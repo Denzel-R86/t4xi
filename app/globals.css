@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* T4XI — officieel design system (licht, Stone) */
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-fog text-ink font-body antialiased;
+}
+
+::selection {
+  @apply bg-ink text-white;
+}
+
+/* Zichtbare keyboard-focus */
+:focus-visible {
+  outline: 2px solid theme("colors.ink.DEFAULT");
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Scroll reveal — CSS-gedreven, geen JS race condition */
+@media (prefers-reduced-motion: no-preference) {
+  html.js .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  html.js .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  html.js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
