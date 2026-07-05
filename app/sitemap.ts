@@ -3,7 +3,22 @@ import type { MetadataRoute } from "next";
 const BASE = "https://t4xi.nl";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return ["", "/diensten", "/tarieven", "/over-ons", "/boeken", "/dagtochten", "/producten", "/contact"].map<MetadataRoute.Sitemap[number]>((path) => ({
+  return [
+    "",
+    "/diensten",
+    "/tarieven",
+    "/over-ons",
+    "/boeken",
+    "/dagtochten",
+    "/producten",
+    "/contact",
+    "/partner",
+    "/taxi-almere-schiphol",
+    "/taxi-amsterdam-schiphol",
+    "/taxi-rotterdam-schiphol",
+    "/taxi-den-haag-schiphol",
+    "/taxi-utrecht-schiphol",
+  ].map<MetadataRoute.Sitemap[number]>((path) => ({
     url: `${BASE}${path}`,
     lastModified: new Date(),
     changeFrequency: path === "" ? "weekly" : "monthly",

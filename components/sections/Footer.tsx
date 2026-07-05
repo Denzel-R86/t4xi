@@ -56,6 +56,8 @@ export default function Footer() {
             <ul className="mt-4 space-y-2.5 text-sm">
               <li><Link href="/#vloot" className="text-stone-subtle hover:text-white">Ons wagenpark</Link></li>
               <li><Link href="/diensten" className="text-stone-subtle hover:text-white">Voor bedrijven</Link></li>
+              <li><Link href="/partner" className="text-stone-subtle hover:text-white">Partner worden</Link></li>
+              <li><Link href="/klant" className="text-stone-subtle hover:text-white">Mijn account</Link></li>
               <li><Link href="/tarieven" className="text-stone-subtle hover:text-white">Tarieven</Link></li>
               <li><Link href="/over-ons" className="text-stone-subtle hover:text-white">Over ons</Link></li>
               <li><Link href="/boeken" className="text-stone-subtle hover:text-white">Boek een rit</Link></li>

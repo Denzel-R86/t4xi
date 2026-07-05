@@ -9,7 +9,8 @@ const nav = [
   { href: "/diensten", label: "Diensten", icon: "briefcase" },
   { href: "/tarieven", label: "Tarieven", icon: "credit-card" },
   { href: "/dagtochten", label: "Dagtochten", icon: "map-pin" },
-  { href: "/over-ons", label: "Over ons", icon: "users" },
+  { href: "/partner", label: "Partner", icon: "users" },
+  { href: "/over-ons", label: "Over ons", icon: "user" },
 ];
 
 export default function Header() {

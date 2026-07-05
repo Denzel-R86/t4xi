@@ -26,13 +26,13 @@ const FAQS = [
   },
 ];
 
-/** FAQ-accordeon uit het v14-bronbestand. */
-export default function FaqList() {
+/** FAQ-accordeon uit het v14-bronbestand; accepteert optioneel eigen vragen. */
+export default function FaqList({ items = FAQS }: { items?: { q: string; a: string }[] }) {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-3">
-      {FAQS.map((faq, i) => (
+      {items.map((faq, i) => (
         <div key={faq.q} className="overflow-hidden rounded-xl border border-line bg-card shadow-card">
           <button
             type="button"
