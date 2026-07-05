@@ -46,6 +46,8 @@ export default function Footer() {
               <li><Link href="/diensten" className="text-stone-subtle hover:text-white">Zakelijk vervoer</Link></li>
               <li><Link href="/diensten" className="text-stone-subtle hover:text-white">Privéritten</Link></li>
               <li><Link href="/diensten" className="text-stone-subtle hover:text-white">Evenementen</Link></li>
+              <li><Link href="/dagtochten" className="text-stone-subtle hover:text-white">Dagtochten</Link></li>
+              <li><Link href="/producten" className="text-stone-subtle hover:text-white">Memberships</Link></li>
             </ul>
           </nav>
 
@@ -53,6 +55,7 @@ export default function Footer() {
             <p className="text-eyebrow font-medium uppercase text-stone">T4XI</p>
             <ul className="mt-4 space-y-2.5 text-sm">
               <li><Link href="/#vloot" className="text-stone-subtle hover:text-white">Ons wagenpark</Link></li>
+              <li><Link href="/diensten" className="text-stone-subtle hover:text-white">Voor bedrijven</Link></li>
               <li><Link href="/tarieven" className="text-stone-subtle hover:text-white">Tarieven</Link></li>
               <li><Link href="/over-ons" className="text-stone-subtle hover:text-white">Over ons</Link></li>
               <li><Link href="/boeken" className="text-stone-subtle hover:text-white">Boek een rit</Link></li>
@@ -82,12 +85,17 @@ export default function Footer() {
                 <Icon name="clock" size={15} className="shrink-0 text-stone" />
                 24/7 beschikbaar
               </li>
+              <li className="flex items-center gap-2">
+                <Icon name="building" size={15} className="shrink-0 text-stone" />
+                KVK: 80673813
+              </li>
             </ul>
           </div>
         </div>
 
         <p className="mt-14 border-t border-white/10 pt-6 text-xs text-stone">
-          © {new Date().getFullYear()} T4XI · Onderdeel van Noir Driving Services
+          © {new Date().getFullYear()} T4XI.nl — Alle rechten voorbehouden ·
+          Onderdeel van Noir Driving Services
         </p>
       </div>
     </footer>

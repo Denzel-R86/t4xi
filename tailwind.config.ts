@@ -40,6 +40,7 @@ const config: Config = {
       fontFamily: {
         display: ["var(--font-outfit)", "system-ui", "sans-serif"],
         body: ["var(--font-inter)", "system-ui", "sans-serif"],
+        playfair: ["var(--font-playfair)", "Georgia", "serif"],
       },
       fontSize: {
         "display-xl": ["clamp(2.75rem, 6vw, 4.5rem)", { lineHeight: "1.05", letterSpacing: "-0.055em" }],

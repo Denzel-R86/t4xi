@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import Icon from "@/components/ui/Icon";
 
 const nav = [
+  { href: "/#vloot", label: "Vloot", icon: "car" },
   { href: "/diensten", label: "Diensten", icon: "briefcase" },
   { href: "/tarieven", label: "Tarieven", icon: "credit-card" },
+  { href: "/dagtochten", label: "Dagtochten", icon: "map-pin" },
   { href: "/over-ons", label: "Over ons", icon: "users" },
 ];
 

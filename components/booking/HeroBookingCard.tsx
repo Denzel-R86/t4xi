@@ -86,7 +86,11 @@ export default function HeroBookingCard() {
       <button
         type="button"
         disabled={!ready}
-        onClick={() => router.push("/boeken")}
+        onClick={() => {
+          const sec = document.getElementById("boeken");
+          if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+          else router.push("/boeken");
+        }}
         className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-all hover:-translate-y-0.5 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
       >
         Bekijk beschikbaarheid

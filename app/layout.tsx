@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Outfit, Inter } from "next/font/google";
+import { Outfit, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/sections/Header";
 import Footer from "@/components/sections/Footer";
+import StickyCta from "@/components/sections/StickyCta";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -14,6 +15,13 @@ const outfit = Outfit({
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+// Dagtochten-pagina gebruikt Playfair Display voor routenamen (bron: t4xi_v14)
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
   display: "swap",
 });
 
@@ -58,7 +66,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="nl" className={`${outfit.variable} ${inter.variable}`}>
+    <html lang="nl" className={`${outfit.variable} ${inter.variable} ${playfair.variable}`}>
       <body>
         {/* Progressive enhancement: .reveal verbergt content alleen als JS
             daadwerkelijk draait. Zonder JS blijft alles zichtbaar. */}
@@ -72,6 +80,7 @@ export default function RootLayout({
         <Header />
         <main id="content">{children}</main>
         <Footer />
+        <StickyCta />
       </body>
     </html>
   );
