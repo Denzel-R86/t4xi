@@ -16,7 +16,11 @@ export default function BookingForm() {
   const ready = pickup && dropoff;
 
   return (
-    <div className="mt-10 max-w-lg space-y-6 rounded-2xl border border-line bg-card p-8">
+    <div className="relative mt-10 max-w-lg space-y-6 overflow-hidden rounded-[28px] border border-line bg-card p-7 shadow-hero-card">
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-[5px] bg-gradient-to-r from-accent via-stone to-stone-subtle"
+      />
       <AddressAutocomplete
         label="Ophaaladres"
         placeholder="Straat, huisnummer, plaats"
@@ -31,7 +35,7 @@ export default function BookingForm() {
       <button
         type="button"
         disabled={!ready}
-        className="w-full rounded-full bg-ink px-7 py-4 text-sm font-medium text-white transition-colors hover:bg-ink-hover disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex min-h-[52px] w-full items-center justify-center rounded-md bg-accent px-7 font-display text-sm font-medium text-white shadow-cta transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
       >
         {ready ? "Bereken vaste prijs" : "Vul beide adressen in"}
       </button>

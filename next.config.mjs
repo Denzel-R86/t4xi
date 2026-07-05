@@ -1,3 +1,7 @@
+// Dev-bundels van Next.js (webpack/react-refresh) vereisen eval;
+// in productie blijft script-src strikt.
+const isDev = process.env.NODE_ENV === "development";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -17,7 +21,7 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
+              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self'",
               "img-src 'self' data: https:",

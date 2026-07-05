@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* T4XI — officieel design system (licht, Stone) */
+/* T4XI Design System v14 — Stone Premium (licht) */
 :root {
   color-scheme: light;
 }
@@ -12,16 +12,37 @@ html {
 }
 
 body {
-  @apply bg-fog text-ink font-body antialiased;
+  @apply text-ink font-body antialiased;
+  background: linear-gradient(180deg, #f5f3f1 0%, #eeeae5 48%, #f5f3f1 100%);
+}
+
+/* Subtiele premium textuur over het hele canvas (v14 body::before) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(40, 49, 59, 0.12), transparent 34%),
+    radial-gradient(circle at 82% 10%, rgba(153, 150, 148, 0.16), transparent 32%);
+}
+
+main,
+header,
+footer {
+  position: relative;
+  z-index: 1;
 }
 
 ::selection {
-  @apply bg-ink text-white;
+  @apply bg-accent text-white;
 }
 
 /* Zichtbare keyboard-focus */
 :focus-visible {
-  outline: 2px solid theme("colors.ink.DEFAULT");
+  outline: 2px solid theme("colors.accent.DEFAULT");
   outline-offset: 3px;
   border-radius: 2px;
 }

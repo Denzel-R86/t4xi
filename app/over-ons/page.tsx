@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function OverOnsPage() {
   return (
     <section className="mx-auto max-w-site px-6 py-20 md:py-28">
-      <p className="text-eyebrow font-medium uppercase text-stone-text">Over ons</p>
+      <p className="text-eyebrow font-medium uppercase text-accent">Over ons</p>
       <h1 className="mt-3 font-display text-display-lg font-semibold text-ink">
         Premium vervoer, elektrisch gedreven
       </h1>

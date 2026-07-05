@@ -119,7 +119,7 @@ export default function AddressAutocomplete({
 
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-ink">
+      <label className="block text-xs font-bold text-secondary">
         {label}
         <input
           type="text"
@@ -141,7 +141,7 @@ export default function AddressAutocomplete({
           aria-activedescendant={
             activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined
           }
-          className="mt-2 w-full rounded-xl border border-line bg-card px-4 py-3 text-ink placeholder:text-stone focus:border-ink focus:outline-none"
+          className="mt-1.5 min-h-[52px] w-full rounded-field border border-[rgba(31,39,48,0.14)] bg-field px-4 text-[15px] font-medium text-ink placeholder:font-normal placeholder:text-stone focus:border-accent focus:bg-white focus:shadow-[0_0_0_4px_rgba(40,49,59,0.10)] focus:outline-none"
         />
       </label>
 
@@ -156,7 +156,7 @@ export default function AddressAutocomplete({
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-line bg-card shadow-lg"
+          className="absolute z-20 mt-2 w-full overflow-hidden rounded-field border border-line bg-card shadow-card"
         >
           {suggestions.map((s, i) => (
             <li
@@ -171,7 +171,7 @@ export default function AddressAutocomplete({
                 onClick={() => choose(s)}
                 className={`block w-full px-4 py-3 text-left text-sm transition-colors ${
                   i === activeIndex
-                    ? "bg-ink text-white"
+                    ? "bg-accent text-white"
                     : "text-ink hover:bg-fog"
                 }`}
               >

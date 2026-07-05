@@ -8,3 +8,5 @@ out/
 supabase/.temp/
 *.tsbuildinfo
 next-env.d.ts
+.claude-flow/
+.swarm/

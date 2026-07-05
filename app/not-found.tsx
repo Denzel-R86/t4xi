@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function NotFound() {
   return (
     <section className="mx-auto max-w-site px-6 py-24 text-center">
-      <p className="text-eyebrow font-medium uppercase text-stone-text">404</p>
+      <p className="text-eyebrow font-medium uppercase text-accent">404</p>
       <h1 className="mt-3 font-display text-display-lg font-semibold text-ink">
         Deze pagina bestaat niet
       </h1>
@@ -13,7 +13,7 @@ export default function NotFound() {
       <div className="mt-8">
         <Link
           href="/"
-          className="inline-flex rounded-full bg-ink px-7 py-3.5 text-sm font-medium text-white transition-colors hover:bg-ink-hover"
+          className="inline-flex rounded-md bg-accent px-7 py-3.5 text-sm font-medium text-white shadow-cta transition-colors hover:bg-accent-hover"
         >
           Naar de homepage
         </Link>

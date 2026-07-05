@@ -16,7 +16,7 @@ export default function GlobalError({
 
   return (
     <section className="mx-auto max-w-site px-6 py-24 text-center">
-      <p className="text-eyebrow font-medium uppercase text-stone-text">Fout</p>
+      <p className="text-eyebrow font-medium uppercase text-accent">Fout</p>
       <h1 className="mt-3 font-display text-display-lg font-semibold text-ink">
         Er ging iets mis
       </h1>
@@ -28,7 +28,7 @@ export default function GlobalError({
         <button
           type="button"
           onClick={reset}
-          className="rounded-full bg-ink px-7 py-3.5 text-sm font-medium text-white transition-colors hover:bg-ink-hover"
+          className="rounded-md bg-accent px-7 py-3.5 text-sm font-medium text-white shadow-cta transition-colors hover:bg-accent-hover"
         >
           Probeer opnieuw
         </button>

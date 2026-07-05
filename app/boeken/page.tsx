@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function BoekenPage() {
   return (
     <section className="mx-auto max-w-site px-6 py-20 md:py-28">
-      <p className="text-eyebrow font-medium uppercase text-stone-text">Boeken</p>
+      <p className="text-eyebrow font-medium uppercase text-accent">Boeken</p>
       <h1 className="mt-3 font-display text-display-lg font-semibold text-ink">
         Waar mag de rit naartoe?
       </h1>

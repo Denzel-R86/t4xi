@@ -26,7 +26,7 @@ const diensten = [
 export default function DienstenPage() {
   return (
     <section className="mx-auto max-w-site px-6 py-20 md:py-28">
-      <p className="text-eyebrow font-medium uppercase text-stone-text">Diensten</p>
+      <p className="text-eyebrow font-medium uppercase text-accent">Diensten</p>
       <h1 className="mt-3 font-display text-display-lg font-semibold text-ink">
         Vervoer dat bij u past
       </h1>
