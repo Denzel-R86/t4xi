@@ -22,8 +22,9 @@
  * vehicle_class_id, active). Bestaat er al een actieve rij → UPDATE, anders INSERT.
  * Opnieuw importeren maakt dus nooit duplicaten.
  *
- * LET OP: 'service_type' wordt gelezen en gevalideerd, maar nog NIET opgeslagen —
- * er is (nog) geen kolom voor. Zie rapport: optionele mini-migratie later.
+ * 'service_type' wordt gevalideerd tegen de toegestane set en opgeslagen in de
+ * gelijknamige kolom (airport, intercity, day_trip, hotel_transfer,
+ * business_transfer, vip_transfer, hourly_chauffeur).
  */
 
 import { readFileSync, existsSync } from "node:fs";
@@ -87,6 +88,16 @@ function parseCsv(text: string): string[][] {
   }
   return rows;
 }
+
+const ALLOWED_SERVICE_TYPES = [
+  "airport",
+  "intercity",
+  "day_trip",
+  "hotel_transfer",
+  "business_transfer",
+  "vip_transfer",
+  "hourly_chauffeur",
+] as const;
 
 const REQUIRED_COLUMNS = [
   "pickup_slug",
@@ -185,6 +196,8 @@ async function main() {
     if (pickup && dropoff && pickup === dropoff) rowErrors.push("pickup en dropoff zijn gelijk");
     if (!vclass) rowErrors.push("vehicle_class_slug verplicht");
     if (!serviceType) rowErrors.push("service_type verplicht");
+    else if (!ALLOWED_SERVICE_TYPES.includes(serviceType as (typeof ALLOWED_SERVICE_TYPES)[number]))
+      rowErrors.push(`service_type '${serviceType}' ongeldig (toegestaan: ${ALLOWED_SERVICE_TYPES.join(", ")})`);
 
     const price = Number(priceStr);
     if (!priceStr || !Number.isFinite(price) || price <= 0) rowErrors.push("price moet > 0 zijn");
@@ -280,6 +293,7 @@ async function main() {
       pickup_location_id: r.pickupId,
       dropoff_location_id: r.dropoffId,
       vehicle_class_id: r.classId,
+      service_type: r.service_type,
       price: r.price,
       return_price: r.return_price,
       distance_km: r.distance_km,

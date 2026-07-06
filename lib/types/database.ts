@@ -367,6 +367,7 @@ export type Database = {
           pickup_location_id: string
           price: number
           return_price: number | null
+          service_type: string
           source_label: string | null
           updated_at: string
           valid_from: string
@@ -385,6 +386,7 @@ export type Database = {
           pickup_location_id: string
           price: number
           return_price?: number | null
+          service_type?: string
           source_label?: string | null
           updated_at?: string
           valid_from?: string
@@ -403,6 +405,7 @@ export type Database = {
           pickup_location_id?: string
           price?: number
           return_price?: number | null
+          service_type?: string
           source_label?: string | null
           updated_at?: string
           valid_from?: string
