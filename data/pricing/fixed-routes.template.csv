@@ -1,0 +1,4 @@
+pickup_slug,dropoff_slug,vehicle_class_slug,service_type,price,return_price,distance_km,estimated_duration_min,source_label,active
+almere-poort,schiphol-airport,executive-ev,airport,102,184,39,40,Almere Poort → Schiphol,true
+amsterdam-centrum,schiphol-airport,executive-ev,airport,57,103,14,25,Amsterdam Centrum → Schiphol,true
+rotterdam,schiphol-airport,executive-ev,airport,119,214,80,65,Rotterdam → Schiphol,true

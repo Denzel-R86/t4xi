@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "pricing:import": "tsx scripts/import-fixed-routes.ts"
   },
   "dependencies": {
     "next": "^14.2.5",
@@ -28,6 +29,7 @@
     "postcss": "^8.4.40",
     "autoprefixer": "^10.4.19",
     "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.5"
+    "eslint-config-next": "^14.2.5",
+    "tsx": "^4.19.2"
   }
 }
