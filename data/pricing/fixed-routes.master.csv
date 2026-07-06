@@ -1,0 +1,331 @@
+pickup_slug,dropoff_slug,vehicle_class_slug,service_type,price,return_price,distance_km,estimated_duration_min,source_label,active
+amsterdam,schiphol-airport,executive-ev,airport,69,124,22,30,Amsterdam → Schiphol,true
+rotterdam,schiphol-airport,executive-ev,airport,119,214,80,65,Rotterdam → Schiphol,true
+den-haag,schiphol-airport,executive-ev,airport,107,193,43,45,Den Haag → Schiphol,true
+almere-poort,schiphol-airport,executive-ev,airport,102,184,39,40,Almere Poort → Schiphol,true
+almere-stad-centrum,schiphol-airport,executive-ev,airport,104,187,40,40,Almere Stad Centrum → Schiphol,true
+almere-haven,schiphol-airport,executive-ev,airport,103,185,40,40,Almere Haven → Schiphol,true
+almere-muziekwijk,schiphol-airport,executive-ev,airport,105,189,41,42,Almere Muziekwijk → Schiphol,true
+almere-buiten,schiphol-airport,executive-ev,airport,110,198,44,45,Almere Buiten → Schiphol,true
+almere-hout,schiphol-airport,executive-ev,airport,113,203,45,46,Almere Hout → Schiphol,true
+almere-oostvaarders,schiphol-airport,executive-ev,airport,116,209,47,48,Almere Oostvaarders → Schiphol,true
+amsterdam-zuidas,schiphol-airport,executive-ev,airport,50,90,10,20,Amsterdam Zuidas → Schiphol,true
+amsterdam-centrum,schiphol-airport,executive-ev,airport,57,103,14,25,Amsterdam Centrum → Schiphol,true
+amsterdam-oud-zuid-de-pijp,schiphol-airport,executive-ev,airport,55,99,13,24,Amsterdam Oud-Zuid / De Pijp → Schiphol,true
+amsterdam-oost,schiphol-airport,executive-ev,airport,60,108,16,28,Amsterdam Oost → Schiphol,true
+amsterdam-zuidoost-bijlmer,schiphol-airport,executive-ev,airport,60,108,16,28,Amsterdam Zuidoost / Bijlmer → Schiphol,true
+amsterdam-noord,schiphol-airport,executive-ev,airport,65,117,20,30,Amsterdam Noord → Schiphol,true
+leidsche-rijn,schiphol-airport,executive-ev,airport,104,187,40,40,Leidsche Rijn → Schiphol,true
+utrecht-centrum,schiphol-airport,executive-ev,airport,110,198,44,44,Utrecht Centrum → Schiphol,true
+de-uithof-science-park,schiphol-airport,executive-ev,airport,117,211,48,48,De Uithof → Schiphol,true
+amsterdam,rotterdam-airport,executive-ev,airport,119,214,85,70,Amsterdam → Rotterdam Airport,true
+rotterdam,rotterdam-airport,executive-ev,airport,39,70,12,20,Rotterdam → Rotterdam Airport,true
+amsterdam,rotterdam,executive-ev,intercity,109,196,78,65,Amsterdam → Rotterdam,true
+amsterdam,den-haag,executive-ev,intercity,85,153,65,55,Amsterdam → Den Haag,true
+amsterdam,utrecht,executive-ev,intercity,69,124,40,35,Amsterdam → Utrecht,true
+amsterdam,eindhoven,executive-ev,intercity,139,250,120,90,Amsterdam → Eindhoven,true
+rotterdam,amsterdam,executive-ev,intercity,109,196,78,65,Rotterdam → Amsterdam,true
+rotterdam,den-haag,executive-ev,intercity,49,88,25,30,Rotterdam → Den Haag,true
+rotterdam,utrecht,executive-ev,intercity,79,142,55,50,Rotterdam → Utrecht,true
+almere,amsterdam,executive-ev,intercity,45,81,35,35,Almere → Amsterdam,true
+almere,utrecht,executive-ev,intercity,65,117,42,42,Almere → Utrecht,true
+utrecht,amsterdam,executive-ev,intercity,69,124,40,40,Utrecht → Amsterdam,true
+amsterdam,schiphol-airport,business,airport,58,104,15,15,Amsterdam → Schiphol,false
+amsterdam,rotterdam-airport,business,airport,148,266,75,68,Amsterdam → Rotterdam Airport,false
+rotterdam,schiphol-airport,business,airport,131,236,64,58,Rotterdam → Schiphol,false
+rotterdam,rotterdam-airport,business,airport,44,79,6,15,Rotterdam → Rotterdam Airport,false
+den-haag,schiphol-airport,business,airport,119,214,56,50,Den Haag → Schiphol,false
+den-haag,rotterdam-airport,executive-ev,airport,67,121,21,19,Den Haag → Rotterdam Airport,false
+den-haag,rotterdam-airport,business,airport,67,121,21,19,Den Haag → Rotterdam Airport,false
+utrecht,schiphol-airport,executive-ev,airport,104,187,46,41,Utrecht → Schiphol,false
+utrecht,schiphol-airport,business,airport,104,187,46,41,Utrecht → Schiphol,false
+utrecht,rotterdam-airport,executive-ev,airport,134,241,66,59,Utrecht → Rotterdam Airport,false
+utrecht,rotterdam-airport,business,airport,134,241,66,59,Utrecht → Rotterdam Airport,false
+almere,schiphol-airport,executive-ev,airport,104,187,46,41,Almere → Schiphol,false
+almere,schiphol-airport,business,airport,104,187,46,41,Almere → Schiphol,false
+almere,rotterdam-airport,executive-ev,airport,179,322,96,86,Almere → Rotterdam Airport,false
+almere,rotterdam-airport,business,airport,179,322,96,86,Almere → Rotterdam Airport,false
+eindhoven,schiphol-airport,executive-ev,airport,254,457,146,131,Eindhoven → Schiphol,false
+eindhoven,schiphol-airport,business,airport,254,457,146,131,Eindhoven → Schiphol,false
+eindhoven,rotterdam-airport,executive-ev,airport,220,396,123,111,Eindhoven → Rotterdam Airport,false
+eindhoven,rotterdam-airport,business,airport,220,396,123,111,Eindhoven → Rotterdam Airport,false
+almere-poort,schiphol-airport,business,airport,104,187,46,41,Almere Poort → Schiphol,false
+almere-poort,rotterdam-airport,executive-ev,airport,179,322,96,86,Almere Poort → Rotterdam Airport,false
+almere-poort,rotterdam-airport,business,airport,179,322,96,86,Almere Poort → Rotterdam Airport,false
+almere-stad-centrum,schiphol-airport,business,airport,104,187,46,41,Almere Stad Centrum → Schiphol,false
+almere-stad-centrum,rotterdam-airport,executive-ev,airport,179,322,96,86,Almere Stad Centrum → Rotterdam Airport,false
+almere-stad-centrum,rotterdam-airport,business,airport,179,322,96,86,Almere Stad Centrum → Rotterdam Airport,false
+almere-haven,schiphol-airport,business,airport,104,187,46,41,Almere Haven → Schiphol,false
+almere-haven,rotterdam-airport,executive-ev,airport,179,322,96,86,Almere Haven → Rotterdam Airport,false
+almere-haven,rotterdam-airport,business,airport,179,322,96,86,Almere Haven → Rotterdam Airport,false
+almere-muziekwijk,schiphol-airport,business,airport,104,187,46,41,Almere Muziekwijk → Schiphol,false
+almere-muziekwijk,rotterdam-airport,executive-ev,airport,179,322,96,86,Almere Muziekwijk → Rotterdam Airport,false
+almere-muziekwijk,rotterdam-airport,business,airport,179,322,96,86,Almere Muziekwijk → Rotterdam Airport,false
+almere-buiten,schiphol-airport,business,airport,104,187,46,41,Almere Buiten → Schiphol,false
+almere-buiten,rotterdam-airport,executive-ev,airport,179,322,96,86,Almere Buiten → Rotterdam Airport,false
+almere-buiten,rotterdam-airport,business,airport,179,322,96,86,Almere Buiten → Rotterdam Airport,false
+almere-hout,schiphol-airport,business,airport,104,187,46,41,Almere Hout → Schiphol,false
+almere-hout,rotterdam-airport,executive-ev,airport,179,322,96,86,Almere Hout → Rotterdam Airport,false
+almere-hout,rotterdam-airport,business,airport,179,322,96,86,Almere Hout → Rotterdam Airport,false
+almere-oostvaarders,schiphol-airport,business,airport,104,187,46,41,Almere Oostvaarders → Schiphol,false
+almere-oostvaarders,rotterdam-airport,executive-ev,airport,179,322,96,86,Almere Oostvaarders → Rotterdam Airport,false
+almere-oostvaarders,rotterdam-airport,business,airport,179,322,96,86,Almere Oostvaarders → Rotterdam Airport,false
+amsterdam-zuidas,schiphol-airport,business,airport,58,104,15,15,Amsterdam Zuidas → Schiphol,false
+amsterdam-zuidas,rotterdam-airport,executive-ev,airport,148,266,75,68,Amsterdam Zuidas → Rotterdam Airport,false
+amsterdam-zuidas,rotterdam-airport,business,airport,148,266,75,68,Amsterdam Zuidas → Rotterdam Airport,false
+amsterdam-centrum,schiphol-airport,business,airport,58,104,15,15,Amsterdam Centrum → Schiphol,false
+amsterdam-centrum,rotterdam-airport,executive-ev,airport,148,266,75,68,Amsterdam Centrum → Rotterdam Airport,false
+amsterdam-centrum,rotterdam-airport,business,airport,148,266,75,68,Amsterdam Centrum → Rotterdam Airport,false
+amsterdam-oud-zuid-de-pijp,schiphol-airport,business,airport,58,104,15,15,Amsterdam Oud-Zuid / De Pijp → Schiphol,false
+amsterdam-oud-zuid-de-pijp,rotterdam-airport,executive-ev,airport,148,266,75,68,Amsterdam Oud-Zuid / De Pijp → Rotterdam Airport,false
+amsterdam-oud-zuid-de-pijp,rotterdam-airport,business,airport,148,266,75,68,Amsterdam Oud-Zuid / De Pijp → Rotterdam Airport,false
+amsterdam-oost,schiphol-airport,business,airport,58,104,15,15,Amsterdam Oost → Schiphol,false
+amsterdam-oost,rotterdam-airport,executive-ev,airport,148,266,75,68,Amsterdam Oost → Rotterdam Airport,false
+amsterdam-oost,rotterdam-airport,business,airport,148,266,75,68,Amsterdam Oost → Rotterdam Airport,false
+amsterdam-zuidoost-bijlmer,schiphol-airport,business,airport,58,104,15,15,Amsterdam Zuidoost / Bijlmer → Schiphol,false
+amsterdam-zuidoost-bijlmer,rotterdam-airport,executive-ev,airport,148,266,75,68,Amsterdam Zuidoost / Bijlmer → Rotterdam Airport,false
+amsterdam-zuidoost-bijlmer,rotterdam-airport,business,airport,148,266,75,68,Amsterdam Zuidoost / Bijlmer → Rotterdam Airport,false
+amsterdam-noord,schiphol-airport,business,airport,58,104,15,15,Amsterdam Noord → Schiphol,false
+amsterdam-noord,rotterdam-airport,executive-ev,airport,148,266,75,68,Amsterdam Noord → Rotterdam Airport,false
+amsterdam-noord,rotterdam-airport,business,airport,148,266,75,68,Amsterdam Noord → Rotterdam Airport,false
+leidsche-rijn,schiphol-airport,business,airport,104,187,46,41,Leidsche Rijn → Schiphol,false
+leidsche-rijn,rotterdam-airport,executive-ev,airport,134,241,66,59,Leidsche Rijn → Rotterdam Airport,false
+leidsche-rijn,rotterdam-airport,business,airport,134,241,66,59,Leidsche Rijn → Rotterdam Airport,false
+utrecht-centrum,schiphol-airport,business,airport,104,187,46,41,Utrecht Centrum → Schiphol,false
+utrecht-centrum,rotterdam-airport,executive-ev,airport,134,241,66,59,Utrecht Centrum → Rotterdam Airport,false
+utrecht-centrum,rotterdam-airport,business,airport,134,241,66,59,Utrecht Centrum → Rotterdam Airport,false
+de-uithof-science-park,schiphol-airport,business,airport,104,187,46,41,De Uithof → Schiphol,false
+de-uithof-science-park,rotterdam-airport,executive-ev,airport,134,241,66,59,De Uithof → Rotterdam Airport,false
+de-uithof-science-park,rotterdam-airport,business,airport,134,241,66,59,De Uithof → Rotterdam Airport,false
+amsterdam,rotterdam,business,intercity,151,272,77,69,Amsterdam → Rotterdam,false
+amsterdam,den-haag,business,intercity,142,256,71,64,Amsterdam → Den Haag,false
+amsterdam,utrecht,business,intercity,104,187,46,41,Amsterdam → Utrecht,false
+amsterdam,almere,executive-ev,intercity,85,153,33,30,Amsterdam → Almere,false
+amsterdam,almere,business,intercity,85,153,33,30,Amsterdam → Almere,false
+amsterdam,eindhoven,business,intercity,259,466,149,134,Amsterdam → Eindhoven,false
+rotterdam,amsterdam,business,intercity,151,272,77,69,Rotterdam → Amsterdam,false
+rotterdam,den-haag,business,intercity,76,137,27,24,Rotterdam → Den Haag,false
+rotterdam,utrecht,business,intercity,133,239,65,59,Rotterdam → Utrecht,false
+rotterdam,almere,executive-ev,intercity,181,326,97,87,Rotterdam → Almere,false
+rotterdam,almere,business,intercity,181,326,97,87,Rotterdam → Almere,false
+rotterdam,eindhoven,executive-ev,intercity,211,380,117,105,Rotterdam → Eindhoven,false
+rotterdam,eindhoven,business,intercity,211,380,117,105,Rotterdam → Eindhoven,false
+den-haag,amsterdam,executive-ev,intercity,142,256,71,64,Den Haag → Amsterdam,false
+den-haag,amsterdam,business,intercity,142,256,71,64,Den Haag → Amsterdam,false
+den-haag,rotterdam,executive-ev,intercity,76,137,27,24,Den Haag → Rotterdam,false
+den-haag,rotterdam,business,intercity,76,137,27,24,Den Haag → Rotterdam,false
+den-haag,utrecht,executive-ev,intercity,149,268,76,68,Den Haag → Utrecht,false
+den-haag,utrecht,business,intercity,149,268,76,68,Den Haag → Utrecht,false
+den-haag,almere,executive-ev,intercity,182,328,98,88,Den Haag → Almere,false
+den-haag,almere,business,intercity,182,328,98,88,Den Haag → Almere,false
+den-haag,eindhoven,executive-ev,intercity,251,452,144,130,Den Haag → Eindhoven,false
+den-haag,eindhoven,business,intercity,251,452,144,130,Den Haag → Eindhoven,false
+utrecht,amsterdam,business,intercity,104,187,46,41,Utrecht → Amsterdam,false
+utrecht,rotterdam,executive-ev,intercity,133,239,65,59,Utrecht → Rotterdam,false
+utrecht,rotterdam,business,intercity,133,239,65,59,Utrecht → Rotterdam,false
+utrecht,den-haag,executive-ev,intercity,149,268,76,68,Utrecht → Den Haag,false
+utrecht,den-haag,business,intercity,149,268,76,68,Utrecht → Den Haag,false
+utrecht,almere,executive-ev,intercity,97,175,41,37,Utrecht → Almere,false
+utrecht,almere,business,intercity,97,175,41,37,Utrecht → Almere,false
+utrecht,eindhoven,executive-ev,intercity,190,342,103,93,Utrecht → Eindhoven,false
+utrecht,eindhoven,business,intercity,190,342,103,93,Utrecht → Eindhoven,false
+almere,amsterdam,business,intercity,85,153,33,30,Almere → Amsterdam,false
+almere,rotterdam,executive-ev,intercity,181,326,97,87,Almere → Rotterdam,false
+almere,rotterdam,business,intercity,181,326,97,87,Almere → Rotterdam,false
+almere,den-haag,executive-ev,intercity,182,328,98,88,Almere → Den Haag,false
+almere,den-haag,business,intercity,182,328,98,88,Almere → Den Haag,false
+almere,utrecht,business,intercity,97,175,41,37,Almere → Utrecht,false
+almere,eindhoven,executive-ev,intercity,242,436,138,124,Almere → Eindhoven,false
+almere,eindhoven,business,intercity,242,436,138,124,Almere → Eindhoven,false
+eindhoven,amsterdam,executive-ev,intercity,259,466,149,134,Eindhoven → Amsterdam,false
+eindhoven,amsterdam,business,intercity,259,466,149,134,Eindhoven → Amsterdam,false
+eindhoven,rotterdam,executive-ev,intercity,211,380,117,105,Eindhoven → Rotterdam,false
+eindhoven,rotterdam,business,intercity,211,380,117,105,Eindhoven → Rotterdam,false
+eindhoven,den-haag,executive-ev,intercity,251,452,144,130,Eindhoven → Den Haag,false
+eindhoven,den-haag,business,intercity,251,452,144,130,Eindhoven → Den Haag,false
+eindhoven,utrecht,executive-ev,intercity,190,342,103,93,Eindhoven → Utrecht,false
+eindhoven,utrecht,business,intercity,190,342,103,93,Eindhoven → Utrecht,false
+eindhoven,almere,executive-ev,intercity,242,436,138,124,Eindhoven → Almere,false
+eindhoven,almere,business,intercity,242,436,138,124,Eindhoven → Almere,false
+almere-poort,amsterdam,executive-ev,intercity,85,153,33,30,Almere Poort → Amsterdam,false
+almere-poort,amsterdam,business,intercity,85,153,33,30,Almere Poort → Amsterdam,false
+almere-poort,rotterdam,executive-ev,intercity,181,326,97,87,Almere Poort → Rotterdam,false
+almere-poort,rotterdam,business,intercity,181,326,97,87,Almere Poort → Rotterdam,false
+almere-poort,den-haag,executive-ev,intercity,182,328,98,88,Almere Poort → Den Haag,false
+almere-poort,den-haag,business,intercity,182,328,98,88,Almere Poort → Den Haag,false
+almere-poort,utrecht,executive-ev,intercity,97,175,41,37,Almere Poort → Utrecht,false
+almere-poort,utrecht,business,intercity,97,175,41,37,Almere Poort → Utrecht,false
+almere-stad-centrum,amsterdam,executive-ev,intercity,85,153,33,30,Almere Stad Centrum → Amsterdam,false
+almere-stad-centrum,amsterdam,business,intercity,85,153,33,30,Almere Stad Centrum → Amsterdam,false
+almere-stad-centrum,rotterdam,executive-ev,intercity,181,326,97,87,Almere Stad Centrum → Rotterdam,false
+almere-stad-centrum,rotterdam,business,intercity,181,326,97,87,Almere Stad Centrum → Rotterdam,false
+almere-stad-centrum,den-haag,executive-ev,intercity,182,328,98,88,Almere Stad Centrum → Den Haag,false
+almere-stad-centrum,den-haag,business,intercity,182,328,98,88,Almere Stad Centrum → Den Haag,false
+almere-stad-centrum,utrecht,executive-ev,intercity,97,175,41,37,Almere Stad Centrum → Utrecht,false
+almere-stad-centrum,utrecht,business,intercity,97,175,41,37,Almere Stad Centrum → Utrecht,false
+almere-haven,amsterdam,executive-ev,intercity,85,153,33,30,Almere Haven → Amsterdam,false
+almere-haven,amsterdam,business,intercity,85,153,33,30,Almere Haven → Amsterdam,false
+almere-haven,rotterdam,executive-ev,intercity,181,326,97,87,Almere Haven → Rotterdam,false
+almere-haven,rotterdam,business,intercity,181,326,97,87,Almere Haven → Rotterdam,false
+almere-haven,den-haag,executive-ev,intercity,182,328,98,88,Almere Haven → Den Haag,false
+almere-haven,den-haag,business,intercity,182,328,98,88,Almere Haven → Den Haag,false
+almere-haven,utrecht,executive-ev,intercity,97,175,41,37,Almere Haven → Utrecht,false
+almere-haven,utrecht,business,intercity,97,175,41,37,Almere Haven → Utrecht,false
+almere-muziekwijk,amsterdam,executive-ev,intercity,85,153,33,30,Almere Muziekwijk → Amsterdam,false
+almere-muziekwijk,amsterdam,business,intercity,85,153,33,30,Almere Muziekwijk → Amsterdam,false
+almere-muziekwijk,rotterdam,executive-ev,intercity,181,326,97,87,Almere Muziekwijk → Rotterdam,false
+almere-muziekwijk,rotterdam,business,intercity,181,326,97,87,Almere Muziekwijk → Rotterdam,false
+almere-muziekwijk,den-haag,executive-ev,intercity,182,328,98,88,Almere Muziekwijk → Den Haag,false
+almere-muziekwijk,den-haag,business,intercity,182,328,98,88,Almere Muziekwijk → Den Haag,false
+almere-muziekwijk,utrecht,executive-ev,intercity,97,175,41,37,Almere Muziekwijk → Utrecht,false
+almere-muziekwijk,utrecht,business,intercity,97,175,41,37,Almere Muziekwijk → Utrecht,false
+almere-buiten,amsterdam,executive-ev,intercity,85,153,33,30,Almere Buiten → Amsterdam,false
+almere-buiten,amsterdam,business,intercity,85,153,33,30,Almere Buiten → Amsterdam,false
+almere-buiten,rotterdam,executive-ev,intercity,181,326,97,87,Almere Buiten → Rotterdam,false
+almere-buiten,rotterdam,business,intercity,181,326,97,87,Almere Buiten → Rotterdam,false
+almere-buiten,den-haag,executive-ev,intercity,182,328,98,88,Almere Buiten → Den Haag,false
+almere-buiten,den-haag,business,intercity,182,328,98,88,Almere Buiten → Den Haag,false
+almere-buiten,utrecht,executive-ev,intercity,97,175,41,37,Almere Buiten → Utrecht,false
+almere-buiten,utrecht,business,intercity,97,175,41,37,Almere Buiten → Utrecht,false
+almere-hout,amsterdam,executive-ev,intercity,85,153,33,30,Almere Hout → Amsterdam,false
+almere-hout,amsterdam,business,intercity,85,153,33,30,Almere Hout → Amsterdam,false
+almere-hout,rotterdam,executive-ev,intercity,181,326,97,87,Almere Hout → Rotterdam,false
+almere-hout,rotterdam,business,intercity,181,326,97,87,Almere Hout → Rotterdam,false
+almere-hout,den-haag,executive-ev,intercity,182,328,98,88,Almere Hout → Den Haag,false
+almere-hout,den-haag,business,intercity,182,328,98,88,Almere Hout → Den Haag,false
+almere-hout,utrecht,executive-ev,intercity,97,175,41,37,Almere Hout → Utrecht,false
+almere-hout,utrecht,business,intercity,97,175,41,37,Almere Hout → Utrecht,false
+almere-oostvaarders,amsterdam,executive-ev,intercity,85,153,33,30,Almere Oostvaarders → Amsterdam,false
+almere-oostvaarders,amsterdam,business,intercity,85,153,33,30,Almere Oostvaarders → Amsterdam,false
+almere-oostvaarders,rotterdam,executive-ev,intercity,181,326,97,87,Almere Oostvaarders → Rotterdam,false
+almere-oostvaarders,rotterdam,business,intercity,181,326,97,87,Almere Oostvaarders → Rotterdam,false
+almere-oostvaarders,den-haag,executive-ev,intercity,182,328,98,88,Almere Oostvaarders → Den Haag,false
+almere-oostvaarders,den-haag,business,intercity,182,328,98,88,Almere Oostvaarders → Den Haag,false
+almere-oostvaarders,utrecht,executive-ev,intercity,97,175,41,37,Almere Oostvaarders → Utrecht,false
+almere-oostvaarders,utrecht,business,intercity,97,175,41,37,Almere Oostvaarders → Utrecht,false
+amsterdam-zuidas,rotterdam,executive-ev,intercity,151,272,77,69,Amsterdam Zuidas → Rotterdam,false
+amsterdam-zuidas,rotterdam,business,intercity,151,272,77,69,Amsterdam Zuidas → Rotterdam,false
+amsterdam-zuidas,den-haag,executive-ev,intercity,142,256,71,64,Amsterdam Zuidas → Den Haag,false
+amsterdam-zuidas,den-haag,business,intercity,142,256,71,64,Amsterdam Zuidas → Den Haag,false
+amsterdam-zuidas,utrecht,executive-ev,intercity,104,187,46,41,Amsterdam Zuidas → Utrecht,false
+amsterdam-zuidas,utrecht,business,intercity,104,187,46,41,Amsterdam Zuidas → Utrecht,false
+amsterdam-zuidas,eindhoven,executive-ev,intercity,259,466,149,134,Amsterdam Zuidas → Eindhoven,false
+amsterdam-zuidas,eindhoven,business,intercity,259,466,149,134,Amsterdam Zuidas → Eindhoven,false
+amsterdam-centrum,rotterdam,executive-ev,intercity,151,272,77,69,Amsterdam Centrum → Rotterdam,false
+amsterdam-centrum,rotterdam,business,intercity,151,272,77,69,Amsterdam Centrum → Rotterdam,false
+amsterdam-centrum,den-haag,executive-ev,intercity,142,256,71,64,Amsterdam Centrum → Den Haag,false
+amsterdam-centrum,den-haag,business,intercity,142,256,71,64,Amsterdam Centrum → Den Haag,false
+amsterdam-centrum,utrecht,executive-ev,intercity,104,187,46,41,Amsterdam Centrum → Utrecht,false
+amsterdam-centrum,utrecht,business,intercity,104,187,46,41,Amsterdam Centrum → Utrecht,false
+amsterdam-centrum,eindhoven,executive-ev,intercity,259,466,149,134,Amsterdam Centrum → Eindhoven,false
+amsterdam-centrum,eindhoven,business,intercity,259,466,149,134,Amsterdam Centrum → Eindhoven,false
+amsterdam-oud-zuid-de-pijp,rotterdam,executive-ev,intercity,151,272,77,69,Amsterdam Oud-Zuid / De Pijp → Rotterdam,false
+amsterdam-oud-zuid-de-pijp,rotterdam,business,intercity,151,272,77,69,Amsterdam Oud-Zuid / De Pijp → Rotterdam,false
+amsterdam-oud-zuid-de-pijp,den-haag,executive-ev,intercity,142,256,71,64,Amsterdam Oud-Zuid / De Pijp → Den Haag,false
+amsterdam-oud-zuid-de-pijp,den-haag,business,intercity,142,256,71,64,Amsterdam Oud-Zuid / De Pijp → Den Haag,false
+amsterdam-oud-zuid-de-pijp,utrecht,executive-ev,intercity,104,187,46,41,Amsterdam Oud-Zuid / De Pijp → Utrecht,false
+amsterdam-oud-zuid-de-pijp,utrecht,business,intercity,104,187,46,41,Amsterdam Oud-Zuid / De Pijp → Utrecht,false
+amsterdam-oud-zuid-de-pijp,eindhoven,executive-ev,intercity,259,466,149,134,Amsterdam Oud-Zuid / De Pijp → Eindhoven,false
+amsterdam-oud-zuid-de-pijp,eindhoven,business,intercity,259,466,149,134,Amsterdam Oud-Zuid / De Pijp → Eindhoven,false
+amsterdam-oost,rotterdam,executive-ev,intercity,151,272,77,69,Amsterdam Oost → Rotterdam,false
+amsterdam-oost,rotterdam,business,intercity,151,272,77,69,Amsterdam Oost → Rotterdam,false
+amsterdam-oost,den-haag,executive-ev,intercity,142,256,71,64,Amsterdam Oost → Den Haag,false
+amsterdam-oost,den-haag,business,intercity,142,256,71,64,Amsterdam Oost → Den Haag,false
+amsterdam-oost,utrecht,executive-ev,intercity,104,187,46,41,Amsterdam Oost → Utrecht,false
+amsterdam-oost,utrecht,business,intercity,104,187,46,41,Amsterdam Oost → Utrecht,false
+amsterdam-oost,eindhoven,executive-ev,intercity,259,466,149,134,Amsterdam Oost → Eindhoven,false
+amsterdam-oost,eindhoven,business,intercity,259,466,149,134,Amsterdam Oost → Eindhoven,false
+amsterdam-zuidoost-bijlmer,rotterdam,executive-ev,intercity,151,272,77,69,Amsterdam Zuidoost / Bijlmer → Rotterdam,false
+amsterdam-zuidoost-bijlmer,rotterdam,business,intercity,151,272,77,69,Amsterdam Zuidoost / Bijlmer → Rotterdam,false
+amsterdam-zuidoost-bijlmer,den-haag,executive-ev,intercity,142,256,71,64,Amsterdam Zuidoost / Bijlmer → Den Haag,false
+amsterdam-zuidoost-bijlmer,den-haag,business,intercity,142,256,71,64,Amsterdam Zuidoost / Bijlmer → Den Haag,false
+amsterdam-zuidoost-bijlmer,utrecht,executive-ev,intercity,104,187,46,41,Amsterdam Zuidoost / Bijlmer → Utrecht,false
+amsterdam-zuidoost-bijlmer,utrecht,business,intercity,104,187,46,41,Amsterdam Zuidoost / Bijlmer → Utrecht,false
+amsterdam-zuidoost-bijlmer,eindhoven,executive-ev,intercity,259,466,149,134,Amsterdam Zuidoost / Bijlmer → Eindhoven,false
+amsterdam-zuidoost-bijlmer,eindhoven,business,intercity,259,466,149,134,Amsterdam Zuidoost / Bijlmer → Eindhoven,false
+amsterdam-noord,rotterdam,executive-ev,intercity,151,272,77,69,Amsterdam Noord → Rotterdam,false
+amsterdam-noord,rotterdam,business,intercity,151,272,77,69,Amsterdam Noord → Rotterdam,false
+amsterdam-noord,den-haag,executive-ev,intercity,142,256,71,64,Amsterdam Noord → Den Haag,false
+amsterdam-noord,den-haag,business,intercity,142,256,71,64,Amsterdam Noord → Den Haag,false
+amsterdam-noord,utrecht,executive-ev,intercity,104,187,46,41,Amsterdam Noord → Utrecht,false
+amsterdam-noord,utrecht,business,intercity,104,187,46,41,Amsterdam Noord → Utrecht,false
+amsterdam-noord,eindhoven,executive-ev,intercity,259,466,149,134,Amsterdam Noord → Eindhoven,false
+amsterdam-noord,eindhoven,business,intercity,259,466,149,134,Amsterdam Noord → Eindhoven,false
+leidsche-rijn,amsterdam,executive-ev,intercity,104,187,46,41,Leidsche Rijn → Amsterdam,false
+leidsche-rijn,amsterdam,business,intercity,104,187,46,41,Leidsche Rijn → Amsterdam,false
+leidsche-rijn,rotterdam,executive-ev,intercity,133,239,65,59,Leidsche Rijn → Rotterdam,false
+leidsche-rijn,rotterdam,business,intercity,133,239,65,59,Leidsche Rijn → Rotterdam,false
+leidsche-rijn,den-haag,executive-ev,intercity,149,268,76,68,Leidsche Rijn → Den Haag,false
+leidsche-rijn,den-haag,business,intercity,149,268,76,68,Leidsche Rijn → Den Haag,false
+utrecht-centrum,amsterdam,executive-ev,intercity,104,187,46,41,Utrecht Centrum → Amsterdam,false
+utrecht-centrum,amsterdam,business,intercity,104,187,46,41,Utrecht Centrum → Amsterdam,false
+utrecht-centrum,rotterdam,executive-ev,intercity,133,239,65,59,Utrecht Centrum → Rotterdam,false
+utrecht-centrum,rotterdam,business,intercity,133,239,65,59,Utrecht Centrum → Rotterdam,false
+utrecht-centrum,den-haag,executive-ev,intercity,149,268,76,68,Utrecht Centrum → Den Haag,false
+utrecht-centrum,den-haag,business,intercity,149,268,76,68,Utrecht Centrum → Den Haag,false
+de-uithof-science-park,amsterdam,executive-ev,intercity,104,187,46,41,De Uithof → Amsterdam,false
+de-uithof-science-park,amsterdam,business,intercity,104,187,46,41,De Uithof → Amsterdam,false
+de-uithof-science-park,rotterdam,executive-ev,intercity,133,239,65,59,De Uithof → Rotterdam,false
+de-uithof-science-park,rotterdam,business,intercity,133,239,65,59,De Uithof → Rotterdam,false
+de-uithof-science-park,den-haag,executive-ev,intercity,149,268,76,68,De Uithof → Den Haag,false
+de-uithof-science-park,den-haag,business,intercity,149,268,76,68,De Uithof → Den Haag,false
+amsterdam,antwerpen,executive-ev,day_trip,536,,179,161,Amsterdam → Antwerpen,false
+amsterdam,antwerpen,business,day_trip,536,,179,161,Amsterdam → Antwerpen,false
+amsterdam,brussel,executive-ev,day_trip,624,,234,211,Amsterdam → Brussel,false
+amsterdam,brussel,business,day_trip,624,,234,211,Amsterdam → Brussel,false
+amsterdam,brugge,executive-ev,day_trip,624,,234,211,Amsterdam → Brugge,false
+amsterdam,brugge,business,day_trip,624,,234,211,Amsterdam → Brugge,false
+amsterdam,dusseldorf,executive-ev,day_trip,640,,244,220,Amsterdam → Düsseldorf,false
+amsterdam,dusseldorf,business,day_trip,640,,244,220,Amsterdam → Düsseldorf,false
+amsterdam,keulen,executive-ev,day_trip,711,,288,259,Amsterdam → Keulen,false
+amsterdam,keulen,business,day_trip,711,,288,259,Amsterdam → Keulen,false
+rotterdam,antwerpen,executive-ev,day_trip,420,,106,95,Rotterdam → Antwerpen,false
+rotterdam,antwerpen,business,day_trip,420,,106,95,Rotterdam → Antwerpen,false
+rotterdam,brussel,executive-ev,day_trip,509,,162,146,Rotterdam → Brussel,false
+rotterdam,brussel,business,day_trip,509,,162,146,Rotterdam → Brussel,false
+rotterdam,brugge,executive-ev,day_trip,504,,159,143,Rotterdam → Brugge,false
+rotterdam,brugge,business,day_trip,504,,159,143,Rotterdam → Brugge,false
+rotterdam,dusseldorf,executive-ev,day_trip,631,,238,214,Rotterdam → Düsseldorf,false
+rotterdam,dusseldorf,business,day_trip,631,,238,214,Rotterdam → Düsseldorf,false
+rotterdam,keulen,executive-ev,day_trip,692,,276,248,Rotterdam → Keulen,false
+rotterdam,keulen,business,day_trip,692,,276,248,Rotterdam → Keulen,false
+den-haag,antwerpen,executive-ev,day_trip,455,,128,115,Den Haag → Antwerpen,false
+den-haag,antwerpen,business,day_trip,455,,128,115,Den Haag → Antwerpen,false
+den-haag,brussel,executive-ev,day_trip,543,,183,165,Den Haag → Brussel,false
+den-haag,brussel,business,day_trip,543,,183,165,Den Haag → Brussel,false
+den-haag,brugge,executive-ev,day_trip,512,,164,148,Den Haag → Brugge,false
+den-haag,brugge,business,day_trip,512,,164,148,Den Haag → Brugge,false
+den-haag,dusseldorf,executive-ev,day_trip,671,,263,237,Den Haag → Düsseldorf,false
+den-haag,dusseldorf,business,day_trip,671,,263,237,Den Haag → Düsseldorf,false
+den-haag,keulen,executive-ev,day_trip,732,,301,271,Den Haag → Keulen,false
+den-haag,keulen,business,day_trip,732,,301,271,Den Haag → Keulen,false
+utrecht,antwerpen,executive-ev,day_trip,485,,147,132,Utrecht → Antwerpen,false
+utrecht,antwerpen,business,day_trip,485,,147,132,Utrecht → Antwerpen,false
+utrecht,brussel,executive-ev,day_trip,570,,200,180,Utrecht → Brussel,false
+utrecht,brussel,business,day_trip,570,,200,180,Utrecht → Brussel,false
+utrecht,brugge,executive-ev,day_trip,604,,221,199,Utrecht → Brugge,false
+utrecht,brugge,business,day_trip,604,,221,199,Utrecht → Brugge,false
+utrecht,dusseldorf,executive-ev,day_trip,572,,201,181,Utrecht → Düsseldorf,false
+utrecht,dusseldorf,business,day_trip,572,,201,181,Utrecht → Düsseldorf,false
+utrecht,keulen,executive-ev,day_trip,640,,244,220,Utrecht → Keulen,false
+utrecht,keulen,business,day_trip,640,,244,220,Utrecht → Keulen,false
+almere,antwerpen,executive-ev,day_trip,551,,188,169,Almere → Antwerpen,false
+almere,antwerpen,business,day_trip,551,,188,169,Almere → Antwerpen,false
+almere,brussel,executive-ev,day_trip,636,,241,217,Almere → Brussel,false
+almere,brussel,business,day_trip,636,,241,217,Almere → Brussel,false
+almere,brugge,executive-ev,day_trip,658,,255,230,Almere → Brugge,false
+almere,brugge,business,day_trip,658,,255,230,Almere → Brugge,false
+almere,dusseldorf,executive-ev,day_trip,600,,219,197,Almere → Düsseldorf,false
+almere,dusseldorf,business,day_trip,600,,219,197,Almere → Düsseldorf,false
+almere,keulen,executive-ev,day_trip,672,,264,238,Almere → Keulen,false
+almere,keulen,business,day_trip,672,,264,238,Almere → Keulen,false
+eindhoven,antwerpen,executive-ev,day_trip,420,,106,95,Eindhoven → Antwerpen,false
+eindhoven,antwerpen,business,day_trip,420,,106,95,Eindhoven → Antwerpen,false
+eindhoven,brussel,executive-ev,day_trip,471,,138,124,Eindhoven → Brussel,false
+eindhoven,brussel,business,day_trip,471,,138,124,Eindhoven → Brussel,false
+eindhoven,brugge,executive-ev,day_trip,591,,213,192,Eindhoven → Brugge,false
+eindhoven,brugge,business,day_trip,591,,213,192,Eindhoven → Brugge,false
+eindhoven,dusseldorf,executive-ev,day_trip,452,,126,113,Eindhoven → Düsseldorf,false
+eindhoven,dusseldorf,business,day_trip,452,,126,113,Eindhoven → Düsseldorf,false
+eindhoven,keulen,executive-ev,day_trip,504,,159,143,Eindhoven → Keulen,false
+eindhoven,keulen,business,day_trip,504,,159,143,Eindhoven → Keulen,false
