@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "pricing:import": "tsx scripts/import-fixed-routes.ts"
+    "pricing:import": "tsx scripts/import-fixed-routes.ts",
+    "test:brain": "tsx --test lib/pricing-brain/brain.test.ts"
   },
   "dependencies": {
     "next": "^14.2.5",
