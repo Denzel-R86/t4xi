@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getPricingQuote } from "@/lib/pricing/service";
+import { sendBookingEmails } from "@/lib/notifications/booking-email";
 
 /**
  * POST /api/bookings
@@ -172,6 +173,38 @@ export async function POST(request: Request) {
       error: "server_error",
       message: "Boeking kon niet worden bevestigd.",
     });
+  }
+
+  // 5. Notificaties (best-effort): mag de boeking nooit breken of de response
+  //    veranderen. email_sent wordt alleen true als BEIDE mails slagen.
+  try {
+    const emails = await sendBookingEmails({
+      bookingRef,
+      rideType,
+      pickup,
+      dropoff,
+      date,
+      time,
+      vehicle: vehicle || null,
+      persons,
+      luggage: luggage || null,
+      price: priceEuros,
+      currency,
+      quoteOnRequest,
+      returnApplied,
+      customerName: name,
+      customerPhone: phone,
+      customerEmail: email,
+    });
+    if (emails.sent) {
+      const { error: updErr } = await supabase
+        .from("bookings")
+        .update({ email_sent: true })
+        .eq("booking_ref", bookingRef);
+      if (updErr) console.error("[bookings] email_sent-update faalde:", updErr.message);
+    }
+  } catch (e) {
+    console.error("[bookings] notificatie-laag fout:", e instanceof Error ? e.message : e);
   }
 
   return json(201, {
