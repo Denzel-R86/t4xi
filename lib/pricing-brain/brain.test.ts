@@ -12,6 +12,12 @@ import {
   type PriceDecision,
 } from "./index";
 import { STUB_FACTOR_KEYS } from "./factors/stubs";
+import {
+  analyzeRoute,
+  toRouteContext,
+  summarize,
+  type BrainRoute,
+} from "../../scripts/brain-analyze";
 
 const ctx = (over: Partial<RouteContext> = {}): RouteContext => ({
   pickupSlug: "almere-poort",
@@ -204,4 +210,77 @@ test("explainer — geeft base price, data_status per regel en stub-lijst", () =
     assert.ok(["active", "estimated"].includes(l.dataStatus));
   }
   assert.ok(ex.rationale.includes("Aanbevolen"));
+});
+
+// ── Stap 8d: Brain Analyze — pure analyse-kern ───────────────────────────────
+
+const ACTIONS = [
+  "RAISE_URGENT",
+  "RAISE",
+  "LOWER",
+  "REPRICE_PSYCH",
+  "POSITION_PREMIUM",
+  "MANUAL_REVIEW",
+  "HOLD",
+] as const;
+
+const brainRoute = (over: Partial<BrainRoute> = {}): BrainRoute => ({
+  fixedRoutePriceId: "frp-1",
+  pickupLocationId: "loc-a",
+  dropoffLocationId: "loc-b",
+  vehicleClassId: "vc-1",
+  pickupSlug: "almere-poort",
+  dropoffSlug: "schiphol-airport",
+  vehicleClassCode: "executive-ev",
+  serviceType: "airport",
+  distanceKm: 39,
+  estimatedDurationMin: 40,
+  price: 102,
+  returnPrice: 184,
+  pickupIsAirport: false,
+  dropoffIsAirport: true,
+  vehicleMultiplier: 1,
+  ...over,
+});
+
+test("brain-analyze — toRouteContext mapt een route 1:1 naar RouteContext", () => {
+  const c = toRouteContext(brainRoute());
+  assert.equal(c.currentPrice, 102);
+  assert.equal(c.dropoffIsAirport, true);
+  assert.equal(c.market, null);
+  assert.equal(c.distanceKm, 39);
+});
+
+test("brain-analyze — analyzeRoute levert cost + decision + recommendation + explainer", () => {
+  const a = analyzeRoute(brainRoute());
+  assert.equal(a.cost.total, estimateCost(39, 40).total);
+  assert.ok(ACTIONS.includes(a.recommendation.action));
+  // explainer-breakdown telt op tot recommendedPrice
+  const sum = a.explanation.lines.reduce((s, l) => s + l.amount, 0);
+  assert.ok(Math.abs(sum - a.decision.recommendedPrice) < 0.001);
+});
+
+test("brain-analyze — verliesgevende route wordt RAISE_URGENT in de kern", () => {
+  const a = analyzeRoute(
+    brainRoute({
+      serviceType: "intercity",
+      dropoffIsAirport: false,
+      distanceKm: 35,
+      estimatedDurationMin: 35,
+      price: 45,
+    })
+  );
+  assert.equal(a.recommendation.action, "RAISE_URGENT");
+});
+
+test("brain-analyze — summarize telt acties en middelt marge/confidence", () => {
+  const analyses = [
+    analyzeRoute(brainRoute({ serviceType: "intercity", dropoffIsAirport: false, distanceKm: 35, estimatedDurationMin: 35, price: 45 })),
+    analyzeRoute(brainRoute({ serviceType: "intercity", dropoffIsAirport: false, distanceKm: 30, estimatedDurationMin: 30, price: 99 })),
+  ];
+  const s = summarize(analyses);
+  assert.equal(s.routesAnalyzed, 2);
+  const totalCounts = ACTIONS.reduce((sum, a) => sum + s.counts[a], 0);
+  assert.equal(totalCounts, 2);
+  assert.ok(s.avgConfidence > 0 && s.avgConfidence <= 1);
 });

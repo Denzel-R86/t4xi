@@ -10,6 +10,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "pricing:import": "tsx scripts/import-fixed-routes.ts",
+    "brain:analyze": "tsx scripts/brain-analyze.ts",
     "test:brain": "tsx --test lib/pricing-brain/brain.test.ts"
   },
   "dependencies": {
