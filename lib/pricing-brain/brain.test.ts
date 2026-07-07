@@ -3,10 +3,13 @@ import assert from "node:assert/strict";
 import {
   estimateCost,
   decide,
+  recommend,
+  explain,
   buildDefaultProviders,
   DEFAULT_FACTOR_CONFIG,
   psychoRound,
   type RouteContext,
+  type PriceDecision,
 } from "./index";
 import { STUB_FACTOR_KEYS } from "./factors/stubs";
 
@@ -95,4 +98,110 @@ test("cost-floor — tilt een goedkope route naar de kostenondergrens", () => {
   const floor = d.breakdown.find((b) => b.factorKey === "cost_floor");
   assert.ok(floor);
   assert.ok(floor.contribution >= 0);
+});
+
+// ── Stap 8c: Recommendation Engine ───────────────────────────────────────────
+
+const rec = (over: Partial<RouteContext> = {}) => {
+  const c = ctx(over);
+  const d = decide(c, buildDefaultProviders(), DEFAULT_FACTOR_CONFIG);
+  return recommend(c, d);
+};
+
+test("aanbeveling — verliesgevende route geeft RAISE_URGENT", () => {
+  // kosten(35km/35min) = 7 + 14.7 + 25.2 = 46.9 > prijs 45 → marge < 0
+  const r = rec({
+    serviceType: "intercity",
+    dropoffIsAirport: false,
+    distanceKm: 35,
+    estimatedDurationMin: 35,
+    currentPrice: 45,
+  });
+  assert.equal(r.action, "RAISE_URGENT");
+  assert.ok(r.currentMarginPct < 0);
+  assert.ok(r.toPrice !== null && r.toPrice > r.fromPrice);
+});
+
+test("aanbeveling — lage marge geeft RAISE", () => {
+  // kosten(120km/90min) = 7 + 50.4 + 64.8 = 122.2 → marge (139-122.2)/139 ≈ 12%
+  const r = rec({
+    serviceType: "intercity",
+    dropoffIsAirport: false,
+    distanceKm: 120,
+    estimatedDurationMin: 90,
+    currentPrice: 139,
+  });
+  assert.equal(r.action, "RAISE");
+  assert.ok(r.currentMarginPct >= 0 && r.currentMarginPct < 15);
+});
+
+test("aanbeveling — gezonde route geeft HOLD", () => {
+  // kosten(30km/30min) = 7 + 12.6 + 21.6 = 41.2 → marge bij 99 ≈ 58%; charm-prijs; geen markt
+  const r = rec({
+    serviceType: "intercity",
+    dropoffIsAirport: false,
+    distanceKm: 30,
+    estimatedDurationMin: 30,
+    currentPrice: 99,
+  });
+  assert.equal(r.action, "HOLD");
+  assert.equal(r.toPrice, null);
+});
+
+test("aanbeveling — psychologische afwijking geeft REPRICE_PSYCH", () => {
+  // gezonde marge, geen markt, maar 102 is geen charm-prijs (→ 99, delta 3)
+  const r = rec({
+    serviceType: "intercity",
+    dropoffIsAirport: false,
+    distanceKm: 40,
+    estimatedDurationMin: 50,
+    currentPrice: 102,
+  });
+  assert.equal(r.action, "REPRICE_PSYCH");
+  assert.equal(r.toPrice, psychoRound(102));
+});
+
+test("aanbeveling — lage confidence geeft MANUAL_REVIEW", () => {
+  const c = ctx({
+    serviceType: "intercity",
+    dropoffIsAirport: false,
+    distanceKm: 30,
+    estimatedDurationMin: 30,
+    currentPrice: 99,
+  });
+  const lowConf: PriceDecision = {
+    basePrice: 10.77,
+    recommendedPrice: 105,
+    rawRecommendedPrice: 105,
+    psychologicalPrice: 105,
+    overallConfidence: 0.3,
+    breakdown: [],
+    currency: "EUR",
+  };
+  const r = recommend(c, lowConf);
+  assert.equal(r.action, "MANUAL_REVIEW");
+  assert.equal(r.toPrice, null);
+});
+
+// ── Stap 8c: Explainer ───────────────────────────────────────────────────────
+
+test("explainer — breakdown telt op tot recommendedPrice", () => {
+  const d = decide(ctx(), buildDefaultProviders(), DEFAULT_FACTOR_CONFIG);
+  const ex = explain(d);
+  const sum = ex.lines.reduce((s, l) => s + l.amount, 0);
+  assert.ok(Math.abs(sum - ex.recommendedPrice) < 0.001, `sum ${sum} != ${ex.recommendedPrice}`);
+});
+
+test("explainer — geeft base price, data_status per regel en stub-lijst", () => {
+  const d = decide(ctx(), buildDefaultProviders(), DEFAULT_FACTOR_CONFIG);
+  const ex = explain(d);
+  assert.equal(ex.basePrice, d.basePrice);
+  assert.equal(ex.currency, "EUR");
+  // stubs staan niet tussen de regels, maar apart vermeld
+  assert.equal(ex.stubbedFactors.length, STUB_FACTOR_KEYS.length);
+  for (const l of ex.lines) {
+    assert.notEqual(l.dataStatus, "stub");
+    assert.ok(["active", "estimated"].includes(l.dataStatus));
+  }
+  assert.ok(ex.rationale.includes("Aanbevolen"));
 });

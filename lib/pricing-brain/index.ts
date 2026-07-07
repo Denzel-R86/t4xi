@@ -27,6 +27,8 @@ export {
 } from "./cost-model";
 export { psychoRound } from "./factors/psychological";
 export { decide } from "./decision-engine";
+export { recommend, DEFAULT_THRESHOLDS, RETURN_MULTIPLIER } from "./recommendation-engine";
+export { explain } from "./explainer";
 
 /**
  * Standaard providerlijst in pipeline-volgorde:

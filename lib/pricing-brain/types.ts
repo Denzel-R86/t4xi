@@ -108,3 +108,63 @@ export type CostEstimate = {
   timeCost: number;
   assumptions: CostAssumptions;
 };
+
+// ── Recommendation Engine ────────────────────────────────────────────────────
+
+export type RecommendationAction =
+  | "RAISE_URGENT"
+  | "RAISE"
+  | "LOWER"
+  | "REPRICE_PSYCH"
+  | "POSITION_PREMIUM"
+  | "MANUAL_REVIEW"
+  | "HOLD";
+
+export type RecommendationThresholds = {
+  /** Onder deze overall-confidence → MANUAL_REVIEW. */
+  minConfidence: number;
+  /** Onder deze marge (ratio) → RAISE. */
+  lowMarginPct: number;
+  /** Boven deze marge geldt een route als "gezond". */
+  healthyMarginPct: number;
+  /** Boven deze marge + boven de markt → LOWER. */
+  highMarginPct: number;
+  /** Minimale €-afwijking van de charm-prijs → REPRICE_PSYCH. */
+  psychDelta: number;
+};
+
+export type Recommendation = {
+  action: RecommendationAction;
+  fromPrice: number;
+  toPrice: number | null;
+  fromReturnPrice: number | null;
+  toReturnPrice: number | null;
+  rationale: string;
+  confidence: number;
+  /** Huidige marge in procenten. */
+  currentMarginPct: number;
+  /** Verwachte marge bij toPrice, in procenten. */
+  expectedMarginPct: number | null;
+};
+
+// ── Explainer ────────────────────────────────────────────────────────────────
+
+export type PriceExplanationLine = {
+  factorKey: string;
+  label: string;
+  amount: number;
+  confidence: number;
+  dataStatus: DataStatus;
+};
+
+export type PriceExplanation = {
+  basePrice: number;
+  lines: PriceExplanationLine[];
+  /** Factoren die (nog) geen data hebben en 0 bijdragen. */
+  stubbedFactors: string[];
+  rawRecommendedPrice: number;
+  recommendedPrice: number;
+  overallConfidence: number;
+  rationale: string;
+  currency: "EUR";
+};
