@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AddressAutocomplete, {
   type AddressSuggestion,
 } from "@/components/booking/AddressAutocomplete";
 import Icon from "@/components/ui/Icon";
-import { calcPrice, inferAddressMeta, type RitType } from "@/lib/pricing";
+import { inferAddressMeta, type RitType } from "@/lib/booking-meta";
 
 const TABS: { key: RitType; label: string }[] = [
   { key: "enkel", label: "Enkele rit" },
@@ -107,11 +107,76 @@ export default function BookingSection() {
     () => (pickup ? inferAddressMeta(pickup.label) : null),
     [pickup]
   );
-  const price = useMemo(
-    () => calcPrice(pickup?.label ?? "", dropoff?.label ?? "", tab, persons, luggage),
-    [pickup, dropoff, tab, persons, luggage]
-  );
   const ready = pickup && dropoff;
+
+  // Live richtprijs — UITSLUITEND uit de autoritatieve Pricing Engine
+  // (/api/pricing/quote). Geen client-side prijslogica. Debounce + abort tegen
+  // race-conditions bij snel typen/wisselen.
+  type Quote =
+    | { status: "idle" | "loading" | "onrequest" | "error" }
+    | { status: "ready"; amount: string; note: string };
+  const [quote, setQuote] = useState<Quote>({ status: "idle" });
+
+  useEffect(() => {
+    if (!pickup || !dropoff) {
+      setQuote({ status: "idle" });
+      return;
+    }
+    const controller = new AbortController();
+    setQuote({ status: "loading" });
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/pricing/quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pickup: pickup.label,
+            dropoff: dropoff.label,
+            returnTrip: tab === "retour",
+            passengers: persons,
+          }),
+          signal: controller.signal,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.available) {
+          setQuote({
+            status: "ready",
+            amount: `€${data.price}`,
+            note: data.returnApplied ? "Retour — vaste prijs vooraf" : "Vaste prijs vooraf",
+          });
+        } else {
+          setQuote({ status: "onrequest" });
+        }
+      } catch (err) {
+        if ((err as Error)?.name === "AbortError") return;
+        setQuote({ status: "error" });
+      }
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [pickup, dropoff, tab, persons]);
+
+  const priceNote =
+    quote.status === "idle"
+      ? "Vul adressen in"
+      : quote.status === "loading"
+        ? "Prijs berekenen…"
+        : quote.status === "ready"
+          ? quote.note
+          : quote.status === "onrequest"
+            ? "Offerte op aanvraag"
+            : "Prijs tijdelijk niet beschikbaar";
+  const priceAmount =
+    quote.status === "ready"
+      ? quote.amount
+      : quote.status === "loading"
+        ? "…"
+        : quote.status === "onrequest"
+          ? "Op aanvraag"
+          : "—";
+  const priceBig = quote.status === "ready" || quote.status === "idle" || quote.status === "error";
 
   return (
     <div className="relative overflow-hidden rounded-[28px] border border-line bg-card p-6 shadow-hero-card md:p-7">
@@ -231,18 +296,21 @@ export default function BookingSection() {
           ))}
         </div>
 
-        {/* Prijsvoorbeeld */}
+        {/* Prijsvoorbeeld — bron: autoritatieve Pricing Engine (/api/pricing/quote) */}
         <div
           className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-[rgba(31,39,48,0.12)] bg-[linear-gradient(135deg,#FFFFFF,#F3F0EA)] p-4"
           role="region"
           aria-live="polite"
+          aria-busy={quote.status === "loading"}
           aria-label="Geschatte prijs"
         >
           <div>
             <div className="text-[10px] uppercase tracking-[0.14em] text-stone">Geschatte prijs</div>
-            <div className="mt-0.5 text-xs text-secondary">{price.note}</div>
+            <div className="mt-0.5 text-xs text-secondary">{priceNote}</div>
           </div>
-          <div className="font-display text-[28px] font-bold text-accent">{price.amount}</div>
+          <div className={`shrink-0 font-display font-bold text-accent ${priceBig ? "text-[28px]" : "text-base"}`}>
+            {priceAmount}
+          </div>
         </div>
 
         {ready && (
