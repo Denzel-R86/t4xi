@@ -26,6 +26,12 @@ import {
   summarize,
   type BrainRoute,
 } from "../../scripts/brain-analyze";
+import {
+  buildOverview,
+  topOpportunities,
+  topRisks,
+} from "../../app/dashboard/brain/metrics";
+import type { BrainRouteView } from "../../app/dashboard/brain/types";
 
 const ctx = (over: Partial<RouteContext> = {}): RouteContext => ({
   pickupSlug: "almere-poort",
@@ -381,4 +387,77 @@ test("simulator — custom percentage per service_type", () => {
   assert.equal(rep.results[0].afterPrice, 108);
   assert.equal(rep.results[1].afterPrice, 95);
   assert.equal(rep.routesAffected, 2);
+});
+
+// ── Stap 8f: Dashboard — pure metrics-aggregatie ─────────────────────────────
+
+const view = (over: Partial<BrainRouteView> = {}): BrainRouteView => ({
+  id: "1",
+  pickupSlug: "a",
+  dropoffSlug: "b",
+  vehicleClassCode: "executive-ev",
+  serviceType: "airport",
+  distanceKm: 39,
+  durationMin: 40,
+  currentPrice: 100,
+  currentReturnPrice: null,
+  cost: 52,
+  marginEur: 48,
+  marginPct: 48,
+  recommendedPrice: 100,
+  psychologicalPrice: 99,
+  rawRecommendedPrice: 100,
+  overallConfidence: 0.85,
+  action: "HOLD",
+  toPrice: null,
+  expectedMarginPct: null,
+  rationale: "",
+  explanation: {
+    basePrice: 10,
+    lines: [],
+    stubbedFactors: [],
+    rawRecommendedPrice: 100,
+    recommendedPrice: 100,
+    overallConfidence: 0.85,
+    rationale: "",
+    currency: "EUR",
+  },
+  sim: {
+    pickupSlug: "a",
+    dropoffSlug: "b",
+    vehicleClassCode: "executive-ev",
+    serviceType: "airport",
+    distanceKm: 39,
+    estimatedDurationMin: 40,
+    price: 100,
+    recommendedAction: "HOLD",
+    recommendedToPrice: null,
+  },
+  ...over,
+});
+
+test("dashboard — buildOverview telt acties, marge, confidence en verlies", () => {
+  const o = buildOverview([
+    view({ action: "RAISE_URGENT", marginEur: -5, marginPct: -5 }),
+    view({ action: "HOLD", marginPct: 40 }),
+    view({ action: "HOLD", marginPct: 20 }),
+  ]);
+  assert.equal(o.routeCount, 3);
+  assert.equal(o.counts.RAISE_URGENT, 1);
+  assert.equal(o.counts.HOLD, 2);
+  assert.equal(o.lossMakingCount, 1);
+  assert.equal(o.avgMarginPct, 18.33);
+});
+
+test("dashboard — topOpportunities/topRisks sorteren correct", () => {
+  const routes = [
+    view({ id: "a", currentPrice: 100, recommendedPrice: 130, marginPct: 30 }),
+    view({ id: "b", currentPrice: 100, recommendedPrice: 110, marginPct: 5 }),
+    view({ id: "c", currentPrice: 100, recommendedPrice: 100, marginPct: 50 }),
+  ];
+  const opps = topOpportunities(routes, 5);
+  assert.equal(opps.length, 2); // c heeft geen opwaartse ruimte
+  assert.equal(opps[0].id, "a");
+  const risks = topRisks(routes, 5);
+  assert.equal(risks[0].id, "b"); // laagste marge eerst
 });
