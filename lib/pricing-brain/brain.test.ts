@@ -13,6 +13,14 @@ import {
 } from "./index";
 import { STUB_FACTOR_KEYS } from "./factors/stubs";
 import {
+  simulate,
+  scenarioServiceTypePct,
+  scenarioCustomByService,
+  scenarioCostIncrease,
+  scenarioApplyRaises,
+  type SimRouteInput,
+} from "./index";
+import {
   analyzeRoute,
   toRouteContext,
   summarize,
@@ -283,4 +291,94 @@ test("brain-analyze — summarize telt acties en middelt marge/confidence", () =
   const totalCounts = ACTIONS.reduce((sum, a) => sum + s.counts[a], 0);
   assert.equal(totalCounts, 2);
   assert.ok(s.avgConfidence > 0 && s.avgConfidence <= 1);
+});
+
+// ── Stap 8e: Simulator (pure what-if) ────────────────────────────────────────
+
+const simRoute = (over: Partial<SimRouteInput> = {}): SimRouteInput => ({
+  pickupSlug: "a",
+  dropoffSlug: "b",
+  vehicleClassCode: "executive-ev",
+  serviceType: "airport",
+  distanceKm: 39,
+  estimatedDurationMin: 40,
+  price: 102,
+  recommendedAction: "HOLD",
+  recommendedToPrice: null,
+  ...over,
+});
+
+test("simulator — airport +8% raakt alleen airport-routes", () => {
+  const rep = simulate(
+    [simRoute({ serviceType: "airport", price: 100 }), simRoute({ serviceType: "intercity", price: 100 })],
+    scenarioServiceTypePct("airport", 8)
+  );
+  assert.equal(rep.routesAffected, 1);
+  assert.equal(rep.results[0].afterPrice, 108);
+  assert.equal(rep.results[1].afterPrice, 100);
+  assert.equal(rep.results[1].changed, false);
+});
+
+test("simulator — omzet/marge-delta klopt bij airport +8%", () => {
+  const rep = simulate(
+    [simRoute({ serviceType: "airport", price: 100, distanceKm: 39, estimatedDurationMin: 40 })],
+    scenarioServiceTypePct("airport", 8)
+  );
+  assert.equal(rep.revenueBefore, 100);
+  assert.equal(rep.revenueAfter, 108);
+  assert.equal(rep.revenueDelta, 8);
+  assert.equal(rep.revenueDeltaPct, 8);
+  assert.equal(rep.marginDelta, 8); // kosten gelijk → margewinst == prijswinst
+});
+
+test("simulator — kostenstijging +20% verlaagt marge, prijs blijft gelijk", () => {
+  const rep = simulate(
+    [simRoute({ price: 102, distanceKm: 39, estimatedDurationMin: 40 })],
+    scenarioCostIncrease(20)
+  );
+  const r = rep.results[0];
+  assert.equal(r.afterPrice, r.beforePrice);
+  assert.equal(r.beforeCost, 52.18);
+  assert.equal(r.afterCost, 62.62);
+  assert.equal(r.changed, true);
+  assert.equal(rep.routesAffected, 1);
+  assert.ok(r.afterMargin < r.beforeMargin);
+});
+
+test("simulator — detecteert routes die verliesgevend worden", () => {
+  const rep = simulate(
+    [simRoute({ price: 55, distanceKm: 39, estimatedDurationMin: 40 })],
+    scenarioCostIncrease(20)
+  );
+  const r = rep.results[0];
+  assert.ok(r.beforeMargin >= 0 && r.afterMargin < 0);
+  assert.equal(r.becameLossMaking, true);
+  assert.equal(rep.lossMakingBefore, 0);
+  assert.equal(rep.lossMakingAfter, 1);
+  assert.equal(rep.becameLossMaking.length, 1);
+});
+
+test("simulator — past alleen RAISE/RAISE_URGENT adviezen toe", () => {
+  const rep = simulate(
+    [
+      simRoute({ price: 100, recommendedAction: "RAISE", recommendedToPrice: 120 }),
+      simRoute({ price: 100, recommendedAction: "HOLD", recommendedToPrice: null }),
+      simRoute({ price: 100, recommendedAction: "RAISE_URGENT", recommendedToPrice: 90 }),
+    ],
+    scenarioApplyRaises()
+  );
+  assert.equal(rep.results[0].afterPrice, 120);
+  assert.equal(rep.results[1].afterPrice, 100);
+  assert.equal(rep.results[2].afterPrice, 90);
+  assert.equal(rep.routesAffected, 2);
+});
+
+test("simulator — custom percentage per service_type", () => {
+  const rep = simulate(
+    [simRoute({ serviceType: "airport", price: 100 }), simRoute({ serviceType: "intercity", price: 100 })],
+    scenarioCustomByService({ airport: 8, intercity: -5 })
+  );
+  assert.equal(rep.results[0].afterPrice, 108);
+  assert.equal(rep.results[1].afterPrice, 95);
+  assert.equal(rep.routesAffected, 2);
 });

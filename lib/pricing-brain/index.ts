@@ -29,6 +29,15 @@ export { psychoRound } from "./factors/psychological";
 export { decide } from "./decision-engine";
 export { recommend, DEFAULT_THRESHOLDS, RETURN_MULTIPLIER } from "./recommendation-engine";
 export { explain } from "./explainer";
+export {
+  simulate,
+  simulateRoute,
+  scenarioServiceTypePct,
+  scenarioCustomByService,
+  scenarioCostIncrease,
+  scenarioApplyRaises,
+} from "./simulator";
+export type { SimScenario, SimRouteInput, RouteSimResult, SimReport } from "./simulator";
 
 /**
  * Standaard providerlijst in pipeline-volgorde:
