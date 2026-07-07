@@ -43,7 +43,65 @@ export default function BookingSection() {
   const [persons, setPersons] = useState(1);
   const [luggage, setLuggage] = useState("handbagage");
   const [vehicle, setVehicle] = useState(VEHICLES[0]);
-  const [submitted, setSubmitted] = useState(false);
+
+  type SubmitState =
+    | { status: "idle" | "loading" }
+    | { status: "success"; bookingRef: string; quoteOnRequest: boolean; price: number | null }
+    | { status: "error"; message: string };
+  const [submit, setSubmit] = useState<SubmitState>({ status: "idle" });
+  const loading = submit.status === "loading";
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (loading) return; // geen dubbele submit
+    if (!pickup || !dropoff) {
+      setSubmit({ status: "error", message: "Vul een ophaaladres en bestemming in." });
+      return;
+    }
+
+    const form = new FormData(e.currentTarget);
+    const payload = {
+      rideType: tab,
+      pickup: pickup.label,
+      dropoff: dropoff.label,
+      date: String(form.get("datum") ?? ""),
+      time: String(form.get("tijd") ?? ""),
+      vehicle,
+      persons,
+      luggage,
+      customerName: String(form.get("naam") ?? ""),
+      customerPhone: String(form.get("telefoon") ?? ""),
+      customerEmail: String(form.get("email") ?? ""),
+    };
+
+    setSubmit({ status: "loading" });
+    try {
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        setSubmit({
+          status: "success",
+          bookingRef: data.bookingRef,
+          quoteOnRequest: Boolean(data.quoteOnRequest),
+          price: typeof data.price === "number" ? data.price : null,
+        });
+      } else {
+        setSubmit({
+          status: "error",
+          message: data.message ?? "Er ging iets mis. Probeer het opnieuw of bel ons.",
+        });
+      }
+    } catch {
+      setSubmit({
+        status: "error",
+        message: "Geen verbinding. Controleer je internet of bel ons.",
+      });
+    }
+  }
 
   const meta = useMemo(
     () => (pickup ? inferAddressMeta(pickup.label) : null),
@@ -62,10 +120,24 @@ export default function BookingSection() {
         className="absolute inset-x-0 top-0 h-[5px] bg-gradient-to-r from-accent via-stone to-stone-subtle"
       />
 
-      {submitted && (
-        <div className="mb-5 flex items-center justify-center gap-2 rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700">
-          <Icon name="check" size={16} />
-          Boeking ontvangen! Wij bevestigen u via WhatsApp of e-mail.
+      {submit.status === "success" && (
+        <div className="mb-5 rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700" role="status" aria-live="polite">
+          <div className="flex items-center justify-center gap-2 font-semibold">
+            <Icon name="check" size={16} />
+            Boeking ontvangen — referentie {submit.bookingRef}
+          </div>
+          <p className="mt-1 text-green-700/90">
+            {submit.quoteOnRequest
+              ? "Deze route krijgt een offerte op aanvraag. Wij bevestigen prijs en tijd via WhatsApp of e-mail."
+              : "Wij bevestigen uw rit via WhatsApp of e-mail."}
+          </p>
+        </div>
+      )}
+
+      {submit.status === "error" && (
+        <div className="mb-5 flex items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-center text-sm text-red-600" role="alert" aria-live="assertive">
+          <Icon name="phone" size={16} />
+          {submit.message}
         </div>
       )}
 
@@ -89,12 +161,7 @@ export default function BookingSection() {
         ))}
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSubmitted(true);
-        }}
-      >
+      <form onSubmit={handleSubmit}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 grid gap-1 sm:grid-cols-2 sm:gap-4">
             <AddressAutocomplete label="Van" placeholder="Vertrekadres" onSelect={setPickup} />
@@ -203,11 +270,13 @@ export default function BookingSection() {
 
         <button
           type="submit"
-          className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-all hover:-translate-y-0.5 hover:bg-accent-hover"
+          disabled={loading}
+          aria-busy={loading}
+          className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-all hover:-translate-y-0.5 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
           aria-label="Boeking bevestigen"
         >
           <Icon name="calendar-check" size={18} />
-          Boeking bevestigen
+          {loading ? "Bezig met verzenden…" : "Boeking bevestigen"}
         </button>
         <p className="mt-3 text-center text-[13px] text-secondary">
           Of bel{" "}
