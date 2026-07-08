@@ -7,6 +7,7 @@ import {
   type PricingSupabaseClient,
 } from "@/lib/supabase/server";
 import type { Json, Tables, TablesInsert } from "@/lib/types/database";
+import { resolveLocationSlug } from "@/lib/pricing/location-aliases";
 
 /**
  * T4XI Pricing Service — v1 (App Router, server-side).
@@ -204,14 +205,21 @@ async function resolveQuote(
 
 // ── Locatie-/klasse-resolutie ────────────────────────────────────────────────
 
-/** Vindt een actieve locatie op exacte slug, geslugificeerde input of naam (case-insensitive). */
+/**
+ * Vindt een actieve locatie. Volgorde:
+ *   0. alias-resolutie: een vrij (straat)adres → canonieke fixed-route slug
+ *      (Stap 9e — postcode/keyword-mapping, geen prijslogica).
+ *   a. exacte slug (alias of geslugificeerde vrije tekst)
+ *   b. naam case-insensitive (alleen zonder alias; de alias is al canoniek)
+ */
 async function findLocation(
   supabase: PricingSupabaseClient,
   raw: string
 ): Promise<LocationRow | null> {
-  const slug = slugify(raw);
+  const alias = resolveLocationSlug(raw);
+  const slug = alias ?? slugify(raw);
 
-  // a. exacte slug (of geslugificeerde vrije tekst)
+  // a. exacte slug (alias of geslugificeerde vrije tekst)
   const bySlug = await supabase
     .from("locations")
     .select("id, slug, name, active")
@@ -222,7 +230,8 @@ async function findLocation(
   if (bySlug.error) throw bySlug.error;
   if (bySlug.data) return bySlug.data;
 
-  // b. naam case-insensitive
+  // b. naam case-insensitive — alleen zinvol zonder alias
+  if (alias) return null;
   const byName = await supabase
     .from("locations")
     .select("id, slug, name, active")
