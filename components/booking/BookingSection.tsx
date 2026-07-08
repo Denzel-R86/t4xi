@@ -72,6 +72,8 @@ export default function BookingSection() {
       customerName: String(form.get("naam") ?? ""),
       customerPhone: String(form.get("telefoon") ?? ""),
       customerEmail: String(form.get("email") ?? ""),
+      // Honeypot: leeg bij echte gebruikers; bots vullen dit → API blokkeert stil.
+      website: String(form.get("website") ?? ""),
     };
 
     setSubmit({ status: "loading" });
@@ -227,6 +229,19 @@ export default function BookingSection() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {/* Honeypot — verborgen voor mensen, zichtbaar voor bots. Blijft leeg bij
+            echte gebruikers; als het gevuld is blokkeert /api/bookings stil. */}
+        <div aria-hidden="true" style={{ display: "none" }}>
+          <label htmlFor="f-website">Website (niet invullen)</label>
+          <input
+            id="f-website"
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            defaultValue=""
+          />
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 grid gap-1 sm:grid-cols-2 sm:gap-4">
             <AddressAutocomplete label="Van" placeholder="Vertrekadres" onSelect={setPickup} />
