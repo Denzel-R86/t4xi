@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getPricingQuote } from "@/lib/pricing/service";
 import { sendBookingEmails } from "@/lib/notifications/booking-email";
+import { rateLimit, clientIp } from "@/lib/security/rate-limit";
 
 /**
  * POST /api/bookings
@@ -9,6 +10,10 @@ import { sendBookingEmails } from "@/lib/notifications/booking-email";
  * Legt een boeking vast. Server-side only (service-role client → Node runtime,
  * nooit gecachet). De service-role key blijft op de server; hij wordt nooit in
  * de response of naar de client gelekt.
+ *
+ * Anti-spam/misbruik (Stap 9f), vóór alles: payload-size guard → rate limiting
+ * (max 5 pogingen / 10 min per IP+user-agent, 429) → honeypot (stil accepteren
+ * zonder DB-write). Verdachte pogingen worden server-side gelogd.
  *
  * Flow:
  *   1. input valideren (types + formaten)
@@ -25,6 +30,14 @@ export const dynamic = "force-dynamic";
 
 const MAX_PERSONS = 8;
 const QUOTE_ON_REQUEST = "Offerte op aanvraag";
+
+// ── Anti-spam/misbruik (Stap 9f) ─────────────────────────────────────────────
+const RATE_MAX = 5; // pogingen
+const RATE_WINDOW_MS = 10 * 60_000; // per 10 minuten
+const MAX_BODY_BYTES = 4096; // ruime bovengrens voor een boeking-JSON
+/** Verborgen veld dat bots invullen; echte formulieren sturen het niet mee. */
+const HONEYPOT_FIELD = "website";
+
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -51,16 +64,53 @@ function serviceRoleClient(): SupabaseClient | null {
 }
 
 export async function POST(request: Request) {
-  // 1. Body parsen
+  const ip = clientIp(request);
+  const ua = request.headers.get("user-agent") ?? "unknown";
+
+  // 0a. Payload-size guard — lees de ruwe body één keer, begrens de grootte.
+  const rawBody = await request.text();
+  if (rawBody.length > MAX_BODY_BYTES) {
+    console.warn(`[bookings] payload te groot (${rawBody.length} tekens) ip=${ip}`);
+    return json(413, { ok: false, error: "payload_too_large", message: "Aanvraag te groot." });
+  }
+
+  // 0b. Rate limiting per IP + user-agent (elke poging telt, ook ongeldige).
+  const rl = rateLimit(`bookings:${ip}|${ua}`, RATE_MAX, RATE_WINDOW_MS);
+  if (rl.limited) {
+    console.warn(`[bookings] rate-limit overschreden ip=${ip} ua="${ua.slice(0, 80)}"`);
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "rate_limited",
+        message: "Te veel boekingspogingen. Probeer het over een paar minuten opnieuw, of bel ons.",
+      },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+    );
+  }
+
+  // 1. Body parsen (uit de al gelezen tekst).
   let body: Body;
   try {
-    const parsed = (await request.json()) as unknown;
+    const parsed = JSON.parse(rawBody) as unknown;
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
       return bad("Body moet een JSON-object zijn.");
     }
     body = parsed as Body;
   } catch {
     return bad("Body is geen geldige JSON.");
+  }
+
+  // 1b. Honeypot — als het verborgen veld gevuld is, is dit vrijwel zeker een bot.
+  //     Stil accepteren: neutrale success, GEEN DB-write (bot leert niets).
+  const honeypot = body[HONEYPOT_FIELD];
+  if (typeof honeypot === "string" && honeypot.trim() !== "") {
+    console.warn(`[bookings] honeypot geraakt ip=${ip} ua="${ua.slice(0, 80)}"`);
+    return json(200, {
+      ok: true,
+      status: "pending",
+      quoteOnRequest: true,
+      message: "Boeking ontvangen.",
+    });
   }
 
   // 2. Velden valideren
