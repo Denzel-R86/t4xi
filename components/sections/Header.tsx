@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Icon from "@/components/ui/Icon";
+import Wordmark from "@/components/ui/Wordmark";
 
 const nav = [
   { href: "/#vloot", label: "Vloot", icon: "car" },
@@ -31,10 +32,10 @@ export default function Header() {
       <div className="mx-auto flex h-16 max-w-site items-center gap-4 px-4 md:px-6 lg:h-[68px]">
         <Link
           href="/"
-          className="font-display text-[22px] font-extrabold tracking-[3px] text-ink"
+          className="flex items-center text-ink"
           aria-label="T4XI — naar homepage"
         >
-          T<span className="text-stone">4</span>XI
+          <Wordmark className="h-[22px] w-auto" title="" />
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex lg:pl-6" aria-label="Hoofdnavigatie">

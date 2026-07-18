@@ -1,361 +1,269 @@
-import Image from "next/image";
-import Button from "@/components/ui/Button";
-import Icon from "@/components/ui/Icon";
-import ScrollReveal from "@/components/ui/ScrollReveal";
-import HeroBookingCard from "@/components/booking/HeroBookingCard";
-import BookingSection from "@/components/booking/BookingSection";
-import ServicesSection from "@/components/sections/ServicesSection";
-import ReviewsSection from "@/components/sections/ReviewsSection";
-import FairBand from "@/components/sections/FairBand";
-import PriceTables from "@/components/sections/PriceTables";
-import WhySection from "@/components/sections/WhySection";
-import ProductsTeaser from "@/components/sections/ProductsTeaser";
-import ZakelijkSection from "@/components/sections/ZakelijkSection";
-import FaqList from "@/components/sections/FaqList";
-import ContactSection from "@/components/sections/ContactSection";
+import Link from "next/link";
+import { Reveal } from "@/components/horizon/motion";
+import {
+  HorizonSpine,
+  Viewport,
+  Breath,
+  NarrativePattern,
+  SentencePattern,
+  LedgerPattern,
+  EditorialFigure,
+  VowsPattern,
+  ProofPattern,
+  Stamp,
+  Dash,
+  type LedgerEntry,
+} from "@/components/horizon/patterns";
 
-const trustStats = [
-  { num: "★★★★★", title: "500+ tevreden klanten", sub: "Google beoordelingen", stars: true },
-  { num: "24/7", title: "Altijd bereikbaar", sub: "Boek ook 's nachts" },
-  { num: "100%", title: "Vaste prijzen", sub: "Geen verrassingen" },
-  { num: "2", title: "Elektrische voertuigen", sub: "Tesla & Lynk & Co" },
-  { num: "€0", title: "Annuleringskosten", sub: "Gratis tot 2 uur voor" },
+/**
+ * Homepage — eerste uitspraak in de Horizon Design Language (v1).
+ *
+ * Geen secties maar betekenis-viewports in een verticaal ritme
+ * (Stilte → Statement → Adem → Bewijs → Adem → Handeling):
+ *
+ *   Arrival → Recognition → Certainty → Journey → Proof → Invitation
+ *
+ * De horizonlijn draagt de pagina; de handeling (de boekingszin, gekoppeld aan
+ * de echte Pricing Engine) ligt óp de lijn. Volledige boekingsflow: /boeken.
+ */
+
+const VOWS = [
+  {
+    title: "Vaste prijs vooraf.",
+    text: "Geen taxameterstress. U ziet vooraf de prijs op basis van vertrekpunt, bestemming, postcodegebied en bagage.",
+  },
+  {
+    title: "Ontspannen onderweg.",
+    text: "Stil elektrisch vervoer, nette chauffeur, rustige rijstijl en ruimte voor een representatieve rit.",
+  },
+  {
+    title: "Schiphol zonder gedoe.",
+    text: "Afspraak, ophaaltijd en bagage vooraf afgestemd. Bij luchthavenritten rekenen we met realistische reistijd.",
+  },
+  {
+    title: "Gemakkelijk boeken.",
+    text: "Adres invullen, prijs bekijken en direct bevestigen via WhatsApp of e-mail. Bevestiging binnen vijf minuten.",
+  },
 ];
 
-const beleving = [
-  { icon: "receipt", title: "Vaste prijs vooraf", text: "Geen taxameterstress. U ziet vooraf een duidelijke richtprijs op basis van vertrekpunt, bestemming, postcodegebied en bagage." },
-  { icon: "armchair", title: "Ontspannen onderweg", text: "Stil elektrisch vervoer, nette chauffeur, rustige rijstijl en voldoende ruimte voor een representatieve rit naar luchthaven of afspraak." },
-  { icon: "plane", title: "Schiphol zonder gedoe", text: "Afspraak, ophaaltijd en bagage worden vooraf afgestemd. Bij luchthavenritten houden we rekening met realistische reistijd." },
-  { icon: "message-check", title: "Gemakkelijk boeken", text: "Adres invullen, postcode en stad automatisch herkennen, prijs bekijken en direct bevestigen via WhatsApp of e-mail." },
+const LEDGER: LedgerEntry[] = [
+  { phrase: "Almere Poort naar Schiphol", detail: "39 km · 40 min", fact: 102, factNote: "vast", href: "/boeken" },
+  { phrase: "Amsterdam Centrum naar Schiphol", detail: "14 km · 25 min", fact: 57, factNote: "vast", href: "/boeken" },
+  { phrase: "Amsterdam Zuidas naar Schiphol", detail: "10 km · 15 min", fact: 50, factNote: "vast", href: "/boeken" },
+  { phrase: "Den Haag naar Schiphol", detail: "43 km · 45 min", fact: 107, factNote: "vast", href: "/boeken" },
+  { phrase: "Rotterdam naar Schiphol", detail: "80 km · 50 min", fact: 119, factNote: "vast", href: "/boeken" },
+  { phrase: "Utrecht Centrum naar Schiphol", detail: "44 km · 40 min", fact: 110, factNote: "vast", href: "/boeken" },
 ];
 
-const teslaSpecs = [
-  { icon: "leaf", val: "100%", label: "Elektrisch" },
-  { icon: "users", val: "4", label: "Passagiers" },
-  { icon: "luggage", val: "Ruim", label: "Bagageruim" },
-  { icon: "map-pin", val: "2", label: "Regio's" },
-];
-
-const bookingFeatures = [
-  { icon: "lock", text: "Vaste prijs vooraf — geen taxameter" },
-  { icon: "shield-check", text: "VOG-gescreende chauffeurs" },
-  { icon: "clock", text: "Bevestiging binnen 5 minuten" },
-  { icon: "credit-card", text: "iDEAL, pin of contant" },
-  { icon: "plane", text: "Vluchttijden worden gemonitord" },
+const PATHS = [
+  { label: "Diensten", href: "/diensten" },
+  { label: "Dagtochten", href: "/dagtochten" },
+  { label: "Zakelijk", href: "/diensten" },
+  { label: "Memberships", href: "/producten" },
+  { label: "Tarieven", href: "/tarieven" },
+  { label: "Partner worden", href: "/partner" },
 ];
 
 export default function HomePage() {
   return (
     <>
-      {/* ═══ HERO ═══ */}
-      <section aria-label="Welkomstsectie" className="relative overflow-hidden border-b border-line">
-        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(135deg,#F5F3F1_0%,#FFFFFF_54%,#E8E4DE_100%)]" />
-        <div aria-hidden="true" className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(40,49,59,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(40,49,59,.08)_1px,transparent_1px)] [background-size:64px_64px]" />
+      <HorizonSpine />
 
-        <div className="relative mx-auto grid max-w-site gap-12 px-6 pb-14 pt-16 lg:grid-cols-2 lg:items-center lg:gap-16 lg:pb-24 lg:pt-28">
-          <div>
-            <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
-              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-accent shadow-[0_0_0_4px_rgba(40,49,59,0.12)]" />
-              Executive Airport Mobility
-            </p>
-            <h1 className="mt-5 font-display text-display-xl font-bold text-ink">
-              Van voordeur
-              <br />
-              <em className="not-italic text-accent">tot vertrekhal.</em>
-            </h1>
-            <p className="mt-6 max-w-xl text-lg text-secondary">
-              Boek eenvoudig uw premium rit met vaste prijs vooraf. Rustig
-              elektrisch vervoer, professionele chauffeur en heldere afspraken
-              over passagiers en bagage.
-            </p>
-            <div className="mt-9 hidden flex-wrap gap-4 lg:flex">
-              <Button href="#boeken" size="xl">
-                <Icon name="calendar-check" size={19} />
-                Boek een rit
-              </Button>
-              <Button href="#vloot" variant="ghost" size="xl">
-                <Icon name="car" size={19} />
-                Bekijk wagenpark
-              </Button>
+      {/* ═══ ARRIVAL — stilte, dan het statement; de handeling ligt op de lijn ═══ */}
+      <Viewport
+        meaning="arrival"
+        label="Aankomst"
+        first
+        above={
+          <NarrativePattern
+            as="h1"
+            kicker="Executive Airport Mobility — Nederland"
+            voice="Van voordeur"
+            echo="tot vertrekhal."
+            note="Premium rit met vaste prijs vooraf. Rustig elektrisch vervoer, professionele chauffeur en heldere afspraken over passagiers en bagage."
+          />
+        }
+        onLine={
+          <Reveal delay={2}>
+            <SentencePattern />
+          </Reveal>
+        }
+        below={
+          <Reveal delay={3}>
+            <Stamp>
+              24/7 beschikbaar<Dash />VOG-gescreende chauffeurs<Dash />100% elektrisch<Dash />
+              <b className="font-semibold text-ink">bevestiging binnen 5 minuten</b>
+            </Stamp>
+          </Reveal>
+        }
+      />
+
+      <Breath />
+
+      {/* ═══ RECOGNITION — de beleving, als beloftes in volle regels ═══ */}
+      <Viewport
+        meaning="recognition"
+        label="Herkenning — de T4XI beleving"
+        above={
+          <NarrativePattern
+            kicker="De T4XI beleving"
+            voice="Rust, overzicht en comfort"
+            echo="vanaf het eerste contact."
+            note="Een premium rit begint niet bij instappen, maar bij eenvoudig boeken, heldere communicatie en weten waar u aan toe bent."
+          />
+        }
+        below={<VowsPattern vows={VOWS} />}
+      />
+
+      <Breath />
+
+      {/* ═══ CERTAINTY — het grootboek van vaste prijzen ═══ */}
+      <Viewport
+        meaning="certainty"
+        label="Zekerheid — vaste tarieven"
+        id="prijzen"
+        above={
+          <NarrativePattern
+            kicker="Vaste tarieven — geen taxameter, geen verrassing"
+            voice="Elke rit heeft zijn prijs."
+            echo="Vooraf. Zwart op wit."
+            note="Enkele rit; retour ×1,8 · nachttarief (23:00–06:00) +15%. Eerlijk voor u én voor de chauffeur — zonder platformcommissies."
+          />
+        }
+        below={
+          <Reveal>
+            <LedgerPattern
+              entries={LEDGER}
+              closing={
+                <Stamp>
+                  <Link href="/tarieven" className="hz-guide-line text-ink no-underline">
+                    Alle vaste tarieven en routes
+                  </Link>
+                  <Dash />
+                  onbekende route? Offerte op aanvraag
+                </Stamp>
+              }
+            />
+          </Reveal>
+        }
+      />
+
+      <Breath />
+
+      {/* ═══ JOURNEY — de rit zelf: de vloot als technische tekening ═══ */}
+      <Viewport
+        meaning="journey"
+        label="De rit — ons wagenpark"
+        id="vloot"
+        above={
+          <NarrativePattern
+            kicker="Ons wagenpark — 100% elektrisch onderweg"
+            voice="Tesla Model Y."
+            echo="Stil als de afspraak zelf."
+            note="Het vlaggenschip van de vloot: volledig elektrisch, ruim interieur en indrukwekkend rijbereik. Zakelijk of particulier — de Model Y zet de toon."
+          />
+        }
+        below={
+          <Reveal>
+            <EditorialFigure
+              src="/tesla_model_y_black.jpg"
+              alt="Tesla Model Y — volledig elektrisch, premium interieur"
+              annotations={[
+                { text: "Bagage: 2 grote koffers + 2 handbagage", side: "left", top: "16%" },
+                { text: "4 passagiers, excl. chauffeur", side: "right", top: "38%" },
+              ]}
+              specs={[
+                { k: "Aandrijving", v: "100% EV" },
+                { k: "Beschikbaar", v: "24 / 7" },
+                { k: "Chauffeurs", v: "VOG-gescreend" },
+                { k: "Regio's", v: "AMS · RTM" },
+              ]}
+            />
+            <Stamp className="mt-5">
+              Ook actief<Dash />
+              <b className="font-semibold text-ink">Lynk &amp; Co 01</b> · plug-in hybrid · panoramadak · zakelijk &amp;
+              bruiloften
+            </Stamp>
+          </Reveal>
+        }
+      />
+
+      <Breath />
+
+      {/* ═══ PROOF — één geverifieerde stem, gegraveerd ═══ */}
+      <Viewport
+        meaning="proof"
+        label="Bewijs — beoordelingen"
+        above={
+          <ProofPattern
+            quote="Prachtige Tesla,"
+            accent="op de minuut stipt op Schiphol."
+            stamp={
+              <Stamp>
+                Mark H.<Dash />geverifieerde rit naar Schiphol<Dash />
+                <b className="font-semibold text-ink">★ 4,9 van 5 — 127 beoordelingen</b>
+              </Stamp>
+            }
+          />
+        }
+        below={
+          <Reveal>
+            <Stamp>
+              VOG-gescreende chauffeurs<Dash />100% elektrisch<Dash />KVK 80673813<Dash />gratis annuleren tot 2 uur
+              voor vertrek
+            </Stamp>
+          </Reveal>
+        }
+      />
+
+      <Breath />
+
+      {/* ═══ INVITATION — de uitnodiging ═══ */}
+      <Viewport
+        meaning="invitation"
+        label="Uitnodiging — boek uw rit"
+        id="boeken"
+        above={
+          <NarrativePattern
+            kicker="Nu — uw rit"
+            voice="Waar moet u zijn?"
+          />
+        }
+        onLine={
+          <Reveal delay={1}>
+            <div className="flex flex-wrap items-center gap-6 border-t border-ink/30 pt-6">
+              <Link
+                href="/boeken"
+                className="hz-confirm-btn px-10 py-4 text-[13px] font-medium uppercase tracking-[0.14em] text-ink no-underline"
+              >
+                <span>Boek uw rit — vaste prijs</span>
+              </Link>
+              <a href="tel:+31634744522" className="hz-guide-line text-sm text-secondary no-underline">
+                of bel +31 6 34 74 45 22
+              </a>
             </div>
-
-            <div
-              className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3 rounded-card border border-line bg-white/80 px-5 py-4 text-sm text-secondary shadow-card"
-              aria-label="Vertrouwensindicatoren"
-            >
-              <span className="flex items-center gap-2">
-                <span className="tracking-[2px] text-accent" aria-label="5 sterren beoordeling">★★★★★</span>
-                500+ ritten
-              </span>
-              <span aria-hidden="true" className="hidden h-5 w-px bg-line-strong sm:block" />
-              <span className="flex items-center gap-1.5">
-                <Icon name="clock" size={16} className="text-accent" />
-                24/7 beschikbaar
-              </span>
-              <span aria-hidden="true" className="hidden h-5 w-px bg-line-strong sm:block" />
-              <span className="flex items-center gap-1.5">
-                <Icon name="shield-check" size={16} className="text-accent" />
-                VOG-gescreend
-              </span>
-              <span aria-hidden="true" className="hidden h-5 w-px bg-line-strong sm:block" />
-              <span className="flex items-center gap-1.5">
-                <Icon name="leaf" size={16} className="text-accent" />
-                100% groen
-              </span>
-            </div>
-          </div>
-
-          <HeroBookingCard />
-        </div>
-      </section>
-
-      {/* ═══ TRUST STRIP ═══ */}
-      <div className="border-b border-line bg-card" role="region" aria-label="Klantwaardering en statistieken">
-        <div className="mx-auto flex max-w-site flex-wrap items-center justify-between gap-6 px-6 py-9">
-          {trustStats.map((s, i) => (
-            <div key={s.title} className="flex items-center gap-6">
-              {i > 0 && <span aria-hidden="true" className="hidden h-10 w-px bg-line lg:block" />}
-              <div className="min-w-[110px] text-center">
-                <div className={`font-display font-bold leading-none text-accent ${s.stars ? "text-base tracking-[2px]" : "text-[30px]"}`}>
-                  {s.num}
-                </div>
-                <div className="mt-1.5 text-sm font-medium text-ink">{s.title}</div>
-                <div className="mt-0.5 text-xs text-stone">{s.sub}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ═══ RITBELEVING ═══ */}
-      <section className="py-16 md:py-24" aria-labelledby="experience-title">
-        <div className="mx-auto max-w-site px-6">
-          <ScrollReveal>
-            <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
-              <span aria-hidden="true" className="h-px w-4 bg-accent" />
-              De T4XI beleving
-            </p>
-            <h2 id="experience-title" className="mt-4 max-w-3xl font-display text-display-lg font-bold text-ink">
-              Rust, overzicht en comfort vanaf het eerste contact.
-            </h2>
-            <p className="mt-4 max-w-2xl text-secondary">
-              Een premium rit begint niet bij instappen, maar bij eenvoudig
-              boeken, heldere communicatie en weten waar u aan toe bent.
-            </p>
-          </ScrollReveal>
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {beleving.map((b, i) => (
-              <ScrollReveal key={b.title} delay={i * 100}>
-                <article className="h-full rounded-card border border-line bg-card p-6 shadow-card">
-                  <Icon name={b.icon} size={24} className="text-accent" />
-                  <h3 className="mb-2 mt-3.5 font-display text-lg font-semibold text-ink">{b.title}</h3>
-                  <p className="text-sm leading-relaxed text-secondary">{b.text}</p>
-                </article>
-              </ScrollReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ DIENSTEN ═══ */}
-      <ServicesSection />
-
-      {/* ═══ VLOOT ═══ */}
-      <section id="vloot" className="border-t border-line bg-card/60 py-16 md:py-24" aria-labelledby="vloot-title">
-        <div className="mx-auto max-w-site px-6">
-          <ScrollReveal>
-            <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
-              <span aria-hidden="true" className="h-px w-4 bg-accent" />
-              Ons wagenpark
-            </p>
-            <h2 id="vloot-title" className="mt-4 font-display text-display-lg font-bold text-ink">
-              Premium voertuigen
-              <br />
-              <span className="italic text-stone">voor elke gelegenheid</span>
-            </h2>
-          </ScrollReveal>
-
-          <ScrollReveal>
-            <div className="relative mt-12 overflow-hidden rounded-fleet border border-line bg-card shadow-card-lg">
-              <div className="relative w-full">
-                <Image
-                  src="/tesla_model_y_black.jpg"
-                  alt="Tesla Model Y — volledig elektrisch, premium interieur"
-                  fill
-                  sizes="(min-width: 1200px) 1200px, 100vw"
-                  className="object-cover saturate-[0.92] contrast-[0.95]"
-                />
-                <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(245,243,241,.96),rgba(245,243,241,.72),rgba(245,243,241,.10))]" />
-                <div className="relative flex min-h-64 flex-col justify-center p-6 md:min-h-[420px] md:p-12">
-                  <div className="max-w-[540px]">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3.5 py-2 text-xs font-medium text-white">
-                      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-white" />
-                      Executive Airport Mobility — actief
-                    </span>
-                    <h3 className="mt-4 font-display text-3xl font-bold text-ink md:text-4xl">Tesla Model Y</h3>
-                    <p className="mt-3 rounded-2xl bg-white/70 p-4 text-sm leading-relaxed text-secondary backdrop-blur-sm md:text-base">
-                      Het vlaggenschip van onze vloot. Volledig elektrisch, ruim
-                      interieur en een indrukwekkend rijbereik. Zakelijk of
-                      particulier — de Tesla Model Y zet de toon.
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2.5">
-                      {teslaSpecs.map((spec) => (
-                        <span key={spec.label} className="flex items-center gap-2 rounded-xl border border-line bg-fog px-3 py-2 text-xs text-ink">
-                          <Icon name={spec.icon} size={15} className="text-accent" />
-                          <b className="font-semibold">{spec.val}</b> {spec.label}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      <Button href="#boeken">
-                        <Icon name="calendar-check" size={17} />
-                        Direct boeken
-                      </Button>
-                      <Button href="tel:+31634744522" variant="ghost">
-                        <Icon name="phone" size={17} />
-                        Bel ons
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal>
-            <div className="mt-10 grid overflow-hidden rounded-fleet border border-line bg-card shadow-card-lg md:grid-cols-2">
-              <div className="relative h-64 md:h-auto">
-                <Image
-                  src="/lynk_co_black.jpg"
-                  alt="Lynk & Co 01 — plug-in hybrid SUV"
-                  fill
-                  sizes="(min-width: 768px) 600px, 100vw"
-                  className="object-cover saturate-[0.92]"
-                />
-              </div>
-              <div className="p-6 md:p-10">
-                <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3.5 py-2 text-xs font-medium text-white">
-                  <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-white" />
-                  Amsterdam — actief
-                </span>
-                <h3 className="mt-4 font-display text-2xl font-bold text-ink md:text-3xl">Lynk &amp; Co 01</h3>
-                <p className="mt-3 text-sm leading-relaxed text-secondary md:text-base">
-                  Plug-in hybride SUV met panoramadak, premium interieur en
-                  opvallende uitstraling. Representatief voor elk zakelijk bezoek.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2.5">
-                  {[
-                    { icon: "bolt", label: "Plug-in Hybrid" },
-                    { icon: "users", label: "4 personen" },
-                    { icon: "sun", label: "Panoramadak" },
-                    { icon: "briefcase", label: "Zakelijk" },
-                  ].map((tag) => (
-                    <span key={tag.label} className="flex items-center gap-2 rounded-xl border border-line bg-fog px-3 py-2 text-xs text-ink">
-                      <Icon name={tag.icon} size={15} className="text-accent" />
-                      {tag.label}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-6">
-                  <Button href="#boeken" variant="ghost">
-                    <Icon name="calendar-check" size={17} />
-                    Boek de Lynk &amp; Co
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ═══ BOOKING ═══ */}
-      <section id="boeken" className="border-t border-line bg-[linear-gradient(180deg,#F5F3F1,#FFFFFF)] py-16 md:py-24" aria-labelledby="boeken-title">
-        <div className="mx-auto grid max-w-site items-start gap-12 px-6 lg:grid-cols-2">
-          <ScrollReveal>
-            <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
-              <span aria-hidden="true" className="h-px w-4 bg-accent" />
-              Direct reserveren
-            </p>
-            <h2 id="boeken-title" className="mt-4 font-display text-display-lg font-bold text-ink">
-              Plan uw
-              <br />
-              <span className="italic text-stone">rit nu</span>
-            </h2>
-            <p className="mt-4 text-secondary">Vaste prijs, bevestiging binnen 5 min. Geen verrassingen.</p>
-            <ul className="mt-8 flex flex-col gap-4">
-              {bookingFeatures.map((f) => (
-                <li key={f.text} className="flex items-center gap-3 text-sm text-ink">
-                  <Icon name={f.icon} size={18} className="shrink-0 text-accent" />
-                  {f.text}
-                </li>
+          </Reveal>
+        }
+        below={
+          <Reveal delay={2}>
+            <p className="flex flex-wrap gap-x-7 gap-y-2">
+              {PATHS.map((p) => (
+                <Link
+                  key={p.label}
+                  href={p.href}
+                  className="hz-guide-line text-[13px] uppercase tracking-[0.1em] text-secondary no-underline"
+                >
+                  {p.label}
+                </Link>
               ))}
-            </ul>
-          </ScrollReveal>
-          <ScrollReveal delay={150}>
-            <BookingSection />
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ═══ EERLIJK PLATFORM ═══ */}
-      <FairBand />
-
-      {/* ═══ PRIJSOVERZICHT ═══ */}
-      <section id="prijzen" className="border-t border-line bg-card/60 py-16 md:py-24" aria-labelledby="prijzen-title">
-        <div className="mx-auto max-w-site px-6">
-          <ScrollReveal>
-            <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
-              <span aria-hidden="true" className="h-px w-4 bg-accent" />
-              Vaste tarieven
             </p>
-            <h2 id="prijzen-title" className="mt-4 font-display text-display-lg font-bold text-ink">
-              Geen verrassingen,
-              <br />
-              <span className="italic text-stone">altijd vaste prijs</span>
-            </h2>
-            <p className="mt-4 max-w-2xl text-secondary">
-              Onderstaande prijzen zijn voor enkele rit. Retour = ×1,8.
-              Nachttarief (23:00–06:00) = +15%.
-            </p>
-          </ScrollReveal>
-          <ScrollReveal>
-            <div className="mt-12">
-              <PriceTables />
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ═══ WHY ═══ */}
-      <WhySection />
-
-      {/* ═══ REVIEWS ═══ */}
-      <ReviewsSection />
-
-      {/* ═══ MOBILITEITSPRODUCTEN ═══ */}
-      <ProductsTeaser />
-
-      {/* ═══ ZAKELIJK ═══ */}
-      <ZakelijkSection />
-
-      {/* ═══ FAQ ═══ */}
-      <section className="border-t border-line py-16 md:py-24" aria-labelledby="faq-title">
-        <div className="mx-auto max-w-site px-6">
-          <ScrollReveal>
-            <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
-              <span aria-hidden="true" className="h-px w-4 bg-accent" />
-              Veelgestelde vragen
-            </p>
-            <h2 id="faq-title" className="mb-12 mt-4 font-display text-display-lg font-bold text-ink">
-              Heeft u <span className="italic text-stone">vragen?</span>
-            </h2>
-          </ScrollReveal>
-          <FaqList />
-        </div>
-      </section>
-
-      {/* ═══ CONTACT ═══ */}
-      <ContactSection />
+            <Stamp className="mt-8">
+              Bevestiging binnen 5 minuten<Dash />iDEAL, pin of contant<Dash />
+              <b className="font-semibold text-ink">gratis annuleren tot 2 uur voor vertrek</b>
+            </Stamp>
+          </Reveal>
+        }
+      />
     </>
   );
 }

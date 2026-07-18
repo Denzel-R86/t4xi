@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Icon from "@/components/ui/Icon";
+import Wordmark from "@/components/ui/Wordmark";
 
 const socials = [
   { href: "https://wa.me/31634744522", label: "WhatsApp T4XI", icon: "whatsapp", external: true },
@@ -13,9 +14,8 @@ export default function Footer() {
       <div className="mx-auto max-w-site px-6 pb-10 pt-16">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            <p className="font-display text-[22px] font-extrabold tracking-[3px]">
-              T<span className="text-stone">4</span>XI
-            </p>
+            <Wordmark className="h-[26px] w-auto" title="T4XI" />
+            <p className="mt-2.5 text-sm tracking-[0.02em] text-stone-subtle">Arrive composed.</p>
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-stone-subtle">
               Premium taxivervoer in Amsterdam en Rotterdam. Tesla Model Y en
               Lynk &amp; Co 01. Vaste prijzen, 24/7 beschikbaar.

@@ -1,0 +1,177 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   HORIZON DESIGN LANGUAGE v1 — motion & pattern styles
+   ─────────────────────────────────────────────────────
+   Alle beweging op de site is één van vijf werkwoorden uit de Motion Engine:
+
+     Reveal   .hz-reveal    — content stijgt óp naar de lijn (enter)
+     Travel   .hz-travel-*  — iets beweegt langs/over de horizon (ambient)
+     Guide    .hz-guide-*   — richting bij hover/focus (underline, arrow)
+     Focus    .hz-focus     — aandacht bij interactie (invoer, prijs)
+     Confirm  .hz-confirm-* — een voltooide handeling bevestigt zich (odometer)
+
+   Eén easing (chauffeur-curve), drie tempo's. Nieuwe animaties bestaan niet:
+   wie beweging nodig heeft, kiest een werkwoord.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --hz-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hz-immediate: 240ms;
+  --hz-composed: 700ms;
+  --hz-cinematic: 1100ms;
+  --hz-line: rgba(31, 39, 48, 0.28);
+  --hz-line-soft: rgba(31, 39, 48, 0.12);
+  --hz-y: 62svh; /* de horizon */
+}
+@media (max-width: 768px) {
+  :root { --hz-y: 56svh; }
+}
+
+/* ── de ruggengraat ── */
+.hz-spine {
+  position: fixed;
+  left: 0; right: 0;
+  top: var(--hz-y);
+  height: 1px;
+  background: var(--hz-line);
+  opacity: 0.32;
+  z-index: 5;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.hz-spine.hz-travel-drawn {
+  transition: transform var(--hz-cinematic) var(--hz-ease);
+  transform: scaleX(1);
+}
+/* Travel: de rit langs de lijn — positie wordt door de engine gezet */
+.hz-spine .hz-travel-tick {
+  position: absolute;
+  top: -1px; left: 0;
+  width: 28px; height: 3px;
+  background: #1f2730;
+  transform: translateX(-10vw);
+  transition: transform 160ms linear;
+  will-change: transform;
+}
+
+/* ── Reveal ──
+   Progressive enhancement: zonder JavaScript is ALLE content direct zichtbaar
+   (geen opacity:0-startstaat). De verborgen startstaat geldt alleen wanneer JS
+   draait — RootLayout zet daarvoor `html.js` (beforeInteractive). Zo blijven
+   prijzen, links en CTA's leesbaar en bruikbaar zonder motion. */
+html.js .hz-reveal {
+  opacity: 0;
+  transform: translateY(26px);
+}
+html.js .hz-reveal.hz-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--hz-composed) var(--hz-ease),
+    transform var(--hz-composed) var(--hz-ease);
+}
+html.js .hz-reveal.hz-d1.hz-in { transition-delay: 90ms; }
+html.js .hz-reveal.hz-d2.hz-in { transition-delay: 180ms; }
+html.js .hz-reveal.hz-d3.hz-in { transition-delay: 270ms; }
+
+/* ── Guide ── */
+.hz-guide-line { position: relative; }
+.hz-guide-line::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: -1px;
+  height: 1px; width: 100%;
+  background: #1f2730;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 420ms var(--hz-ease);
+}
+.hz-guide-line:hover::after,
+.hz-guide-line:focus-visible::after { transform: scaleX(1); }
+
+.hz-guide-arrow .hz-arrow {
+  display: inline-block;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity var(--hz-immediate) var(--hz-ease), transform var(--hz-immediate) var(--hz-ease);
+}
+.hz-guide-arrow:hover .hz-arrow,
+.hz-guide-arrow:focus-visible .hz-arrow { opacity: 1; transform: none; }
+
+.hz-guide-space { transition: letter-spacing 300ms var(--hz-ease); }
+.hz-guide-space:hover { letter-spacing: 0.16em; }
+
+/* ── Focus ── */
+.hz-focus {
+  border-bottom: 1px solid var(--hz-line);
+  transition: border-color var(--hz-immediate) var(--hz-ease);
+}
+.hz-focus:focus-within, .hz-focus:focus { border-color: #1f2730; }
+input.hz-blank {
+  background: none; border: 0; outline: none;
+  color: #1f2730;
+  padding: 0 2px;
+}
+input.hz-blank::placeholder { color: #999694; font-weight: 300; }
+
+/* ── Confirm: odometer ── */
+.hz-confirm-roll {
+  display: inline-flex;
+  overflow: hidden;
+  height: 1.15em;
+  line-height: 1.15em;
+  vertical-align: -0.18em;
+  font-variant-numeric: tabular-nums;
+}
+.hz-confirm-roll .hz-col { display: inline-block; }
+.hz-confirm-roll.hz-live .hz-col {
+  transition: transform 850ms var(--hz-ease);
+}
+.hz-confirm-roll .hz-col span { display: block; height: 1.15em; }
+
+/* Confirm: vul-knop (de handeling kleurt vol van onder) */
+.hz-confirm-btn {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #1f2730;
+}
+.hz-confirm-btn > span { position: relative; z-index: 2; transition: color 350ms var(--hz-ease); }
+.hz-confirm-btn::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: #1f2730;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 350ms var(--hz-ease);
+}
+.hz-confirm-btn:hover::before, .hz-confirm-btn:focus-visible::before { transform: scaleY(1); }
+.hz-confirm-btn:hover > span, .hz-confirm-btn:focus-visible > span { color: #f5f3f1; }
+
+/* ── patronen: ledger ── */
+.hz-ledger-entry { border-bottom: 1px solid var(--hz-line-soft); }
+.hz-ledger-entry:first-child { border-top: 1px solid var(--hz-line); }
+
+/* ── patronen: editorial figure ── */
+.hz-frame {
+  position: relative;
+  border: 1px solid var(--hz-line-soft);
+  overflow: hidden;
+  background: linear-gradient(160deg, #ece9e4 0%, #f5f3f1 60%);
+}
+.hz-frame .hz-frame-wash {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(245, 243, 241, 0.94), rgba(245, 243, 241, 0.55) 40%, rgba(245, 243, 241, 0.05));
+  z-index: 1;
+}
+.hz-dim { position: absolute; z-index: 2; }
+.hz-dim i { display: block; height: 1px; background: var(--hz-line); margin-bottom: 6px; }
+
+/* ── reduced motion: alles direct, Travel-accent uit ── */
+@media (prefers-reduced-motion: reduce) {
+  html.js .hz-reveal, html.js .hz-reveal.hz-in { opacity: 1; transform: none; transition: none; }
+  .hz-reveal { opacity: 1; transform: none; transition: none; }
+  .hz-spine { transform: scaleX(1); transition: none; }
+  .hz-spine .hz-travel-tick { display: none; }
+  .hz-confirm-roll.hz-live .hz-col { transition: none; }
+  .hz-guide-line::after, .hz-confirm-btn::before, .hz-guide-arrow .hz-arrow { transition: none; }
+}

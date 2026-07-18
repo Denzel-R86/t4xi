@@ -1,0 +1,466 @@
+"use client";
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * HORIZON DESIGN LANGUAGE v1 — patronen (de grondwet)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Eén idee: één doorgetrokken horizonlijn draagt elke pagina.
+ * Het verhaal staat erboven, de handeling ligt erop, het bewijs staat eronder —
+ * zoals de letters van het woordmerk op de weg staan.
+ *
+ * PATTERN-FIRST. Dit bestand bevat patronen, geen paginacomponenten. Pagina's
+ * (homepage, booking, pricing, dashboard, account) COMPONEREN deze patronen;
+ * een patroon weet niets van de pagina waarop het staat.
+ *
+ *   HorizonSpine     — de ruggengraat: de lijn + het Travel-accent (de rit)
+ *   Viewport         — een betekenis-dragend beeldvlak met een ritme-slag
+ *   NarrativePattern — een tweestemmig statement boven de lijn
+ *   SentencePattern  — de handeling als zin: "Ik reis van ___ naar ___"
+ *   LedgerPattern    — het grootboek: gegraveerde zekerheden (GEEN pricing
+ *                      table: geen kolomkoppen, geen raster, geen knopkolom —
+ *                      elke regel is een frase met een feit)
+ *   EditorialFigure  — beeld als technische tekening met maatannotaties
+ *   VowsPattern      — genummerde beloftes als volle regels (geen kaarten)
+ *   ProofPattern     — een citaat óp de lijn + gegraveerd bewijs
+ *   Breath           — de adem tussen twee statements (stilte is het patroon)
+ *
+ * VERTICAAL RITME. Een pagina is geen stapel secties maar een tempo:
+ * Stilte → Statement → Adem → Bewijs → Adem → Handeling. Viewports heten naar
+ * hun betekenis (Arrival, Recognition, Certainty, Journey, Proof, Invitation) —
+ * nooit naar hun inhoud (hero, fleet, reviews).
+ *
+ * MOTION. Uitsluitend via de Motion Engine (motion.tsx): Reveal, Travel,
+ * Guide, Focus, Confirm. Nieuwe animaties bestaan niet.
+ *
+ * STOP CONDITIONS — stop onmiddellijk en ontwerp opnieuw zodra ontstaat:
+ *   · een component dat op een SaaS-template lijkt
+ *   · een sectie die op een standaard landingpage lijkt
+ *   · een card-grid · een pricing table · een testimonial slider
+ *   · een FAQ-accordion · een hero met headline + subheadline + CTA
+ *   · glassmorphism · een Apple-kopie · een Blacklane-kopie
+ *
+ * Het doel is niet een mooiere pagina. Het doel is een taal waarvan iedere
+ * toekomstige pagina vanzelf T4XI wordt.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+import "./horizon.css";
+import Link from "next/link";
+import Image from "next/image";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Reveal, Odometer, usePrefersReducedMotion } from "./motion";
+
+/* ── de ruggengraat ─────────────────────────────────────────────────────── */
+
+/** De horizonlijn: tekent in bij aankomst (Travel), en draagt het Travel-accent
+ *  — een klein segment dat met de scroll langs de lijn reist (de rit van de
+ *  pagina zelf; het enige narratieve accent, nooit leidend). */
+export function HorizonSpine() {
+  const tick = useRef<HTMLSpanElement>(null);
+  const reduced = usePrefersReducedMotion();
+  const [drawn, setDrawn] = useState(false);
+
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setDrawn(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
+
+  useEffect(() => {
+    if (reduced) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const total = document.documentElement.scrollHeight - innerHeight;
+        const p = total > 0 ? Math.min(1, Math.max(0, scrollY / total)) : 0;
+        if (tick.current) {
+          tick.current.style.transform = `translateX(${8 + p * 84}vw)`;
+        }
+      });
+    };
+    onScroll();
+    addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [reduced]);
+
+  return (
+    <div className={`hz-spine${drawn ? " hz-travel-drawn" : ""}`} aria-hidden="true">
+      <span ref={tick} className="hz-travel-tick" />
+    </div>
+  );
+}
+
+/* ── viewport & ritme ───────────────────────────────────────────────────── */
+
+type Meaning = "arrival" | "recognition" | "certainty" | "journey" | "proof" | "invitation";
+
+/** Een betekenis-dragend beeldvlak. `above` eindigt op de lijn, `onLine` ligt
+ *  erop, `below` staat eronder. Ritme-slag: statement = volle viewport. */
+export function Viewport({
+  meaning,
+  label,
+  id,
+  above,
+  onLine,
+  below,
+  first = false,
+}: {
+  meaning: Meaning;
+  /** Toegankelijke naam van het beeldvlak (aria-label). */
+  label: string;
+  id?: string;
+  above: ReactNode;
+  onLine?: ReactNode;
+  below?: ReactNode;
+  /** Eerste viewport van de pagina: compenseert de vaste header zodat de
+   *  naad bij aankomst exact op de spine ligt. */
+  first?: boolean;
+}) {
+  return (
+    <section
+      id={id}
+      data-viewport={meaning}
+      aria-label={label}
+      className="relative grid min-h-[100svh] px-[5vw]"
+      style={{
+        gridTemplateRows: `minmax(calc(var(--hz-y) - ${first ? 68 : 0}px), auto) auto minmax(0, 1fr)`,
+      }}
+    >
+      <div className="flex flex-col justify-end pb-9 pt-24">{above}</div>
+      <div>{onLine}</div>
+      <div className="pb-16 pt-9">{below}</div>
+    </section>
+  );
+}
+
+/** De adem tussen twee statements. Stilte is het patroon — geen inhoud. */
+export function Breath() {
+  return <div aria-hidden="true" className="h-[22svh]" />;
+}
+
+/* ── narrative ──────────────────────────────────────────────────────────── */
+
+/** Tweestemmig statement boven de lijn: een kicker met kastlijntje en een
+ *  compositie van draagstem (ink) en echostem (stone). Geen subheadline. */
+export function NarrativePattern({
+  kicker,
+  voice,
+  echo,
+  note,
+  as: Tag = "h2",
+}: {
+  kicker: string;
+  voice: string;
+  echo?: string;
+  /** Stille steunregel (max één, klein, secundair). */
+  note?: string;
+  as?: "h1" | "h2";
+}) {
+  return (
+    <div>
+      <Reveal>
+        <p className="flex items-center gap-3.5 text-[11px] font-medium uppercase tracking-[0.16em] text-secondary">
+          <span aria-hidden="true" className="h-px w-8 bg-ink" />
+          {kicker}
+        </p>
+      </Reveal>
+      <Reveal delay={1}>
+        <Tag className="mt-6 font-display text-[clamp(44px,7.6vw,108px)] font-extrabold leading-[0.98] tracking-[-0.03em] text-ink">
+          {voice}
+          {echo && (
+            <>
+              <br />
+              <span className="font-light text-stone">{echo}</span>
+            </>
+          )}
+        </Tag>
+      </Reveal>
+      {note && (
+        <Reveal delay={2}>
+          <p className="mt-6 max-w-md text-[15px] leading-relaxed text-secondary">{note}</p>
+        </Reveal>
+      )}
+    </div>
+  );
+}
+
+/** Gegraveerde regel in de merkcode-opmaak (tijdstempel / feitregel). */
+export function Stamp({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <p
+      className={`text-[11px] font-medium uppercase tracking-[0.14em] text-secondary [font-variant-numeric:tabular-nums] ${className}`}
+    >
+      {children}
+    </p>
+  );
+}
+
+/** Het kastlijntje in een Stamp. */
+export function Dash() {
+  return (
+    <span aria-hidden="true" className="px-2 text-stone">
+      —
+    </span>
+  );
+}
+
+/* ── sentence: de handeling als zin ─────────────────────────────────────── */
+
+type Quote =
+  | { status: "idle" | "loading" | "onrequest" | "error" }
+  | { status: "ready"; price: number };
+
+/** De boekingszin óp de lijn: "Ik reis van ___ naar ___." — het antwoord is de
+ *  vaste prijs uit de echte Pricing Engine. Confirm leidt naar de volledige
+ *  boekingsflow. Focus/Confirm-werkwoorden; geen kaart, geen formulierblok. */
+export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: string }) {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [quote, setQuote] = useState<Quote>({ status: "idle" });
+
+  useEffect(() => {
+    if (from.trim().length < 3 || to.trim().length < 3) {
+      setQuote({ status: "idle" });
+      return;
+    }
+    const controller = new AbortController();
+    setQuote({ status: "loading" });
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/pricing/quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pickup: from.trim(), dropoff: to.trim() }),
+          signal: controller.signal,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.available) setQuote({ status: "ready", price: data.price });
+        else setQuote({ status: "onrequest" });
+      } catch (err) {
+        if ((err as Error)?.name !== "AbortError") setQuote({ status: "error" });
+      }
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [from, to]);
+
+  const blank = (
+    value: string,
+    set: (v: string) => void,
+    placeholder: string,
+    label: string
+  ) => (
+    <span className="hz-focus inline-block align-baseline">
+      <input
+        className="hz-blank font-display font-medium"
+        style={{ width: `${Math.max(placeholder.length, value.length) + 1}ch` }}
+        value={value}
+        onChange={(e) => set(e.target.value)}
+        placeholder={placeholder}
+        aria-label={label}
+        autoComplete="off"
+      />
+    </span>
+  );
+
+  return (
+    <div className="border-t border-ink/30 pt-5">
+      <p className="font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink">
+        Ik reis van {blank(from, setFrom, "Almere Poort", "Vertrek")} naar{" "}
+        {blank(to, setTo, "Schiphol", "Bestemming")}.
+      </p>
+      <div
+        className="mt-4 flex flex-wrap items-baseline gap-x-7 gap-y-3"
+        aria-live="polite"
+        aria-busy={quote.status === "loading"}
+      >
+        <Stamp>
+          {quote.status === "ready" ? (
+            <>
+              Uw vaste prijs<Dash />
+              <b className="font-semibold text-ink">
+                €&nbsp;
+                <Odometer value={quote.price} />
+              </b>
+              <Dash />
+              incl. btw
+            </>
+          ) : quote.status === "loading" ? (
+            <>Prijs berekenen…</>
+          ) : quote.status === "onrequest" ? (
+            <>
+              Offerte op aanvraag<Dash />wij bevestigen de prijs persoonlijk
+            </>
+          ) : quote.status === "error" ? (
+            <>Prijs even niet beschikbaar<Dash />bel of app ons</>
+          ) : (
+            <>
+              Vul de zin aan<Dash />vaste prijs, geen taxameter
+            </>
+          )}
+        </Stamp>
+        <Link
+          href={confirmHref}
+          className="hz-confirm-btn px-7 py-3 text-[12px] font-medium uppercase tracking-[0.14em] text-ink no-underline"
+        >
+          <span>Bevestig de rit</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/* ── ledger: gegraveerde zekerheden ─────────────────────────────────────── */
+
+export type LedgerEntry = {
+  phrase: string;
+  detail?: string;
+  fact: number | string;
+  factNote?: string;
+  href?: string;
+};
+
+/** Het grootboek. GEEN tabel: geen kolomkoppen, geen raster, geen knopkolom.
+ *  Elke regel is een frase met een feit, gescheiden door hairlines; hover
+ *  onthult de handeling (Guide). */
+export function LedgerPattern({ entries, closing }: { entries: LedgerEntry[]; closing?: ReactNode }) {
+  return (
+    <div>
+      <ul className="list-none">
+        {entries.map((e) => {
+          const inner = (
+            <span className="flex flex-wrap items-baseline gap-x-4 gap-y-1 py-6">
+              <span className="font-display text-[clamp(18px,2.3vw,26px)] font-medium text-ink">
+                {e.phrase}
+              </span>
+              {e.detail && <span className="text-sm text-secondary">{e.detail}</span>}
+              <span className="ml-auto flex items-baseline gap-3">
+                <span className="hz-arrow text-[11px] font-medium uppercase tracking-[0.14em] text-secondary">
+                  Boek deze rit →
+                </span>
+                <span className="font-display text-[clamp(19px,2.3vw,26px)] font-bold text-ink [font-variant-numeric:tabular-nums]">
+                  {typeof e.fact === "number" ? <>€&nbsp;{e.fact}</> : e.fact}
+                </span>
+                {e.factNote && <span className="text-xs uppercase tracking-[0.1em] text-stone">{e.factNote}</span>}
+              </span>
+            </span>
+          );
+          return (
+            <li key={e.phrase} className="hz-ledger-entry">
+              {e.href ? (
+                <Link href={e.href} className="hz-guide-line hz-guide-arrow block no-underline">
+                  {inner}
+                </Link>
+              ) : (
+                inner
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {closing && <div className="pt-5">{closing}</div>}
+    </div>
+  );
+}
+
+/* ── editorial figure: beeld als technische tekening ────────────────────── */
+
+export function EditorialFigure({
+  src,
+  alt,
+  annotations,
+  specs,
+}: {
+  src: string;
+  alt: string;
+  annotations?: { text: string; side: "left" | "right"; top: string }[];
+  specs?: { k: string; v: string }[];
+}) {
+  return (
+    <figure>
+      <div className="hz-frame aspect-[16/9] md:aspect-[21/9]">
+        <Image src={src} alt={alt} fill sizes="90vw" className="object-cover saturate-[0.9] contrast-[0.96]" />
+        <span className="hz-frame-wash" aria-hidden="true" />
+        {annotations?.map((a) => (
+          <span
+            key={a.text}
+            className={`hz-dim hidden w-[26%] text-[10px] font-medium uppercase tracking-[0.14em] text-secondary md:block ${
+              a.side === "left" ? "left-[5%]" : "right-[5%] text-right"
+            }`}
+            style={{ top: a.top }}
+          >
+            <i aria-hidden="true" />
+            {a.text}
+          </span>
+        ))}
+      </div>
+      {specs && (
+        <figcaption className="flex flex-wrap border-t border-ink/30">
+          {specs.map((s) => (
+            <span key={s.k} className="min-w-[42%] flex-1 border-r border-ink/10 py-4 pr-6 last:border-r-0 md:min-w-0">
+              <span className="block text-[10px] font-medium uppercase tracking-[0.16em] text-stone">{s.k}</span>
+              <span className="mt-1 block font-display text-[clamp(15px,1.7vw,20px)] font-bold text-ink [font-variant-numeric:tabular-nums]">
+                {s.v}
+              </span>
+            </span>
+          ))}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
+/* ── vows: beloftes als volle regels ────────────────────────────────────── */
+
+export function VowsPattern({ vows }: { vows: { title: string; text: string }[] }) {
+  return (
+    <div>
+      {vows.map((v, i) => (
+        <Reveal key={v.title} delay={(Math.min(i, 3) as 0 | 1 | 2 | 3) || 0}>
+          <div className="grid grid-cols-[56px_1fr] items-baseline gap-6 border-t border-ink/10 py-8 last:border-b md:grid-cols-[90px_1fr_minmax(0,300px)]">
+            <span className="text-[15px] font-light text-stone [font-variant-numeric:tabular-nums]">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span className="font-display text-[clamp(21px,3vw,36px)] font-bold leading-[1.12] tracking-[-0.02em] text-ink">
+              {v.title}
+            </span>
+            <span className="col-start-2 text-sm leading-relaxed text-secondary md:col-start-3 md:text-right">
+              {v.text}
+            </span>
+          </div>
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
+/* ── proof: citaat op de lijn ───────────────────────────────────────────── */
+
+export function ProofPattern({
+  quote,
+  accent,
+  stamp,
+}: {
+  quote: string;
+  accent: string;
+  stamp: ReactNode;
+}) {
+  return (
+    <div>
+      <Reveal>
+        <blockquote className="max-w-4xl font-display text-[clamp(28px,4.6vw,60px)] font-light leading-[1.12] tracking-[-0.02em] text-ink">
+          “{quote} <b className="font-extrabold">{accent}</b>”
+        </blockquote>
+      </Reveal>
+      <Reveal delay={1}>
+        <div className="mt-7">{stamp}</div>
+      </Reveal>
+    </div>
+  );
+}
