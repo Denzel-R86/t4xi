@@ -19,8 +19,11 @@
  *   SUPABASE_SERVICE_ROLE_KEY         (verplicht voor echte import: schrijven)
  *
  * Idempotentie: matcht op (pickup_location_id, dropoff_location_id,
- * vehicle_class_id, active). Bestaat er al een actieve rij → UPDATE, anders INSERT.
- * Opnieuw importeren maakt dus nooit duplicaten.
+ * vehicle_class_id) — NIET op `active`. Bestaat er al een rij voor dat paar →
+ * UPDATE (ook als die inactief is), anders INSERT. Opnieuw importeren maakt dus
+ * nooit duplicaten, ook niet bij het patroon "eerst inactief staged, later
+ * activeren". De unieke index uit migratie 20260719120000_unique_route_key.sql
+ * dwingt dezelfde regel op databaseniveau af.
  *
  * 'service_type' wordt gevalideerd tegen de toegestane set en opgeslagen in de
  * gelijknamige kolom (airport, intercity, day_trip, hotel_transfer,
@@ -274,15 +277,42 @@ async function main() {
   }
   console.log(`Gevalideerd: ${resolved.length} route(s), 0 fouten.`);
 
-  // 5. Bestaande actieve routes ophalen → insert vs update bepalen (idempotent)
+  // 5. Bestaande routes ophalen → insert vs update bepalen (idempotent)
+  //
+  // BEWUST zonder filter op `active`: de routesleutel is (pickup, dropoff,
+  // vehicle_class). Filterden we hier op active=true, dan zou een import van een
+  // inactieve route geen match vinden en een TWEEDE rij voor hetzelfde paar
+  // aanmaken — precies het "eerst staged, dan publiceren"-patroon dat duplicaten
+  // opleverde. Een bestaande rij wordt nu altijd bijgewerkt, ook als die
+  // inactief is en de import hem activeert (of omgekeerd).
   const { data: existing, error: exErr } = await supabase
     .from("fixed_route_prices")
-    .select("id, pickup_location_id, dropoff_location_id, vehicle_class_id, active")
-    .eq("active", true);
+    .select("id, pickup_location_id, dropoff_location_id, vehicle_class_id, active");
   if (exErr) fail(`Kon bestaande routes niet lezen: ${exErr.message}`);
+
   const existingMap = new Map<string, string>();
+  const duplicates: string[] = [];
   for (const e of existing ?? []) {
-    existingMap.set(`${e.pickup_location_id}|${e.dropoff_location_id}|${e.vehicle_class_id}`, e.id);
+    const key = `${e.pickup_location_id}|${e.dropoff_location_id}|${e.vehicle_class_id}`;
+    if (existingMap.has(key)) {
+      duplicates.push(key);
+      continue;
+    }
+    existingMap.set(key, e.id);
+  }
+
+  // Reeds bestaande duplicaten zijn niet veilig automatisch te updaten: welke
+  // van de twee rijen is leidend? Stop en laat een mens dit opruimen.
+  if (duplicates.length) {
+    console.error(
+      `Gevonden: ${duplicates.length} dubbele route(s) in fixed_route_prices ` +
+        `(zelfde pickup/dropoff/vehicle_class):`
+    );
+    console.error(duplicates.map((d) => `  ${d}`).join("\n"));
+    fail(
+      "Ruim de duplicaten eerst op — de unieke index in migratie " +
+        "20260719120000_unique_route_key.sql voorkomt dat dit opnieuw ontstaat."
+    );
   }
 
   const toInsert: Record<string, unknown>[] = [];
