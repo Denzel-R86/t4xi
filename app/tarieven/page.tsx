@@ -12,9 +12,24 @@ import { loadRateCard, type CityRates, type RateEntry } from "@/lib/pricing/rate
  * vertrekstad twee gescheiden groepen: Naar Schiphol en Intercity. Geen tabs,
  * geen cards, geen pricing-table — hairlines, tabellaire cijfers, ademruimte.
  *
- * ISR: uurlijkse revalidatie behoudt statische SEO-waarde met verse prijzen.
+ * CACHING — bewust dynamisch, niet ISR.
+ *
+ * Eerder stond hier `revalidate = 3600`. Bij de herprijzing van 2026-07-19 bleek
+ * dat gevaarlijk: /api/pricing/quote is `force-dynamic` en gaf direct de nieuwe
+ * prijs, terwijl deze pagina tot een uur lang de oude prijs bleef tonen. Precies
+ * de discrepantie tussen tarief en boekingsprijs die deze pagina moet uitsluiten
+ * — een klant ziet €85 en betaalt €105.
+ *
+ * De pagina leest één geïndexeerde query over enkele tientallen rijen, dus
+ * dynamisch renderen is goedkoop. Correctheid weegt hier zwaarder dan een
+ * gecachete render. Server-rendering blijft intact, dus SEO verandert niet.
+ *
+ * Groeit het verkeer, dan is de volgende stap tag-based caching
+ * (`unstable_cache` + `revalidateTag`) met invalidatie op elke prijsmutatie —
+ * niet een tijdgebaseerde TTL, want die geeft opnieuw een venster waarin
+ * tarief en quote uiteenlopen.
  */
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Tarieven",
