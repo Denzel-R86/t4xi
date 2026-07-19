@@ -22,8 +22,25 @@ import type { Database } from "@/lib/types/database";
 
 export type PricingSupabaseClient = SupabaseClient<Database>;
 
+/**
+ * Fetch die Next's Data Cache overslaat.
+ *
+ * Next patcht global fetch in server components en cachet GET-responses. Dat
+ * gold ook voor de Supabase-reads: op 2026-07-19 stonden er twaalf routes
+ * actief in de database terwijl /tarieven ze niet toonde, en bleef de pagina
+ * na een prijswijziging oude bedragen serveren. `export const dynamic =
+ * "force-dynamic"` op de pagina loste dat NIET op — dat maakt de route
+ * dynamisch, maar laat de gecachete fetch-response intact.
+ *
+ * Prijsdata mag nooit uit een cache komen: de tarievenpagina en de quote-engine
+ * moeten hetzelfde bedrag tonen, anders ziet een klant €85 en betaalt hij €105.
+ */
+const noStoreFetch: typeof fetch = (input, init) =>
+  fetch(input, { ...init, cache: "no-store" });
+
 const clientOptions = {
   auth: { persistSession: false, autoRefreshToken: false },
+  global: { fetch: noStoreFetch },
 } as const;
 
 /** True als tenminste een read-client geconfigureerd kan worden. */

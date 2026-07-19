@@ -205,33 +205,53 @@ async function resolveQuote(
 
 // ── Locatie-/klasse-resolutie ────────────────────────────────────────────────
 
-/**
- * Vindt een actieve locatie. Volgorde:
- *   0. alias-resolutie: een vrij (straat)adres → canonieke fixed-route slug
- *      (Stap 9e — postcode/keyword-mapping, geen prijslogica).
- *   a. exacte slug (alias of geslugificeerde vrije tekst)
- *   b. naam case-insensitive (alleen zonder alias; de alias is al canoniek)
- */
-async function findLocation(
+/** Zoekt één actieve locatie op exacte slug. */
+async function locationBySlug(
   supabase: PricingSupabaseClient,
-  raw: string
+  slug: string
 ): Promise<LocationRow | null> {
-  const alias = resolveLocationSlug(raw);
-  const slug = alias ?? slugify(raw);
-
-  // a. exacte slug (alias of geslugificeerde vrije tekst)
-  const bySlug = await supabase
+  const res = await supabase
     .from("locations")
     .select("id, slug, name, active")
     .eq("active", true)
     .eq("slug", slug)
     .limit(1)
     .maybeSingle();
-  if (bySlug.error) throw bySlug.error;
-  if (bySlug.data) return bySlug.data;
+  if (res.error) throw res.error;
+  return res.data ?? null;
+}
 
-  // b. naam case-insensitive — alleen zinvol zonder alias
-  if (alias) return null;
+/**
+ * Vindt een actieve locatie. Volgorde (Stap 10l):
+ *
+ *   1. EXACTE SLUG  — `slugify(raw)` tegen public.locations. Bestaat de locatie
+ *      letterlijk, dan wint die ALTIJD. Een alias mag dit nooit overschrijven.
+ *   2. WIJK/STAD    — alias-resolutie van een vrij (straat)adres via postcode of
+ *      trefwoord; wijkregels vóór stadsfallback (zie location-aliases.ts).
+ *   3. NAAM         — case-insensitieve naammatch, alleen als er geen alias was.
+ *
+ * Vóór 10l draaide stap 2 als eerste. Daardoor werd `rotterdam-kralingen`
+ * teruggebracht naar `rotterdam` en rekende de quote de stadsprijs, terwijl de
+ * tarievenpagina de wijkprijs toonde. Die volgorde is nu omgekeerd.
+ */
+async function findLocation(
+  supabase: PricingSupabaseClient,
+  raw: string
+): Promise<LocationRow | null> {
+  // 1. exacte slug — heeft altijd voorrang op alias-resolutie
+  const exactSlug = slugify(raw);
+  if (exactSlug) {
+    const exact = await locationBySlug(supabase, exactSlug);
+    if (exact) return exact;
+  }
+
+  // 2. alias-resolutie: wijk eerst, stad als fallback
+  const alias = resolveLocationSlug(raw);
+  if (alias) {
+    return await locationBySlug(supabase, alias);
+  }
+
+  // 3. naam case-insensitive — alleen zinvol zonder alias
   const byName = await supabase
     .from("locations")
     .select("id, slug, name, active")

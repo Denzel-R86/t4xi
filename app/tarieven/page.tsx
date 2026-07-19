@@ -121,9 +121,9 @@ export default async function TarievenPage() {
             <span className="font-light text-stone">zijn prijs.</span>
           </h1>
           <p className="mt-6 text-secondary">
-            Prijzen voor de enkele rit met onze executive-EV (Tesla Model Y / Lynk &amp; Co). Retour staat per route
-            vermeld. Nachttarief (23:00–06:00) +15%. Alle bedragen inclusief btw, maximaal 4 passagiers exclusief
-            chauffeur.
+            Prijzen voor de enkele rit in onze executive-klasse: Tesla Model Y (volledig elektrisch) of Lynk &amp; Co 01
+            (plug-in hybride). Retour staat per route vermeld. Nachttarief (23:00–06:00) +15%. Alle bedragen inclusief
+            btw, maximaal 4 passagiers exclusief chauffeur.
           </p>
         </header>
 
