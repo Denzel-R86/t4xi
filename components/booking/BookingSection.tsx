@@ -61,7 +61,9 @@ export default function BookingSection() {
     if (needsFlight && flightNumber.trim() === "") {
       setSubmit({
         status: "error",
-        message: "Vul uw vluchtnummer in — daarmee volgen wij uw vlucht bij vertraging.",
+        message: isArrival
+          ? "Vul uw aankomende vluchtnummer in — daarmee volgen wij uw vlucht en passen wij het ophaalmoment aan."
+          : "Vul uw vertrekkende vluchtnummer in, zodat wij de rit daarop kunnen plannen.",
       });
       return;
     }
@@ -122,15 +124,25 @@ export default function BookingSection() {
   // Live richtprijs — UITSLUITEND uit de autoritatieve Pricing Engine
   // (/api/pricing/quote). Geen client-side prijslogica. Debounce + abort tegen
   // race-conditions bij snel typen/wisselen.
+  /**
+   * De luchthavencontext komt UITSLUITEND uit de prijsengine. Dit component leidt
+   * niets af uit adresteksten of slugs — anders ontstaat er een tweede definitie
+   * van "is dit een luchthavenrit" die uit de pas kan lopen met de server.
+   */
+  type Airport = { isTransfer: boolean; direction: "arrival" | "departure" | null };
   type Quote =
-    | { status: "idle" | "loading" | "onrequest" | "error" }
-    | { status: "ready"; amount: string; note: string; isAirport: boolean };
+    | { status: "idle" | "loading" | "error"; airport?: Airport }
+    | { status: "onrequest"; airport: Airport }
+    | { status: "ready"; amount: string; note: string; airport: Airport };
   const [quote, setQuote] = useState<Quote>({ status: "idle" });
   const [flightNumber, setFlightNumber] = useState("");
 
-  // Het vluchtnummerveld verschijnt zodra de engine bevestigt dat dit een
-  // luchthavenrit is. We vragen er dus nooit naar bij een rit waar het niet toe doet.
-  const needsFlight = quote.status === "ready" && quote.isAirport;
+  // Het vluchtnummerveld verschijnt zodra de engine zegt dat één zijde een
+  // luchthaven is — ook bij "offerte op aanvraag". Ritten vanaf Schiphol hebben nog
+  // geen vaste route, maar de aankomst moet wél gevolgd kunnen worden.
+  const airport = quote.airport;
+  const needsFlight = Boolean(airport?.isTransfer);
+  const isArrival = airport?.direction === "arrival";
 
   useEffect(() => {
     if (!pickup || !dropoff) {
@@ -158,10 +170,20 @@ export default function BookingSection() {
             status: "ready",
             amount: `€${data.price}`,
             note: data.returnApplied ? "Retour — vaste prijs vooraf" : "Vaste prijs vooraf",
-            isAirport: Boolean(data.isAirportTransfer),
+            airport: {
+              isTransfer: Boolean(data.isAirportTransfer),
+              direction: data.flightDirection ?? null,
+            },
           });
         } else {
-          setQuote({ status: "onrequest" });
+          // Ook zonder vaste prijs geeft de API de luchthavencontext mee.
+          setQuote({
+            status: "onrequest",
+            airport: {
+              isTransfer: Boolean(data.isAirportTransfer),
+              direction: data.flightDirection ?? null,
+            },
+          });
         }
       } catch (err) {
         if ((err as Error)?.name === "AbortError") return;
@@ -317,7 +339,8 @@ export default function BookingSection() {
           {needsFlight && (
             <div className="sm:col-span-2">
               <label htmlFor="f-flight" className={labelCls}>
-                Vluchtnummer <span className="text-accent">— verplicht bij luchthavenritten</span>
+                {isArrival ? "Aankomend vluchtnummer" : "Vertrekkend vluchtnummer"}{" "}
+                <span className="text-accent">— verplicht</span>
               </label>
               <input
                 id="f-flight"
@@ -333,10 +356,38 @@ export default function BookingSection() {
                 className={inputCls}
               />
               <p id="f-flight-help" className="mt-1.5 text-[12px] text-secondary">
-                Wij volgen uw vluchtstatus en passen het ophaalmoment aan wanneer uw vlucht
-                vertraagd is. Na de landing is 60 minuten wachttijd inbegrepen voor
-                grenscontrole en bagage.
+                {isArrival
+                  ? "Wij volgen uw vluchtstatus en passen het ophaalmoment aan wanneer uw vlucht vertraagd is."
+                  : "Wij gebruiken uw vluchtnummer om de rit op uw vertrektijd te plannen."}
               </p>
+
+              {/*
+                Airport Arrival Service — uitsluitend bij een OPHALING. De klant ziet
+                wat inbegrepen is, niet waaruit de kosten bestaan: geen parkeerbedrag
+                en geen aparte toeslagregel. Het prijsmodel is nog niet vastgesteld,
+                dus hier staan bewust geen bedragen.
+              */}
+              {isArrival && (
+                <div className="mt-3 rounded-field border border-line bg-fog px-4 py-3">
+                  <p className="text-xs font-bold text-ink">Inclusief Airport Arrival Service</p>
+                  <ul className="mt-2 flex flex-col gap-1.5 text-[12px] text-secondary">
+                    {[
+                      "Wij volgen uw vluchtstatus",
+                      "60 minuten wachttijd inbegrepen vanaf de geregistreerde landing",
+                      "Persoonlijke afstemming van de ophaallocatie",
+                    ].map((t) => (
+                      <li key={t} className="flex items-start gap-2">
+                        <Icon name="check" size={13} className="mt-0.5 shrink-0 text-accent" />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2.5 border-t border-line pt-2.5 text-[12px] text-secondary">
+                    Na de landing ontvangt u van ons via WhatsApp of telefoon de exacte
+                    ophaallocatie, met de naam van uw chauffeur en het voertuig.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -50,6 +50,11 @@ export type BookingEmailData = {
   luggage: string | null;
   /** Vluchtnummer bij luchthavenritten; stuurt de handmatige vluchtcontrole aan. */
   flightNumber: string | null;
+  /**
+   * arrival = ophalen ván een luchthaven, departure = brengen náár een luchthaven.
+   * Server-side afgeleid uit locations.location_type; de klant kiest dit niet.
+   */
+  flightDirection: "arrival" | "departure" | null;
   price: number | null;
   currency: string;
   quoteOnRequest: boolean;
@@ -164,7 +169,32 @@ function opsHtml(data: BookingEmailData): string {
       ${detailRow("Passagiers", String(data.persons))}
       ${detailRow("Bagage", data.luggage ? escapeHtml(data.luggage) : "—")}
       ${detailRow("Voertuig", data.vehicle ? escapeHtml(data.vehicle) : "—")}
-      ${data.flightNumber ? detailRow("Vlucht", `<b>${escapeHtml(data.flightNumber)}</b> — vluchtstatus volgen`) : ""}
+      ${
+        data.flightNumber
+          ? detailRow(
+              "Vlucht",
+              `<b>${escapeHtml(data.flightNumber)}</b>` +
+                (data.flightDirection === "arrival"
+                  ? " &middot; AANKOMST"
+                  : data.flightDirection === "departure"
+                    ? " &middot; vertrek"
+                    : "")
+            )
+          : ""
+      }
+      ${
+        // Operationele instructie, uitsluitend bij een ophaling. Er staat bewust GEEN
+        // live vluchtstatus in: er is nog geen koppeling met een vluchtdata-API, dus
+        // elke "status" hier zou verzonnen zijn. Dispatch controleert handmatig.
+        data.flightDirection === "arrival"
+          ? detailRow(
+              "Actie dispatch",
+              "<b>Controleer de aankomststatus van deze vlucht.</b> Wachttijd van 60 minuten " +
+                "start bij de geregistreerde landing. Stem de ophaallocatie persoonlijk af " +
+                "met de klant via WhatsApp of telefoon."
+            )
+          : ""
+      }
     </table>
     <h2 style="font-size:14px;margin:22px 0 4px;color:${INK};">Klantgegevens</h2>
     <table style="width:100%;border-collapse:collapse;border-top:1px solid rgba(31,39,48,0.10);">

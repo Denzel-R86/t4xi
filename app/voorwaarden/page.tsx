@@ -85,18 +85,48 @@ export default function VoorwaardenPage() {
 
       <h2 className={H2}>3 · Luchthavenritten en vluchtvertraging</h2>
       <p className={P}>
-        Bij ritten van of naar een luchthaven vragen wij uw vluchtnummer. Wij volgen uw
-        vluchtstatus en passen het ophaalmoment aan wanneer uw vlucht vertraagd is. U hoeft
-        ons daarvoor niet te bellen.
+        Bij ritten van of naar een luchthaven vragen wij uw vluchtnummer. Wij onderscheiden
+        twee situaties, omdat de afspraken verschillen:
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">
+        Ophalen ván een luchthaven (aankomende vlucht)
+      </h3>
+      <p className={P}>
+        Wij volgen uw vluchtstatus en passen het ophaalmoment aan wanneer uw vlucht
+        vertraagd is. U hoeft ons daarvoor niet te bellen.
       </p>
       <p className={P}>
-        Na de daadwerkelijke landing is 60 minuten wachttijd inbegrepen voor uitstappen,
-        grenscontrole en bagage. Extra wachttijd die niet door de vluchtvertraging wordt
-        veroorzaakt, stemmen wij vooraf met u af en kan apart in rekening worden gebracht.
+        <strong>Na de geregistreerde landingstijd is 60 minuten wachttijd inbegrepen</strong>{" "}
+        voor uitstappen, grenscontrole en bagage. Die termijn begint dus niet bij de geplande
+        aankomsttijd, maar bij het moment waarop uw toestel daadwerkelijk is geland. Extra
+        wachttijd die niet door de vluchtvertraging wordt veroorzaakt, stemmen wij vooraf met
+        u af en kan apart in rekening worden gebracht.
       </p>
       <p className={P}>
-        Geeft u geen of een onjuist vluchtnummer op, dan kunnen wij uw vlucht niet volgen
-        en geldt het oorspronkelijk afgesproken ophaalmoment.
+        De exacte ophaallocatie op de luchthaven stemmen wij na de landing persoonlijk met u
+        af, via WhatsApp of telefoon. Wij noemen die locatie bewust niet vooraf: luchthavens
+        wijzen op- en afstapplaatsen aan en kunnen die wijzigen, en wij willen u geen plek
+        toezeggen die op het moment van aankomst niet meer klopt.
+      </p>
+      <p className={P}>
+        Wij baseren ons op vluchtinformatie van externe bronnen. Die informatie kan wijzigen,
+        onvolledig zijn of met vertraging beschikbaar komen. Wij spannen ons in om de
+        aankomst juist te volgen, maar kunnen de juistheid van gegevens van derden niet
+        garanderen. Merkt u dat de gegevens niet kloppen, neem dan contact met ons op.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">
+        Brengen náár een luchthaven (vertrekkende vlucht)
+      </h3>
+      <p className={P}>
+        Wij gebruiken uw vluchtnummer om de rit op uw vertrektijd te plannen. Voor een rit
+        náár een luchthaven geldt geen inbegrepen wachttijd: die is bedoeld voor aankomsten.
+      </p>
+
+      <p className={P}>
+        Geeft u geen of een onjuist vluchtnummer op, dan kunnen wij uw vlucht niet volgen en
+        geldt het oorspronkelijk afgesproken ophaalmoment.
       </p>
 
       <h2 className={H2}>4 · Voertuig en capaciteit</h2>

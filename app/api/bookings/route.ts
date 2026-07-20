@@ -180,22 +180,34 @@ export async function POST(request: Request) {
   // unknown_location / route_not_fixed / data_unavailable → lead vastleggen als
   // "Offerte op aanvraag" (prijs null). We verliezen de klant niet.
 
-  // 3b. Vluchtnummer — verplicht bij luchthavenritten.
+  // 3b. Vluchtnummer — verplicht zodra één zijde een luchthaven is.
   //
   // T4XI belooft de vluchtstatus te volgen en het ophaalmoment aan te passen bij
   // vertraging. Die belofte wordt handmatig uitgevoerd en is zonder vluchtnummer
-  // onuitvoerbaar. Daarom is het veld hier verplicht — niet als formaliteit, maar
-  // omdat de dienst er anders niet geleverd kan worden.
+  // onuitvoerbaar. Het veld is hier dus geen formaliteit: zonder nummer kan de
+  // dienst niet geleverd worden.
   //
-  // Alleen afdwingen als we de route kennen: bij "offerte op aanvraag" weten we niet
-  // of het een luchthavenrit is, en dan blokkeren we de lead niet.
-  const isAirport = quote.available && quote.isAirportTransfer;
-  if (isAirport && flightNumber === "") {
-    return bad("Vluchtnummer is verplicht bij ritten van of naar een luchthaven.");
+  // OOK bij "offerte op aanvraag". Ritten vanaf Schiphol hebben nog geen vaste
+  // route, dus `quote.available` is false — maar het blijft een luchthavenrit.
+  // De luchthavencontext komt daarom uit de service en niet uit `available`.
+  //
+  // De richting wordt server-side afgeleid en nooit door de klant gekozen:
+  // luchthaven als vertrek → arrival, luchthaven als bestemming → departure.
+  const airport = quote.airport;
+  if (airport.isAirportTransfer && flightNumber === "") {
+    return bad(
+      airport.isAirportPickup
+        ? "Vul uw aankomende vluchtnummer in — daarmee volgen wij uw vlucht en passen wij het ophaalmoment aan."
+        : "Vul uw vertrekkende vluchtnummer in, zodat wij de rit daarop kunnen plannen."
+    );
   }
   if (flightNumber !== "" && !/^[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?$/.test(flightNumber)) {
     return bad("Vluchtnummer lijkt niet te kloppen. Bijvoorbeeld: KL1234.");
   }
+  // Een vluchtnummer zonder luchthaven aan een van beide zijden slaat nergens op;
+  // we slaan het dan niet op in plaats van het stilzwijgend te bewaren.
+  const flightDirection = airport.isAirportTransfer ? airport.flightDirection : null;
+  const flightNumberToStore = airport.isAirportTransfer ? flightNumber : "";
 
   // 4. Schrijven via service-role RPC
   const supabase = serviceRoleClient();
@@ -224,7 +236,8 @@ export async function POST(request: Request) {
     p_from_lon: coord(body.fromLon),
     p_to_lat: coord(body.toLat),
     p_to_lon: coord(body.toLon),
-    p_flight_number: flightNumber || null,
+    p_flight_number: flightNumberToStore || null,
+    p_flight_direction: flightDirection,
   });
 
   if (error) {
@@ -260,7 +273,8 @@ export async function POST(request: Request) {
       vehicle: vehicle || null,
       persons,
       luggage: luggage || null,
-      flightNumber: flightNumber || null,
+      flightNumber: flightNumberToStore || null,
+      flightDirection,
       price: priceEuros,
       currency,
       quoteOnRequest,

@@ -124,17 +124,36 @@ export async function POST(request: Request) {
         estimatedDurationMin: result.estimatedDurationMin,
         vatRate: result.vatRate,
         source: result.source,
-        // Stuurt het vluchtnummerveld in de boekingsflow aan: bij luchthavenritten
-        // is dat verplicht, omdat wij anders de vluchtstatus niet kunnen volgen.
-        isAirportTransfer: result.isAirportTransfer,
+        // Luchthavencontext uit de service — de enige plek waar richting wordt
+        // bepaald. Het formulier leidt hier niets zelf uit af.
+        isAirportTransfer: result.airport.isAirportTransfer,
+        pickupIsAirport: result.airport.pickupIsAirport,
+        dropoffIsAirport: result.airport.dropoffIsAirport,
+        isAirportPickup: result.airport.isAirportPickup,
+        isAirportDropoff: result.airport.isAirportDropoff,
+        flightDirection: result.airport.flightDirection,
       },
       { status: 200 }
     );
   }
 
-  // Niet beschikbaar → publiek contract: alleen available + message (geen interne reason).
+  // Niet beschikbaar → publiek contract: geen interne `reason` naar buiten.
+  //
+  // De luchthavencontext gaat WEL mee. Een rit vanaf Schiphol zonder vaste route
+  // krijgt "offerte op aanvraag", maar blijft een luchthavenrit: het formulier moet
+  // het vluchtnummerveld tonen, anders kan de aankomst niet gevolgd worden en is de
+  // belofte over wachttijd niet waar te maken.
   return NextResponse.json(
-    { available: false, message: result.message },
+    {
+      available: false,
+      message: result.message,
+      isAirportTransfer: result.airport.isAirportTransfer,
+      pickupIsAirport: result.airport.pickupIsAirport,
+      dropoffIsAirport: result.airport.dropoffIsAirport,
+      isAirportPickup: result.airport.isAirportPickup,
+      isAirportDropoff: result.airport.isAirportDropoff,
+      flightDirection: result.airport.flightDirection,
+    },
     { status: statusForReason(result.reason) }
   );
 }

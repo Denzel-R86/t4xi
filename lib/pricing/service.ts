@@ -51,6 +51,63 @@ export type UnavailableReason =
   | "capacity_exceeded"
   | "data_unavailable";
 
+/** Richting van de vlucht bij een luchthavenrit. */
+export type FlightDirection = "arrival" | "departure";
+
+/**
+ * Luchthavencontext van een rit — DE ENIGE plek waar richting wordt bepaald.
+ *
+ * De quote-API, het boekingsformulier en de booking-route lezen allemaal dit
+ * object. Geen van drieën leidt zelf iets af uit slugs of adresteksten; dan
+ * ontstaan er drie definities die stilzwijgend uit elkaar lopen.
+ *
+ * Afgeleid van `locations.location_type`, niet van de slug — een naamconventie
+ * is geen contract.
+ */
+export type AirportContext = {
+  pickupIsAirport: boolean;
+  dropoffIsAirport: boolean;
+  /** Ophalen ván een luchthaven: aankomende vlucht, wachttijd vanaf de landing. */
+  isAirportPickup: boolean;
+  /** Brengen náár een luchthaven: vertrekkende vlucht. */
+  isAirportDropoff: boolean;
+  /** Eén van beide zijden is een luchthaven → vluchtnummer verplicht. */
+  isAirportTransfer: boolean;
+  /**
+   * arrival wint van departure wanneer beide zijden een luchthaven zijn: bij een
+   * transfer tussen luchthavens is de ophaling het operationeel bepalende deel,
+   * want daar staat de chauffeur te wachten.
+   */
+  flightDirection: FlightDirection | null;
+};
+
+/** Geen luchthaven aan beide zijden — ook gebruikt als de locaties onbekend zijn. */
+export const NO_AIRPORT: AirportContext = {
+  pickupIsAirport: false,
+  dropoffIsAirport: false,
+  isAirportPickup: false,
+  isAirportDropoff: false,
+  isAirportTransfer: false,
+  flightDirection: null,
+};
+
+/** Bepaalt de luchthavencontext uit twee (mogelijk onbekende) locaties. */
+export function airportContext(
+  pickup: { location_type: string | null } | null,
+  dropoff: { location_type: string | null } | null
+): AirportContext {
+  const pickupIsAirport = pickup?.location_type === "airport";
+  const dropoffIsAirport = dropoff?.location_type === "airport";
+  return {
+    pickupIsAirport,
+    dropoffIsAirport,
+    isAirportPickup: pickupIsAirport,
+    isAirportDropoff: dropoffIsAirport,
+    isAirportTransfer: pickupIsAirport || dropoffIsAirport,
+    flightDirection: pickupIsAirport ? "arrival" : dropoffIsAirport ? "departure" : null,
+  };
+}
+
 export type PricingQuoteResult =
   | {
       available: true;
@@ -66,13 +123,9 @@ export type PricingQuoteResult =
       estimatedDurationMin: number;
       vehicleClass: string;
       route: { pickupSlug: string; dropoffSlug: string; label: string | null };
-      /**
-       * True als herkomst of bestemming een luchthaven is. Stuurt twee dingen aan:
-       * het vluchtnummerveld in de boekingsflow (verplicht bij luchthavenritten) en
-       * de zichtbaarheid van het wachttijdbeleid. Afgeleid van locations.location_type,
-       * niet van de slug — een naamconventie is geen contract.
-       */
+      /** @deprecated gebruik `airport.isAirportTransfer` — blijft voor bestaande callers. */
       isAirportTransfer: boolean;
+      airport: AirportContext;
       dataSource: "supabase";
     }
   | {
@@ -80,6 +133,12 @@ export type PricingQuoteResult =
       reason: UnavailableReason;
       /** klantzichtbare tekst — v1: altijd "Offerte op aanvraag" */
       message: string;
+      /**
+       * OOK bij een onbeschikbare offerte gevuld zodra de locaties herkend zijn.
+       * Een rit vanaf Schiphol zonder vaste route is nog steeds een luchthavenrit:
+       * het vluchtnummer blijft verplicht, anders kan de aankomst niet gevolgd worden.
+       */
+      airport: AirportContext;
     };
 
 type LocationRow = Pick<Tables<"locations">, "id" | "slug" | "name" | "active" | "location_type">;
@@ -112,8 +171,11 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function unavailable(reason: UnavailableReason): PricingQuoteResult {
-  return { available: false, reason, message: QUOTE_ON_REQUEST_MESSAGE };
+function unavailable(
+  reason: UnavailableReason,
+  airport: AirportContext = NO_AIRPORT
+): PricingQuoteResult {
+  return { available: false, reason, message: QUOTE_ON_REQUEST_MESSAGE, airport };
 }
 
 // ── Publieke service ─────────────────────────────────────────────────────────
@@ -159,11 +221,16 @@ async function resolveQuote(
   if (!pickup || !dropoff) return unavailable("unknown_location");
   if (!vehicleClass) return unavailable("unknown_location");
 
+  // Vanaf hier zijn beide locaties bekend, dus kennen we de luchthavencontext —
+  // ook als er straks geen vaste route blijkt te bestaan. Een rit vanaf Schiphol
+  // zonder tarief blijft een luchthavenrit met vluchtnummerplicht.
+  const airport = airportContext(pickup, dropoff);
+
   // Capaciteitscontrole (zacht): past de vraag binnen de klasse?
   const passengers = input.passengers ?? 1;
   const luggage = input.luggage ?? 0;
   if (passengers > vehicleClass.max_passengers || luggage > vehicleClass.max_luggage) {
-    return unavailable("capacity_exceeded");
+    return unavailable("capacity_exceeded", airport);
   }
 
   // 1. Vaste route = bron van waarheid
@@ -171,7 +238,7 @@ async function resolveQuote(
   try {
     fixed = await findFixedRoute(supabase, pickup.id, dropoff.id, vehicleClass.id);
   } catch {
-    return unavailable("data_unavailable");
+    return unavailable("data_unavailable", airport);
   }
 
   if (fixed) {
@@ -197,8 +264,8 @@ async function resolveQuote(
         dropoffSlug: dropoff.slug,
         label: fixed.source_label,
       },
-      isAirportTransfer:
-        pickup.location_type === "airport" || dropoff.location_type === "airport",
+      isAirportTransfer: airport.isAirportTransfer,
+      airport,
       dataSource: "supabase",
     };
   }
@@ -209,7 +276,7 @@ async function resolveQuote(
     return ruleBased;
   }
 
-  return unavailable("route_not_fixed");
+  return unavailable("route_not_fixed", airport);
 }
 
 // ── Locatie-/klasse-resolutie ────────────────────────────────────────────────
