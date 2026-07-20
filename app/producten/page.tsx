@@ -84,7 +84,7 @@ const EVENTS = [
   },
   {
     icon: "plane", name: "Congres & Conference",
-    desc: "Sprekers en internationale gasten ophalen van Schiphol en brengen naar de locatie. Naambordje, vluchttijd tracking, altijd op tijd.",
+    desc: "Sprekers en internationale gasten ophalen van Schiphol en brengen naar de locatie. Naambordje bij aankomst en wij volgen de vluchtstatus.",
     details: [
       { icon: "plane", text: "Vluchtmonitoring inbegrepen" },
       { icon: "id-badge", text: "Naambordje ophaal op Schiphol" },

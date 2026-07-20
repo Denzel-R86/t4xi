@@ -23,7 +23,7 @@ const DIENSTEN = [
     icon: "user",
     title: "Privéritten",
     text: "Naar een diner, evenement of afspraak. Stijlvol vervoer voor elke gelegenheid.",
-    features: ["Directe boeking", "Binnen 60 min.", "Transparante prijs"],
+    features: ["Directe boeking", "Vaste prijs vooraf", "Transparante prijs"],
     cta: "Nu boeken",
     href: "/boeken",
   },

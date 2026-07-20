@@ -12,10 +12,10 @@ export const metadata: Metadata = {
 
 const FEATURES = [
   { icon: "lock", text: "Vaste prijs vooraf — geen taxameter" },
-  { icon: "shield-check", text: "VOG-gescreende chauffeurs" },
-  { icon: "clock", text: "Bevestiging binnen 5 minuten" },
+  { icon: "shield-check", text: "Geldige Nederlandse taxichauffeurskaart" },
+  { icon: "clock", text: "Bevestiging via WhatsApp of e-mail" },
   { icon: "credit-card", text: "iDEAL, pin of contant" },
-  { icon: "plane", text: "Vluchttijden worden gemonitord" },
+  { icon: "plane", text: "Wij volgen uw vluchtstatus bij vertraging" },
 ];
 
 export default function BoekenPage() {
@@ -32,7 +32,7 @@ export default function BoekenPage() {
           <span className="italic text-stone">rit nu</span>
         </h1>
         <p className="mt-4 max-w-md text-secondary">
-          Vaste prijs, bevestiging binnen 5 min. Geen verrassingen.
+          Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.
         </p>
         <ul className="mt-8 flex flex-col gap-4">
           {FEATURES.map((f) => (

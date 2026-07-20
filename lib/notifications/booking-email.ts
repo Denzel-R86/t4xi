@@ -48,6 +48,8 @@ export type BookingEmailData = {
   vehicle: string | null;
   persons: number;
   luggage: string | null;
+  /** Vluchtnummer bij luchthavenritten; stuurt de handmatige vluchtcontrole aan. */
+  flightNumber: string | null;
   price: number | null;
   currency: string;
   quoteOnRequest: boolean;
@@ -162,6 +164,7 @@ function opsHtml(data: BookingEmailData): string {
       ${detailRow("Passagiers", String(data.persons))}
       ${detailRow("Bagage", data.luggage ? escapeHtml(data.luggage) : "—")}
       ${detailRow("Voertuig", data.vehicle ? escapeHtml(data.vehicle) : "—")}
+      ${data.flightNumber ? detailRow("Vlucht", `<b>${escapeHtml(data.flightNumber)}</b> — vluchtstatus volgen`) : ""}
     </table>
     <h2 style="font-size:14px;margin:22px 0 4px;color:${INK};">Klantgegevens</h2>
     <table style="width:100%;border-collapse:collapse;border-top:1px solid rgba(31,39,48,0.10);">

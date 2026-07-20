@@ -124,6 +124,9 @@ export async function POST(request: Request) {
         estimatedDurationMin: result.estimatedDurationMin,
         vatRate: result.vatRate,
         source: result.source,
+        // Stuurt het vluchtnummerveld in de boekingsflow aan: bij luchthavenritten
+        // is dat verplicht, omdat wij anders de vluchtstatus niet kunnen volgen.
+        isAirportTransfer: result.isAirportTransfer,
       },
       { status: 200 }
     );

@@ -2,9 +2,9 @@ import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
 const USPS = [
-  { icon: "clock", nr: "01", title: "Altijd op tijd", text: "Wij monitoren uw vlucht en zijn er — of u nu vroeg aankomt of vertraagd bent. Geen wachttijden, geen stress." },
+  { icon: "clock", nr: "01", title: "Wij volgen uw vlucht", text: "Vertraagd? Wij volgen uw vluchtstatus en passen het ophaalmoment aan. Na de landing is 60 minuten wachttijd inbegrepen." },
   { icon: "car", nr: "02", title: "Luxe voertuigen", text: "Tesla Model Y en Lynk & Co 01. Geen standaard taxi — premium comfort voor elke rit." },
-  { icon: "shield-check", nr: "03", title: "Professionele chauffeurs", text: "VOG-gescreend, TCA-gecertificeerd en opgeleid in gastvrijheid. Discreet en betrouwbaar." },
+  { icon: "shield-check", nr: "03", title: "Professionele chauffeurs", text: "Uw chauffeur beschikt over een geldige Nederlandse taxichauffeurskaart. Discreet, ervaren en representatief." },
   { icon: "coin", nr: "04", title: "Transparante tarieven", text: "Vaste prijs vóór de rit. Geen taxameter, bagage vooraf zichtbaar afgestemd, geen verborgen kosten." },
 ];
 

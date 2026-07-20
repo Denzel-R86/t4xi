@@ -4,37 +4,58 @@ import Link from "next/link";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import FaqList from "@/components/sections/FaqList";
-import QuickBookCard from "@/components/seo/QuickBookCard";
+import RateTable from "@/components/seo/RateTable";
 import { STEDEN } from "@/lib/seo-steden";
+import { loadRateCard } from "@/lib/pricing/rate-card";
 
-/** SEO-landingspagina's (taxi-<stad>-schiphol) — template uit de v14-bron. */
+/**
+ * SEO-landingspagina's (taxi-<stad>-schiphol).
+ *
+ * PRIJZEN KOMEN UIT DE ENGINE, NOOIT UIT DE CONTENT. Tot 2026-07-20 stonden hier
+ * hardgecodeerde bedragen die niet meer klopten: de Utrecht-pagina beloofde €79
+ * terwijl de quote €110 rekende. Deze pagina leest nu `loadRateCard()` — dezelfde
+ * bron als /tarieven en /api/pricing/quote.
+ *
+ * Bewust dynamisch, net als /tarieven: bij statische generatie zou een prijswijziging
+ * pas bij de volgende build zichtbaar worden, en dan loopt de landingspagina opnieuw
+ * achter op de boekingsprijs.
+ */
 
-export const dynamicParams = false;
+export const dynamic = "force-dynamic";
 
-export function generateStaticParams() {
-  return STEDEN.map((s) => ({ slug: s.slug }));
-}
+// Bewust GEEN generateStaticParams/dynamicParams. In combinatie daarmee prerendert
+// Next deze route alsnog (zichtbaar als ● in de build-output) en worden de prijzen
+// bij build-tijd ingebakken — precies de veroudering die we hier oplossen.
+// Onbekende slugs worden hieronder afgevangen met notFound().
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const stad = STEDEN.find((s) => s.slug === params.slug);
   if (!stad) return {};
   return {
-    title: `Taxi ${stad.naam} Schiphol — Vaste Prijs ${stad.prijs}`,
+    // Geen bedrag in de title: twee van de vijf steden hebben geen stadsbrede prijs,
+    // en een titel die veroudert is precies het probleem dat we hier oplossen.
+    title: `Taxi ${stad.naam} → Schiphol — vaste prijs vooraf`,
     description: stad.metaDescription,
     alternates: { canonical: `/${stad.slug}` },
   };
 }
 
 const USPS = [
-  { icon: "lock", title: "Vaste prijs", text: "Geen taxameter, geen surge pricing, ook niet bij files of nacht." },
-  { icon: "plane", title: "Vluchtmonitoring", text: "Geef je vluchtnummer op — wij passen de ophaaltijd automatisch aan bij vertraging." },
-  { icon: "leaf", title: "Volledig elektrisch", text: "Tesla Model Y — 0 uitstoot, ruim bagageruim, premium interieur." },
-  { icon: "clock", title: "24/7 beschikbaar", text: "Vroege vluchten, late aankomsten, last-minute boekingen — wij rijden altijd." },
+  { icon: "lock", title: "Vaste prijs", text: "Vooraf bekend en inclusief btw. Geen taxameter, geen surge pricing — ook niet bij file of 's nachts." },
+  { icon: "plane", title: "Wij volgen uw vlucht", text: "Geef uw vluchtnummer op; wij passen het ophaalmoment aan bij vertraging. Na de landing is 60 minuten wachttijd inbegrepen." },
+  { icon: "leaf", title: "Volledig elektrisch", text: "Tesla Model Y — geen uitstoot, ruime bagageruimte, premium interieur." },
+  { icon: "clock", title: "24/7 beschikbaar", text: "Vroege vluchten, late aankomsten en last-minute ritten. Wij rijden dag en nacht." },
 ];
 
-export default function SeoLandingPage({ params }: { params: { slug: string } }) {
+export default async function SeoLandingPage({ params }: { params: { slug: string } }) {
   const stad = STEDEN.find((s) => s.slug === params.slug);
   if (!stad) notFound();
+
+  // Live tarieven voor deze stad. Levert de engine niets, dan tonen we geen enkel
+  // bedrag — liever geen prijs dan een verkeerde.
+  const rateCard = await loadRateCard();
+  const cityRates = rateCard.find((c) => c.citySlug === stad.citySlug) ?? null;
+  const schipholRates = cityRates?.toSchiphol ?? [];
 
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -67,15 +88,11 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
               <br />
               <span className="italic text-stone">naar Schiphol</span>
             </h1>
-            <p className="mt-6 max-w-[480px] text-secondary">
-              {stad.intro.split(stad.prijs)[0]}
-              <strong className="text-ink">{stad.prijs}</strong>
-              {stad.intro.split(stad.prijs)[1]}
-            </p>
+            <p className="mt-6 max-w-[480px] text-secondary">{stad.intro}</p>
             <ul className="mt-7 flex flex-col gap-2.5">
               {[
-                "Ophaal bij jouw voordeur",
-                "Vluchttijden worden gemonitord",
+                "Ophaal bij uw voordeur",
+                "Wij volgen uw vluchtstatus bij vertraging",
                 "Tesla Model Y — volledig elektrisch",
                 "Maximaal 4 passagiers excl. chauffeur · bagage vooraf afgestemd",
               ].map((t) => (
@@ -106,7 +123,7 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
             </p>
           </div>
 
-          <QuickBookCard stad={stad} />
+          <RateTable stad={stad} rates={schipholRates} />
         </div>
       </section>
 
@@ -119,9 +136,7 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
                 <Icon name={u.icon} size={20} />
               </span>
               <h2 className="mt-3 font-display text-base font-semibold text-ink">{u.title}</h2>
-              <p className="mt-1.5 text-sm leading-relaxed text-secondary">
-                {u.title === "Vaste prijs" ? `Altijd ${stad.prijs} — geen taxameter, geen surge pricing, ook niet bij files of nacht.` : u.text}
-              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-secondary">{u.text}</p>
             </div>
           ))}
         </div>
@@ -204,11 +219,11 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
         <div className="mx-auto max-w-site px-6">
           <p className="text-eyebrow font-medium uppercase text-stone">Klaar om te boeken?</p>
           <h2 className="mt-4 font-display text-display-lg font-bold text-fog">
-            <span className="italic text-stone-subtle">{stad.naam} → Schiphol</span> voor {stad.prijs}
+            <span className="italic text-stone-subtle">{stad.naam} → Schiphol</span> met vaste prijs
           </h2>
           <p className="mx-auto mt-4 max-w-[480px] text-stone-subtle">
-            Reserveer nu en rijd zonder stress naar Schiphol. Bevestiging binnen
-            5 minuten.
+            Vul uw adres in en u ziet direct wat de rit kost. Die prijs staat vast bij
+            bevestiging — ook als het verkeer tegenzit.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
@@ -216,7 +231,7 @@ export default function SeoLandingPage({ params }: { params: { slug: string } })
               className="inline-flex min-h-[52px] items-center gap-2 rounded-md bg-fog px-8 font-display text-base font-medium text-ink transition-transform hover:-translate-y-0.5"
             >
               <Icon name="calendar-check" size={18} />
-              Nu boeken — {stad.prijs}
+              Bereken uw prijs
             </Link>
             <a
               href={`https://wa.me/31634744522?text=${encodeURIComponent(`Hallo T4XI, ik wil een taxi van ${stad.naam} naar Schiphol boeken.`)}`}

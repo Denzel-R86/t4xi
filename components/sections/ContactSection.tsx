@@ -57,7 +57,7 @@ export default function ContactSection() {
           <Icon name="whatsapp" size={22} />
           Direct WhatsApp-en
         </a>
-        <p className="mt-3.5 text-[13px] text-white/30">Reactietijd: onder 5 minuten</p>
+        <p className="mt-3.5 text-[13px] text-white/30">Dag en nacht bereikbaar</p>
       </div>
     </section>
   );

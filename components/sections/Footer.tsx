@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Icon from "@/components/ui/Icon";
 import Wordmark from "@/components/ui/Wordmark";
+import { BEDRIJF } from "@/lib/legal";
 
 const socials = [
   { href: "https://wa.me/31634744522", label: "WhatsApp T4XI", icon: "whatsapp", external: true },
@@ -33,9 +34,13 @@ export default function Footer() {
                 </a>
               ))}
             </div>
-            <p className="mt-5 flex items-center gap-2 text-sm text-stone-subtle" aria-label="Google beoordeling">
-              <span className="tracking-[2px] text-stone-subtle">★★★★★</span>
-              4.9 — 127 reviews
+            {/*
+              Beoordelingscijfer verwijderd (Sprint 11, Fase 0): er is geen verifieerbare
+              bron voor "4.9 — 127 reviews". Komt terug zodra een Google-reviewkoppeling
+              bestaat. Zie components/sections/ReviewsSection.tsx.
+            */}
+            <p className="mt-5 text-sm text-stone-subtle">
+              Vaste prijs vooraf — geen taxameter, geen surge pricing.
             </p>
           </div>
 
@@ -57,7 +62,8 @@ export default function Footer() {
               <li><Link href="/#vloot" className="text-stone-subtle hover:text-white">Ons wagenpark</Link></li>
               <li><Link href="/diensten" className="text-stone-subtle hover:text-white">Voor bedrijven</Link></li>
               <li><Link href="/partner" className="text-stone-subtle hover:text-white">Partner worden</Link></li>
-              <li><Link href="/klant" className="text-stone-subtle hover:text-white">Mijn account</Link></li>
+              {/* "Mijn account" verwijderd: /klant is afgesloten tot er echte
+                  authenticatie is (Sprint 11, Fase 0 — zie middleware.ts). */}
               <li><Link href="/tarieven" className="text-stone-subtle hover:text-white">Tarieven</Link></li>
               <li><Link href="/over-ons" className="text-stone-subtle hover:text-white">Over ons</Link></li>
               <li><Link href="/boeken" className="text-stone-subtle hover:text-white">Boek een rit</Link></li>
@@ -95,10 +101,17 @@ export default function Footer() {
           </div>
         </div>
 
-        <p className="mt-14 border-t border-white/10 pt-6 text-xs text-stone">
-          © {new Date().getFullYear()} T4XI.nl — Alle rechten voorbehouden ·
-          Onderdeel van Noir Driving Services
-        </p>
+        <div className="mt-14 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-stone sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {new Date().getFullYear()} T4XI.nl — Alle rechten voorbehouden ·
+            Onderdeel van {BEDRIJF.rechtspersoon} · KvK {BEDRIJF.kvk}
+            {BEDRIJF.btw ? ` · Btw ${BEDRIJF.btw}` : ""}
+          </p>
+          <nav aria-label="Juridisch" className="flex gap-4">
+            <Link href="/privacy" className="hover:text-white">Privacyverklaring</Link>
+            <Link href="/voorwaarden" className="hover:text-white">Algemene voorwaarden</Link>
+          </nav>
+        </div>
       </div>
     </footer>
   );

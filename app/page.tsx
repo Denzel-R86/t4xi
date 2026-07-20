@@ -14,6 +14,7 @@ import {
   Dash,
   type LedgerEntry,
 } from "@/components/horizon/patterns";
+import { loadRateCard, type CityRates } from "@/lib/pricing/rate-card";
 
 /**
  * Homepage — eerste uitspraak in de Horizon Design Language (v1).
@@ -42,18 +43,47 @@ const VOWS = [
   },
   {
     title: "Gemakkelijk boeken.",
-    text: "Adres invullen, prijs bekijken en direct bevestigen via WhatsApp of e-mail. Bevestiging binnen vijf minuten.",
+    text: "Adres invullen, prijs bekijken en boeken. Wij bevestigen uw rit via WhatsApp of e-mail.",
   },
 ];
 
-const LEDGER: LedgerEntry[] = [
-  { phrase: "Almere Poort naar Schiphol", detail: "39 km · 40 min", fact: 102, factNote: "vast", href: "/boeken" },
-  { phrase: "Amsterdam Centrum naar Schiphol", detail: "14 km · 25 min", fact: 57, factNote: "vast", href: "/boeken" },
-  { phrase: "Amsterdam Zuidas naar Schiphol", detail: "10 km · 15 min", fact: 50, factNote: "vast", href: "/boeken" },
-  { phrase: "Den Haag naar Schiphol", detail: "43 km · 45 min", fact: 107, factNote: "vast", href: "/boeken" },
-  { phrase: "Rotterdam naar Schiphol", detail: "80 km · 50 min", fact: 119, factNote: "vast", href: "/boeken" },
-  { phrase: "Utrecht Centrum naar Schiphol", detail: "44 km · 40 min", fact: 110, factNote: "vast", href: "/boeken" },
+/**
+ * Welke routes het grootboek toont — een redactionele keuze, één per vertrekstad.
+ *
+ * Alleen de SELECTIE staat hier vast. Prijs en afstand komen uit `loadRateCard()`,
+ * dezelfde bron als /tarieven, de landingspagina's en de quote-engine. Verdwijnt een
+ * route uit de catalogus, dan valt hij hier vanzelf weg.
+ *
+ * Vóór 2026-07-20 stonden hier hardgecodeerde bedragen én afstanden. De prijzen
+ * klopten toevallig nog, maar de afstanden niet meer: Amsterdam Centrum stond op
+ * 14 km waar het er 26 zijn, Rotterdam op 80 waar het er 61 zijn. Precies dezelfde
+ * veroudering als op de landingspagina's, alleen op de drukst bezochte pagina.
+ */
+const LEDGER_SELECTIE: { citySlug: string; from: string }[] = [
+  { citySlug: "amsterdam", from: "Amsterdam Zuidas" },
+  { citySlug: "amsterdam", from: "Amsterdam Centrum" },
+  { citySlug: "almere", from: "Almere Poort" },
+  { citySlug: "den-haag", from: "Den Haag" },
+  { citySlug: "utrecht", from: "Utrecht Centrum" },
+  { citySlug: "rotterdam", from: "Rotterdam" },
 ];
+
+function buildLedger(cities: CityRates[]): LedgerEntry[] {
+  return LEDGER_SELECTIE.flatMap(({ citySlug, from }) => {
+    const stad = cities.find((c) => c.citySlug === citySlug);
+    const route = stad?.toSchiphol.find((r) => r.from === from);
+    if (!route) return [];
+    return [
+      {
+        phrase: `${route.from} naar ${route.to}`,
+        detail: `${route.distanceKm} km`,
+        fact: route.single,
+        factNote: "vast",
+        href: "/boeken",
+      },
+    ];
+  });
+}
 
 const PATHS = [
   { label: "Diensten", href: "/diensten" },
@@ -64,7 +94,12 @@ const PATHS = [
   { label: "Partner worden", href: "/partner" },
 ];
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  // Live tarieven — één bron van waarheid met /tarieven en de quote-engine.
+  const ledger = buildLedger(await loadRateCard());
+
   return (
     <>
       <HorizonSpine />
@@ -91,8 +126,8 @@ export default function HomePage() {
         below={
           <Reveal delay={3}>
             <Stamp>
-              24/7 beschikbaar<Dash />VOG-gescreende chauffeurs<Dash />100% elektrisch<Dash />
-              <b className="font-semibold text-ink">bevestiging binnen 5 minuten</b>
+              24/7 beschikbaar<Dash />geldige taxichauffeurskaart<Dash />100% elektrisch<Dash />
+              <b className="font-semibold text-ink">vaste prijs vooraf</b>
             </Stamp>
           </Reveal>
         }
@@ -133,7 +168,7 @@ export default function HomePage() {
         below={
           <Reveal>
             <LedgerPattern
-              entries={LEDGER}
+              entries={ledger}
               closing={
                 <Stamp>
                   <Link href="/tarieven" className="hz-guide-line text-ink no-underline">
@@ -175,7 +210,7 @@ export default function HomePage() {
               specs={[
                 { k: "Aandrijving", v: "100% EV" },
                 { k: "Beschikbaar", v: "24 / 7" },
-                { k: "Chauffeurs", v: "VOG-gescreend" },
+                { k: "Chauffeurs", v: "Taxichauffeurskaart" },
                 { k: "Regio's", v: "AMS · RTM" },
               ]}
             />
@@ -190,18 +225,23 @@ export default function HomePage() {
 
       <Breath />
 
-      {/* ═══ PROOF — één geverifieerde stem, gegraveerd ═══ */}
+      {/* ═══ PROOF — uitsluitend wat aantoonbaar is ═══ */}
+      {/*
+        Klantcitaten en beoordelingscijfers zijn hier bewust verwijderd: er is geen
+        verifieerbare bron. Zie components/sections/ReviewsSection.tsx. Wat hier staat
+        is controleerbaar — de prijsbelofte, het luchthavenbeleid en het KvK-nummer.
+      */}
       <Viewport
         meaning="proof"
-        label="Bewijs — beoordelingen"
+        label="Bewijs — onze belofte"
         above={
           <ProofPattern
-            quote="Prachtige Tesla,"
-            accent="op de minuut stipt op Schiphol."
+            quote="De prijs die u ziet,"
+            accent="is de prijs die u betaalt."
             stamp={
               <Stamp>
-                Mark H.<Dash />geverifieerde rit naar Schiphol<Dash />
-                <b className="font-semibold text-ink">★ 4,9 van 5 — 127 beoordelingen</b>
+                Vaste prijs vooraf<Dash />file en wachttijd zijn ons risico<Dash />
+                <b className="font-semibold text-ink">geen taxameter, geen surge pricing</b>
               </Stamp>
             }
           />
@@ -209,8 +249,8 @@ export default function HomePage() {
         below={
           <Reveal>
             <Stamp>
-              VOG-gescreende chauffeurs<Dash />100% elektrisch<Dash />KVK 80673813<Dash />gratis annuleren tot 2 uur
-              voor vertrek
+              Geldige Nederlandse taxichauffeurskaart<Dash />100% elektrisch<Dash />KVK 80673813<Dash />
+              vluchtstatus wordt gevolgd bij luchthavenritten
             </Stamp>
           </Reveal>
         }
@@ -258,8 +298,8 @@ export default function HomePage() {
               ))}
             </p>
             <Stamp className="mt-8">
-              Bevestiging binnen 5 minuten<Dash />iDEAL, pin of contant<Dash />
-              <b className="font-semibold text-ink">gratis annuleren tot 2 uur voor vertrek</b>
+              Bevestiging via WhatsApp of e-mail<Dash />iDEAL, pin of contant<Dash />
+              <b className="font-semibold text-ink">vaste prijs, geen taxameter</b>
             </Stamp>
           </Reveal>
         }

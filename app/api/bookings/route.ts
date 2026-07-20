@@ -124,6 +124,10 @@ export async function POST(request: Request) {
   const vehicle = str(body.vehicle);
   const luggage = str(body.luggage);
   const rideType = str(body.rideType) || "direct";
+  // Vluchtnummer: normaliseren naar hoofdletters zonder scheidingstekens, zodat
+  // "kl 1234" en "KL-1234" dezelfde waarde opleveren. De RPC normaliseert nog een
+  // keer — de database is de laatste verdedigingslinie, niet de eerste.
+  const flightNumber = str(body.flightNumber).toUpperCase().replace(/[^A-Z0-9]/g, "");
 
   if (pickup.length < 3) return bad("Ophaaladres is verplicht (min. 3 tekens).");
   if (dropoff.length < 3) return bad("Bestemming is verplicht (min. 3 tekens).");
@@ -176,6 +180,23 @@ export async function POST(request: Request) {
   // unknown_location / route_not_fixed / data_unavailable → lead vastleggen als
   // "Offerte op aanvraag" (prijs null). We verliezen de klant niet.
 
+  // 3b. Vluchtnummer — verplicht bij luchthavenritten.
+  //
+  // T4XI belooft de vluchtstatus te volgen en het ophaalmoment aan te passen bij
+  // vertraging. Die belofte wordt handmatig uitgevoerd en is zonder vluchtnummer
+  // onuitvoerbaar. Daarom is het veld hier verplicht — niet als formaliteit, maar
+  // omdat de dienst er anders niet geleverd kan worden.
+  //
+  // Alleen afdwingen als we de route kennen: bij "offerte op aanvraag" weten we niet
+  // of het een luchthavenrit is, en dan blokkeren we de lead niet.
+  const isAirport = quote.available && quote.isAirportTransfer;
+  if (isAirport && flightNumber === "") {
+    return bad("Vluchtnummer is verplicht bij ritten van of naar een luchthaven.");
+  }
+  if (flightNumber !== "" && !/^[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?$/.test(flightNumber)) {
+    return bad("Vluchtnummer lijkt niet te kloppen. Bijvoorbeeld: KL1234.");
+  }
+
   // 4. Schrijven via service-role RPC
   const supabase = serviceRoleClient();
   if (!supabase) {
@@ -203,6 +224,7 @@ export async function POST(request: Request) {
     p_from_lon: coord(body.fromLon),
     p_to_lat: coord(body.toLat),
     p_to_lon: coord(body.toLon),
+    p_flight_number: flightNumber || null,
   });
 
   if (error) {
@@ -238,6 +260,7 @@ export async function POST(request: Request) {
       vehicle: vehicle || null,
       persons,
       luggage: luggage || null,
+      flightNumber: flightNumber || null,
       price: priceEuros,
       currency,
       quoteOnRequest,

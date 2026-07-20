@@ -13,6 +13,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/producten",
     "/contact",
     "/partner",
+    "/privacy",
+    "/voorwaarden",
     "/taxi-almere-schiphol",
     "/taxi-amsterdam-schiphol",
     "/taxi-rotterdam-schiphol",

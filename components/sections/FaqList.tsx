@@ -6,7 +6,7 @@ import Icon from "@/components/ui/Icon";
 const FAQS = [
   {
     q: "Hoe boek ik een taxi?",
-    a: "Via het formulier op deze pagina, WhatsApp of telefonisch. Bevestiging binnen 5 minuten.",
+    a: "Via het formulier op deze pagina, WhatsApp of telefonisch. Wij bevestigen uw rit per e-mail of WhatsApp.",
   },
   {
     q: "Rijdt T4XI naar Schiphol?",

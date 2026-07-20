@@ -58,6 +58,13 @@ export default function BookingSection() {
       setSubmit({ status: "error", message: "Vul een ophaaladres en bestemming in." });
       return;
     }
+    if (needsFlight && flightNumber.trim() === "") {
+      setSubmit({
+        status: "error",
+        message: "Vul uw vluchtnummer in — daarmee volgen wij uw vlucht bij vertraging.",
+      });
+      return;
+    }
 
     const form = new FormData(e.currentTarget);
     const payload = {
@@ -69,6 +76,7 @@ export default function BookingSection() {
       vehicle,
       persons,
       luggage,
+      flightNumber: needsFlight ? flightNumber.trim() : "",
       customerName: String(form.get("naam") ?? ""),
       customerPhone: String(form.get("telefoon") ?? ""),
       customerEmail: String(form.get("email") ?? ""),
@@ -116,8 +124,13 @@ export default function BookingSection() {
   // race-conditions bij snel typen/wisselen.
   type Quote =
     | { status: "idle" | "loading" | "onrequest" | "error" }
-    | { status: "ready"; amount: string; note: string };
+    | { status: "ready"; amount: string; note: string; isAirport: boolean };
   const [quote, setQuote] = useState<Quote>({ status: "idle" });
+  const [flightNumber, setFlightNumber] = useState("");
+
+  // Het vluchtnummerveld verschijnt zodra de engine bevestigt dat dit een
+  // luchthavenrit is. We vragen er dus nooit naar bij een rit waar het niet toe doet.
+  const needsFlight = quote.status === "ready" && quote.isAirport;
 
   useEffect(() => {
     if (!pickup || !dropoff) {
@@ -145,6 +158,7 @@ export default function BookingSection() {
             status: "ready",
             amount: `€${data.price}`,
             note: data.returnApplied ? "Retour — vaste prijs vooraf" : "Vaste prijs vooraf",
+            isAirport: Boolean(data.isAirportTransfer),
           });
         } else {
           setQuote({ status: "onrequest" });
@@ -293,6 +307,38 @@ export default function BookingSection() {
               ))}
             </select>
           </div>
+
+          {/*
+            Vluchtnummer — verschijnt uitsluitend bij luchthavenritten, zodra de
+            prijsengine heeft bevestigd dat herkomst of bestemming een luchthaven is.
+            Zonder dit nummer kan T4XI de belofte "wij volgen uw vluchtstatus" niet
+            waarmaken, daarom is het veld daar verplicht.
+          */}
+          {needsFlight && (
+            <div className="sm:col-span-2">
+              <label htmlFor="f-flight" className={labelCls}>
+                Vluchtnummer <span className="text-accent">— verplicht bij luchthavenritten</span>
+              </label>
+              <input
+                id="f-flight"
+                name="vluchtnummer"
+                value={flightNumber}
+                onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
+                placeholder="KL1234"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={8}
+                required
+                aria-describedby="f-flight-help"
+                className={inputCls}
+              />
+              <p id="f-flight-help" className="mt-1.5 text-[12px] text-secondary">
+                Wij volgen uw vluchtstatus en passen het ophaalmoment aan wanneer uw vlucht
+                vertraagd is. Na de landing is 60 minuten wachttijd inbegrepen voor
+                grenscontrole en bagage.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Adresdetectie */}

@@ -6,7 +6,7 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 export const metadata: Metadata = {
   title: "Contact",
   description:
-    "Neem contact op met T4XI: bel, mail of WhatsApp. Dag en nacht bereikbaar, reactietijd onder 5 minuten.",
+    "Neem contact op met T4XI: bel, mail of WhatsApp. Dag en nacht bereikbaar voor vragen en boekingen.",
   alternates: { canonical: "/contact" },
 };
 

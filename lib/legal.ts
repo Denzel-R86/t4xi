@@ -1,0 +1,75 @@
+/**
+ * Bedrijfs- en juridische gegevens, op één plek.
+ *
+ * ── PLACEHOLDERS ───────────────────────────────────────────────────────────
+ *
+ * Waarden die nog moeten worden aangeleverd staan als `null`. Componenten tonen
+ * die velden dan NIET — er verschijnt liever niets dan een verzonnen nummer.
+ *
+ * Zolang `BTW_NUMMER` null is, is de site NIET publiceerbaar: een Nederlandse
+ * onderneming die op afstand aan consumenten verkoopt, moet haar btw-identificatie
+ * vermelden. `assertPubliceerbaar()` maakt dat expliciet controleerbaar.
+ */
+
+export const BEDRIJF = {
+  handelsnaam: "T4XI",
+  rechtspersoon: "Noir Driving Services",
+  kvk: "80673813",
+  /** AAN TE LEVEREN — zie assertPubliceerbaar(). */
+  btw: null as string | null,
+  vestigingsplaats: "Almere",
+  land: "Nederland",
+  telefoon: "+31 6 34 74 45 22",
+  telefoonHref: "tel:+31634744522",
+  email: "booking@t4xi.nl",
+} as const;
+
+/** Verwerkers die persoonsgegevens ontvangen. Voedt de privacyverklaring. */
+export const VERWERKERS = [
+  { naam: "Supabase", doel: "opslag van boekingen en offerteaanvragen", regio: "EU (eu-west-1, Ierland)" },
+  { naam: "Resend", doel: "verzending van bevestigingsmails", regio: "EU/VS" },
+  { naam: "PDOK Locatieserver", doel: "adresaanvulling tijdens het invullen", regio: "Nederland" },
+  { naam: "Google Places API", doel: "adresaanvulling als terugvaloptie", regio: "EU/VS" },
+  { naam: "Vercel", doel: "hosting en levering van de website", regio: "EU/VS" },
+] as const;
+
+/** Categorieën persoonsgegevens die de website daadwerkelijk vastlegt. */
+export const GEGEVENS = [
+  "naam",
+  "e-mailadres",
+  "telefoonnummer",
+  "ophaaladres en bestemming",
+  "datum en tijd van de rit",
+  "aantal passagiers en bagage",
+  "vluchtnummer bij luchthavenritten",
+  "eventuele opmerkingen die u zelf invult",
+] as const;
+
+/** Laatste inhoudelijke wijziging van de juridische teksten. */
+export const LAATST_BIJGEWERKT = "20 juli 2026";
+
+/**
+ * Faalt zolang er verplichte gegevens ontbreken.
+ *
+ * BEDOELD ALS DEPLOY-GATE, niet als render-check. Roep dit aan in een
+ * pre-deploy-script of CI-stap — niet tijdens het renderen van een pagina, want
+ * dan breekt de build al vóórdat de gegevens er zijn en kan er niets meer getest
+ * worden. De pagina's tonen intussen een zichtbare markering op de plek van het
+ * ontbrekende nummer, zodat het niet stilzwijgend live gaat.
+ */
+export function assertPubliceerbaar(): void {
+  const ontbreekt: string[] = [];
+  if (!BEDRIJF.btw) ontbreekt.push("BTW-nummer (lib/legal.ts → BEDRIJF.btw)");
+  if (ontbreekt.length > 0) {
+    throw new Error(
+      `Juridische gegevens ontbreken en de site is niet publiceerbaar:\n` +
+        ontbreekt.map((o) => `  · ${o}`).join("\n") +
+        `\n\nVul deze aan in lib/legal.ts voordat u naar productie deployt.`
+    );
+  }
+}
+
+/** True als alles compleet is — voor componenten die zachtjes willen degraderen. */
+export function isPubliceerbaar(): boolean {
+  return Boolean(BEDRIJF.btw);
+}

@@ -66,6 +66,13 @@ export type PricingQuoteResult =
       estimatedDurationMin: number;
       vehicleClass: string;
       route: { pickupSlug: string; dropoffSlug: string; label: string | null };
+      /**
+       * True als herkomst of bestemming een luchthaven is. Stuurt twee dingen aan:
+       * het vluchtnummerveld in de boekingsflow (verplicht bij luchthavenritten) en
+       * de zichtbaarheid van het wachttijdbeleid. Afgeleid van locations.location_type,
+       * niet van de slug — een naamconventie is geen contract.
+       */
+      isAirportTransfer: boolean;
       dataSource: "supabase";
     }
   | {
@@ -75,7 +82,7 @@ export type PricingQuoteResult =
       message: string;
     };
 
-type LocationRow = Pick<Tables<"locations">, "id" | "slug" | "name" | "active">;
+type LocationRow = Pick<Tables<"locations">, "id" | "slug" | "name" | "active" | "location_type">;
 type VehicleClassRow = Pick<
   Tables<"vehicle_classes">,
   "id" | "code" | "max_passengers" | "max_luggage" | "active"
@@ -190,6 +197,8 @@ async function resolveQuote(
         dropoffSlug: dropoff.slug,
         label: fixed.source_label,
       },
+      isAirportTransfer:
+        pickup.location_type === "airport" || dropoff.location_type === "airport",
       dataSource: "supabase",
     };
   }
@@ -212,7 +221,7 @@ async function locationBySlug(
 ): Promise<LocationRow | null> {
   const res = await supabase
     .from("locations")
-    .select("id, slug, name, active")
+    .select("id, slug, name, active, location_type")
     .eq("active", true)
     .eq("slug", slug)
     .limit(1)
@@ -254,7 +263,7 @@ async function findLocation(
   // 3. naam case-insensitive — alleen zinvol zonder alias
   const byName = await supabase
     .from("locations")
-    .select("id, slug, name, active")
+    .select("id, slug, name, active, location_type")
     .eq("active", true)
     .ilike("name", raw)
     .limit(1)

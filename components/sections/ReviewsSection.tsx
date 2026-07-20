@@ -1,6 +1,23 @@
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
+/**
+ * REVIEWS UITGESCHAKELD — Sprint 11, Fase 0 (2026-07-20)
+ *
+ * De hieronder staande citaten en het aggregaat ("4.9 — 127 beoordelingen") zijn niet
+ * te herleiden tot een verifieerbare bron: de bookings-tabel bevat nul records en er is
+ * geen koppeling met Google Reviews. Onder de Omnibus-richtlijn is het publiceren van
+ * niet-verifieerbare klantbeoordelingen in de EU verboden; de ACM handhaaft daarop.
+ *
+ * De sectie is daarom uitgeschakeld in plaats van verwijderd, zodat hij in één regel
+ * terugkomt zodra er een verifieerbare bron is. Voorwaarden om weer aan te zetten:
+ *   1. de citaten komen van echte, herleidbare klanten;
+ *   2. het aggregaat komt uit een externe bron (Google Business Profile) en wordt
+ *      daarnaar gelinkt;
+ *   3. het woord "geverifieerde" wordt alleen gebruikt als er ook echt geverifieerd is.
+ */
+const REVIEWS_ENABLED = false;
+
 const REVIEWS = [
   {
     initials: "MH",
@@ -32,8 +49,10 @@ const REVIEWS = [
   },
 ];
 
-/** Reviewsectie uit het v14-bronbestand, incl. aggregate en Google-CTA. */
+/** Reviewsectie. Rendert niets zolang er geen verifieerbare bron is (zie boven). */
 export default function ReviewsSection() {
+  if (!REVIEWS_ENABLED) return null;
+
   return (
     <section className="border-t border-line bg-card/60 py-16 md:py-24" aria-labelledby="reviews-title">
       <div className="mx-auto max-w-site px-6">
