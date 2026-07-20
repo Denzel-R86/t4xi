@@ -14,7 +14,8 @@ import { BEDRIJF, VERWERKERS, GEGEVENS, LAATST_BIJGEWERKT } from "@/lib/legal";
  *
  * Wat hier NIET in zit en wel geregeld moet worden vóór livegang:
  *   · verwerkersovereenkomsten met Supabase, Resend, Google en Vercel;
- *   · een definitieve bewaartermijn, vastgesteld door de eigenaar;
+ *   · definitieve bewaartermijnen — alleen de fiscale 7 jaar volgt uit de wet, de
+ *     rest is een keuze van de eigenaar en staat zichtbaar gemarkeerd open;
  *   · toetsing door een jurist.
  *
  * Publiceer deze pagina niet als definitieve juridische tekst zonder die toetsing.
@@ -119,13 +120,65 @@ export default function PrivacyPage() {
         uitvoert. Dat is nodig om u te kunnen ophalen.
       </p>
 
-      <h2 className={H2}>Hoe lang wij ze bewaren</h2>
+      <h2 className={H2}>Op welke grondslag</h2>
       <p className={P}>
-        Boekingsgegevens bewaren wij zolang dat nodig is voor de uitvoering van de rit en
-        de administratieve afhandeling daarvan. Voor gegevens die op onze facturen staan
-        geldt de wettelijke fiscale bewaarplicht van zeven jaar. Prijsaanvragen zonder
-        boeking bewaren wij korter, omdat daar geen overeenkomst uit voortkomt.
+        Voor het uitvoeren en bevestigen van uw rit verwerken wij uw gegevens op grond van
+        de <strong>uitvoering van de overeenkomst</strong> met u. Voor de bedragen die op
+        onze facturen terechtkomen geldt een <strong>wettelijke verplichting</strong>: de
+        fiscale bewaarplicht. Voor het vastleggen van prijsaanvragen beroepen wij ons op ons{" "}
+        <strong>gerechtvaardigd belang</strong> om te kunnen controleren of onze tarieven
+        kloppen — daar zit geen naam of contactgegeven bij.
       </p>
+
+      <h2 className={H2}>Hoe lang wij ze bewaren</h2>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-line text-left text-xs uppercase tracking-[0.1em] text-stone">
+              <th className="py-2 pr-4 font-medium">Gegevens</th>
+              <th className="py-2 pr-4 font-medium">Bewaartermijn</th>
+              <th className="py-2 font-medium">Waarom</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 font-medium text-ink">Factuurgegevens</td>
+              <td className="py-2.5 pr-4 text-secondary">7 jaar</td>
+              <td className="py-2.5 text-secondary">fiscale bewaarplicht</td>
+            </tr>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 font-medium text-ink">Boeking en contactgegevens</td>
+              <td className="py-2.5 pr-4 text-secondary">
+                <mark className="bg-amber-200/60 px-1">[termijn vast te stellen]</mark>
+              </td>
+              <td className="py-2.5 text-secondary">afhandeling, klachten en garantie</td>
+            </tr>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 font-medium text-ink">Vluchtnummer</td>
+              <td className="py-2.5 pr-4 text-secondary">
+                <mark className="bg-amber-200/60 px-1">[termijn vast te stellen]</mark>
+              </td>
+              <td className="py-2.5 text-secondary">alleen nodig rond de rit zelf</td>
+            </tr>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 font-medium text-ink">Prijsaanvragen zonder boeking</td>
+              <td className="py-2.5 pr-4 text-secondary">
+                <mark className="bg-amber-200/60 px-1">[termijn vast te stellen]</mark>
+              </td>
+              <td className="py-2.5 text-secondary">tariefcontrole; bevat geen contactgegevens</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className={P}>
+        Na afloop van een termijn verwijderen wij de gegevens of maken wij ze onherleidbaar.
+      </p>
+      <div className="mt-3 rounded-md border-l-2 border-amber-500 bg-amber-100/40 px-4 py-3 text-sm text-ink">
+        <b>Bewaartermijnen nog vast te stellen.</b> Alleen de fiscale bewaarplicht van zeven
+        jaar volgt uit de wet. De overige termijnen zijn een keuze van de eigenaar en staan
+        hier bewust open — een verzonnen termijn is geen termijn. De AVG vraagt om een
+        onderbouwde keuze, niet om een gebruikelijk klinkend getal.
+      </div>
 
       <h2 className={H2}>Cookies</h2>
       <p className={P}>

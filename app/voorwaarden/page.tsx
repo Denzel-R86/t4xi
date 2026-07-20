@@ -11,10 +11,14 @@ import { BEDRIJF, LAATST_BIJGEWERKT } from "@/lib/legal";
  * woordelijk afgestemd op wat T4XI operationeel toezegt (Sprint 11). Ze zijn dus
  * feitelijk juist, maar juridisch ongetoetst.
  *
- * Nog vast te stellen door de eigenaar vóór livegang:
- *   · annuleringsvoorwaarden en eventuele kosten;
+ * Het annuleringsbeleid (artikel 7) is op 2026-07-20 door de eigenaar vastgesteld.
+ * De aansprakelijkheidsbepaling (artikel 9) volgt dwingend Nederlands recht:
+ * aansprakelijkheid voor dood of letsel wordt niet uitgesloten, en er staan bewust
+ * GEEN bedragen of dekkingsgrenzen in — die zouden zonder de polis verzonnen zijn.
+ *
+ * Nog te doen vóór livegang:
+ *   · toetsing aan de daadwerkelijke taxiverzekeringspolis (bagage, eigen risico);
  *   · tarief voor wachttijd buiten de inbegrepen 60 minuten;
- *   · aansprakelijkheidsbeperking en verzekeringsdekking;
  *   · toetsing door een jurist.
  *
  * Waar een bepaling nog niet is vastgesteld, staat dat er zichtbaar bij in plaats
@@ -123,12 +127,83 @@ export default function VoorwaardenPage() {
         ervoor.
       </p>
 
-      <h2 className={H2}>7 · Annulering</h2>
-      <div className={TODO}>
-        <b>Nog vast te stellen.</b> De annuleringstermijn en eventuele kosten zijn nog niet
-        bepaald. Deze bepaling wordt aangevuld vóór publicatie; tot die tijd stemmen wij
-        annuleringen in overleg af via {BEDRIJF.telefoon}.
+      <h2 className={H2}>7 · Annulering, wijziging en no-show</h2>
+      <p className={P}>
+        U kunt uw rit kosteloos annuleren tot 24 uur vóór de afgesproken ophaaltijd. Daarna
+        gelden de onderstaande kosten, omdat de rit dan is ingepland en de tijd van de
+        chauffeur niet meer opnieuw verkocht kan worden:
+      </p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-line text-left text-xs uppercase tracking-[0.1em] text-stone">
+              <th className="py-2 pr-4 font-medium">Moment van annuleren</th>
+              <th className="py-2 font-medium">Kosten</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 text-secondary">Meer dan 24 uur vooraf</td>
+              <td className="py-2.5 font-medium text-ink">kosteloos</td>
+            </tr>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 text-secondary">Tussen 24 en 6 uur vooraf</td>
+              <td className="py-2.5 font-medium text-ink">50% van de ritprijs</td>
+            </tr>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 text-secondary">Minder dan 6 uur vooraf</td>
+              <td className="py-2.5 font-medium text-ink">100% van de ritprijs</td>
+            </tr>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 text-secondary">No-show</td>
+              <td className="py-2.5 font-medium text-ink">100% van de ritprijs</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Wanneer is er sprake van een no-show?</h3>
+      <p className={P}>
+        Van een no-show spreken wij pas als aan alle vier de voorwaarden is voldaan: de
+        chauffeur is op de bevestigde ophaallocatie aanwezig, er is geprobeerd persoonlijk
+        contact met u op te nemen, de inbegrepen wachttijd is verstreken, en u bent niet
+        verschenen. Bij luchthavenophalingen begint die wachttijd te lopen vanaf de
+        daadwerkelijk geregistreerde landingstijd, volgens het luchthavenbeleid in artikel 3.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Geannuleerde vlucht</h3>
+      <p className={P}>
+        Wordt uw vlucht geannuleerd, dan kunt u kosteloos annuleren, mits u dit vóór het
+        geplande ophaalmoment aan ons meldt. Wij kunnen u vragen de annulering aan te tonen,
+        bijvoorbeeld met het bericht van de luchtvaartmaatschappij.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Wijzigen is geen annuleren</h3>
+      <p className={P}>
+        Een wijziging van route, datum of tijd geldt niet automatisch als annulering. Wij
+        beoordelen eerst of de wijziging operationeel uitvoerbaar is. Leidt de wijziging tot
+        een andere route of een andere prijs, dan bevestigen wij eerst de nieuwe prijs; die
+        geldt pas nadat u deze heeft geaccepteerd.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Annulering door T4XI</h3>
+      <p className={P}>
+        Moeten wij een rit annuleren, dan betalen wij reeds betaalde bedragen volledig terug.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Hoe annuleert u?</h3>
+      <p className={P}>
+        Per e-mail via{" "}
+        <a className="underline" href={`mailto:${BEDRIJF.email}`}>
+          {BEDRIJF.email}
+        </a>{" "}
+        of telefonisch via{" "}
+        <a className="underline" href={BEDRIJF.telefoonHref}>
+          {BEDRIJF.telefoon}
+        </a>
+        . Het moment waarop uw bericht ons bereikt, bepaalt welk tarief hierboven geldt.
+        Komt er later een boekingsportaal beschikbaar, dan kunt u ook daar annuleren.
+      </p>
 
       <h2 className={H2}>8 · Betaling</h2>
       <p className={P}>
@@ -137,10 +212,65 @@ export default function VoorwaardenPage() {
       </p>
 
       <h2 className={H2}>9 · Aansprakelijkheid</h2>
+      <p className={P}>
+        Op de vervoersovereenkomst zijn onder meer de wettelijke regels voor personenvervoer
+        uit Boek 8 van het Burgerlijk Wetboek van toepassing.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Letsel en overlijden</h3>
+      <p className={P}>
+        Onze aansprakelijkheid voor dood of lichamelijk letsel in verband met het vervoer
+        wordt niet uitgesloten en niet verder beperkt dan het dwingend Nederlands recht
+        toestaat. Wij nemen daarover geen afwijkende bepaling op.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Gevolgschade</h3>
+      <p className={P}>
+        Wij zijn niet aansprakelijk voor indirecte schade of gevolgschade, waaronder gemiste
+        vluchten, gemiste afspraken, omzetverlies en winstderving — behalve voor zover
+        uitsluiting daarvan volgens dwingend recht niet is toegestaan.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Bagage</h3>
+      <p className={P}>
+        Bij vermissing of beschadiging van bagage wordt onze aansprakelijkheid beoordeeld
+        volgens het toepasselijke recht en de daadwerkelijke dekking van onze
+        taxiverzekering. Wij hanteren geen vooraf vastgesteld maximumbedrag dat losstaat van
+        die dekking.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Vertraging</h3>
+      <p className={P}>
+        Wij zijn niet aansprakelijk voor vertraging die het gevolg is van omstandigheden die
+        een zorgvuldig vervoerder redelijkerwijs niet kon vermijden, zoals onverwachte
+        wegafsluitingen, ernstige ongevallen, extreme weersomstandigheden, overheidsmaatregelen
+        of andere overmacht.
+      </p>
+      <p className={P}>
+        Dat is geen vrijbrief: wij spannen ons in om u tijdig te informeren zodra wij weten
+        dat de rit vertraging oploopt, en bieden waar dat redelijk is een alternatief aan.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Wat wij van u vragen</h3>
+      <p className={P}>
+        U bent verantwoordelijk voor het opgeven van correcte boekingsgegevens, voor tijdige
+        aanwezigheid op de afgesproken ophaallocatie, voor geldige reisdocumenten, en voor het
+        vooraf melden van bijzondere bagage of specifieke vervoersbehoeften — bijvoorbeeld een
+        kinderzitje, een rolstoel of een instrument.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Strijd met dwingend recht</h3>
+      <p className={P}>
+        Blijkt een bepaling uit deze voorwaarden in strijd met dwingend consumenten- of
+        vervoersrecht, dan blijft die bepaling buiten toepassing. De overige voorwaarden
+        blijven dan onverkort gelden.
+      </p>
+
       <div className={TODO}>
-        <b>Nog vast te stellen.</b> De aansprakelijkheidsbepaling moet worden afgestemd op
-        de verzekeringsdekking en juridisch worden getoetst. Er is bewust geen standaard
-        beperkingsclausule opgenomen die de dekking niet weerspiegelt.
+        <b>Definitieve verzekerings- en juridische controle vereist.</b> De bepalingen over
+        bagagedekking, aansprakelijkheidsgrenzen en eigen risico moeten worden getoetst aan de
+        daadwerkelijke taxiverzekeringspolis. Zolang die polis niet is ingezien, staan hier
+        bewust geen bedragen of dekkingsgrenzen — die zouden anders verzonnen zijn.
       </div>
 
       <h2 className={H2}>10 · Klachten en toepasselijk recht</h2>
