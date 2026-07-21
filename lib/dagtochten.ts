@@ -19,12 +19,39 @@ export type Route = {
   itinerary: { t: string; a: string }[];
 };
 
-export const COUNTRIES = [
-  { flag: "🇧🇪", name: "België", desc: "Van de kanalen van Brugge tot de Art Nouveau van Brussel en het bier van Gent. België verbergt Europa's rijkste cultuur.", count: "6 routes beschikbaar" },
-  { flag: "🇳🇱", name: "Nederland", desc: "Tulpenvelden, molens, het Rijksmuseum, de Keukenhof. Ons eigen land blijft verrassen en is perfect als dagtrip vanuit de grote stad.", count: "5 routes beschikbaar" },
-  { flag: "🇩🇪", name: "Duitsland", desc: "Keulen's Dom, de Rijnvallei, het Zwarte Woud. Op slechts 2 tot 3 uur rijden beginnen de Duits sprookjesachtige landschappen.", count: "5 routes beschikbaar" },
-  { flag: "🇱🇺", name: "Luxemburg", desc: "Het mini-land met maximi impact: vestingstad Luxemburg, de Ardennen en wijngaarden langs de Moezel. Onontdekt en onvergetelijk.", count: "2 routes beschikbaar" },
-];
+/**
+ * Brugge — de uitgelichte dagtocht op /dagtochten.
+ *
+ * Stond tot 2026-07-21 los gedefinieerd binnen FEATURED.modal en ontbrak
+ * daardoor in ROUTES: het filterbare raster liet Brugge niet zien, en elke
+ * telling over ROUTES rapporteerde België één route te laag. Nu één definitie,
+ * waar FEATURED naar verwijst.
+ */
+const BRUGGE: Route = {
+  slug: "brugge",
+  name: "Brugge",
+  emoji: "🏰",
+  flag: "🇧🇪",
+  country: "be" as Country,
+  countryName: "België",
+  duration: "ca. 2,5u",
+  km: "~240 km",
+  tagline: "Het Venetië van het Noorden",
+  desc: "Brugge is een van de best bewaarde middeleeuwse steden van Europa. De kanalen, klokketoren en handgebakken chocolaatjes maken het een onvergetelijke bestemming. T4XI brengt u rechtstreeks naar het hart van deze sprookjesstad.",
+  luggage: "Bagage in overleg",
+  highlights: [],
+  price: "€795",
+  itinerary: [
+    { t: "08:00", a: "Vertrek vanuit Amsterdam, Almere of Rotterdam" },
+    { t: "10:30", a: "Aankomst Markt Brugge — Belfort bestijgen (optioneel)" },
+    { t: "11:30", a: "Kanaalwandeling door het historisch centrum" },
+    { t: "13:00", a: "Lunch in de Burg of op de Markt" },
+    { t: "14:30", a: "Choco-Story Museum of Groeningemuseum" },
+    { t: "16:00", a: "Vrije tijd: chocolatiers & brouwerij De Halve Maan" },
+    { t: "17:30", a: "Vertrek richting Nederland" },
+    { t: "20:00", a: "Aankomst thuis" },
+  ],
+};
 
 export const FEATURED = {
   name: "Brugge",
@@ -39,34 +66,11 @@ export const FEATURED = {
     { icon: "map-pin", text: "Deur-tot-deur, geen tussenstops" },
     { icon: "coin", text: "Retourpakket beschikbaar" },
   ],
-  modal: {
-    slug: "brugge",
-    name: "Brugge",
-    emoji: "🏰",
-    flag: "🇧🇪",
-    country: "be" as Country,
-    countryName: "België",
-    duration: "ca. 2,5u",
-    km: "~240 km",
-    tagline: "Het Venetië van het Noorden",
-    desc: "Brugge is een van de best bewaarde middeleeuwse steden van Europa. De kanalen, klokketoren en handgebakken chocolaatjes maken het een onvergetelijke bestemming. T4XI brengt u rechtstreeks naar het hart van deze sprookjesstad.",
-    luggage: "Bagage in overleg",
-    highlights: [],
-    price: "€795",
-    itinerary: [
-      { t: "08:00", a: "Vertrek vanuit Amsterdam, Almere of Rotterdam" },
-      { t: "10:30", a: "Aankomst Markt Brugge — Belfort bestijgen (optioneel)" },
-      { t: "11:30", a: "Kanaalwandeling door het historisch centrum" },
-      { t: "13:00", a: "Lunch in de Burg of op de Markt" },
-      { t: "14:30", a: "Choco-Story Museum of Groeningemuseum" },
-      { t: "16:00", a: "Vrije tijd: chocolatiers & brouwerij De Halve Maan" },
-      { t: "17:30", a: "Vertrek richting Nederland" },
-      { t: "20:00", a: "Aankomst thuis" },
-    ],
-  } satisfies Route,
+  modal: BRUGGE,
 };
 
 export const ROUTES: Route[] = [
+  BRUGGE,
   {
     slug: "gent", name: "Gent", emoji: "🏛️", flag: "🇧🇪", country: "be", countryName: "België",
     duration: "2u rijden", km: "~200 km",
@@ -240,3 +244,48 @@ export const ROUTES: Route[] = [
     ],
   },
 ];
+
+/**
+ * Landen met hun aanbod. Het AANTAL routes wordt afgeleid uit ROUTES en staat
+ * hier bewust niet als vaste waarde.
+ *
+ * Tot 2026-07-21 stonden hier handmatige tellingen die samen 18 routes
+ * beloofden terwijl er 10 bestonden — een claim die met elke toevoeging verder
+ * uit de pas liep. Een afgeleid getal kan niet verouderen.
+ */
+const LANDEN: { code: Country; flag: string; name: string; desc: string }[] = [
+  {
+    code: "be" as Country,
+    flag: "🇧🇪",
+    name: "België",
+    desc: "Van de kanalen van Brugge tot de Art Nouveau van Brussel en het bier van Gent. België verbergt Europa's rijkste cultuur.",
+  },
+  {
+    code: "nl" as Country,
+    flag: "🇳🇱",
+    name: "Nederland",
+    desc: "Tulpenvelden, molens, het Rijksmuseum, de Keukenhof. Ons eigen land blijft verrassen en is perfect als dagtrip vanuit de grote stad.",
+  },
+  {
+    code: "de" as Country,
+    flag: "🇩🇪",
+    name: "Duitsland",
+    desc: "Keulen's Dom, de Rijnvallei, het Zwarte Woud. Op slechts 2 tot 3 uur rijden beginnen de Duits sprookjesachtige landschappen.",
+  },
+  {
+    code: "lu" as Country,
+    flag: "🇱🇺",
+    name: "Luxemburg",
+    desc: "Het mini-land met maximi impact: vestingstad Luxemburg, de Ardennen en wijngaarden langs de Moezel. Onontdekt en onvergetelijk.",
+  },
+];
+
+/** Aantal beschikbare routes per land, geteld uit ROUTES. */
+export function routeCount(country: Country): number {
+  return ROUTES.filter((r) => r.country === country).length;
+}
+
+export const COUNTRIES = LANDEN.map((l) => {
+  const n = routeCount(l.code);
+  return { ...l, count: `${n} route${n === 1 ? "" : "s"} beschikbaar` };
+});
