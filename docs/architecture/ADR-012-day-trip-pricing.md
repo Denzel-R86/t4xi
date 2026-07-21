@@ -5,6 +5,33 @@
 **Context:** Sprint 12.3 — Single Source of Truth
 **Voorafgaand onderzoek:** auditrapport dagtochten, 21 juli 2026
 
+> **Beslisvoorwaarde.** Deze ADR kan pas naar `Accepted` worden gewijzigd nadat de
+> productdefinitie van een dagtocht is vastgesteld. Zolang die definitie niet is
+> gekozen, blijft elke prijsarchitectuur voorlopig — inclusief de aanbeveling voor
+> optie C hieronder.
+
+De besluitvolgorde is dwingend:
+
+```text
+Productdefinitie
+        │
+        ▼
+Operationeel model
+        │
+        ▼
+Kostprijsmodel
+        │
+        ▼
+Prijsarchitectuur (A / B / C)
+        │
+        ▼
+Implementatie
+```
+
+Rechtstreeks van kostprijs naar prijsarchitectuur springen is de valkuil die deze
+ADR wil voorkomen: een ontwerpbesluit dat onbewust afhangt van een operationele
+keuze die nog niet is gemaakt.
+
 ---
 
 ## Context
