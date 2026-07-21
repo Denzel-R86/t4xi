@@ -70,8 +70,24 @@ const jsonLd = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // suppressHydrationWarning hoort op <html>: het `js-detect`-script draait
+  // `beforeInteractive` en zet de class `js` vóórdat React hydrateert. React
+  // vergelijkt dan een DOM mét die class tegen een render zónder, en meldt
+  // terecht een verschil.
+  //
+  // Dat verschil is opzettelijk en mag NIET worden opgelost door `js`
+  // server-side mee te renderen: dan krijgen ook bezoekers zónder JavaScript de
+  // class, blijft `.reveal` verborgen en zien zij een lege pagina. De detectie
+  // werkt alleen als de class uitsluitend door de browser wordt gezet.
+  //
+  // Het attribuut werkt één niveau diep — alleen de attributen van dit element
+  // zelf. Echte hydration-verschillen in de pagina-inhoud blijven zichtbaar.
   return (
-    <html lang="nl" className={`${outfit.variable} ${inter.variable} ${playfair.variable}`}>
+    <html
+      lang="nl"
+      suppressHydrationWarning
+      className={`${outfit.variable} ${inter.variable} ${playfair.variable}`}
+    >
       <body>
         {/* Progressive enhancement: .reveal verbergt content alleen als JS
             daadwerkelijk draait. Zonder JS blijft alles zichtbaar. */}
