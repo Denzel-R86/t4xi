@@ -86,9 +86,14 @@ export default function RoutesExplorer() {
                 ))}
               </ul>
               <div className="mt-auto flex items-baseline gap-2 border-t border-line pt-4">
-                <span className="text-[11px] uppercase tracking-wider text-stone">Vanaf</span>
-                <span className="font-playfair text-[28px] font-bold text-accent">{r.price}</span>
-                <span className="text-xs text-secondary">retour</span>
+                {r.onAanvraag ? (
+                  <span className="font-playfair text-[22px] font-bold text-accent">Op aanvraag</span>
+                ) : (
+                  <>
+                    <span className="font-playfair text-[28px] font-bold text-accent">{r.price}</span>
+                    <span className="text-xs text-secondary">retour, voor de gehele auto</span>
+                  </>
+                )}
               </div>
               <div className="mt-4 grid gap-2">
                 <button
@@ -96,7 +101,7 @@ export default function RoutesExplorer() {
                   onClick={() => setModal(r)}
                   className="flex min-h-11 items-center justify-center rounded-md border border-line-strong bg-white/60 text-sm font-medium text-ink transition-colors hover:bg-white"
                 >
-                  Details &amp; tijdschema
+                  Details &amp; programma
                 </button>
                 {/* Gewone <a>: in-page anker, native browserscroll — geen router nodig. */}
                 <a
@@ -153,20 +158,33 @@ export function RouteModal({ route, onClose }: { route: Route; onClose: () => vo
         </p>
         <p className="mt-4 text-sm leading-relaxed text-secondary">{route.desc}</p>
         <p className="mb-3 mt-6 text-[10px] uppercase tracking-[2px] text-accent">
-          Voorbeeldschema (flexibel aanpasbaar)
+          Indicatief dagprogramma
         </p>
         <ul className="flex flex-col gap-2.5">
-          {route.itinerary.map((it) => (
-            <li key={it.t} className="flex gap-3 text-sm">
-              <span className="w-12 shrink-0 font-semibold text-accent">{it.t}</span>
-              <span className="text-secondary">{it.a}</span>
+          {route.itinerary.map((onderdeel) => (
+            <li key={onderdeel} className="flex gap-3 text-sm">
+              <span aria-hidden="true" className="mt-2 h-1 w-1 shrink-0 rounded-full bg-accent" />
+              <span className="text-secondary">{onderdeel}</span>
             </li>
           ))}
         </ul>
+        <p className="mt-3 text-xs leading-[1.7] text-stone">
+          De volgorde en samenstelling stemmen wij met u af. De definitieve planning
+          ontvangt u na bevestiging van uw reservering.
+        </p>
         <div className="mt-6 flex items-baseline gap-2.5 border-t border-line pt-6">
-          <span className="text-xs uppercase tracking-wider text-stone">Retourprijs</span>
-          <span className="font-playfair text-4xl font-bold text-accent">{route.price}</span>
-          <span className="text-xs text-secondary">voor de gehele auto (max. 4 passagiers)</span>
+          {route.onAanvraag ? (
+            <>
+              <span className="font-playfair text-2xl font-bold text-accent">Op aanvraag</span>
+              <span className="text-xs text-secondary">planning en prijs stemmen wij op maat af</span>
+            </>
+          ) : (
+            <>
+              <span className="text-xs uppercase tracking-wider text-stone">Retourprijs</span>
+              <span className="font-playfair text-4xl font-bold text-accent">{route.price}</span>
+              <span className="text-xs text-secondary">voor de gehele auto (max. 4 passagiers)</span>
+            </>
+          )}
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3">
           <button
