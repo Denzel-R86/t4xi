@@ -239,13 +239,31 @@ berekening.
 | 1 | Vervoer heen en terug; chauffeur vertrekt tussentijds | Alleen rijtijd telt; chauffeur kan tussentijds ander werk doen |
 | 2 | Vervoer plus wachttijd; chauffeur blijft beschikbaar | Volledige dagduur telt als chauffeurstijd |
 | 3 | Volledige privéchauffeur voor een dag | Als 2, plus ritten tussen locaties gedurende de dag |
-| 4 | Arrangement met vaste maximale duur | Als 2, maar met een plafond dat de staart afsnijdt |
+| 4 | Arrangement met vaste maximale duur | Als 2, maar met een plafond dat de staart afsnijdt en de kostprijs voorspelbaar maakt |
+| 5 | Arrangement met variabele beschikbaarheid | Als 2, zonder plafond; uitloop is de open kostenpost |
 
 De duurtabel hierboven hoort bij varianten 2, 3 en 4. Bij variant 1 is de kostprijs
 fundamenteel lager en beweegt hij wél met afstand mee — dan zijn Keukenhof en
 Brugge echt verschillende producten in plaats van één productcategorie.
 
 Deze keuze bepaalt ook of één pakketprijs per bestemming houdbaar is.
+
+#### Welke architectuur bij welke definitie
+
+Optie C is een aanbeveling onder voorwaarden, geen universeel beste oplossing.
+
+| Productdefinitie | Sterkste architectuur | Opmerking |
+|---|---|---|
+| Transport + afzetten (chauffeur vertrekt) | **B of C** | Afstand en rijtijd zijn dominante kostenfactoren; een engine-model is goed verdedigbaar. |
+| Transport + wachttijd (chauffeur blijft beschikbaar) | **C** | Chauffeurstijd wordt de dominante kostenfactor; vaste pakketprijzen zijn logischer. |
+| Privéchauffeur voor een volledige dag | **C** | Beschikbaarheid is het primaire product; pakketprijs past het best. |
+| Arrangement met **vaste maximale duur** | **B of C** | Een harde tijdslimiet maakt de kostprijs voorspelbaar. Zowel een berekende engineprijs als een centraal beheerde pakketprijs zijn verdedigbaar. |
+| Arrangement met **variabele beschikbaarheid** | **C** | Uitloop en flexibiliteit maken een centraal beheerde pakketprijs robuuster dan een puur berekend model. |
+
+Twee van de vijf definities laten optie B open. Het Keukenhof-argument tegen
+optie B geldt alleen wanneer de chauffeur gebonden is — precies de aanname die
+stap 1 vaststelt. De keuze is dus niet zwart-wit, maar volgt uit de commerciële
+positionering.
 
 ### Stap 2 — Operationele duur
 
