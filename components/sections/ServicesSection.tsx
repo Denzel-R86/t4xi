@@ -47,11 +47,11 @@ export default function ServicesSection({ id = "diensten" }: { id?: string }) {
             <span aria-hidden="true" className="h-px w-4 bg-accent" />
             Onze diensten
           </p>
-          <h2 id="diensten-title" className="mt-4 font-display text-display-lg font-bold text-ink">
+          <h1 id="diensten-title" className="mt-4 font-display text-display-lg font-bold text-ink">
             Voor elke rit
             <br />
             <span className="italic text-stone">de juiste service</span>
-          </h2>
+          </h1>
         </ScrollReveal>
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {DIENSTEN.map((d, i) => (

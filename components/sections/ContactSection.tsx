@@ -17,9 +17,9 @@ export default function ContactSection() {
             <span aria-hidden="true" className="h-px w-4 bg-accent" />
             Bereikbaarheid
           </p>
-          <h2 id="contact-title" className="mt-4 font-display text-display-lg font-bold text-ink">
+          <h1 id="contact-title" className="mt-4 font-display text-display-lg font-bold text-ink">
             Neem <span className="italic text-stone">contact op</span>
-          </h2>
+          </h1>
         </ScrollReveal>
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {CARDS.map((c, i) => (
