@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BEDRIJF, VERWERKERS, GEGEVENS, LAATST_BIJGEWERKT } from "@/lib/legal";
+import { BEDRIJF, VERWERKERS, GEGEVENS, BEWAARTERMIJNEN, LAATST_BIJGEWERKT } from "@/lib/legal";
 
 /**
  * Privacyverklaring.
@@ -141,44 +141,26 @@ export default function PrivacyPage() {
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-line">
-              <td className="py-2.5 pr-4 font-medium text-ink">Factuurgegevens</td>
-              <td className="py-2.5 pr-4 text-secondary">7 jaar</td>
-              <td className="py-2.5 text-secondary">fiscale bewaarplicht</td>
-            </tr>
-            <tr className="border-b border-line">
-              <td className="py-2.5 pr-4 font-medium text-ink">Boeking en contactgegevens</td>
-              <td className="py-2.5 pr-4 text-secondary">
-                <mark className="bg-amber-200/60 px-1">[termijn vast te stellen]</mark>
-              </td>
-              <td className="py-2.5 text-secondary">afhandeling, klachten en garantie</td>
-            </tr>
-            <tr className="border-b border-line">
-              <td className="py-2.5 pr-4 font-medium text-ink">Vluchtnummer</td>
-              <td className="py-2.5 pr-4 text-secondary">
-                <mark className="bg-amber-200/60 px-1">[termijn vast te stellen]</mark>
-              </td>
-              <td className="py-2.5 text-secondary">alleen nodig rond de rit zelf</td>
-            </tr>
-            <tr className="border-b border-line">
-              <td className="py-2.5 pr-4 font-medium text-ink">Prijsaanvragen zonder boeking</td>
-              <td className="py-2.5 pr-4 text-secondary">
-                <mark className="bg-amber-200/60 px-1">[termijn vast te stellen]</mark>
-              </td>
-              <td className="py-2.5 text-secondary">tariefcontrole; bevat geen contactgegevens</td>
-            </tr>
+            {BEWAARTERMIJNEN.map((rij) => (
+              <tr key={rij.gegevens} className="border-b border-line">
+                <td className="py-2.5 pr-4 font-medium text-ink">{rij.gegevens}</td>
+                <td className="py-2.5 pr-4 tabular-nums text-secondary">{rij.termijn}</td>
+                <td className="py-2.5 text-secondary">{rij.reden}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
       <p className={P}>
-        Na afloop van een termijn verwijderen wij de gegevens of maken wij ze onherleidbaar.
+        Na afloop van een termijn verwijderen wij de gegevens of maken wij ze onherleidbaar,
+        tenzij een wettelijke verplichting ons tot langer bewaren verplicht. Het vluchtnummer
+        bewaren wij korter dan de boeking zelf: het is alleen nodig om u op te halen en heeft
+        daarna geen functie meer.
       </p>
-      <div className="mt-3 rounded-md border-l-2 border-amber-500 bg-amber-100/40 px-4 py-3 text-sm text-ink">
-        <b>Bewaartermijnen nog vast te stellen.</b> Alleen de fiscale bewaarplicht van zeven
-        jaar volgt uit de wet. De overige termijnen zijn een keuze van de eigenaar en staan
-        hier bewust open — een verzonnen termijn is geen termijn. De AVG vraagt om een
-        onderbouwde keuze, niet om een gebruikelijk klinkend getal.
-      </div>
+      <p className={P}>
+        Wij versturen geen nieuwsbrief en houden geen mailinglijst bij. Er is daarom geen
+        bewaartermijn voor marketingcommunicatie.
+      </p>
 
       <h2 className={H2}>Cookies</h2>
       <p className={P}>

@@ -15,8 +15,8 @@ export const BEDRIJF = {
   handelsnaam: "T4XI",
   rechtspersoon: "Noir Driving Services",
   kvk: "80673813",
-  /** AAN TE LEVEREN — zie assertPubliceerbaar(). */
-  btw: null as string | null,
+  /** Aangeleverd door de eigenaar, 21 juli 2026. Formaat NL + 9 cijfers + B + 2. */
+  btw: "NL003472098B32" as string | null,
   vestigingsplaats: "Almere",
   land: "Nederland",
   telefoon: "+31 6 34 74 45 22",
@@ -45,8 +45,47 @@ export const GEGEVENS = [
   "eventuele opmerkingen die u zelf invult",
 ] as const;
 
+/**
+ * Bewaartermijnen, vastgesteld door de eigenaar op 21 juli 2026.
+ *
+ * Eén bron voor privacyverklaring en voorwaarden, zodat ze niet uit elkaar kunnen
+ * lopen. Alleen de fiscale bewaarplicht volgt uit de wet; de overige termijnen
+ * zijn een onderbouwde keuze onder het AVG-beginsel van opslagbeperking.
+ *
+ * Er staat bewust GEEN categorie voor marketingcommunicatie in: de website kent
+ * geen nieuwsbrief, opt-in of mailinglijst. Een bewaartermijn opnemen voor een
+ * verwerking die niet plaatsvindt, beschrijft de werkelijkheid onjuist.
+ */
+export const BEWAARTERMIJNEN = [
+  {
+    gegevens: "Facturen, betalingen en financiële administratie",
+    termijn: "7 jaar",
+    reden: "fiscale bewaarplicht",
+  },
+  {
+    gegevens: "Boekings- en ritgegevens",
+    termijn: "12 maanden na de rit",
+    reden: "klantenservice, restituties en geschillen",
+  },
+  {
+    gegevens: "Vluchtnummer en vluchtstatus",
+    termijn: "30 dagen na de rit",
+    reden: "alleen nodig voor uitvoering en korte nazorg",
+  },
+  {
+    gegevens: "Prijsaanvragen zonder boeking",
+    termijn: "3 maanden",
+    reden: "opvolging van de aanvraag; bevat geen contactgegevens",
+  },
+  {
+    gegevens: "Klachten en klantenservice",
+    termijn: "1 jaar na afhandeling",
+    reden: "bewijsvoering en eventuele vervolgvragen",
+  },
+] as const;
+
 /** Laatste inhoudelijke wijziging van de juridische teksten. */
-export const LAATST_BIJGEWERKT = "20 juli 2026";
+export const LAATST_BIJGEWERKT = "21 juli 2026";
 
 /**
  * Faalt zolang er verplichte gegevens ontbreken.
