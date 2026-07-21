@@ -14,10 +14,32 @@ import { BEDRIJF, LAATST_BIJGEWERKT } from "@/lib/legal";
  * Het annuleringsbeleid (artikel 7) is op 2026-07-20 door de eigenaar vastgesteld.
  * De aansprakelijkheidsbepaling (artikel 9) volgt dwingend Nederlands recht:
  * aansprakelijkheid voor dood of letsel wordt niet uitgesloten, en er staan bewust
- * GEEN bedragen of dekkingsgrenzen in — die zouden zonder de polis verzonnen zijn.
+ * GEEN bedragen of dekkingsgrenzen in.
+ *
+ * ── VERZEKERINGSTOETSING 2026-07-21 ────────────────────────────────────────
+ *
+ * Artikel 9 is getoetst aan polis 3018880 (Noir Ventures, Victor Insurance
+ * Europe B.V. als gevolmachtigde) met polisaanhangsel d.d. 27-11-2025, en aan
+ * AV_Z 2021-1, BV_PAvp 2021-1 en BV_SVI 2022-1.
+ *
+ * Uitkomst: de voorwaarden beloven niets ruimers dan de dekking.
+ *
+ * Twee bepalingen dragen dat:
+ *   · BV_PAvp art. 9.7 sluit vervoer tegen betaling UIT, "tenzij anders is
+ *     overeengekomen". Clausule 156 is die afspraak. De hele taxidekking hangt
+ *     aan die clausule.
+ *   · BV_PAvp art. 4.2a sluit schade aan vervoerde zaken uit, behalve normale
+ *     handbagage en kleding. Clausule 156 verruimt dat tot zaken van vervoerde
+ *     personen, maar alleen TOT HET WETTELIJK VOORGESCHREVEN BEDRAG en alleen
+ *     bij vervoer krachtens een Wp2000-vergunning.
+ *
+ * Daarom staat er in artikel 9 geen bedrag en geen toezegging dat bagage
+ * "verzekerd" is: het is aansprakelijkheidsdekking met een wettelijk plafond,
+ * geen bagageverzekering. Neem hier geen bedrag op zonder de polis opnieuw te
+ * toetsen — en houd er rekening mee dat een verlopen Wp2000-vergunning deze
+ * dekking laat vervallen.
  *
  * Nog te doen vóór livegang:
- *   · toetsing aan de daadwerkelijke taxiverzekeringspolis (bagage, eigen risico);
  *   · tarief voor wachttijd buiten de inbegrepen 60 minuten;
  *   · toetsing door een jurist.
  *
@@ -35,8 +57,6 @@ export const metadata: Metadata = {
 
 const H2 = "mt-10 font-display text-xl font-bold text-ink";
 const P = "mt-3 text-secondary";
-const TODO =
-  "mt-3 rounded-md border-l-2 border-amber-500 bg-amber-100/40 px-4 py-3 text-sm text-ink";
 
 export default function VoorwaardenPage() {
   return (
@@ -296,12 +316,12 @@ export default function VoorwaardenPage() {
         blijven dan onverkort gelden.
       </p>
 
-      <div className={TODO}>
-        <b>Definitieve verzekerings- en juridische controle vereist.</b> De bepalingen over
-        bagagedekking, aansprakelijkheidsgrenzen en eigen risico moeten worden getoetst aan de
-        daadwerkelijke taxiverzekeringspolis. Zolang die polis niet is ingezien, staan hier
-        bewust geen bedragen of dekkingsgrenzen — die zouden anders verzonnen zijn.
-      </div>
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">Onze verzekering</h3>
+      <p className={P}>
+        Wij vervoeren u met een voertuig dat verzekerd is voor personenvervoer tegen
+        betaling. Wilt u weten wat dat in een concreet geval betekent, dan lichten wij
+        dat op verzoek toe.
+      </p>
 
       <h2 className={H2}>10 · Klachten en toepasselijk recht</h2>
       <p className={P}>
