@@ -142,12 +142,11 @@ export default function DagtochtenPage() {
               kunnen worden gecombineerd met een retourrit of meerdaagse trip.
             </p>
             <p className="mb-10 mt-4 max-w-3xl rounded-xl border border-line bg-card px-4 py-3.5 text-sm font-medium leading-[1.7] text-ink">
-              Tarieven zijn opnieuw berekend als realistische all-in dagtarieven
-              op basis van retourkilometers, wachttijd, dagdeel-inzet van de
-              chauffeur, voertuigkosten, planning en beschikbaarheid. Maximaal 4
-              passagiers exclusief chauffeur. Adviesbagage: 2 grote koffers + 2
-              handbagage bij 4 passagiers, of 3 grote koffers bij maximaal 3
-              passagiers.
+              Alle dagtochten worden persoonlijk bevestigd. De vermelde
+              pakketprijzen gelden voor de standaardarrangementen; eventuele
+              maatwerkwensen stemmen wij vooraf met u af. Maximaal 4 passagiers
+              exclusief chauffeur. Adviesbagage: 2 grote koffers + 2 handbagage
+              bij 4 passagiers, of 3 grote koffers bij maximaal 3 passagiers.
             </p>
           </ScrollReveal>
           <RoutesExplorer />
