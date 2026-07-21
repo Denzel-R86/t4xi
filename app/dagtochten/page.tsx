@@ -4,6 +4,7 @@ import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import RoutesExplorer, { FeaturedDetailsButton } from "@/components/dagtochten/RoutesExplorer";
 import { COUNTRIES, FEATURED } from "@/lib/dagtochten";
+import { BEDRIJF } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Dagtochten",
@@ -81,10 +82,10 @@ export default function DagtochtenPage() {
                 <div className="flex gap-4">
                   <FeaturedDetailsButton />
                   <Link
-                    href="/boeken"
+                    href="#aanvragen"
                     className="flex min-h-11 flex-1 items-center justify-center rounded-md bg-accent text-sm font-medium text-white shadow-cta transition-colors hover:bg-accent-hover"
                   >
-                    Boek nu
+                    Dagtocht aanvragen
                   </Link>
                 </div>
               </div>
@@ -154,7 +155,11 @@ export default function DagtochtenPage() {
       </section>
 
       {/* ═══ OP MAAT ═══ */}
-      <section className="border-t border-line bg-card/60 py-16 md:py-24" aria-labelledby="custom-titel">
+      <section
+        id="aanvragen"
+        className="scroll-mt-24 border-t border-line bg-card/60 py-16 md:py-24"
+        aria-labelledby="custom-titel"
+      >
         <div className="mx-auto grid max-w-site items-start gap-12 px-6 lg:grid-cols-2">
           <ScrollReveal>
             <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
@@ -184,7 +189,7 @@ export default function DagtochtenPage() {
             </ul>
           </ScrollReveal>
           <ScrollReveal delay={150}>
-            <CustomTourForm />
+            <DagtochtAanvraag />
           </ScrollReveal>
         </div>
       </section>
@@ -192,74 +197,70 @@ export default function DagtochtenPage() {
   );
 }
 
-const inputCls =
-  "min-h-[52px] w-full rounded-field border border-[rgba(31,39,48,0.14)] bg-field px-4 text-[15px] font-medium text-ink placeholder:font-normal placeholder:text-stone focus:border-accent focus:bg-white focus:shadow-[0_0_0_4px_rgba(40,49,59,0.10)] focus:outline-none";
-const labelCls = "mb-1.5 block text-xs font-bold text-secondary";
+/**
+ * Aanvraagblok voor dagtochten.
+ *
+ * Bewust GEEN formulier. Hier stond een `<form>` zonder action en zonder
+ * onSubmit: die verzond niets, zette naam en e-mailadres in de query string en
+ * liet datum en wensen volledig vallen (velden zonder `name`). Zolang er geen
+ * backend achter zit, is een werkend contactkanaal eerlijker dan een invulveld
+ * dat een verwerking suggereert die niet plaatsvindt.
+ *
+ * Een echte online aanvraagflow volgt pas nadat ADR-012 de status `Accepted`
+ * heeft en de productdefinitie van een dagtocht vaststaat.
+ */
+const KANAAL =
+  "flex min-h-[52px] items-center gap-3 rounded-md border border-line-strong bg-white/60 px-4 text-[15px] font-medium text-ink transition-colors hover:bg-white";
 
-function CustomTourForm() {
+const WA_TEKST = encodeURIComponent(
+  "Hallo T4XI, ik wil graag een dagtocht aanvragen."
+);
+
+function DagtochtAanvraag() {
   return (
-    <form
-      className="relative overflow-hidden rounded-[28px] border border-line bg-card p-6 shadow-hero-card md:p-7"
-      aria-label="Offerte aanvragen"
-    >
+    <div className="relative overflow-hidden rounded-[28px] border border-line bg-card p-6 shadow-hero-card md:p-7">
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[5px] bg-gradient-to-r from-accent via-stone to-stone-subtle" />
-      <p className="mb-6 text-[11px] uppercase tracking-[3px] text-accent">Vraag een offerte aan</p>
-      <div className="grid gap-4">
-        <div>
-          <label htmlFor="ct-naam" className={labelCls}>Naam</label>
-          <input id="ct-naam" name="naam" placeholder="Uw naam" autoComplete="name" required className={inputCls} />
-        </div>
-        <div>
-          <label htmlFor="ct-contact" className={labelCls}>E-mail / WhatsApp</label>
-          <input id="ct-contact" name="contact" placeholder="E-mail of WhatsApp" className={inputCls} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="ct-vertrek" className={labelCls}>Vertrekpunt</label>
-            <select id="ct-vertrek" name="vertrekpunt" className={inputCls}>
-              <option>Amsterdam</option>
-              <option>Almere</option>
-              <option>Rotterdam</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="ct-pass" className={labelCls}>Aantal passagiers</label>
-            <input id="ct-pass" name="passagiers" type="number" min={1} max={4} defaultValue={2} className={inputCls} />
-          </div>
-        </div>
-        <div>
-          <label htmlFor="ct-bagage" className={labelCls}>Bagage</label>
-          <select id="ct-bagage" name="bagage" className={inputCls}>
-            <option>Handbagage</option>
-            <option>1-2 koffers</option>
-            <option>3 koffers — alleen bij max. 3 passagiers</option>
-            <option>Meer bagage / grotere koffers — eerst afstemmen</option>
-          </select>
-        </div>
-        <div>
-          <label htmlFor="ct-best" className={labelCls}>Gewenste bestemming(en)</label>
-          <input id="ct-best" name="bestemming" placeholder="Bijv. Brugge + Gent op één dag" className={inputCls} />
-        </div>
-        <div>
-          <label htmlFor="ct-datum" className={labelCls}>Voorkeursdatum</label>
-          <input id="ct-datum" type="date" className={inputCls} />
-        </div>
-        <div>
-          <label htmlFor="ct-wensen" className={labelCls}>Extra wensen</label>
-          <textarea
-            id="ct-wensen"
-            placeholder="Lunch reservering, specifieke bezienswaardigheden, etc."
-            className={`${inputCls} min-h-24 resize-y py-3`}
-          />
-        </div>
+      <p className="mb-5 text-[11px] uppercase tracking-[3px] text-accent">Vraag een dagtocht aan</p>
+      <p className="text-[15px] leading-[1.8] text-secondary">
+        Iedere dagtocht stemmen wij persoonlijk met u af. Laat ons weten wat u in
+        gedachten heeft:
+      </p>
+      <ul className="mt-5 flex flex-col gap-2.5">
+        {[
+          "gewenste datum",
+          "vertrekplaats",
+          "groepsgrootte",
+          "eventuele maatwerkwensen",
+        ].map((t) => (
+          <li key={t} className="flex items-center gap-3 text-sm text-ink">
+            <Icon name="check" size={16} className="shrink-0 text-accent" />
+            {t}
+          </li>
+        ))}
+      </ul>
+      <div className="mt-7 grid gap-2.5">
+        <a
+          href={`https://wa.me/31634744522?text=${WA_TEKST}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={KANAAL}
+        >
+          <Icon name="whatsapp" size={18} className="shrink-0 text-whatsapp" />
+          WhatsApp
+        </a>
+        <a href={BEDRIJF.telefoonHref} className={KANAAL}>
+          <Icon name="phone" size={17} className="shrink-0 text-accent" />
+          {BEDRIJF.telefoon}
+        </a>
+        <a href={`mailto:${BEDRIJF.email}`} className={KANAAL}>
+          <Icon name="mail" size={17} className="shrink-0 text-accent" />
+          {BEDRIJF.email}
+        </a>
       </div>
-      <button
-        type="submit"
-        className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-all hover:-translate-y-0.5 hover:bg-accent-hover"
-      >
-        <Icon name="send" size={17} />
-        Offerte aanvragen
-      </button>
-    </form>
+      <p className="mt-5 text-xs leading-[1.7] text-stone">
+        Wij bevestigen de beschikbaarheid, planning en definitieve pakketprijs
+        persoonlijk voordat de rit vaststaat.
+      </p>
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import Icon from "@/components/ui/Icon";
 import { FEATURED, ROUTES, type Country, type Route } from "@/lib/dagtochten";
@@ -99,12 +98,13 @@ export default function RoutesExplorer() {
                 >
                   Details &amp; tijdschema
                 </button>
-                <Link
-                  href="/boeken"
+                {/* Gewone <a>: in-page anker, native browserscroll — geen router nodig. */}
+                <a
+                  href="#aanvragen"
                   className="flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium text-white shadow-cta transition-colors hover:bg-accent-hover"
                 >
-                  Direct boeken
-                </Link>
+                  Dagtocht aanvragen
+                </a>
               </div>
             </div>
           </article>
@@ -176,12 +176,14 @@ export function RouteModal({ route, onClose }: { route: Route; onClose: () => vo
           >
             Sluiten
           </button>
-          <Link
-            href="/boeken"
+          {/* onClose sluit de modal, anders scrollt de achtergrond onzichtbaar weg. */}
+          <a
+            href="#aanvragen"
+            onClick={onClose}
             className="flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium text-white shadow-cta hover:bg-accent-hover"
           >
-            Boek deze route
-          </Link>
+            Dagtocht aanvragen
+          </a>
         </div>
       </div>
     </div>
