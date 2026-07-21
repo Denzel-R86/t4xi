@@ -39,8 +39,14 @@ import { BEDRIJF, LAATST_BIJGEWERKT } from "@/lib/legal";
  * toetsen — en houd er rekening mee dat een verlopen Wp2000-vergunning deze
  * dekking laat vervallen.
  *
- * Nog te doen vóór livegang:
- *   · tarief voor wachttijd buiten de inbegrepen 60 minuten;
+ * Artikel 2 regelt verlenging op verzoek van de klant zonder een tarief te
+ * noemen: meerkosten worden vooraf afgesproken en zonder akkoord niet in
+ * rekening gebracht. Dat is bewust — een bepaling die verwijst naar "het
+ * geldende wachttarief" terwijl er geen tarief is gepubliceerd, is voor de
+ * klant niet bepaalbaar en daarmee aanvechtbaar.
+ *
+ * Nog te doen (v1.1, niet blokkerend voor livegang):
+ *   · een gepubliceerd wachttarief per uur, zodra de kostprijs is vastgesteld;
  *   · toetsing door een jurist.
  *
  * Waar een bepaling nog niet is vastgesteld, staat dat er zichtbaar bij in plaats
@@ -101,6 +107,20 @@ export default function VoorwaardenPage() {
       <p className={P}>
         Wijzigt u na bevestiging de route, het aantal passagiers of de hoeveelheid bagage,
         dan kan een aangepaste prijs gelden. Wij stemmen dat vooraf met u af.
+      </p>
+
+      <h3 className="mt-6 font-display text-base font-semibold text-ink">
+        Wachttijd en verlenging op uw verzoek
+      </h3>
+      <p className={P}>
+        Vraagt u onderweg om extra wachttijd, om een tussenstop of om een langer verblijf dan
+        afgesproken, dan is dat mogelijk voor zover onze planning dat toelaat. Wij spreken de
+        meerkosten daarvoor <strong>vooraf</strong> met u af.
+      </p>
+      <p className={P}>
+        Zonder uw voorafgaande akkoord brengen wij geen meerkosten in rekening. Kunnen wij
+        het verzoek niet inwilligen, bijvoorbeeld omdat de chauffeur een volgende rit heeft,
+        dan zeggen wij dat ter plekke en blijft de oorspronkelijke afspraak gelden.
       </p>
 
       <h2 className={H2}>3 · Luchthavenritten en vluchtvertraging</h2>
