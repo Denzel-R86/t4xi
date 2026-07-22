@@ -3,6 +3,8 @@ import Link from "next/link";
 import "@/components/horizon/horizon.css";
 import FairBand from "@/components/sections/FairBand";
 import { loadRateCard, type CityRates, type RateEntry } from "@/lib/pricing/rate-card";
+import DestinationExplorer from "@/components/tarieven/DestinationExplorer";
+import { destinationGroupFor } from "@/lib/destinations";
 
 /**
  * Tarievenpagina — Editorial Ledger binnen de Horizon Design Language.
@@ -99,7 +101,19 @@ function CitySection({ city }: { city: CityRates }) {
         Vanuit {city.cityName}
       </h2>
       <RouteGroup title="Naar Schiphol" entries={city.toSchiphol} cityName={city.cityName} />
+      {/* Alleen tonen wanneer de stad zulke routes heeft (nu: Rotterdam The
+          Hague Airport vanuit Amsterdam en Rotterdam). Vóór 2026-07-22 werden
+          deze actieve routes nergens weergegeven. */}
+      {city.otherAirports.length > 0 && (
+        <RouteGroup title="Overige luchthavens" entries={city.otherAirports} cityName={city.cityName} />
+      )}
       <RouteGroup title="Intercity" entries={city.intercity} cityName={city.cityName} />
+      {(() => {
+        const group = destinationGroupFor(city.citySlug);
+        return group ? (
+          <DestinationExplorer group={group} cityName={city.cityName} intercity={city.intercity} />
+        ) : null;
+      })()}
     </section>
   );
 }

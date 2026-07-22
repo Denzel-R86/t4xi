@@ -1,0 +1,118 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import Icon from "@/components/ui/Icon";
+import type { RateEntry } from "@/lib/pricing/rate-card";
+import type { OriginDestinationGroup } from "@/lib/destinations";
+
+/**
+ * Bestemmingskiezer per vertrekstad: Steden / Attracties & bezienswaardigheden /
+ * Andere bestemming.
+ *
+ * PRIJZEN KOMEN UITSLUITEND UIT DE RATE-CARD. Dit component toont een vaste
+ * prijs alleen wanneer de vertrekstad die bestemming al in fixed_route_prices
+ * heeft; alles daarbuiten is expliciet "Prijs op aanvraag". Er wordt hier dus
+ * nooit een bedrag verzonnen of afgeleid.
+ *
+ * "Andere bestemming" verwijst nu naar /boeken; zodra de gedeelde
+ * PDOK-autocomplete (stap 2 van de productieblokkers) er is, komt die hier
+ * inline.
+ */
+
+type Segment = "cities" | "attractions" | "other";
+
+const SEGMENTS: { key: Segment; label: string }[] = [
+  { key: "cities", label: "Steden" },
+  { key: "attractions", label: "Attracties & bezienswaardigheden" },
+  { key: "other", label: "Andere bestemming" },
+];
+
+export default function DestinationExplorer({
+  group,
+  cityName,
+  intercity,
+}: {
+  group: OriginDestinationGroup;
+  cityName: string;
+  /** Bestaande vaste intercityprijzen van deze vertrekstad (rate-card). */
+  intercity: RateEntry[];
+}) {
+  const [segment, setSegment] = useState<Segment>("cities");
+
+  // Vaste prijs per bestemmingsnaam — alléén wat de rate-card al kent.
+  const priceByDestination = new Map(intercity.map((e) => [e.to, e]));
+
+  const options = segment === "cities" ? group.cities : segment === "attractions" ? group.attractions : [];
+
+  return (
+    <div className="mt-9">
+      <h3 className="text-[11px] font-medium uppercase tracking-[0.16em] text-secondary">
+        Kies een bestemming
+      </h3>
+
+      <div role="tablist" aria-label={`Bestemmingen vanuit ${cityName}`} className="mt-3 flex flex-wrap gap-2">
+        {SEGMENTS.map((s) => (
+          <button
+            key={s.key}
+            role="tab"
+            aria-selected={segment === s.key}
+            onClick={() => setSegment(s.key)}
+            className={`min-h-10 rounded-full border px-4 text-sm font-medium transition-colors ${
+              segment === s.key
+                ? "border-accent bg-accent text-white"
+                : "border-line bg-white/70 text-secondary hover:text-ink"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {segment !== "other" ? (
+        <ul className="mt-4 list-none">
+          {options.map((o) => {
+            const fixed = priceByDestination.get(o.label);
+            return (
+              <li
+                key={o.searchValue + o.label}
+                className="grid grid-cols-[1fr_auto] items-baseline gap-x-6 border-t border-line py-3.5 first:border-t-0"
+              >
+                <span className="font-display text-[15px] font-medium text-ink">
+                  {cityName} <span className="text-stone">→</span> {o.label}
+                </span>
+                {fixed ? (
+                  <span className="text-right font-display text-[15px] font-bold text-ink [font-variant-numeric:tabular-nums]">
+                    € {fixed.single}
+                    {fixed.retour !== null && (
+                      <span className="ml-2 text-sm font-normal text-secondary">retour € {fixed.retour}</span>
+                    )}
+                  </span>
+                ) : (
+                  <Link
+                    href={`/boeken?van=${encodeURIComponent(cityName)}&naar=${encodeURIComponent(o.searchValue)}`}
+                    className="text-right text-sm text-secondary underline-offset-4 hover:text-ink hover:underline"
+                  >
+                    Prijs op aanvraag
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="mt-4 border-t border-line pt-4 text-sm text-secondary">
+          Elk ander adres, hotel of bekende locatie — vul uw bestemming in op de boekingspagina
+          en u ziet direct de vaste prijs, of ontvangt een offerte op aanvraag.{" "}
+          <Link
+            href={`/boeken?van=${encodeURIComponent(cityName)}`}
+            className="inline-flex items-center gap-1.5 font-medium text-ink underline-offset-4 hover:underline"
+          >
+            Naar de boekingspagina
+            <Icon name="arrow-right" size={14} />
+          </Link>
+        </p>
+      )}
+    </div>
+  );
+}

@@ -22,6 +22,8 @@ export type RawRateRow = {
   cityName: string;
   dropoffSlug: string;
   dropoffName: string;
+  /** locations.location_type van de bestemming ("airport", "city", …). */
+  dropoffType: string;
   serviceType: string;
   single: number;
   retour: number | null;
@@ -41,6 +43,13 @@ export type CityRates = {
   cityName: string;
   toSchiphol: RateEntry[];
   intercity: RateEntry[];
+  /**
+   * Routes naar een luchthaven die niet Schiphol is (nu: Rotterdam The Hague
+   * Airport). Tot 2026-07-22 werden deze rijen stilzwijgend weggegooid — twee
+   * actieve, betaalde routes (Amsterdam €119, Rotterdam €39) stonden daardoor
+   * nergens op /tarieven.
+   */
+  otherAirports: RateEntry[];
 };
 
 /** Vaste volgorde van de hoofd-vertreksteden; overige steden volgen alfabetisch. */
@@ -64,16 +73,17 @@ export function groupRoutes(rows: RawRateRow[]): CityRates[] {
 
     let city = byCity.get(r.citySlug);
     if (!city) {
-      city = { citySlug: r.citySlug, cityName: r.cityName, toSchiphol: [], intercity: [] };
+      city = { citySlug: r.citySlug, cityName: r.cityName, toSchiphol: [], intercity: [], otherAirports: [] };
       byCity.set(r.citySlug, city);
     }
 
     const isSchiphol = r.dropoffSlug === "schiphol-airport";
+    const isOtherAirport = !isSchiphol && r.dropoffType === "airport";
     const isIntercity = r.serviceType === "intercity";
-    if (!isSchiphol && !isIntercity) continue; // bv. secundaire luchthaven → niet in dit model
+    if (!isSchiphol && !isOtherAirport && !isIntercity) continue; // onbekend routetype → niet tonen
 
     const entry: RateEntry = {
-      from: isSchiphol ? r.pickupName : r.cityName,
+      from: isSchiphol || isOtherAirport ? r.pickupName : r.cityName,
       to: isSchiphol ? "Schiphol" : r.dropoffName,
       distanceKm: r.distanceKm,
       single: r.single,
@@ -84,7 +94,7 @@ export function groupRoutes(rows: RawRateRow[]): CityRates[] {
     if (seen.has(key)) continue; // iedere route maximaal één keer
     seen.add(key);
 
-    (isSchiphol ? city.toSchiphol : city.intercity).push(entry);
+    (isSchiphol ? city.toSchiphol : isOtherAirport ? city.otherAirports : city.intercity).push(entry);
   }
 
   const sortByPrice = (a: RateEntry, b: RateEntry) => a.single - b.single;
@@ -92,6 +102,7 @@ export function groupRoutes(rows: RawRateRow[]): CityRates[] {
   sections.forEach((c) => {
     c.toSchiphol.sort(sortByPrice);
     c.intercity.sort(sortByPrice);
+    c.otherAirports.sort(sortByPrice);
   });
 
   sections.sort((a, b) => {
@@ -117,7 +128,7 @@ export async function loadRateCard(): Promise<CityRates[]> {
     .select(
       `price, return_price, distance_km, service_type,
        pickup:locations!fixed_route_prices_pickup_location_id_fkey ( name, city:cities ( slug, name ) ),
-       dropoff:locations!fixed_route_prices_dropoff_location_id_fkey ( slug, name )`
+       dropoff:locations!fixed_route_prices_dropoff_location_id_fkey ( slug, name, location_type )`
     )
     .eq("active", true);
 
@@ -139,6 +150,7 @@ export async function loadRateCard(): Promise<CityRates[]> {
         cityName: String(city.name ?? ""),
         dropoffSlug: String(dropoff.slug ?? ""),
         dropoffName: String(dropoff.name ?? ""),
+        dropoffType: String(dropoff.location_type ?? ""),
         serviceType: String(r.service_type ?? ""),
         single: num(r.price),
         retour: r.return_price === null || r.return_price === undefined ? null : num(r.return_price),
