@@ -2,6 +2,17 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Outfit, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
+
+/*
+ * TYPOGRAFIE — bewuste afwijking van de Brand Guide (besluit eigenaar, 22-07-2026).
+ *
+ * De T4XI Brand Guide 2026 noemt Helvetica/Arial als systeemtypografie. Dat is
+ * de veilige keuze voor drukwerk en collateral, geen webvoorschrift. De site
+ * gebruikt Outfit (display), Inter (tekst) en Playfair Display (accenten,
+ * dagtochten) omdat die de "premium uitstraling" uit dezelfde guide op het web
+ * beter dragen. Kleur volgt de guide wél strikt: Primary Navy #28313B is het
+ * accent (tailwind.config.ts → ink/accent).
+ */
 import Header from "@/components/sections/Header";
 import Footer from "@/components/sections/Footer";
 import StickyCta from "@/components/sections/StickyCta";
