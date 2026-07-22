@@ -96,6 +96,7 @@ export const ROUTES: Route[] = [
   BRUGGE,
   {
     slug: "gent", name: "Gent", emoji: "🏛️", flag: "🇧🇪", country: "be", countryName: "België",
+    image: "/dagtochten/gent.jpg",
     duration: "2,8u rijden", km: "~220 km",
     tagline: "Middeleeuwse stad met bruisend studentenleven en iconische Gravensteen.",
     desc: "Gent combineert middeleeuwse grandeur met een bruisende studentencultuur. Het Gravensteen, de Graslei en de culinaire Patershol-wijk maken het tot een perfecte dagtrip.",
@@ -115,6 +116,7 @@ export const ROUTES: Route[] = [
   },
   {
     slug: "brussel", name: "Brussel", emoji: "🍺", flag: "🇧🇪", country: "be", countryName: "België",
+    image: "/dagtochten/brussel.jpg",
     duration: "2,7u rijden", km: "~205 km",
     tagline: "De hoofdstad van Europa: Grand Place, Art Nouveau, Atomium en Belgische frietjes.",
     desc: "De hoofdstad van Europa barst van cultuur: de UNESCO Grand Place, het Atomium, prachtige Art Nouveau architectuur en uiteraard de beroemde Belgische keuken.",
@@ -134,6 +136,7 @@ export const ROUTES: Route[] = [
   },
   {
     slug: "keulen", name: "Keulen", emoji: "⛪", flag: "🇩🇪", country: "de", countryName: "Duitsland",
+    image: "/dagtochten/keulen.jpg",
     duration: "3,1u rijden", km: "~265 km",
     tagline: "De Dom die de hemel raakt, en een stad vol kunst, bier en Rijnromantiek.",
     desc: "De Kölner Dom domineert het stadssilhouet en is een absolute must-see. Combineer dit met modern kunst, Rijnkruising en authentiek Kölsch bier in een traditioneel Brauhaus.",
@@ -196,6 +199,7 @@ export const ROUTES: Route[] = [
   },
   {
     slug: "luxemburg", name: "Luxemburg-Stad", emoji: "🏰", flag: "🇱🇺", country: "lu", countryName: "Luxemburg",
+    image: "/dagtochten/luxemburg.jpg",
     duration: "4,9u rijden", km: "~415 km",
     tagline: "UNESCO-vestingstad op een rots, met ondergrondse kazematten en een verfijnde culinaire scene.",
     desc: "Dit verborgen pareltje is onverdiend onbekend. Een vestingstad op een rots, met ondergrondse kazematten, een charmante benedenstad en een van de hoogste levensstandaarden ter wereld.",
@@ -238,6 +242,7 @@ export const ROUTES: Route[] = [
   },
   {
     slug: "dusseldorf", name: "Düsseldorf", emoji: "🛍️", flag: "🇩🇪", country: "de", countryName: "Duitsland",
+    image: "/dagtochten/dusseldorf.jpg",
     duration: "2,7u rijden", km: "~225 km",
     tagline: "Mode, design en de Königsallee — Duitslands meest elegante winkelstraat.",
     desc: "Düsseldorf is Duitslands meest elegante stad — mode, design en de beroemde \"Kö\" (Königsallee). Combineer high-end shopping met kunst en een Altbier in de Altstadt.",
@@ -257,6 +262,7 @@ export const ROUTES: Route[] = [
   },
   {
     slug: "delft", name: "Delft & Den Haag", emoji: "🏺", flag: "🇳🇱", country: "nl", countryName: "Nederland",
+    image: "/dagtochten/delft.jpg",
     duration: "1u rijden", km: "~70 km",
     tagline: "Delfts Blauw, Vermeer, het Mauritshuis — koninklijke cultuur op één dag.",
     desc: "Een dag vol Vermeer, Delfts Blauw en koninklijke allure. Van de schilderachtige grachten van Delft naar het prestigieuze Mauritshuis in Den Haag — en dan nog een strandwandeling in Scheveningen.",
