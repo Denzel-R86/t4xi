@@ -10,3 +10,4 @@ supabase/.temp/
 next-env.d.ts
 .claude-flow/
 .swarm/
+data/pricing/too-cheap-routes.review.csv
