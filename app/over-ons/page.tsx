@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import FairBand from "@/components/sections/FairBand";
 import WhySection from "@/components/sections/WhySection";
 import ReviewsSection from "@/components/sections/ReviewsSection";
@@ -15,26 +16,41 @@ export default function OverOnsPage() {
   return (
     <>
       <section className="mx-auto max-w-site px-6 pb-4 pt-16 md:pt-24">
-        <ScrollReveal>
-          <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
-            <span aria-hidden="true" className="h-px w-4 bg-accent" />
-            Over ons
-          </p>
-          <h1 className="mt-4 font-display text-display-lg font-bold text-ink">
-            Premium vervoer,
-            <br />
-            <span className="italic text-stone">elektrisch gedreven</span>
-          </h1>
-          <div className="mt-6 max-w-2xl space-y-4 text-secondary">
-            <p>
-              T4XI is onderdeel van Noir Driving Services, opgericht in Almere.
-              We rijden uitsluitend elektrisch en geloven dat premium vervoer
-              transparant hoort te zijn: een vaste prijs vooraf, een chauffeur
-              die op tijd is en een auto die stil en comfortabel rijdt.
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <ScrollReveal>
+            <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
+              <span aria-hidden="true" className="h-px w-4 bg-accent" />
+              Over ons
             </p>
-            <p>Arrive with confidence — dat is geen slogan, dat is de afspraak.</p>
-          </div>
-        </ScrollReveal>
+            <h1 className="mt-4 font-display text-display-lg font-bold text-ink">
+              Premium vervoer,
+              <br />
+              <span className="italic text-stone">elektrisch gedreven</span>
+            </h1>
+            <div className="mt-6 max-w-2xl space-y-4 text-secondary">
+              <p>
+                T4XI is onderdeel van Noir Driving Services, opgericht in Almere.
+                We rijden uitsluitend elektrisch en geloven dat premium vervoer
+                transparant hoort te zijn: een vaste prijs vooraf, een chauffeur
+                die op tijd is en een auto die stil en comfortabel rijdt.
+              </p>
+              <p>Arrive with confidence — dat is geen slogan, dat is de afspraak.</p>
+            </div>
+          </ScrollReveal>
+          {/* Interieur Tesla Model Y (gecureerd, T4XI): illustreert het "stil en
+              comfortabel"-interieur uit de tekst. Eén dominante foto per sectie. */}
+          <ScrollReveal delay={150}>
+            <figure className="relative aspect-[4/5] overflow-hidden rounded-fleet border border-line shadow-card-lg">
+              <Image
+                src="/tesla-interieur.jpg"
+                alt="Interieur van de Tesla Model Y — minimalistisch, ruim en stil"
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+              />
+            </figure>
+          </ScrollReveal>
+        </div>
       </section>
       <FairBand />
       <WhySection />
