@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import FaqList from "@/components/sections/FaqList";
@@ -215,8 +216,18 @@ export default async function SeoLandingPage({ params }: { params: { slug: strin
       </section>
 
       {/* ═══ CTA BAND ═══ */}
-      <div className="border-t border-line bg-ink py-16 text-center md:py-20">
-        <div className="mx-auto max-w-site px-6">
+      <div className="relative overflow-hidden border-t border-line bg-ink py-16 text-center md:py-20">
+        {/* Schiphol-platform bij avond (gecureerd, T4XI). De navy-avondtinten
+            sluiten aan op bg-ink; de overlay houdt de fog-tekst leesbaar. */}
+        <Image
+          src="/schiphol-avond.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover object-center opacity-40"
+        />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-ink via-ink/85 to-ink/70" />
+        <div className="relative mx-auto max-w-site px-6">
           <p className="text-eyebrow font-medium uppercase text-stone">Klaar om te boeken?</p>
           <h2 className="mt-4 font-display text-display-lg font-bold text-fog">
             <span className="italic text-stone-subtle">{stad.naam} → Schiphol</span> met vaste prijs
