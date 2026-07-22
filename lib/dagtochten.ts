@@ -31,6 +31,14 @@ export type Route = {
   itinerary: string[];
   /** True als de route niet als standaardarrangement leverbaar is. */
   onAanvraag?: boolean;
+  /**
+   * Optioneel bestemmingsbeeld onder /public/dagtochten/<slug>.jpg. Wanneer leeg
+   * valt de kaart terug op het emoji-vlak. Nieuwe eigen foto toevoegen = bestand
+   * plaatsen en dit veld zetten; er verandert verder niets aan de kaart.
+   * Bronnen (gecureerd, T4XI): brugge · antwerpen (Grote Markt) · rijnvallei
+   * (Rüdesheim) · keukenhof (Bollenstreek).
+   */
+  image?: string;
 };
 
 /**
@@ -55,6 +63,7 @@ const BRUGGE: Route = {
   luggage: "Bagage in overleg",
   highlights: [],
   price: "€795",
+  image: "/dagtochten/brugge.jpg",
   itinerary: [
     "Vertrek vanuit Amsterdam, Almere of Rotterdam",
     "Aankomst Markt Brugge — Belfort bestijgen (optioneel)",
@@ -150,6 +159,7 @@ export const ROUTES: Route[] = [
     luggage: "Bagage in overleg",
     highlights: ["Rubenshuis & Koninklijk Museum", "Diamantwijk — meest exclusieve wijk ter wereld", "Grote Markt & Onze-Lieve-Vrouwekathedraal", "Modemuseum MoMu"],
     price: "€595",
+    image: "/dagtochten/antwerpen.jpg",
     itinerary: [
       "Vertrek vanuit Amsterdam, Almere of Rotterdam",
       "Aankomst — Grote Markt & Stadhuis",
@@ -172,6 +182,7 @@ export const ROUTES: Route[] = [
     // laadstops. Als standaardarrangement binnen één dag niet leverbaar.
     price: "Op aanvraag",
     onAanvraag: true,
+    image: "/dagtochten/rijnvallei.jpg",
     itinerary: [
       "Vroeg vertrek vanuit Amsterdam, Almere of Rotterdam",
       "Aankomst Bacharach — middeleeuws stadje",
@@ -213,6 +224,7 @@ export const ROUTES: Route[] = [
     luggage: "Bagage in overleg",
     highlights: ["Keukenhof Tuinen (mrt–mei)", "Bollenvelden langs de N208", "Kasteel Keukenhof", "Duingebied Amsterdamse Waterleidingduinen"],
     price: "€349",
+    image: "/dagtochten/keukenhof.jpg",
     itinerary: [
       "Vertrek vanuit Amsterdam",
       "Aankomst Keukenhof — opening",

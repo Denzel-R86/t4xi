@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import RoutesExplorer, { FeaturedDetailsButton } from "@/components/dagtochten/RoutesExplorer";
@@ -89,8 +90,21 @@ export default function DagtochtenPage() {
                   </Link>
                 </div>
               </div>
-              <div aria-hidden="true" className="flex min-h-56 items-center justify-center bg-[linear-gradient(135deg,#EEEAE5,#DDD7CE)] text-[120px] lg:text-[160px]">
-                {FEATURED.emoji}
+              <div className="relative min-h-56 overflow-hidden bg-[linear-gradient(135deg,#EEEAE5,#DDD7CE)]">
+                {FEATURED.modal.image ? (
+                  <Image
+                    src={FEATURED.modal.image}
+                    alt={`${FEATURED.name} — ${FEATURED.title}`}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    className="object-cover"
+                    priority
+                  />
+                ) : (
+                  <div aria-hidden="true" className="flex h-full items-center justify-center text-[120px] lg:text-[160px]">
+                    {FEATURED.emoji}
+                  </div>
+                )}
               </div>
             </div>
           </ScrollReveal>

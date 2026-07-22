@@ -1,8 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Icon from "@/components/ui/Icon";
 import { FEATURED, ROUTES, type Country, type Route } from "@/lib/dagtochten";
+
+/**
+ * Bestemmingsbeeld met terugval. Heeft de route een eigen foto
+ * (/public/dagtochten/<slug>.jpg), dan tonen we die; anders het emoji-vlak dat
+ * er al was. Zo blijft het raster consistent en kan later per route een foto
+ * worden bijgeplaatst zonder de kaart te herbouwen.
+ */
+function RouteMedia({ route, sizes, emojiClass }: { route: Route; sizes: string; emojiClass: string }) {
+  if (route.image) {
+    return (
+      <Image
+        src={route.image}
+        alt={route.name}
+        fill
+        sizes={sizes}
+        className="object-cover"
+      />
+    );
+  }
+  return <span aria-hidden="true" className={emojiClass}>{route.emoji}</span>;
+}
 
 /** "Details bekijken"-knop van de featured Brugge-kaart, opent de routemodal. */
 export function FeaturedDetailsButton() {
@@ -59,12 +81,16 @@ export default function RoutesExplorer() {
       <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {visible.map((r) => (
           <article key={r.slug} className="flex h-full flex-col overflow-hidden rounded-card border border-line bg-card shadow-card">
-            <div className="relative flex h-36 items-center justify-center bg-[linear-gradient(135deg,#EEEAE5,#E2DDD5)] text-5xl">
-              <span aria-hidden="true">{r.emoji}</span>
-              <span className="absolute left-4 top-4 rounded-full bg-white/85 px-3 py-1 text-xs text-ink">
+            <div className="relative flex h-36 items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#EEEAE5,#E2DDD5)]">
+              <RouteMedia
+                route={r}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                emojiClass="text-5xl"
+              />
+              <span className="absolute left-4 top-4 z-10 rounded-full bg-white/85 px-3 py-1 text-xs text-ink backdrop-blur-sm">
                 {r.flag} {r.countryName}
               </span>
-              <span className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-white/85 px-3 py-1 text-[11px] text-secondary">
+              <span className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-white/85 px-3 py-1 text-[11px] text-secondary backdrop-blur-sm">
                 <Icon name="clock" size={12} />
                 {r.duration}
               </span>
@@ -145,10 +171,15 @@ export function RouteModal({ route, onClose }: { route: Route; onClose: () => vo
           type="button"
           onClick={onClose}
           aria-label="Sluiten"
-          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-md text-stone hover:bg-fog hover:text-ink"
+          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-md bg-white/80 text-ink backdrop-blur-sm hover:bg-white"
         >
           <Icon name="x" size={18} />
         </button>
+        {route.image && (
+          <div className="relative -mx-7 -mt-7 mb-5 h-48 overflow-hidden">
+            <Image src={route.image} alt={route.name} fill sizes="(max-width: 640px) 100vw, 512px" className="object-cover" />
+          </div>
+        )}
         <p className="mb-2 text-[11px] uppercase tracking-[3px] text-accent">
           {route.flag} {route.countryName}
         </p>
