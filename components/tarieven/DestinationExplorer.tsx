@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Icon from "@/components/ui/Icon";
+import AddressAutocomplete, {
+  type AddressSuggestion,
+} from "@/components/shared/AddressAutocomplete";
 import type { RateEntry } from "@/lib/pricing/rate-card";
 import type { OriginDestinationGroup } from "@/lib/destinations";
 
@@ -15,9 +19,8 @@ import type { OriginDestinationGroup } from "@/lib/destinations";
  * heeft; alles daarbuiten is expliciet "Prijs op aanvraag". Er wordt hier dus
  * nooit een bedrag verzonnen of afgeleid.
  *
- * "Andere bestemming" verwijst nu naar /boeken; zodra de gedeelde
- * PDOK-autocomplete (stap 2 van de productieblokkers) er is, komt die hier
- * inline.
+ * "Andere bestemming" gebruikt de GEDEELDE AddressAutocomplete en deep-linkt
+ * naar /boeken?pickup=…&dropoff=… — dezelfde flow als hero en boekingsformulier.
  */
 
 type Segment = "cities" | "attractions" | "other";
@@ -38,10 +41,17 @@ export default function DestinationExplorer({
   /** Bestaande vaste intercityprijzen van deze vertrekstad (rate-card). */
   intercity: RateEntry[];
 }) {
+  const router = useRouter();
   const [segment, setSegment] = useState<Segment>("cities");
+  const [other, setOther] = useState<AddressSuggestion | null>(null);
+  const [otherText, setOtherText] = useState("");
 
   // Vaste prijs per bestemmingsnaam — alléén wat de rate-card al kent.
   const priceByDestination = new Map(intercity.map((e) => [e.to, e]));
+
+  const otherValue = other?.label ?? (otherText.trim().length >= 3 ? otherText.trim() : null);
+  const bookingHref = (dropoff: string) =>
+    `/boeken?pickup=${encodeURIComponent(cityName)}&dropoff=${encodeURIComponent(dropoff)}`;
 
   const options = segment === "cities" ? group.cities : segment === "attractions" ? group.attractions : [];
 
@@ -82,15 +92,18 @@ export default function DestinationExplorer({
                   {cityName} <span className="text-stone">→</span> {o.label}
                 </span>
                 {fixed ? (
-                  <span className="text-right font-display text-[15px] font-bold text-ink [font-variant-numeric:tabular-nums]">
+                  <Link
+                    href={bookingHref(o.searchValue)}
+                    className="text-right font-display text-[15px] font-bold text-ink underline-offset-4 [font-variant-numeric:tabular-nums] hover:underline"
+                  >
                     € {fixed.single}
                     {fixed.retour !== null && (
                       <span className="ml-2 text-sm font-normal text-secondary">retour € {fixed.retour}</span>
                     )}
-                  </span>
+                  </Link>
                 ) : (
                   <Link
-                    href={`/boeken?van=${encodeURIComponent(cityName)}&naar=${encodeURIComponent(o.searchValue)}`}
+                    href={bookingHref(o.searchValue)}
                     className="text-right text-sm text-secondary underline-offset-4 hover:text-ink hover:underline"
                   >
                     Prijs op aanvraag
@@ -101,17 +114,28 @@ export default function DestinationExplorer({
           })}
         </ul>
       ) : (
-        <p className="mt-4 border-t border-line pt-4 text-sm text-secondary">
-          Elk ander adres, hotel of bekende locatie — vul uw bestemming in op de boekingspagina
-          en u ziet direct de vaste prijs, of ontvangt een offerte op aanvraag.{" "}
-          <Link
-            href={`/boeken?van=${encodeURIComponent(cityName)}`}
-            className="inline-flex items-center gap-1.5 font-medium text-ink underline-offset-4 hover:underline"
+        <div className="mt-4 max-w-xl border-t border-line pt-4">
+          <p className="mb-2 text-sm text-secondary">
+            Elk ander adres, hotel of bekende locatie. Vul uw bestemming in — bestaat er een
+            vaste prijs, dan ziet u die direct op de boekingspagina; anders ontvangt u een
+            offerte op aanvraag.
+          </p>
+          <AddressAutocomplete
+            label={`Bestemming vanuit ${cityName}`}
+            placeholder="Bijv. Hilton Schiphol of Efteling, Kaatsheuvel"
+            onSelect={setOther}
+            onTextChange={setOtherText}
+          />
+          <button
+            type="button"
+            disabled={!otherValue}
+            onClick={() => otherValue && router.push(bookingHref(otherValue))}
+            className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-md bg-accent px-6 text-sm font-medium text-white shadow-cta transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Naar de boekingspagina
+            Bekijk vaste prijs
             <Icon name="arrow-right" size={14} />
-          </Link>
-        </p>
+          </button>
+        </div>
       )}
     </div>
   );

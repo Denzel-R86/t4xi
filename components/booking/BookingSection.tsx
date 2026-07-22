@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import AddressAutocomplete, {
   type AddressSuggestion,
-} from "@/components/booking/AddressAutocomplete";
+} from "@/components/shared/AddressAutocomplete";
+import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import Icon from "@/components/ui/Icon";
 import { inferAddressMeta, type RitType } from "@/lib/booking-meta";
 
@@ -36,10 +37,22 @@ const labelCls = "mb-1.5 block text-xs font-bold text-secondary";
  * rit-type tabs, adressen met PDOK-autocomplete, datum/tijd/voertuig/
  * passagiers/bagage, adresdetectie-pillen, live richtprijs en contactvelden.
  */
-export default function BookingSection() {
+export default function BookingSection({
+  initialPickup,
+  initialDropoff,
+}: {
+  /** Deep-link (?pickup=…): veld vooraf gevuld, prijs rekent direct. */
+  initialPickup?: string;
+  /** Deep-link (?dropoff=…). */
+  initialDropoff?: string;
+} = {}) {
   const [tab, setTab] = useState<RitType>("enkel");
-  const [pickup, setPickup] = useState<AddressSuggestion | null>(null);
-  const [dropoff, setDropoff] = useState<AddressSuggestion | null>(null);
+  const [pickup, setPickup] = useState<AddressSuggestion | null>(
+    initialPickup ? { id: "deeplink", label: initialPickup, source: "free" } : null
+  );
+  const [dropoff, setDropoff] = useState<AddressSuggestion | null>(
+    initialDropoff ? { id: "deeplink", label: initialDropoff, source: "free" } : null
+  );
   const [persons, setPersons] = useState(1);
   const [luggage, setLuggage] = useState("handbagage");
   const [vehicle, setVehicle] = useState(VEHICLES[0]);
@@ -121,20 +134,9 @@ export default function BookingSection() {
   );
   const ready = pickup && dropoff;
 
-  // Live richtprijs — UITSLUITEND uit de autoritatieve Pricing Engine
-  // (/api/pricing/quote). Geen client-side prijslogica. Debounce + abort tegen
-  // race-conditions bij snel typen/wisselen.
-  /**
-   * De luchthavencontext komt UITSLUITEND uit de prijsengine. Dit component leidt
-   * niets af uit adresteksten of slugs — anders ontstaat er een tweede definitie
-   * van "is dit een luchthavenrit" die uit de pas kan lopen met de server.
-   */
-  type Airport = { isTransfer: boolean; direction: "arrival" | "departure" | null };
-  type Quote =
-    | { status: "idle" | "loading" | "error"; airport?: Airport }
-    | { status: "onrequest"; airport: Airport }
-    | { status: "ready"; amount: string; note: string; airport: Airport };
-  const [quote, setQuote] = useState<Quote>({ status: "idle" });
+  // Live richtprijs én luchthavencontext via de GEDEELDE quote-flow
+  // (components/shared/useRouteQuote.ts) — dezelfde keten als de homepagehero.
+  const quote = useRouteQuote(pickup, dropoff, { returnTrip: tab === "retour", passengers: persons });
   const [flightNumber, setFlightNumber] = useState("");
 
   // Het vluchtnummerveld verschijnt zodra de engine zegt dat één zijde een
@@ -143,58 +145,6 @@ export default function BookingSection() {
   const airport = quote.airport;
   const needsFlight = Boolean(airport?.isTransfer);
   const isArrival = airport?.direction === "arrival";
-
-  useEffect(() => {
-    if (!pickup || !dropoff) {
-      setQuote({ status: "idle" });
-      return;
-    }
-    const controller = new AbortController();
-    setQuote({ status: "loading" });
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch("/api/pricing/quote", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            pickup: pickup.label,
-            dropoff: dropoff.label,
-            returnTrip: tab === "retour",
-            passengers: persons,
-          }),
-          signal: controller.signal,
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.available) {
-          setQuote({
-            status: "ready",
-            amount: `€${data.price}`,
-            note: data.returnApplied ? "Retour — vaste prijs vooraf" : "Vaste prijs vooraf",
-            airport: {
-              isTransfer: Boolean(data.isAirportTransfer),
-              direction: data.flightDirection ?? null,
-            },
-          });
-        } else {
-          // Ook zonder vaste prijs geeft de API de luchthavencontext mee.
-          setQuote({
-            status: "onrequest",
-            airport: {
-              isTransfer: Boolean(data.isAirportTransfer),
-              direction: data.flightDirection ?? null,
-            },
-          });
-        }
-      } catch (err) {
-        if ((err as Error)?.name === "AbortError") return;
-        setQuote({ status: "error" });
-      }
-    }, 400);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [pickup, dropoff, tab, persons]);
 
   const priceNote =
     quote.status === "idle"
@@ -280,8 +230,8 @@ export default function BookingSection() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 grid gap-1 sm:grid-cols-2 sm:gap-4">
-            <AddressAutocomplete label="Van" placeholder="Vertrekadres" onSelect={setPickup} />
-            <AddressAutocomplete label="Naar" placeholder="Bestemming" onSelect={setDropoff} />
+            <AddressAutocomplete label="Van" placeholder="Vertrekadres" onSelect={setPickup} initialValue={initialPickup} />
+            <AddressAutocomplete label="Naar" placeholder="Bestemming" onSelect={setDropoff} initialValue={initialDropoff} />
           </div>
           <div>
             <label htmlFor="f-date" className={labelCls}>Datum</label>

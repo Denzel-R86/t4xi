@@ -209,5 +209,19 @@ export function resolveLocationSlug(address: string): string | null {
     if (rule.test(full, place)) return rule.slug;
   }
 
+  // 2026-07-22 (E2E-bevinding): PDOK-wóónplaatslabels hebben de vorm
+  // "Plaats, Gemeente, Provincie" ("Schiphol, Haarlemmermeer, Noord-Holland"),
+  // zodat het láátste segment geen bruikbare plaats is. Alleen voor dat
+  // driedelige formaat proberen we het EERSTE segment als plaats. De eisen
+  // (≥ 2 komma's, geen cijfers) sluiten straatlabels uit: "Schipholweg 1,
+  // Leiden" en "Utrechtseweg, Arnhem" komen hier nooit doorheen.
+  const segments = full.split(",").map((s) => s.trim());
+  const first = segments[0] ?? "";
+  if (segments.length >= 3 && first && !/\d/.test(first)) {
+    for (const rule of KEYWORD_RULES) {
+      if (rule.test(first, first)) return rule.slug;
+    }
+  }
+
   return null;
 }

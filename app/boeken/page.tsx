@@ -18,7 +18,21 @@ const FEATURES = [
   { icon: "plane", text: "Wij volgen uw vluchtstatus bij vertraging" },
 ];
 
-export default function BoekenPage() {
+/**
+ * Deep-linking: /boeken?pickup=…&dropoff=… vult beide adresvelden vooraf in,
+ * rekent direct de vaste prijs en toont waar nodig het vluchtnummerveld.
+ * Homepage-hero, tarievenpagina, SEO-pagina's en advertenties gebruiken zo
+ * exact dezelfde boekingsflow. `van`/`naar` blijven als aliassen werken.
+ */
+export default function BoekenPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
+  const first = (v: string | string[] | undefined): string | undefined =>
+    (Array.isArray(v) ? v[0] : v)?.trim() || undefined;
+  const initialPickup = first(searchParams?.pickup) ?? first(searchParams?.van);
+  const initialDropoff = first(searchParams?.dropoff) ?? first(searchParams?.naar);
   return (
     <section className="mx-auto grid max-w-site items-start gap-12 px-6 py-16 md:py-24 lg:grid-cols-2">
       <div>
@@ -44,7 +58,7 @@ export default function BoekenPage() {
         </ul>
       </div>
       <ScrollReveal>
-        <BookingSection />
+        <BookingSection initialPickup={initialPickup} initialDropoff={initialDropoff} />
       </ScrollReveal>
     </section>
   );

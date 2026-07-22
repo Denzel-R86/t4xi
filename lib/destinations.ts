@@ -20,7 +20,7 @@ export type DestinationOption = {
   type: "city" | "attraction";
 };
 
-export type OriginSlug = "amsterdam" | "almere" | "utrecht" | "den-haag";
+export type OriginSlug = "amsterdam" | "almere" | "utrecht" | "den-haag" | "rotterdam";
 
 export type OriginDestinationGroup = {
   origin: OriginSlug;
@@ -92,6 +92,20 @@ export const DESTINATION_GROUPS: OriginDestinationGroup[] = [
       attractie("Ouwehands Dierenpark", "Ouwehands Dierenpark, Rhenen"),
       attractie("Nationaal Park De Hoge Veluwe", "Nationaal Park De Hoge Veluwe, Otterlo"),
       KEUKENHOF, ZAANSE_SCHANS, GIETHOORN,
+    ],
+  },
+  {
+    origin: "rotterdam",
+    cities: [
+      stad("Eindhoven"), stad("Maastricht"), stad("Amsterdam"), stad("Den Haag"),
+      stad("Utrecht"), stad("Breda"), stad("Dordrecht"), stad("Delft"),
+      stad("Leiden"), stad("'s-Hertogenbosch"),
+    ],
+    attractions: [
+      attractie("Diergaarde Blijdorp", "Diergaarde Blijdorp, Rotterdam"),
+      attractie("Euromast", "Euromast, Rotterdam"),
+      KINDERDIJK, MADURODAM, KEUKENHOF, EFTELING, WALIBI, KASTEEL_DE_HAAR,
+      ZAANSE_SCHANS, GIETHOORN,
     ],
   },
   {

@@ -164,3 +164,11 @@ test("plaats-segment wint: 'Hotel Amsterdam, Rotterdam' is Rotterdam", () => {
   assert.equal(resolveLocationSlug("Hotel Amsterdam, Rotterdam"), "rotterdam");
   assert.equal(resolveLocationSlug("Utrechtsestraat 1, 1017VH Amsterdam"), "amsterdam-centrum");
 });
+
+test("woonplaats-labels (plaats, gemeente, provincie) resolven op het eerste segment", () => {
+  assert.equal(resolveLocationSlug("Schiphol, Haarlemmermeer, Noord-Holland"), "schiphol-airport");
+  assert.equal(resolveLocationSlug("Amsterdam, Amsterdam, Noord-Holland"), "amsterdam");
+  // straatnamen met stadsnamen erin mogen NOOIT via deze terugval resolven
+  assert.equal(resolveLocationSlug("Schipholweg 1, Leiden"), null);
+  assert.equal(resolveLocationSlug("Utrechtseweg 10, Arnhem"), null);
+});

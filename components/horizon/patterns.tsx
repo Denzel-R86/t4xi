@@ -48,8 +48,10 @@
 import "./horizon.css";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Reveal, Odometer, usePrefersReducedMotion } from "./motion";
+import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
+import { useRouteQuote } from "@/components/shared/useRouteQuote";
 
 /* ── de ruggengraat ─────────────────────────────────────────────────────── */
 
@@ -210,71 +212,127 @@ export function Dash() {
 
 /* ── sentence: de handeling als zin ─────────────────────────────────────── */
 
-type Quote =
-  | { status: "idle" | "loading" | "onrequest" | "error" }
-  | { status: "ready"; price: number };
-
 /** De boekingszin óp de lijn: "Ik reis van ___ naar ___." — het antwoord is de
  *  vaste prijs uit de echte Pricing Engine. Confirm leidt naar de volledige
- *  boekingsflow. Focus/Confirm-werkwoorden; geen kaart, geen formulierblok. */
+ *  boekingsflow mét de ingevulde adressen (deep-link — nooit opnieuw zoeken).
+ *
+ *  Suggesties en prijs komen uit de GEDEELDE bronnen (useAddressSuggestions,
+ *  useRouteQuote): dit is dezelfde keten als het boekingsformulier, alleen in
+ *  zin-presentatie. Vrije tekst blijft toegestaan. */
 export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: string }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [quote, setQuote] = useState<Quote>({ status: "idle" });
+  const [activeField, setActiveField] = useState<"from" | "to" | null>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
 
-  useEffect(() => {
-    if (from.trim().length < 3 || to.trim().length < 3) {
-      setQuote({ status: "idle" });
-      return;
+  // Eén gedeelde suggestiebron voor het actieve veld.
+  const activeQuery = activeField === "from" ? from : activeField === "to" ? to : "";
+  const { suggestions, clear } = useAddressSuggestions(activeQuery, activeField !== null);
+
+  // Vrije tekst quoteert direct (bestaand gedrag), via de gedeelde quote-flow.
+  const pickup = useMemo<AddressSuggestion | null>(
+    () => (from.trim().length >= 3 ? { id: "hero-from", label: from.trim(), source: "free" } : null),
+    [from]
+  );
+  const dropoff = useMemo<AddressSuggestion | null>(
+    () => (to.trim().length >= 3 ? { id: "hero-to", label: to.trim(), source: "free" } : null),
+    [to]
+  );
+  const quote = useRouteQuote(pickup, dropoff);
+
+  const href =
+    pickup && dropoff
+      ? `/boeken?pickup=${encodeURIComponent(pickup.label)}&dropoff=${encodeURIComponent(dropoff.label)}`
+      : confirmHref;
+
+  function choose(s: AddressSuggestion) {
+    if (activeField === "from") setFrom(s.label);
+    else if (activeField === "to") setTo(s.label);
+    clear();
+    setActiveIndex(-1);
+    setActiveField(null);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && activeIndex >= 0) {
+      e.preventDefault();
+      choose(suggestions[activeIndex]);
+    } else if (e.key === "Escape") {
+      clear();
+      setActiveIndex(-1);
     }
-    const controller = new AbortController();
-    setQuote({ status: "loading" });
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch("/api/pricing/quote", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pickup: from.trim(), dropoff: to.trim() }),
-          signal: controller.signal,
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.available) setQuote({ status: "ready", price: data.price });
-        else setQuote({ status: "onrequest" });
-      } catch (err) {
-        if ((err as Error)?.name !== "AbortError") setQuote({ status: "error" });
-      }
-    }, 400);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [from, to]);
+  }
 
   const blank = (
+    field: "from" | "to",
     value: string,
     set: (v: string) => void,
     placeholder: string,
     label: string
   ) => (
-    <span className="hz-focus inline-block align-baseline">
+    <span className="hz-focus relative inline-block align-baseline">
       <input
         className="hz-blank font-display font-medium"
         style={{ width: `${Math.max(placeholder.length, value.length) + 1}ch` }}
         value={value}
-        onChange={(e) => set(e.target.value)}
+        onChange={(e) => {
+          set(e.target.value);
+          setActiveIndex(-1);
+        }}
+        onFocus={() => setActiveField(field)}
+        onBlur={() => setTimeout(() => { setActiveField((f) => (f === field ? null : f)); clear(); }, 150)}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         aria-label={label}
+        role="combobox"
+        aria-expanded={activeField === field && suggestions.length > 0}
+        aria-controls={`hero-${field}-listbox`}
+        aria-autocomplete="list"
+        aria-activedescendant={
+          activeField === field && activeIndex >= 0 ? `hero-${field}-option-${activeIndex}` : undefined
+        }
         autoComplete="off"
       />
+      {activeField === field && suggestions.length > 0 && (
+        <ul
+          id={`hero-${field}-listbox`}
+          role="listbox"
+          className="absolute left-0 top-full z-30 mt-2 w-max min-w-[280px] max-w-[90vw] overflow-hidden rounded-field border border-line bg-card text-left shadow-card"
+        >
+          {suggestions.map((s, i) => (
+            <li key={s.id} id={`hero-${field}-option-${i}`} role="option" aria-selected={i === activeIndex}>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => choose(s)}
+                className={`block w-full px-4 py-3 text-left text-sm font-normal transition-colors ${
+                  i === activeIndex ? "bg-accent text-white" : "text-ink hover:bg-fog"
+                }`}
+              >
+                {s.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </span>
   );
 
   return (
     <div className="border-t border-ink/30 pt-5">
-      <p className="font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink">
-        Ik reis van {blank(from, setFrom, "Almere Poort", "Vertrek")} naar{" "}
-        {blank(to, setTo, "Schiphol", "Bestemming")}.
-      </p>
+      {/* Bewust een <div>, geen <p>: de invulvelden dragen een <ul>-listbox en
+          een <ul> mag in HTML niet binnen een <p> (hydration-fout). */}
+      <div className="font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink">
+        Ik reis van {blank("from", from, setFrom, "Almere Poort", "Vertrek")} naar{" "}
+        {blank("to", to, setTo, "Schiphol", "Bestemming")}.
+      </div>
       <div
         className="mt-4 flex flex-wrap items-baseline gap-x-7 gap-y-3"
         aria-live="polite"
@@ -306,7 +364,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
           )}
         </Stamp>
         <Link
-          href={confirmHref}
+          href={href}
           className="hz-confirm-btn px-7 py-3 text-[12px] font-medium uppercase tracking-[0.14em] text-ink no-underline"
         >
           <span>Bevestig de rit</span>
