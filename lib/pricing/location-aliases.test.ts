@@ -95,3 +95,72 @@ test("wijkregels staan vóór de stadsfallback, in beide richtingen", () => {
     assert.ok(slug?.startsWith("den-haag-"), `postcode ${pc} gaf ${slug}`);
   }
 });
+
+// ── Uitbreiding 2026-07-22: productieblokker 2 — echte PDOK-adressen ────────
+test("PDOK-geverifieerde wijkadressen resolven naar de juiste wijkprijs", () => {
+  const cases: [string, string][] = [
+    // Amsterdam — ankers uit PDOK Locatieserver (wijknaam bevestigd)
+    ["Gustav Mahlerlaan 10, 1082MK Amsterdam", "amsterdam-zuidas"],
+    ["Buikslotermeerplein 1, 1025ES Amsterdam", "amsterdam-noord"],
+    ["Middenweg 10, 1097BM Amsterdam", "amsterdam-oost"],
+    ["IJburglaan 719, 1086ZL Amsterdam", "amsterdam-oost"],
+    ["Albert Cuypstraat 100, 1072CX Amsterdam", "amsterdam-oud-zuid-de-pijp"],
+    ["Apollolaan 100, 1077BE Amsterdam", "amsterdam-oud-zuid-de-pijp"],
+    ["Bijlmerplein 100, 1102DA Amsterdam", "amsterdam-zuidoost-bijlmer"],
+    // Almere — Molenbuurt en Bloemenbuurt zijn Almere-Buiten (PDOK)
+    ["Poortmolenstraat 1, 1333BL Almere", "almere-buiten"],
+    ["Evenaar 100, 1338NN Almere", "almere-buiten"],
+    ["Marktgracht 23, 1353AJ Almere", "almere-haven"],
+    // Utrecht
+    ["Langerakbaan 135, 3544PE Utrecht", "leidsche-rijn"],
+    ["Heidelberglaan 8, 3584CS Utrecht", "de-uithof-science-park"],
+  ];
+  for (const [adres, verwacht] of cases) {
+    assert.equal(resolveLocationSlug(adres), verwacht, adres);
+  }
+});
+
+test("wijknamen als vrije tekst resolven naar de wijk, nooit naar de stad", () => {
+  const cases: [string, string][] = [
+    ["Amsterdam Zuidas", "amsterdam-zuidas"],
+    ["Amsterdam Noord", "amsterdam-noord"],
+    ["Amsterdam Oost", "amsterdam-oost"],
+    ["Amsterdam Zuidoost", "amsterdam-zuidoost-bijlmer"],
+    ["De Pijp, Amsterdam", "amsterdam-oud-zuid-de-pijp"],
+    ["Almere Buiten", "almere-buiten"],
+    ["Almere Haven", "almere-haven"],
+    ["Almere Hout", "almere-hout"],
+    ["Leidsche Rijn", "leidsche-rijn"],
+    ["De Uithof, Utrecht", "de-uithof-science-park"],
+  ];
+  for (const [adres, verwacht] of cases) {
+    assert.equal(resolveLocationSlug(adres), verwacht, adres);
+  }
+});
+
+test("stadsfallback: adres zonder wijkregel valt op de stad terug, nooit op niets", () => {
+  const cases: [string, string][] = [
+    // 1043 = Sloterdijk: geen wijkroute → stadsprijs Amsterdam
+    ["Radarweg 29, 1043NX Amsterdam", "amsterdam"],
+    // Rivierenbuurt 1078: buiten Oud-Zuid/De Pijp-range → stadsprijs
+    ["Rooseveltlaan 1, 1078NJ Amsterdam", "amsterdam"],
+    // Buitenveldert 1081: bewust buiten de Zuidas-regel → stadsprijs
+    ["De Boelelaan 1105, 1081HV Amsterdam", "amsterdam"],
+    ["Spoordreef 20, 1315GN Almere", "almere-stad-centrum"],
+    ["Wisselweg 1, 1324EA Almere", "almere"],
+    ["Vredenburg 40, 3511BD Utrecht", "utrecht-centrum"],
+    ["Amsterdamsestraatweg 500, 3553EL Utrecht", "utrecht"],
+    // Plaatsnaam zonder postcode
+    ["Corendon Amsterdam", "amsterdam"],
+    ["Hotel iets, Almere", "almere"],
+    ["Hilton Schiphol", "schiphol-airport"],
+  ];
+  for (const [adres, verwacht] of cases) {
+    assert.equal(resolveLocationSlug(adres), verwacht, adres);
+  }
+});
+
+test("plaats-segment wint: 'Hotel Amsterdam, Rotterdam' is Rotterdam", () => {
+  assert.equal(resolveLocationSlug("Hotel Amsterdam, Rotterdam"), "rotterdam");
+  assert.equal(resolveLocationSlug("Utrechtsestraat 1, 1017VH Amsterdam"), "amsterdam-centrum");
+});

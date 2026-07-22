@@ -29,9 +29,20 @@
  * verschillen tussen tarievenpagina, quote-API en boekingsprijs mogen niet
  * bestaan: de klant ziet en betaalt hetzelfde bedrag.
  *
- * Postcodebereiken zijn geverifieerd tegen PDOK Locatieserver (2026-07-19).
- * Amsterdam, Almere en Utrecht houden bewust hun bestaande, grovere mapping —
- * hun wijkroutes bestonden al en het gedrag verandert daar niet.
+ * Postcodebereiken zijn geverifieerd tegen PDOK Locatieserver (2026-07-19;
+ * uitbreiding Amsterdam/Almere/Utrecht 2026-07-22 — zie ankers per regel).
+ *
+ * ── Uitbreiding 2026-07-22 (productieblokker 2) ────────────────────────────
+ *
+ * De E2E-testboeking legde bloot dat echte PDOK-adreslabels buiten de gedekte
+ * wijken op NIETS resolveerden: geen prijs én geen luchthavencontext, terwijl
+ * /tarieven de wijkprijs wél adverteerde (bv. Zuidas €50). Toegevoegd:
+ *   · wijkregels voor alle actieve wijken met een gepubliceerde prijs;
+ *   · stadsfallbacks voor Amsterdam, Almere en Utrecht (Rotterdam en Den Haag
+ *     bestonden al).
+ * Wijkgrenzen zijn conservatief: bij twijfel valt een adres op de stadsprijs
+ * terug (eerlijk en zichtbaar) in plaats van op een mogelijk verkeerde
+ * wijkprijs.
  */
 
 type PostcodeRule = { min: number; max: number; slug: string };
@@ -48,6 +59,33 @@ const POSTCODE_RULES: PostcodeRule[] = [
   { min: 1311, max: 1319, slug: "almere-stad-centrum" },
   { min: 1011, max: 1019, slug: "amsterdam-centrum" },
   { min: 3511, max: 3512, slug: "utrecht-centrum" },
+
+  // ── Prioriteit 2a-uitbreiding 2026-07-22: Amsterdamse wijken ─────────────
+  // PDOK-ankers: Buikslotermeerplein 1 → 1025, wijk Buikslotermeer (Noord).
+  { min: 1021, max: 1039, slug: "amsterdam-noord" },
+  // Ankers: Albert Cuypstraat 100 → 1072 Oude Pijp; Apollolaan 100 → 1077 Apollobuurt.
+  { min: 1071, max: 1077, slug: "amsterdam-oud-zuid-de-pijp" },
+  // Anker: Gustav Mahlerlaan 10 → 1082, wijk Zuidas. Bewust alléén 1082:
+  // 1081/1083 (Buitenveldert) vallen op de stadsprijs terug.
+  { min: 1082, max: 1082, slug: "amsterdam-zuidas" },
+  // Ankers: IJburglaan → IJburg-West (1086–1087); Middenweg 10 → 1097 Frankendael.
+  { min: 1086, max: 1087, slug: "amsterdam-oost" },
+  { min: 1091, max: 1099, slug: "amsterdam-oost" },
+  // Anker: Bijlmerplein 100 → 1102, wijk Amsterdamse Poort (Zuidoost).
+  { min: 1101, max: 1108, slug: "amsterdam-zuidoost-bijlmer" },
+
+  // ── Prioriteit 2a-uitbreiding 2026-07-22: Almeerse wijken ────────────────
+  // Ankers: Poortmolenstraat 1 → 1333 Molenbuurt (Buiten); Evenaar 100 → 1338
+  // Bloemenbuurt (Buiten).
+  { min: 1333, max: 1349, slug: "almere-buiten" },
+  // Anker: Marktgracht 23 → 1353, wijk Centrum Almere Haven.
+  { min: 1351, max: 1357, slug: "almere-haven" },
+
+  // ── Prioriteit 2a-uitbreiding 2026-07-22: Utrechtse wijken ───────────────
+  // Anker: Langerakbaan 135 → 3544, wijk Leidsche Rijn.
+  { min: 3541, max: 3546, slug: "leidsche-rijn" },
+  // Anker: Heidelberglaan 8 → 3584 (Utrecht Science Park).
+  { min: 3584, max: 3584, slug: "de-uithof-science-park" },
 
   // ── Prioriteit 2b: Rotterdamse wijken ───────────────────────────────────
   { min: 3011, max: 3016, slug: "rotterdam-centrum" },
@@ -68,6 +106,11 @@ const POSTCODE_RULES: PostcodeRule[] = [
   // ── Prioriteit 3: stadsfallback — MOET onderaan blijven ─────────────────
   { min: 3000, max: 3089, slug: "rotterdam" },
   { min: 2491, max: 2599, slug: "den-haag" },
+  // 2026-07-22: ontbrekende stadsfallbacks. 1000–1109 = woonplaats Amsterdam
+  // (1380+ = Weesp, bewust erbuiten); 1300–1369 = Almere; 3500–3585 = Utrecht.
+  { min: 1000, max: 1109, slug: "amsterdam" },
+  { min: 1300, max: 1369, slug: "almere" },
+  { min: 3500, max: 3585, slug: "utrecht" },
 ];
 
 /**
@@ -81,6 +124,26 @@ const KEYWORD_RULES: { test: (full: string, place: string) => boolean; slug: str
   { test: (f) => f.includes("almere stad") || f.includes("almere-stad"), slug: "almere-stad-centrum" },
   { test: (f) => f.includes("amsterdam") && f.includes("centrum"), slug: "amsterdam-centrum" },
   { test: (f) => f.includes("utrecht") && f.includes("centrum"), slug: "utrecht-centrum" },
+
+  // Prioriteit 2 — Amsterdamse wijken (2026-07-22). LET OP: "amsterdam zuidoost"
+  // vóór elke eventuele "amsterdam zuid"-regel — de tweede is een substring.
+  { test: (f) => f.includes("zuidas"), slug: "amsterdam-zuidas" },
+  { test: (f) => f.includes("de pijp") || f.includes("oud-zuid") || f.includes("oud zuid"), slug: "amsterdam-oud-zuid-de-pijp" },
+  { test: (f) => f.includes("amsterdam zuidoost") || f.includes("bijlmer"), slug: "amsterdam-zuidoost-bijlmer" },
+  { test: (f) => f.includes("amsterdam noord") || f.includes("amsterdam-noord"), slug: "amsterdam-noord" },
+  { test: (f) => f.includes("amsterdam oost") || f.includes("amsterdam-oost"), slug: "amsterdam-oost" },
+
+  // Prioriteit 2 — Almeerse wijken (2026-07-22)
+  { test: (f) => f.includes("almere buiten") || f.includes("almere-buiten"), slug: "almere-buiten" },
+  { test: (f) => f.includes("almere haven") || f.includes("almere-haven"), slug: "almere-haven" },
+  { test: (f) => f.includes("almere hout") || f.includes("almere-hout"), slug: "almere-hout" },
+  { test: (f) => f.includes("muziekwijk"), slug: "almere-muziekwijk" },
+  { test: (f) => f.includes("oostvaardersbuurt") || f.includes("almere oostvaarders"), slug: "almere-oostvaarders" },
+
+  // Prioriteit 2 — Utrechtse wijken (2026-07-22). "science park" alleen met
+  // utrecht erbij: Amsterdam heeft óók een Science Park.
+  { test: (f) => f.includes("leidsche rijn") || f.includes("leidsche-rijn"), slug: "leidsche-rijn" },
+  { test: (f) => f.includes("uithof") || (f.includes("science park") && f.includes("utrecht")), slug: "de-uithof-science-park" },
 
   // Prioriteit 2 — Rotterdamse wijken
   { test: (f) => f.includes("kralingen"), slug: "rotterdam-kralingen" },
@@ -103,6 +166,11 @@ const KEYWORD_RULES: { test: (full: string, place: string) => boolean; slug: str
     test: (_f, p) => p.includes("den haag") || p.includes("hague") || p.includes("gravenhage"),
     slug: "den-haag",
   },
+  // 2026-07-22: ontbrekende stadsfallbacks. Match op het PLAATS-segment, zodat
+  // "Hotel Amsterdam, Rotterdam" niet per ongeluk op Amsterdam uitkomt.
+  { test: (_f, p) => p.includes("amsterdam"), slug: "amsterdam" },
+  { test: (_f, p) => p.includes("almere"), slug: "almere" },
+  { test: (_f, p) => p.includes("utrecht"), slug: "utrecht" },
 ];
 
 const POSTCODE_RE = /\b([1-9]\d{3})\s?[A-Za-z]{2}\b/;
