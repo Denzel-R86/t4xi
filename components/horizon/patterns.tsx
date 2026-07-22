@@ -46,7 +46,7 @@
  */
 
 import "./horizon.css";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Reveal, Odometer, usePrefersReducedMotion } from "./motion";

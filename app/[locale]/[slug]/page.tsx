@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";

@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import Icon from "@/components/ui/Icon";
 import Wordmark from "@/components/ui/Wordmark";
+import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 
 const nav = [
   { href: "/#vloot", label: "Vloot", icon: "car" },
@@ -51,6 +52,7 @@ export default function Header() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2.5">
+          <LanguageSwitcher className="hidden lg:flex" />
           <a
             href="tel:+31634744522"
             className="hidden items-center gap-1.5 text-sm text-secondary transition-colors hover:text-ink sm:flex"
@@ -115,6 +117,9 @@ export default function Header() {
               </li>
             ))}
             <li aria-hidden="true" className="my-2 h-px bg-line" />
+            <li className="px-3 py-2">
+              <LanguageSwitcher onSwitched={() => setOpen(false)} />
+            </li>
             <li>
               <a
                 href="tel:+31634744522"

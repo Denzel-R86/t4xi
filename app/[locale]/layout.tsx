@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { notFound } from "next/navigation";
 import { Outfit, Inter, Playfair_Display } from "next/font/google";
-import "./globals.css";
+import { NextIntlClientProvider, hasLocale } from "next-intl";
+import { setRequestLocale } from "next-intl/server";
+import { routing } from "@/i18n/routing";
+import { localeMetadata } from "@/lib/seo-locale";
+import "../globals.css";
 
 /*
  * TYPOGRAFIE — bewuste afwijking van de Brand Guide (besluit eigenaar, 22-07-2026).
@@ -36,22 +41,30 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://t4xi.nl"),
-  title: {
-    default: "T4XI — Premium taxi & elektrische mobiliteit",
-    template: "%s — T4XI",
-  },
-  description:
-    "T4XI is het premium Nederlandse taxiplatform. 100% elektrisch, vaste tarieven, professionele chauffeurs. Arrive with confidence.",
-  openGraph: {
-    type: "website",
-    locale: "nl_NL",
-    siteName: "T4XI",
-  },
-  alternates: { canonical: "/" },
-  robots: { index: true, follow: true },
-};
+/**
+ * Metadatafundering per locale (stap 3): canonical, hreflang-alternates en
+ * og:locale komen uit de centrale helper. De teksten blijven in deze stap
+ * bewust Nederlands — vertaling volgt in stap 4, geen machinevertaling nu.
+ */
+export function generateMetadata({ params }: { params: { locale: string } }): Metadata {
+  const locale = hasLocale(routing.locales, params.locale) ? params.locale : routing.defaultLocale;
+  const base = localeMetadata({
+    locale,
+    path: "/",
+    title: "T4XI — Premium taxi & elektrische mobiliteit",
+    description:
+      "T4XI is het premium Nederlandse taxiplatform. 100% elektrisch, vaste tarieven, professionele chauffeurs. Arrive with confidence.",
+  });
+  return {
+    ...base,
+    metadataBase: new URL("https://t4xi.nl"),
+    title: {
+      default: "T4XI — Premium taxi & elektrische mobiliteit",
+      template: "%s — T4XI",
+    },
+    robots: { index: true, follow: true },
+  };
+}
 
 // Structured data voor lokale vindbaarheid (Google rich results)
 const jsonLd = {
@@ -78,9 +91,19 @@ const jsonLd = {
   },
 };
 
+/** Beide talen worden statisch voorbereid; onbekende locales geven 404. */
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
 export default function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+  params,
+}: Readonly<{ children: React.ReactNode; params: { locale: string } }>) {
+  const { locale } = params;
+  if (!hasLocale(routing.locales, locale)) notFound();
+  // Maakt statische rendering per locale mogelijk (next-intl).
+  setRequestLocale(locale);
   // suppressHydrationWarning hoort op <html>: het `js-detect`-script draait
   // `beforeInteractive` en zet de class `js` vóórdat React hydrateert. React
   // vergelijkt dan een DOM mét die class tegen een render zónder, en meldt
@@ -95,7 +118,7 @@ export default function RootLayout({
   // zelf. Echte hydration-verschillen in de pagina-inhoud blijven zichtbaar.
   return (
     <html
-      lang="nl"
+      lang={locale}
       suppressHydrationWarning
       className={`${outfit.variable} ${inter.variable} ${playfair.variable}`}
     >
@@ -118,10 +141,12 @@ export default function RootLayout({
         >
           Naar de inhoud
         </a>
-        <Header />
-        <main id="content">{children}</main>
-        <Footer />
-        <StickyCta />
+        <NextIntlClientProvider>
+          <Header />
+          <main id="content">{children}</main>
+          <Footer />
+          <StickyCta />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

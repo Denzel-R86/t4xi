@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Icon from "@/components/ui/Icon";
 import type { Stad } from "@/lib/seo-steden";
 import type { RateEntry } from "@/lib/pricing/rate-card";

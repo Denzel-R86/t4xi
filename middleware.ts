@@ -1,4 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
+import createIntlMiddleware from "next-intl/middleware";
+import { routing } from "@/i18n/routing";
+
+/**
+ * Twee taken, in vaste volgorde:
+ *   1. Toegangsbeveiliging voor de interne routes (Sprint 11, Fase 0) — met
+ *      locale-prefix gestript, zodat /en/dashboard even dicht zit als /dashboard.
+ *   2. i18n-routing (next-intl, stap 3): NL zonder prefix, EN onder /en,
+ *      géén automatische browsertaal-redirects (localeDetection: false).
+ */
+const intlMiddleware = createIntlMiddleware(routing);
 
 /**
  * Toegangsbeveiliging voor de interne routes (Sprint 11, Fase 0).
@@ -61,7 +72,18 @@ function challenge(): NextResponse {
 }
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  // Locale-prefix strippen VÓÓR de beveiligingschecks: /en/dashboard moet
+  // exact even dicht zitten als /dashboard. Nooit een localepad langs de
+  // auth-logica laten glippen.
+  const rawPathname = request.nextUrl.pathname;
+  const pathname = rawPathname.replace(/^\/(nl|en)(?=\/|$)/, "") || "/";
+
+  const isProtected =
+    pathname === "/dashboard" || pathname.startsWith("/dashboard/") ||
+    pathname === "/klant" || pathname.startsWith("/klant/");
+
+  // Alles buiten de beschermde paden: alleen i18n-routing.
+  if (!isProtected) return intlMiddleware(request);
 
   // ── /dashboard/brain — Basic Auth ────────────────────────────────────────
   if (pathname === "/dashboard/brain" || pathname.startsWith("/dashboard/brain/")) {
@@ -102,5 +124,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard", "/dashboard/:path*", "/klant", "/klant/:path*"],
+  // Alles behalve API-routes, Next-internals en statische bestanden (met punt).
+  // De beschermde paden vallen hier vanzelf onder; de functie splitst zelf.
+  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
 };

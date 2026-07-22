@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Icon from "@/components/ui/Icon";
 
 /** Sticky mobiele actiebalk uit het v14-bronbestand — verborgen op desktop. */

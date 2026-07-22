@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import Icon from "@/components/ui/Icon";
 import AddressAutocomplete, {
   type AddressSuggestion,

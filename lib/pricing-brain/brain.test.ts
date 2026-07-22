@@ -30,8 +30,8 @@ import {
   buildOverview,
   topOpportunities,
   topRisks,
-} from "../../app/dashboard/brain/metrics";
-import type { BrainRouteView } from "../../app/dashboard/brain/types";
+} from "../../app/[locale]/dashboard/brain/metrics";
+import type { BrainRouteView } from "../../app/[locale]/dashboard/brain/types";
 
 const ctx = (over: Partial<RouteContext> = {}): RouteContext => ({
   pickupSlug: "almere-poort",

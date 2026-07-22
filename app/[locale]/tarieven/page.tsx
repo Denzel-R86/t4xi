@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import "@/components/horizon/horizon.css";
 import FairBand from "@/components/sections/FairBand";
 import { loadRateCard, type CityRates, type RateEntry } from "@/lib/pricing/rate-card";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Icon from "@/components/ui/Icon";
 import Wordmark from "@/components/ui/Wordmark";
 import { BEDRIJF } from "@/lib/legal";
