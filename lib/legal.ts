@@ -87,6 +87,91 @@ export const BEWAARTERMIJNEN = [
 /** Laatste inhoudelijke wijziging van de juridische teksten. */
 export const LAATST_BIJGEWERKT = "21 juli 2026";
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * ENGELSE LAAG (stap 6)
+ *
+ * De Nederlandse data hierboven blijft de bron en verandert niet. Deze laag
+ * levert de vertaalde velden voor de Engelse juridische pagina's. De Engelse
+ * versie is een gemaksvertaling; bij tegenstrijdigheid prevaleert het Nederlands
+ * (zie de disclaimer bovenaan iedere Engelse pagina). `naam`, bedragen, termijnen
+ * en bedrijfsgegevens blijven inhoudelijk gelijk.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+import type { Locale } from "@/i18n/routing";
+
+/** Engelse notatie van de laatste wijzigingsdatum. */
+export const LAATST_BIJGEWERKT_EN = "21 July 2026";
+
+const VERWERKERS_EN = [
+  { naam: "Supabase", doel: "storage of bookings and quote requests", regio: "EU (eu-west-1, Ireland)" },
+  { naam: "Resend", doel: "sending confirmation emails", regio: "EU/US" },
+  { naam: "PDOK Location Server", doel: "address autocompletion while you type", regio: "Netherlands" },
+  { naam: "Google Places API", doel: "address autocompletion as a fallback", regio: "EU/US" },
+  { naam: "Vercel", doel: "hosting and delivery of the website", regio: "EU/US" },
+] as const;
+
+const GEGEVENS_EN = [
+  "name",
+  "email address",
+  "phone number",
+  "pick-up address and destination",
+  "date and time of the ride",
+  "number of passengers and luggage",
+  "flight number for airport rides",
+  "any comments you enter yourself",
+] as const;
+
+const BEWAARTERMIJNEN_EN = [
+  {
+    gegevens: "Invoices, payments and financial records",
+    termijn: "7 years",
+    reden: "statutory tax retention obligation",
+  },
+  {
+    gegevens: "Booking and ride data",
+    termijn: "12 months after the ride",
+    reden: "customer service, refunds and disputes",
+  },
+  {
+    gegevens: "Flight number and flight status",
+    termijn: "30 days after the ride",
+    reden: "only needed for performance and brief aftercare",
+  },
+  {
+    gegevens: "Quote requests without a booking",
+    termijn: "3 months",
+    reden: "follow-up of the request; contains no contact details",
+  },
+  {
+    gegevens: "Complaints and customer service",
+    termijn: "1 year after resolution",
+    reden: "evidence and possible follow-up questions",
+  },
+] as const;
+
+type Verwerker = { naam: string; doel: string; regio: string };
+type Bewaartermijn = { gegevens: string; termijn: string; reden: string };
+
+/** Verwerkers per locale (namen gelijk; doel en regio vertaald). */
+export function getVerwerkers(locale: Locale): readonly Verwerker[] {
+  return locale === "en" ? VERWERKERS_EN : VERWERKERS;
+}
+
+/** Verzamelde gegevens per locale. */
+export function getGegevens(locale: Locale): readonly string[] {
+  return locale === "en" ? GEGEVENS_EN : GEGEVENS;
+}
+
+/** Bewaartermijnen per locale (termijnen inhoudelijk gelijk). */
+export function getBewaartermijnen(locale: Locale): readonly Bewaartermijn[] {
+  return locale === "en" ? BEWAARTERMIJNEN_EN : BEWAARTERMIJNEN;
+}
+
+/** Laatste wijzigingsdatum in de notatie van de locale. */
+export function getLaatstBijgewerkt(locale: Locale): string {
+  return locale === "en" ? LAATST_BIJGEWERKT_EN : LAATST_BIJGEWERKT;
+}
+
 /**
  * Faalt zolang er verplichte gegevens ontbreken.
  *

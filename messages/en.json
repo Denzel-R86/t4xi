@@ -447,7 +447,6 @@
     "formMembership": {
       "title": "Request membership",
       "intro": "Choose your package and we'll be in touch within 24 hours.",
-      "success": "Request received — we'll call you tomorrow!",
       "cta": "Request membership",
       "note": "No annual contract. Cancel anytime.",
       "naam": "Name",
@@ -469,12 +468,12 @@
         "Frequent — €279/month (4 rides)",
         "Business — €549/month (8 rides)",
         "Executive — custom"
-      ]
+      ],
+      "mailSubject": "Airport Membership request"
     },
     "formZakelijk": {
       "title": "Request a ride pass",
       "intro": "Business, including an invoice in your name and VAT number.",
-      "success": "Request received — quote within 1 working day!",
       "cta": "Request a quote",
       "contact": "Contact person",
       "contactPl": "Name",
@@ -500,12 +499,12 @@
         "Custom — I'd like a tailored quote"
       ],
       "route": "Usual route",
-      "routePl": "E.g. Amsterdam/Almere → Schiphol"
+      "routePl": "E.g. Amsterdam/Almere → Schiphol",
+      "mailSubject": "Business ride pass — quote request"
     },
     "formHotel": {
       "title": "Discuss a partnership",
       "intro": "We'll schedule an introductory call and draw up a tailored contract.",
-      "success": "Request received — we'll schedule an introductory call!",
       "cta": "Schedule an introduction",
       "naam": "Name",
       "naamPl": "Your name",
@@ -524,8 +523,11 @@
       "loc": "Hotel location",
       "locPl": "City and address",
       "vraag": "How can we help?",
-      "vraagPl": "E.g. we're looking for a dedicated driver for our guests' Schiphol transfers, 10–15 rides per week..."
-    }
+      "vraagPl": "E.g. we're looking for a dedicated driver for our guests' Schiphol transfers, 10–15 rides per week...",
+      "mailSubject": "Hotel partnership request"
+    },
+    "sendNote": "This opens your email app with the details you entered, ready to send. We handle every request personally.",
+    "orWhatsapp": "Or send us a WhatsApp directly"
   },
   "boekenPagina": {
     "kicker": "Book directly",
@@ -968,7 +970,6 @@
       "Elite — €199 + 8%",
       "Fleet — €299 + 5%"
     ],
-    "formSent": "Application received — we'll call you within 24 hours!",
     "fNaam": "Name *",
     "fNaamPl": "Full name",
     "fTel": "Phone *",
@@ -1010,7 +1011,10 @@
       "Fleet — €299/month + 5%"
     ],
     "fSubmit": "Submit application",
-    "fBel": "Or call directly:"
+    "fBel": "Or call directly:",
+    "mailSubject": "Driver partner application",
+    "sendNote": "This opens your email app with the details you entered, ready to send. We'll then get in touch personally.",
+    "orWhatsapp": "Or send us a WhatsApp directly"
   },
   "seo": {
     "dienstenTitle": "Services",
@@ -1030,6 +1034,10 @@
     "overOnsTitle": "About us",
     "overOnsDesc": "T4XI is an initiative of Noir Driving Services — premium electric transport. Fair to the customer and to the driver.",
     "homeTitle": "T4XI — Premium taxi & electric mobility",
-    "homeDesc": "T4XI is the premium Dutch taxi platform. 100% electric, fixed fares, professional drivers. Arrive with confidence."
+    "homeDesc": "T4XI is the premium Dutch taxi platform. 100% electric, fixed fares, professional drivers. Arrive with confidence.",
+    "privacyTitle": "Privacy statement",
+    "privacyDesc": "How T4XI handles your personal data: what we collect when you book, what we use it for and which parties we share it with.",
+    "voorwaardenTitle": "Terms and conditions",
+    "voorwaardenDesc": "The terms under which T4XI provides transport: fixed prices, airport policy for flight delays, luggage and liability."
   }
 }

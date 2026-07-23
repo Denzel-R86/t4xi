@@ -8,10 +8,10 @@ import { localeUrl } from "@/lib/seo-locale";
  * entry krijgt daarom `alternates.languages` met nl-NL, en en x-default, zodat
  * Google beide taalversies koppelt en niet als duplicaat behandelt.
  *
- * De juridische pagina's (privacy, voorwaarden) en de Nederlandstalige
- * SEO-landingspagina's (taxi-<stad>-schiphol) hebben vooralsnog alleen
- * Nederlandse inhoud en verschijnen zonder alternates — hun /en-variant
- * consolideert via een canonical naar de NL-URL. Vertaling volgt in stap 6.
+ * De juridische pagina's (privacy, voorwaarden) zijn sinds stap 6 tweetalig en
+ * krijgen daarom hreflang-alternates. De Nederlandstalige SEO-landingspagina's
+ * (taxi-<stad>-schiphol) hebben alleen Nederlandse inhoud en verschijnen zonder
+ * alternates — hun /en-variant consolideert via een canonical naar de NL-URL.
  */
 
 /** Tweetalige inhoudspagina's — krijgen hreflang-alternates. */
@@ -25,12 +25,12 @@ const TRANSLATABLE = [
   "/producten",
   "/contact",
   "/partner",
+  "/privacy",
+  "/voorwaarden",
 ] as const;
 
 /** Nederlandstalig-only — geen alternates (nog geen echte EN-versie). */
 const NL_ONLY = [
-  "/privacy",
-  "/voorwaarden",
   "/taxi-almere-schiphol",
   "/taxi-amsterdam-schiphol",
   "/taxi-rotterdam-schiphol",

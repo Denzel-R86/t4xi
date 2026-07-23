@@ -447,7 +447,6 @@
     "formMembership": {
       "title": "Membership aanvragen",
       "intro": "Kies je pakket en wij nemen binnen 24 uur contact op.",
-      "success": "Aanvraag ontvangen — wij bellen je morgen!",
       "cta": "Membership aanvragen",
       "note": "Geen jaarcontract. Altijd opzegbaar.",
       "naam": "Naam",
@@ -469,12 +468,12 @@
         "Frequent — €279/maand (4 ritten)",
         "Business — €549/maand (8 ritten)",
         "Executive — maatwerk"
-      ]
+      ],
+      "mailSubject": "Aanvraag Airport Membership"
     },
     "formZakelijk": {
       "title": "Strippenkaart aanvragen",
       "intro": "Zakelijk, inclusief factuur op naam en BTW-nummer.",
-      "success": "Aanvraag ontvangen — offerte binnen 1 werkdag!",
       "cta": "Offerte aanvragen",
       "contact": "Contactpersoon",
       "contactPl": "Naam",
@@ -500,12 +499,12 @@
         "Maatwerk — ik wil een offerte op maat"
       ],
       "route": "Gebruikelijk traject",
-      "routePl": "Bijv. Amsterdam/Almere → Schiphol"
+      "routePl": "Bijv. Amsterdam/Almere → Schiphol",
+      "mailSubject": "Offerteaanvraag zakelijke strippenkaart"
     },
     "formHotel": {
       "title": "Partnerschap bespreken",
       "intro": "We plannen een kennismakingsgesprek en stellen een contract op maat op.",
-      "success": "Aanvraag ontvangen — wij plannen een kennismakingsgesprek!",
       "cta": "Kennismaking inplannen",
       "naam": "Naam",
       "naamPl": "Uw naam",
@@ -524,8 +523,11 @@
       "loc": "Locatie hotel",
       "locPl": "Stad en adres",
       "vraag": "Hoe kunnen wij helpen?",
-      "vraagPl": "Bijv: wij zoeken een vaste chauffeur voor Schipholtransfers van onze gasten, 10–15 ritten per week..."
-    }
+      "vraagPl": "Bijv: wij zoeken een vaste chauffeur voor Schipholtransfers van onze gasten, 10–15 ritten per week...",
+      "mailSubject": "Aanvraag hotelpartnerschap"
+    },
+    "sendNote": "Dit opent je e-mailprogramma met de ingevulde gegevens, klaar om te versturen. Wij verwerken je aanvraag persoonlijk.",
+    "orWhatsapp": "Of stuur ons direct een WhatsApp"
   },
   "boekenPagina": {
     "kicker": "Direct reserveren",
@@ -968,7 +970,6 @@
       "Elite — €199 + 8%",
       "Fleet — €299 + 5%"
     ],
-    "formSent": "Aanmelding ontvangen — wij bellen je binnen 24 uur!",
     "fNaam": "Naam *",
     "fNaamPl": "Volledige naam",
     "fTel": "Telefoon *",
@@ -1010,7 +1011,10 @@
       "Fleet — €299/maand + 5%"
     ],
     "fSubmit": "Aanmelding versturen",
-    "fBel": "Of bel direct:"
+    "fBel": "Of bel direct:",
+    "mailSubject": "Aanmelding chauffeurspartner",
+    "sendNote": "Dit opent je e-mailprogramma met de ingevulde gegevens, klaar om te versturen. Wij nemen daarna persoonlijk contact op.",
+    "orWhatsapp": "Of stuur ons direct een WhatsApp"
   },
   "seo": {
     "dienstenTitle": "Diensten",
@@ -1030,6 +1034,10 @@
     "overOnsTitle": "Over ons",
     "overOnsDesc": "T4XI is een initiatief van Noir Driving Services — premium elektrisch vervoer. Eerlijk voor de klant én voor de chauffeur.",
     "homeTitle": "T4XI — Premium taxi & elektrische mobiliteit",
-    "homeDesc": "T4XI is het premium Nederlandse taxiplatform. 100% elektrisch, vaste tarieven, professionele chauffeurs. Arrive with confidence."
+    "homeDesc": "T4XI is het premium Nederlandse taxiplatform. 100% elektrisch, vaste tarieven, professionele chauffeurs. Arrive with confidence.",
+    "privacyTitle": "Privacyverklaring",
+    "privacyDesc": "Hoe T4XI omgaat met uw persoonsgegevens: welke gegevens wij verzamelen bij een boeking, waarvoor wij ze gebruiken en met welke partijen wij ze delen.",
+    "voorwaardenTitle": "Algemene voorwaarden",
+    "voorwaardenDesc": "De voorwaarden waaronder T4XI vervoer levert: vaste prijzen, luchthavenbeleid bij vluchtvertraging, bagage en aansprakelijkheid."
   }
 }

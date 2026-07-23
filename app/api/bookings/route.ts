@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getPricingQuote } from "@/lib/pricing/service";
-import { sendBookingEmails } from "@/lib/notifications/booking-email";
+import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
 
 /**
@@ -282,6 +282,10 @@ export async function POST(request: Request) {
       customerName: name,
       customerPhone: phone,
       customerEmail: email,
+      // Taal van de klantmail: uit de boeking, server-side gevalideerd. De URL
+      // is niet betrouwbaar zodra de request server-side wordt verwerkt; een
+      // ongeldige of ontbrekende waarde valt veilig terug op "nl".
+      locale: normalizeLocale(body.locale),
     });
     if (emails.sent) {
       const { error: updErr } = await supabase

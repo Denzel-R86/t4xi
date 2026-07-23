@@ -7,7 +7,7 @@ import AddressAutocomplete, {
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import Icon from "@/components/ui/Icon";
 import { inferAddressMeta, type RitType } from "@/lib/booking-meta";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 const TABS: { key: RitType; labelKey: "tabEnkel" | "tabRetour" | "tabLuchthaven" | "tabDagtocht" }[] = [
   { key: "enkel", labelKey: "tabEnkel" },
@@ -48,6 +48,7 @@ export default function BookingSection({
   initialDropoff?: string;
 } = {}) {
   const t = useTranslations("booking");
+  const locale = useLocale();
   const [tab, setTab] = useState<RitType>("enkel");
   const [pickup, setPickup] = useState<AddressSuggestion | null>(
     initialPickup ? { id: "deeplink", label: initialPickup, source: "free" } : null
@@ -95,6 +96,9 @@ export default function BookingSection({
       customerName: String(form.get("naam") ?? ""),
       customerPhone: String(form.get("telefoon") ?? ""),
       customerEmail: String(form.get("email") ?? ""),
+      // Taal van de bevestigingsmail. De server valideert dit opnieuw en valt bij
+      // een ongeldige waarde terug op "nl" — nooit blind op clientdata vertrouwen.
+      locale,
       // Honeypot: leeg bij echte gebruikers; bots vullen dit → API blokkeert stil.
       website: String(form.get("website") ?? ""),
     };

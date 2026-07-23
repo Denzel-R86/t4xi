@@ -1,6 +1,13 @@
-import type { Metadata } from "next";
+import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { BEDRIJF, VERWERKERS, GEGEVENS, BEWAARTERMIJNEN, LAATST_BIJGEWERKT } from "@/lib/legal";
+import { pageMetadata } from "@/lib/seo-locale";
+import {
+  BEDRIJF,
+  getVerwerkers,
+  getGegevens,
+  getBewaartermijnen,
+  getLaatstBijgewerkt,
+} from "@/lib/legal";
 
 /**
  * Privacyverklaring.
@@ -18,27 +25,39 @@ import { BEDRIJF, VERWERKERS, GEGEVENS, BEWAARTERMIJNEN, LAATST_BIJGEWERKT } fro
  *     rest is een keuze van de eigenaar en staat zichtbaar gemarkeerd open;
  *   · toetsing door een jurist.
  *
- * Publiceer deze pagina niet als definitieve juridische tekst zonder die toetsing.
+ * De Engelse versie (stap 6) is een gemaksvertaling van EXACT deze Nederlandse
+ * bron; bij tegenstrijdigheid prevaleert het Nederlands (disclaimer bovenaan de
+ * Engelse variant). Publiceer geen van beide als definitieve juridische tekst
+ * zonder die toetsing.
  */
 
-export const metadata: Metadata = {
-  title: "Privacyverklaring",
-  description:
-    "Hoe T4XI omgaat met uw persoonsgegevens: welke gegevens wij verzamelen bij een " +
-    "boeking, waarvoor wij ze gebruiken en met welke partijen wij ze delen.",
-  alternates: { canonical: "/privacy" },
-};
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMetadata(params.locale, "/privacy", "privacyTitle", "privacyDesc");
+}
 
 const H2 = "mt-10 font-display text-xl font-bold text-ink";
 const P = "mt-3 text-secondary";
 
-export default function PrivacyPage() {
+/** Vaste Engelse gemaksvertaling-disclaimer bovenaan de EN-pagina. */
+const EN_DISCLAIMER =
+  "This English version is provided for convenience. In the event of any inconsistency, the Dutch version shall prevail.";
+
+export default async function PrivacyPage() {
+  const locale = await getLocale();
+  return locale === "en" ? <PrivacyEN /> : <PrivacyNL />;
+}
+
+function PrivacyNL() {
+  const gegevens = getGegevens("nl");
+  const verwerkers = getVerwerkers("nl");
+  const bewaartermijnen = getBewaartermijnen("nl");
+
   return (
     <main className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
       <p className="text-eyebrow font-medium uppercase text-accent">Juridisch</p>
       <h1 className="mt-4 font-display text-display-lg font-bold text-ink">Privacyverklaring</h1>
       <p className="mt-4 text-secondary">
-        Laatst bijgewerkt op {LAATST_BIJGEWERKT}. Deze verklaring beschrijft hoe{" "}
+        Laatst bijgewerkt op {getLaatstBijgewerkt("nl")}. Deze verklaring beschrijft hoe{" "}
         {BEDRIJF.rechtspersoon}, handelend onder de naam {BEDRIJF.handelsnaam}, omgaat met
         uw persoonsgegevens wanneer u onze website gebruikt of een rit boekt.
       </p>
@@ -68,7 +87,7 @@ export default function PrivacyPage() {
         voeren en te bevestigen:
       </p>
       <ul className="mt-3 list-disc space-y-1 pl-5 text-secondary">
-        {GEGEVENS.map((g) => (
+        {gegevens.map((g) => (
           <li key={g}>{g}</li>
         ))}
       </ul>
@@ -105,7 +124,7 @@ export default function PrivacyPage() {
             </tr>
           </thead>
           <tbody>
-            {VERWERKERS.map((v) => (
+            {verwerkers.map((v) => (
               <tr key={v.naam} className="border-b border-line">
                 <td className="py-2.5 pr-4 font-medium text-ink">{v.naam}</td>
                 <td className="py-2.5 pr-4 text-secondary">{v.doel}</td>
@@ -141,7 +160,7 @@ export default function PrivacyPage() {
             </tr>
           </thead>
           <tbody>
-            {BEWAARTERMIJNEN.map((rij) => (
+            {bewaartermijnen.map((rij) => (
               <tr key={rij.gegevens} className="border-b border-line">
                 <td className="py-2.5 pr-4 font-medium text-ink">{rij.gegevens}</td>
                 <td className="py-2.5 pr-4 tabular-nums text-secondary">{rij.termijn}</td>
@@ -193,6 +212,180 @@ export default function PrivacyPage() {
         Zie ook onze{" "}
         <Link href="/voorwaarden" className="underline">
           algemene voorwaarden
+        </Link>
+        .
+      </p>
+    </main>
+  );
+}
+
+function PrivacyEN() {
+  const gegevens = getGegevens("en");
+  const verwerkers = getVerwerkers("en");
+  const bewaartermijnen = getBewaartermijnen("en");
+
+  return (
+    <main className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
+      <p className="text-eyebrow font-medium uppercase text-accent">Legal</p>
+      <h1 className="mt-4 font-display text-display-lg font-bold text-ink">Privacy statement</h1>
+      <p className="mt-4 rounded-lg border border-line bg-fog px-4 py-3 text-sm text-secondary">
+        {EN_DISCLAIMER}
+      </p>
+      <p className="mt-4 text-secondary">
+        Last updated on {getLaatstBijgewerkt("en")}. This statement describes how{" "}
+        {BEDRIJF.rechtspersoon}, trading under the name {BEDRIJF.handelsnaam}, handles your
+        personal data when you use our website or book a ride.
+      </p>
+
+      <h2 className={H2}>Who is responsible</h2>
+      <p className={P}>
+        {BEDRIJF.rechtspersoon} in {BEDRIJF.vestigingsplaats}, the Netherlands.
+        <br />
+        Chamber of Commerce number: {BEDRIJF.kvk}
+        <br />
+        {BEDRIJF.btw ? (
+          <>VAT identification number: {BEDRIJF.btw}</>
+        ) : (
+          <mark className="bg-amber-200/60 px-1 font-medium text-ink">
+            [MISSING — provide VAT identification number before publication]
+          </mark>
+        )}
+        <br />
+        Email: <a className="underline" href={`mailto:${BEDRIJF.email}`}>{BEDRIJF.email}</a>
+        <br />
+        Phone: <a className="underline" href={BEDRIJF.telefoonHref}>{BEDRIJF.telefoon}</a>
+      </p>
+
+      <h2 className={H2}>What data we collect</h2>
+      <p className={P}>
+        When you book a ride, we ask only for what is needed to carry out and confirm that
+        ride:
+      </p>
+      <ul className="mt-3 list-disc space-y-1 pl-5 text-secondary">
+        {gegevens.map((g) => (
+          <li key={g}>{g}</li>
+        ))}
+      </ul>
+      <p className={P}>
+        In addition, we record price requests — the origin and destination you enter and the
+        calculated price — so that we can verify our rates. We do not request payment details
+        through this website and therefore do not store them.
+      </p>
+
+      <h2 className={H2}>What we use it for</h2>
+      <p className={P}>
+        To perform the transport agreement: scheduling your ride, confirming it by email or
+        WhatsApp, and contacting you if anything changes. If you provide a flight number, we
+        use it to track your flight status and adjust the pick-up time in the event of a
+        delay.
+      </p>
+      <p className={P}>
+        The legal basis is the performance of the agreement with you. We do not use your data
+        for advertising and do not sell it to third parties.
+      </p>
+
+      <h2 className={H2}>Who we share it with</h2>
+      <p className={P}>
+        We engage service providers that process data on our behalf. They may use it only for
+        the purpose for which we engage them:
+      </p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-line text-left text-xs uppercase tracking-[0.1em] text-stone">
+              <th className="py-2 pr-4 font-medium">Party</th>
+              <th className="py-2 pr-4 font-medium">Purpose</th>
+              <th className="py-2 font-medium">Region</th>
+            </tr>
+          </thead>
+          <tbody>
+            {verwerkers.map((v) => (
+              <tr key={v.naam} className="border-b border-line">
+                <td className="py-2.5 pr-4 font-medium text-ink">{v.naam}</td>
+                <td className="py-2.5 pr-4 text-secondary">{v.doel}</td>
+                <td className="py-2.5 text-secondary">{v.regio}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className={P}>
+        We also share your name, pick-up address and time with the driver who carries out
+        your ride. That is necessary in order to collect you.
+      </p>
+
+      <h2 className={H2}>On what legal basis</h2>
+      <p className={P}>
+        To carry out and confirm your ride, we process your data on the basis of the{" "}
+        <strong>performance of the agreement</strong> with you. For the amounts that appear on
+        our invoices, a <strong>legal obligation</strong> applies: the statutory tax retention
+        obligation. For recording price requests, we rely on our{" "}
+        <strong>legitimate interest</strong> in being able to verify that our rates are
+        correct — this involves no name or contact details.
+      </p>
+
+      <h2 className={H2}>How long we keep it</h2>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-line text-left text-xs uppercase tracking-[0.1em] text-stone">
+              <th className="py-2 pr-4 font-medium">Data</th>
+              <th className="py-2 pr-4 font-medium">Retention period</th>
+              <th className="py-2 font-medium">Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bewaartermijnen.map((rij) => (
+              <tr key={rij.gegevens} className="border-b border-line">
+                <td className="py-2.5 pr-4 font-medium text-ink">{rij.gegevens}</td>
+                <td className="py-2.5 pr-4 tabular-nums text-secondary">{rij.termijn}</td>
+                <td className="py-2.5 text-secondary">{rij.reden}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className={P}>
+        Once a period ends, we delete the data or render it untraceable, unless a legal
+        obligation requires us to keep it longer. We keep the flight number for a shorter time
+        than the booking itself: it is only needed to collect you and has no function
+        afterwards.
+      </p>
+      <p className={P}>
+        We do not send a newsletter and do not keep a mailing list. There is therefore no
+        retention period for marketing communications.
+      </p>
+
+      <h2 className={H2}>Cookies</h2>
+      <p className={P}>
+        This website places no tracking or advertising cookies and uses no analytics software
+        that follows you across websites. There is therefore no cookie banner. Should we do so
+        in the future, we will ask for your consent in advance.
+      </p>
+
+      <h2 className={H2}>Your rights</h2>
+      <p className={P}>
+        You have the right to access your data, to have it corrected or deleted, and to object
+        to the processing. To do so, send a message to{" "}
+        <a className="underline" href={`mailto:${BEDRIJF.email}`}>{BEDRIJF.email}</a>. We
+        respond within four weeks.
+      </p>
+      <p className={P}>
+        If you disagree with how we handle your data, you can file a complaint with the Dutch
+        Data Protection Authority (Autoriteit Persoonsgegevens).
+      </p>
+
+      <h2 className={H2}>Security</h2>
+      <p className={P}>
+        Our website is accessible only over a secure connection. Data is stored in an
+        environment with access control, and only staff who carry out or handle your ride have
+        access to your booking.
+      </p>
+
+      <p className="mt-12 border-t border-line pt-6 text-sm text-secondary">
+        See also our{" "}
+        <Link href="/voorwaarden" className="underline">
+          terms and conditions
         </Link>
         .
       </p>

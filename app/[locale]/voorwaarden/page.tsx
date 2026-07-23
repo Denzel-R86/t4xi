@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import { getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { BEDRIJF, LAATST_BIJGEWERKT } from "@/lib/legal";
+import { pageMetadata } from "@/lib/seo-locale";
+import { BEDRIJF, getLaatstBijgewerkt } from "@/lib/legal";
 
 /**
  * Algemene voorwaarden.
@@ -49,22 +50,30 @@ import { BEDRIJF, LAATST_BIJGEWERKT } from "@/lib/legal";
  *   · een gepubliceerd wachttarief per uur, zodra de kostprijs is vastgesteld;
  *   · toetsing door een jurist.
  *
- * Waar een bepaling nog niet is vastgesteld, staat dat er zichtbaar bij in plaats
- * van dat er een gebruikelijk klinkende bepaling wordt verzonnen.
+ * De Engelse versie (stap 6) is een gemaksvertaling van EXACT deze Nederlandse
+ * bron, met dezelfde artikelnummering en juridische betekenis; bij
+ * tegenstrijdigheid prevaleert het Nederlands (disclaimer bovenaan de Engelse
+ * variant). Waar een bepaling nog niet is vastgesteld, staat dat er zichtbaar
+ * bij in plaats van dat er een gebruikelijk klinkende bepaling wordt verzonnen.
  */
 
-export const metadata: Metadata = {
-  title: "Algemene voorwaarden",
-  description:
-    "De voorwaarden waaronder T4XI vervoer levert: vaste prijzen, luchthavenbeleid bij " +
-    "vluchtvertraging, bagage en aansprakelijkheid.",
-  alternates: { canonical: "/voorwaarden" },
-};
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMetadata(params.locale, "/voorwaarden", "voorwaardenTitle", "voorwaardenDesc");
+}
 
 const H2 = "mt-10 font-display text-xl font-bold text-ink";
+const H3 = "mt-6 font-display text-base font-semibold text-ink";
 const P = "mt-3 text-secondary";
 
-export default function VoorwaardenPage() {
+const EN_DISCLAIMER =
+  "This English version is provided for convenience. In the event of any inconsistency, the Dutch version shall prevail.";
+
+export default async function VoorwaardenPage() {
+  const locale = await getLocale();
+  return locale === "en" ? <VoorwaardenEN /> : <VoorwaardenNL />;
+}
+
+function VoorwaardenNL() {
   return (
     <main className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
       <p className="text-eyebrow font-medium uppercase text-accent">Juridisch</p>
@@ -72,7 +81,7 @@ export default function VoorwaardenPage() {
         Algemene voorwaarden
       </h1>
       <p className="mt-4 text-secondary">
-        Laatst bijgewerkt op {LAATST_BIJGEWERKT}. Deze voorwaarden gelden voor alle ritten
+        Laatst bijgewerkt op {getLaatstBijgewerkt("nl")}. Deze voorwaarden gelden voor alle ritten
         die u boekt bij {BEDRIJF.rechtspersoon}, handelend onder de naam{" "}
         {BEDRIJF.handelsnaam}.
       </p>
@@ -109,9 +118,7 @@ export default function VoorwaardenPage() {
         dan kan een aangepaste prijs gelden. Wij stemmen dat vooraf met u af.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">
-        Wachttijd en verlenging op uw verzoek
-      </h3>
+      <h3 className={H3}>Wachttijd en verlenging op uw verzoek</h3>
       <p className={P}>
         Vraagt u onderweg om extra wachttijd, om een tussenstop of om een langer verblijf dan
         afgesproken, dan is dat mogelijk voor zover onze planning dat toelaat. Wij spreken de
@@ -129,9 +136,7 @@ export default function VoorwaardenPage() {
         twee situaties, omdat de afspraken verschillen:
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">
-        Ophalen ván een luchthaven (aankomende vlucht)
-      </h3>
+      <h3 className={H3}>Ophalen ván een luchthaven (aankomende vlucht)</h3>
       <p className={P}>
         Wij volgen uw vluchtstatus en passen het ophaalmoment aan wanneer uw vlucht
         vertraagd is. U hoeft ons daarvoor niet te bellen.
@@ -156,9 +161,7 @@ export default function VoorwaardenPage() {
         garanderen. Merkt u dat de gegevens niet kloppen, neem dan contact met ons op.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">
-        Brengen náár een luchthaven (vertrekkende vlucht)
-      </h3>
+      <h3 className={H3}>Brengen náár een luchthaven (vertrekkende vlucht)</h3>
       <p className={P}>
         Wij gebruiken uw vluchtnummer om de rit op uw vertrektijd te plannen. Voor een rit
         náár een luchthaven geldt geen inbegrepen wachttijd: die is bedoeld voor aankomsten.
@@ -232,7 +235,7 @@ export default function VoorwaardenPage() {
         </table>
       </div>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Wanneer is er sprake van een no-show?</h3>
+      <h3 className={H3}>Wanneer is er sprake van een no-show?</h3>
       <p className={P}>
         Van een no-show spreken wij pas als aan alle vier de voorwaarden is voldaan: de
         chauffeur is op de bevestigde ophaallocatie aanwezig, er is geprobeerd persoonlijk
@@ -241,14 +244,14 @@ export default function VoorwaardenPage() {
         daadwerkelijk geregistreerde landingstijd, volgens het luchthavenbeleid in artikel 3.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Geannuleerde vlucht</h3>
+      <h3 className={H3}>Geannuleerde vlucht</h3>
       <p className={P}>
         Wordt uw vlucht geannuleerd, dan kunt u kosteloos annuleren, mits u dit vóór het
         geplande ophaalmoment aan ons meldt. Wij kunnen u vragen de annulering aan te tonen,
         bijvoorbeeld met het bericht van de luchtvaartmaatschappij.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Wijzigen is geen annuleren</h3>
+      <h3 className={H3}>Wijzigen is geen annuleren</h3>
       <p className={P}>
         Een wijziging van route, datum of tijd geldt niet automatisch als annulering. Wij
         beoordelen eerst of de wijziging operationeel uitvoerbaar is. Leidt de wijziging tot
@@ -256,12 +259,12 @@ export default function VoorwaardenPage() {
         geldt pas nadat u deze heeft geaccepteerd.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Annulering door T4XI</h3>
+      <h3 className={H3}>Annulering door T4XI</h3>
       <p className={P}>
         Moeten wij een rit annuleren, dan betalen wij reeds betaalde bedragen volledig terug.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Hoe annuleert u?</h3>
+      <h3 className={H3}>Hoe annuleert u?</h3>
       <p className={P}>
         Per e-mail via{" "}
         <a className="underline" href={`mailto:${BEDRIJF.email}`}>
@@ -287,21 +290,21 @@ export default function VoorwaardenPage() {
         uit Boek 8 van het Burgerlijk Wetboek van toepassing.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Letsel en overlijden</h3>
+      <h3 className={H3}>Letsel en overlijden</h3>
       <p className={P}>
         Onze aansprakelijkheid voor dood of lichamelijk letsel in verband met het vervoer
         wordt niet uitgesloten en niet verder beperkt dan het dwingend Nederlands recht
         toestaat. Wij nemen daarover geen afwijkende bepaling op.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Gevolgschade</h3>
+      <h3 className={H3}>Gevolgschade</h3>
       <p className={P}>
         Wij zijn niet aansprakelijk voor indirecte schade of gevolgschade, waaronder gemiste
         vluchten, gemiste afspraken, omzetverlies en winstderving — behalve voor zover
         uitsluiting daarvan volgens dwingend recht niet is toegestaan.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Bagage</h3>
+      <h3 className={H3}>Bagage</h3>
       <p className={P}>
         Bij vermissing of beschadiging van bagage wordt onze aansprakelijkheid beoordeeld
         volgens het toepasselijke recht en de daadwerkelijke dekking van onze
@@ -309,7 +312,7 @@ export default function VoorwaardenPage() {
         die dekking.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Vertraging</h3>
+      <h3 className={H3}>Vertraging</h3>
       <p className={P}>
         Wij zijn niet aansprakelijk voor vertraging die het gevolg is van omstandigheden die
         een zorgvuldig vervoerder redelijkerwijs niet kon vermijden, zoals onverwachte
@@ -321,7 +324,7 @@ export default function VoorwaardenPage() {
         dat de rit vertraging oploopt, en bieden waar dat redelijk is een alternatief aan.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Wat wij van u vragen</h3>
+      <h3 className={H3}>Wat wij van u vragen</h3>
       <p className={P}>
         U bent verantwoordelijk voor het opgeven van correcte boekingsgegevens, voor tijdige
         aanwezigheid op de afgesproken ophaallocatie, voor geldige reisdocumenten, en voor het
@@ -329,14 +332,14 @@ export default function VoorwaardenPage() {
         kinderzitje, een rolstoel of een instrument.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Strijd met dwingend recht</h3>
+      <h3 className={H3}>Strijd met dwingend recht</h3>
       <p className={P}>
         Blijkt een bepaling uit deze voorwaarden in strijd met dwingend consumenten- of
         vervoersrecht, dan blijft die bepaling buiten toepassing. De overige voorwaarden
         blijven dan onverkort gelden.
       </p>
 
-      <h3 className="mt-6 font-display text-base font-semibold text-ink">Onze verzekering</h3>
+      <h3 className={H3}>Onze verzekering</h3>
       <p className={P}>
         Wij vervoeren u met een voertuig dat verzekerd is voor personenvervoer tegen
         betaling. Wilt u weten wat dat in een concreet geval betekent, dan lichten wij
@@ -356,6 +359,295 @@ export default function VoorwaardenPage() {
         Zie ook onze{" "}
         <Link href="/privacy" className="underline">
           privacyverklaring
+        </Link>
+        .
+      </p>
+    </main>
+  );
+}
+
+function VoorwaardenEN() {
+  return (
+    <main className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
+      <p className="text-eyebrow font-medium uppercase text-accent">Legal</p>
+      <h1 className="mt-4 font-display text-display-lg font-bold text-ink">
+        Terms and conditions
+      </h1>
+      <p className="mt-4 rounded-lg border border-line bg-fog px-4 py-3 text-sm text-secondary">
+        {EN_DISCLAIMER}
+      </p>
+      <p className="mt-4 text-secondary">
+        Last updated on {getLaatstBijgewerkt("en")}. These terms apply to all rides you book
+        with {BEDRIJF.rechtspersoon}, trading under the name {BEDRIJF.handelsnaam}.
+      </p>
+
+      <h2 className={H2}>1 · Who we are</h2>
+      <p className={P}>
+        {BEDRIJF.rechtspersoon}, established in {BEDRIJF.vestigingsplaats}.
+        <br />
+        Chamber of Commerce number: {BEDRIJF.kvk}
+        <br />
+        {BEDRIJF.btw ? (
+          <>VAT identification number: {BEDRIJF.btw}</>
+        ) : (
+          <mark className="bg-amber-200/60 px-1 font-medium text-ink">
+            [MISSING — provide VAT identification number before publication]
+          </mark>
+        )}
+      </p>
+
+      <h2 className={H2}>2 · Fixed price</h2>
+      <p className={P}>
+        The price you see before booking is the price you pay. That price includes VAT and
+        applies to the route you enter, regardless of the actual travel time. Traffic jams,
+        detours due to roadworks or delays en route do not lead to a higher price — that risk
+        lies with us.
+      </p>
+      <p className={P}>
+        No taximeter is used and we do not apply surge pricing. For rides starting between
+        23:00 and 06:00 a night surcharge of 15% applies, which is already included in the
+        price shown.
+      </p>
+      <p className={P}>
+        If, after confirmation, you change the route, the number of passengers or the amount
+        of luggage, an adjusted price may apply. We agree this with you in advance.
+      </p>
+
+      <h3 className={H3}>Waiting time and extension at your request</h3>
+      <p className={P}>
+        If you ask for extra waiting time, a stopover or a longer stay than agreed while en
+        route, this is possible in so far as our scheduling allows. We agree the additional
+        costs for this with you <strong>in advance</strong>.
+      </p>
+      <p className={P}>
+        Without your prior agreement we do not charge any additional costs. If we cannot grant
+        the request, for example because the driver has a subsequent ride, we say so on the
+        spot and the original arrangement remains in force.
+      </p>
+
+      <h2 className={H2}>3 · Airport rides and flight delays</h2>
+      <p className={P}>
+        For rides from or to an airport we ask for your flight number. We distinguish two
+        situations, because the arrangements differ:
+      </p>
+
+      <h3 className={H3}>Pick-up from an airport (arriving flight)</h3>
+      <p className={P}>
+        We track your flight status and adjust the pick-up time when your flight is delayed.
+        You do not need to call us for this.
+      </p>
+      <p className={P}>
+        <strong>After the registered landing time, 60 minutes of waiting time is included</strong>{" "}
+        for disembarking, border control and baggage. That period therefore does not start at
+        the scheduled arrival time, but at the moment your aircraft has actually landed. Extra
+        waiting time not caused by the flight delay is agreed with you in advance and may be
+        charged separately.
+      </p>
+      <p className={P}>
+        We agree the exact pick-up location at the airport with you personally after landing,
+        via WhatsApp or telephone. We deliberately do not state that location in advance:
+        airports designate pick-up and drop-off points and may change them, and we do not want
+        to promise you a place that no longer applies at the moment of arrival.
+      </p>
+      <p className={P}>
+        We rely on flight information from external sources. That information may change, be
+        incomplete or become available with a delay. We make every effort to track the arrival
+        correctly, but cannot guarantee the accuracy of third-party data. If you notice that
+        the data is incorrect, please contact us.
+      </p>
+
+      <h3 className={H3}>Taking you to an airport (departing flight)</h3>
+      <p className={P}>
+        We use your flight number to plan the ride around your departure time. For a ride to
+        an airport no waiting time is included: that is intended for arrivals.
+      </p>
+
+      <p className={P}>
+        If you provide no flight number or an incorrect one, we cannot track your flight and
+        the originally agreed pick-up time applies.
+      </p>
+
+      <h2 className={H2}>4 · Vehicle and capacity</h2>
+      <p className={P}>
+        We drive a Tesla Model Y (fully electric) or a Lynk &amp; Co 01 (plug-in hybrid). The
+        price is the same for both. We confirm the vehicle category in advance; which car
+        ultimately drives may differ for operational reasons.
+      </p>
+      <p className={P}>
+        A ride is intended for a maximum of 4 passengers excluding the driver. Recommended
+        luggage: 2 large suitcases plus 2 pieces of hand luggage with 4 passengers, or 3 large
+        suitcases with up to 3 passengers. If you have more luggage, please state this when
+        booking, so that we can schedule a suitable vehicle.
+      </p>
+
+      <h2 className={H2}>5 · Driver</h2>
+      <p className={P}>
+        Your driver holds a valid Dutch taxi driver&apos;s card and drives on behalf of{" "}
+        {BEDRIJF.rechtspersoon}.
+      </p>
+
+      <h2 className={H2}>6 · Booking and confirmation</h2>
+      <p className={P}>
+        A booking is formed as soon as we confirm it to you by email or WhatsApp. The request
+        itself is not yet an agreement. We advise booking at least two hours before the desired
+        departure time; for flights before 07:00 preferably the evening before.
+      </p>
+
+      <h2 className={H2}>7 · Cancellation, changes and no-show</h2>
+      <p className={P}>
+        You can cancel your ride free of charge up to 24 hours before the agreed pick-up time.
+        After that, the costs below apply, because the ride is then scheduled and the
+        driver&apos;s time can no longer be resold:
+      </p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-line text-left text-xs uppercase tracking-[0.1em] text-stone">
+              <th className="py-2 pr-4 font-medium">Time of cancellation</th>
+              <th className="py-2 font-medium">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 text-secondary">More than 24 hours in advance</td>
+              <td className="py-2.5 font-medium text-ink">free of charge</td>
+            </tr>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 text-secondary">Between 24 and 6 hours in advance</td>
+              <td className="py-2.5 font-medium text-ink">50% of the ride price</td>
+            </tr>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 text-secondary">Less than 6 hours in advance</td>
+              <td className="py-2.5 font-medium text-ink">100% of the ride price</td>
+            </tr>
+            <tr className="border-b border-line">
+              <td className="py-2.5 pr-4 text-secondary">No-show</td>
+              <td className="py-2.5 font-medium text-ink">100% of the ride price</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 className={H3}>When is there a no-show?</h3>
+      <p className={P}>
+        We only speak of a no-show once all four conditions are met: the driver is present at
+        the confirmed pick-up location, an attempt has been made to contact you personally, the
+        included waiting time has elapsed, and you have not appeared. For airport pick-ups that
+        waiting time starts from the actually registered landing time, in accordance with the
+        airport policy in article 3.
+      </p>
+
+      <h3 className={H3}>Cancelled flight</h3>
+      <p className={P}>
+        If your flight is cancelled, you can cancel free of charge, provided you notify us
+        before the planned pick-up time. We may ask you to demonstrate the cancellation, for
+        example with the message from the airline.
+      </p>
+
+      <h3 className={H3}>Changing is not cancelling</h3>
+      <p className={P}>
+        A change of route, date or time does not automatically count as a cancellation. We
+        first assess whether the change is operationally feasible. If the change leads to a
+        different route or a different price, we first confirm the new price; it applies only
+        after you have accepted it.
+      </p>
+
+      <h3 className={H3}>Cancellation by T4XI</h3>
+      <p className={P}>
+        If we have to cancel a ride, we refund any amounts already paid in full.
+      </p>
+
+      <h3 className={H3}>How do you cancel?</h3>
+      <p className={P}>
+        By email at{" "}
+        <a className="underline" href={`mailto:${BEDRIJF.email}`}>
+          {BEDRIJF.email}
+        </a>{" "}
+        or by phone at{" "}
+        <a className="underline" href={BEDRIJF.telefoonHref}>
+          {BEDRIJF.telefoon}
+        </a>
+        . The moment your message reaches us determines which rate above applies. If a booking
+        portal becomes available later, you can also cancel there.
+      </p>
+
+      <h2 className={H2}>8 · Payment</h2>
+      <p className={P}>
+        Payment takes place as agreed with you at confirmation. No payment details are
+        collected or stored through this website.
+      </p>
+
+      <h2 className={H2}>9 · Liability</h2>
+      <p className={P}>
+        The transport agreement is governed, among other things, by the statutory rules for
+        passenger transport in Book 8 of the Dutch Civil Code.
+      </p>
+
+      <h3 className={H3}>Injury and death</h3>
+      <p className={P}>
+        Our liability for death or bodily injury in connection with the transport is not
+        excluded and not limited any further than mandatory Dutch law permits. We include no
+        deviating provision on this.
+      </p>
+
+      <h3 className={H3}>Consequential loss</h3>
+      <p className={P}>
+        We are not liable for indirect or consequential loss, including missed flights, missed
+        appointments, loss of turnover and loss of profit — except in so far as excluding this
+        is not permitted under mandatory law.
+      </p>
+
+      <h3 className={H3}>Luggage</h3>
+      <p className={P}>
+        In the event of loss of or damage to luggage, our liability is assessed according to
+        the applicable law and the actual cover of our taxi insurance. We do not apply a
+        predetermined maximum amount independent of that cover.
+      </p>
+
+      <h3 className={H3}>Delay</h3>
+      <p className={P}>
+        We are not liable for delay resulting from circumstances that a diligent carrier could
+        not reasonably have avoided, such as unexpected road closures, serious accidents,
+        extreme weather conditions, government measures or other force majeure.
+      </p>
+      <p className={P}>
+        That is not a carte blanche: we make every effort to inform you in good time once we
+        know that the ride is being delayed, and offer an alternative where that is reasonable.
+      </p>
+
+      <h3 className={H3}>What we ask of you</h3>
+      <p className={P}>
+        You are responsible for providing correct booking details, for being present on time
+        at the agreed pick-up location, for valid travel documents, and for reporting special
+        luggage or specific transport needs in advance — for example a child seat, a wheelchair
+        or an instrument.
+      </p>
+
+      <h3 className={H3}>Conflict with mandatory law</h3>
+      <p className={P}>
+        If a provision of these terms proves to conflict with mandatory consumer or transport
+        law, that provision does not apply. The remaining terms then remain fully in force.
+      </p>
+
+      <h3 className={H3}>Our insurance</h3>
+      <p className={P}>
+        We carry you in a vehicle that is insured for passenger transport for payment. If you
+        would like to know what that means in a specific case, we will explain it on request.
+      </p>
+
+      <h2 className={H2}>10 · Complaints and applicable law</h2>
+      <p className={P}>
+        You can submit complaints via{" "}
+        <a className="underline" href={`mailto:${BEDRIJF.email}`}>
+          {BEDRIJF.email}
+        </a>{" "}
+        or {BEDRIJF.telefoon}. Dutch law applies to these terms.
+      </p>
+
+      <p className="mt-12 border-t border-line pt-6 text-sm text-secondary">
+        See also our{" "}
+        <Link href="/privacy" className="underline">
+          privacy statement
         </Link>
         .
       </p>

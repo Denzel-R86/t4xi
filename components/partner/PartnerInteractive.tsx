@@ -3,10 +3,41 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Icon from "@/components/ui/Icon";
+import { BEDRIJF } from "@/lib/legal";
 
 const inputCls =
   "min-h-[52px] w-full rounded-field border border-[rgba(31,39,48,0.14)] bg-field px-4 text-[15px] font-medium text-ink placeholder:font-normal placeholder:text-stone focus:border-accent focus:bg-white focus:shadow-[0_0_0_4px_rgba(40,49,59,0.10)] focus:outline-none";
 const labelCls = "mb-1.5 block text-xs font-bold text-secondary";
+
+const WHATSAPP = "https://wa.me/31634744522";
+
+/**
+ * Eerlijke inzending zonder backend (stap 6, Optie B). Zie ProductForms voor de
+ * onderbouwing: geen verzonnen bevestiging meer; de knop stelt een echte e-mail
+ * op met de ingevulde velden. Pas na verzenden door de bezoeker gaat er iets weg.
+ */
+function collectFields(form: HTMLFormElement): string[] {
+  const els = Array.from(
+    form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea")
+  );
+  return els
+    .filter((el) => el.type !== "submit" && el.type !== "hidden" && el.value.trim() !== "")
+    .map((el) => {
+      const label = el.labels?.[0]?.textContent?.trim().replace(/\s*\*$/, "") ?? el.id;
+      return `${label}: ${el.value.trim()}`;
+    });
+}
+
+function composeMailto(form: HTMLFormElement, subject: string): void {
+  const body = collectFields(form).join("\r\n");
+  window.location.href = `mailto:${BEDRIJF.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+/** WhatsApp-route, óók gevuld met de ingevoerde gegevens (met plain-link fallback). */
+function composeWhatsApp(form: HTMLFormElement, subject: string): void {
+  const text = [subject, ...collectFields(form)].join("\n");
+  window.location.href = `${WHATSAPP}?text=${encodeURIComponent(text)}`;
+}
 
 /** Commissie + maandbedrag per pakket — taalneutraal (label komt uit i18n). */
 const PAKKETTEN = [
@@ -95,7 +126,6 @@ export function EarningsCalculator() {
 /** Aanmeldformulier uit partner.html (#aanmelden). */
 export function PartnerSignupForm() {
   const t = useTranslations("partner");
-  const [sent, setSent] = useState(false);
 
   const vergOpts = t.raw("fVergOpts") as string[];
   const regioOpts = t.raw("fRegioOpts") as string[];
@@ -107,16 +137,10 @@ export function PartnerSignupForm() {
       className="relative overflow-hidden rounded-[28px] border border-line bg-card p-6 shadow-hero-card md:p-7"
       onSubmit={(e) => {
         e.preventDefault();
-        setSent(true);
+        composeMailto(e.currentTarget, t("mailSubject"));
       }}
     >
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[5px] bg-gradient-to-r from-accent via-stone to-stone-subtle" />
-      {sent && (
-        <p className="mb-5 flex items-center gap-2 rounded-lg border border-green-600/30 bg-green-600/10 px-4 py-3.5 text-sm text-green-700">
-          <Icon name="check" size={16} />
-          {t("formSent")}
-        </p>
-      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="p-naam" className={labelCls}>{t("fNaam")}</label>
@@ -178,6 +202,25 @@ export function PartnerSignupForm() {
         {t("fSubmit")}
       </button>
       <p className="mt-3 text-center text-xs text-secondary">
+        {t("sendNote")}{" "}
+        <a
+          href={WHATSAPP}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => {
+            const form = e.currentTarget.closest("form");
+            if (form) {
+              e.preventDefault();
+              composeWhatsApp(form, t("mailSubject"));
+            }
+          }}
+          className="font-medium text-accent hover:underline"
+        >
+          {t("orWhatsapp")}
+        </a>
+        .
+      </p>
+      <p className="mt-2 text-center text-xs text-secondary">
         {t("fBel")}{" "}
         <a href="tel:+31634744522" className="text-accent hover:underline">+31 6 34 74 45 22</a>
       </p>

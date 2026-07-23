@@ -2,8 +2,10 @@
  * Booking-notificaties via Resend (Stap 9c) — VOLLEDIG SERVER-ONLY.
  *
  * Verstuurt na een succesvolle boeking twee mails:
- *   1. bevestiging naar de klant
- *   2. notificatie naar operations (booking@t4xi.nl)
+ *   1. bevestiging naar de klant — tweetalig (stap 6): NL of EN, afhankelijk van
+ *      de locale die met de boeking is meegestuurd en server-side gevalideerd;
+ *   2. notificatie naar operations (booking@t4xi.nl) — bewust Nederlands, want
+ *      intern. Aparte template, dus splitsen is veilig en raakt de klantmail niet.
  *
  * Gebruikt de Resend REST-API rechtstreeks (geen dependency, geen key naar de
  * client). Faalt nooit hard: bij ontbrekende config of een verzendfout wordt
@@ -19,6 +21,8 @@
 // server-side. Nooit importeren in een client component. (De idiomatische guard
 // `import "server-only"` kan later, zodra dat pakket als dependency is opgenomen.)
 
+import type { Locale } from "@/i18n/routing";
+
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const DEFAULT_FROM = "T4XI <onboarding@resend.dev>";
 const DEFAULT_OPS = "booking@t4xi.nl";
@@ -30,13 +34,72 @@ const T4XI = {
   email: "booking@t4xi.nl",
 };
 
-const RIDE_TYPE_LABELS: Record<string, string> = {
-  enkel: "Enkele rit",
-  retour: "Retour",
-  luchthaven: "Luchthaven transfer",
-  dagtocht: "Dagtocht",
-  direct: "Rit",
+/** Ritsoort-labels. NL voor de ops-mail; EN voor de klantmail bij locale "en". */
+const RIDE_TYPE_LABELS: Record<Locale, Record<string, string>> = {
+  nl: {
+    enkel: "Enkele rit",
+    retour: "Retour",
+    luchthaven: "Luchthaven transfer",
+    dagtocht: "Dagtocht",
+    direct: "Rit",
+  },
+  en: {
+    enkel: "One-way ride",
+    retour: "Return",
+    luchthaven: "Airport transfer",
+    dagtocht: "Day trip",
+    direct: "Ride",
+  },
 };
+
+/** Klantgerichte teksten per locale. De ops-mail is en blijft Nederlands. */
+const CUSTOMER_COPY = {
+  nl: {
+    lang: "nl",
+    intlLocale: "nl-NL",
+    subject: (ref: string) => `Je boeking bij T4XI — ${ref}`,
+    preheader: "Bevestiging van je aanvraag en je referentienummer.",
+    heading: "Bedankt voor je boeking",
+    intro: (name: string, ref: string) =>
+      `Beste ${name}, we hebben je aanvraag ontvangen. Je referentie is ` +
+      `<strong style="color:${"#1F2730"};">${ref}</strong>. We bevestigen je rit zo snel mogelijk via WhatsApp of e-mail.`,
+    labelReference: "Referentie",
+    labelType: "Type",
+    labelRoute: "Route",
+    labelDate: "Datum",
+    labelTime: "Tijd",
+    labelPrice: "Prijs",
+    quoteOnRequest: "Offerte op aanvraag",
+    returnSuffix: "retour",
+    contactIntro: "Vragen of wijzigingen? Neem gerust contact op:",
+    tagline: "T4XI — premium elektrisch vervoer",
+  },
+  en: {
+    lang: "en",
+    intlLocale: "en-GB",
+    subject: (ref: string) => `Your T4XI booking — ${ref}`,
+    preheader: "Confirmation of your request and your reference number.",
+    heading: "Thank you for your booking",
+    intro: (name: string, ref: string) =>
+      `Dear ${name}, we have received your request. Your reference is ` +
+      `<strong style="color:${"#1F2730"};">${ref}</strong>. We will confirm your ride as soon as possible via WhatsApp or email.`,
+    labelReference: "Reference",
+    labelType: "Type",
+    labelRoute: "Route",
+    labelDate: "Date",
+    labelTime: "Time",
+    labelPrice: "Price",
+    quoteOnRequest: "Quote on request",
+    returnSuffix: "return",
+    contactIntro: "Questions or changes? Feel free to get in touch:",
+    tagline: "T4XI — premium electric transport",
+  },
+} as const;
+
+/** Valideert onbetrouwbare invoer tot een ondersteunde locale; anders NL. */
+export function normalizeLocale(input: unknown): Locale {
+  return input === "en" ? "en" : "nl";
+}
 
 export type BookingEmailData = {
   bookingRef: string;
@@ -62,6 +125,8 @@ export type BookingEmailData = {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
+  /** Taal van de klantmail. Server-side gevalideerd; ongeldig → "nl". */
+  locale: Locale;
 };
 
 export type SendResult = { sent: boolean; error?: string };
@@ -77,23 +142,27 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function rideTypeLabel(rideType: string): string {
-  return RIDE_TYPE_LABELS[rideType] ?? "Rit";
+/** Ritsoort-label in de gevraagde taal (fallback op de "direct"-waarde). */
+function rideTypeLabel(rideType: string, locale: Locale): string {
+  const table = RIDE_TYPE_LABELS[locale];
+  return table[rideType] ?? table.direct;
 }
 
-function formatDate(date: string): string {
+/** Datum per locale: "23 juli 2026" (nl) / "23 July 2026" (en). */
+function formatDate(date: string, intlLocale: string): string {
   const d = new Date(`${date}T00:00:00`);
   if (Number.isNaN(d.getTime())) return date;
-  return new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric" }).format(d);
+  return new Intl.DateTimeFormat(intlLocale, { day: "numeric", month: "long", year: "numeric" }).format(d);
 }
 
-function formatPrice(data: BookingEmailData): string {
-  if (data.quoteOnRequest || data.price === null) return "Offerte op aanvraag";
-  const priceStr = new Intl.NumberFormat("nl-NL", {
+/** Prijs per locale; het bedrag zelf komt server-side uit de Pricing Engine. */
+function formatPrice(data: BookingEmailData, intlLocale: string, quoteLabel: string, returnSuffix: string): string {
+  if (data.quoteOnRequest || data.price === null) return quoteLabel;
+  const priceStr = new Intl.NumberFormat(intlLocale, {
     style: "currency",
     currency: data.currency || "EUR",
   }).format(data.price);
-  return data.returnApplied ? `${priceStr} (retour)` : priceStr;
+  return data.returnApplied ? `${priceStr} (${returnSuffix})` : priceStr;
 }
 
 // ── HTML-templates ───────────────────────────────────────────────────────────
@@ -103,16 +172,21 @@ const ACCENT = "#28313B";
 const FOG = "#F5F3F1";
 const MUTED = "#5F666D";
 
-function shell(title: string, inner: string): string {
-  return `<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
+function shell(opts: { title: string; inner: string; lang: string; tagline: string; preheader?: string }): string {
+  const { title, inner, lang, tagline, preheader } = opts;
+  const preheaderHtml = preheader
+    ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>`
+    : "";
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;background:${FOG};font-family:Arial,Helvetica,sans-serif;color:${INK};">
+  ${preheaderHtml}
   <div style="max-width:560px;margin:0 auto;padding:24px;">
     <div style="font-size:22px;font-weight:bold;letter-spacing:1px;color:${INK};padding:8px 0 16px;">T4XI</div>
     <div style="background:#ffffff;border:1px solid rgba(31,39,48,0.10);border-radius:16px;padding:28px;">
       ${inner}
     </div>
     <p style="color:${MUTED};font-size:12px;text-align:center;margin-top:20px;">
-      T4XI — premium elektrisch vervoer · ${T4XI.phoneDisplay} · ${escapeHtml(T4XI.email)}
+      ${escapeHtml(tagline)} · ${T4XI.phoneDisplay} · ${escapeHtml(T4XI.email)}
     </p>
   </div>
 </body></html>`;
@@ -130,41 +204,45 @@ function route(data: BookingEmailData): string {
 }
 
 function customerHtml(data: BookingEmailData): string {
+  const c = CUSTOMER_COPY[data.locale];
   const inner = `
-    <h1 style="font-size:20px;margin:0 0 8px;color:${INK};">Bedankt voor je boeking</h1>
+    <h1 style="font-size:20px;margin:0 0 8px;color:${INK};">${escapeHtml(c.heading)}</h1>
     <p style="font-size:14px;color:${MUTED};margin:0 0 20px;line-height:1.5;">
-      Beste ${escapeHtml(data.customerName)}, we hebben je aanvraag ontvangen. Je referentie is
-      <strong style="color:${INK};">${escapeHtml(data.bookingRef)}</strong>. We bevestigen je rit zo snel mogelijk via WhatsApp of e-mail.
+      ${c.intro(escapeHtml(data.customerName), escapeHtml(data.bookingRef))}
     </p>
     <table style="width:100%;border-collapse:collapse;border-top:1px solid rgba(31,39,48,0.10);">
-      ${detailRow("Referentie", escapeHtml(data.bookingRef))}
-      ${detailRow("Type", escapeHtml(rideTypeLabel(data.rideType)))}
-      ${detailRow("Route", route(data))}
-      ${detailRow("Datum", escapeHtml(formatDate(data.date)))}
-      ${detailRow("Tijd", escapeHtml(data.time))}
-      ${detailRow("Prijs", escapeHtml(formatPrice(data)))}
+      ${detailRow(c.labelReference, escapeHtml(data.bookingRef))}
+      ${detailRow(c.labelType, escapeHtml(rideTypeLabel(data.rideType, data.locale)))}
+      ${detailRow(c.labelRoute, route(data))}
+      ${detailRow(c.labelDate, escapeHtml(formatDate(data.date, c.intlLocale)))}
+      ${detailRow(c.labelTime, escapeHtml(data.time))}
+      ${detailRow(c.labelPrice, escapeHtml(formatPrice(data, c.intlLocale, c.quoteOnRequest, c.returnSuffix)))}
     </table>
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(31,39,48,0.10);">
-      <p style="font-size:13px;color:${MUTED};margin:0 0 10px;">Vragen of wijzigingen? Neem gerust contact op:</p>
+      <p style="font-size:13px;color:${MUTED};margin:0 0 10px;">${escapeHtml(c.contactIntro)}</p>
       <p style="margin:0;font-size:14px;">
         <a href="tel:${T4XI.phoneHref}" style="color:${ACCENT};text-decoration:none;font-weight:600;">${T4XI.phoneDisplay}</a> ·
         <a href="${T4XI.whatsapp}" style="color:${ACCENT};text-decoration:none;font-weight:600;">WhatsApp</a> ·
         <a href="mailto:${T4XI.email}" style="color:${ACCENT};text-decoration:none;font-weight:600;">${T4XI.email}</a>
       </p>
     </div>`;
-  return shell(`Je boeking bij T4XI — ${data.bookingRef}`, inner);
+  return shell({ title: c.subject(data.bookingRef), inner, lang: c.lang, tagline: c.tagline, preheader: c.preheader });
 }
 
+/** Interne ops-mail — bewust Nederlands; taalonafhankelijk van de klantkeuze. */
 function opsHtml(data: BookingEmailData): string {
+  const nlDate = formatDate(data.date, "nl-NL");
+  const nlPrice = formatPrice(data, "nl-NL", "Offerte op aanvraag", "retour");
   const inner = `
     <h1 style="font-size:18px;margin:0 0 4px;color:${INK};">Nieuwe boeking</h1>
     <p style="font-size:13px;color:${MUTED};margin:0 0 16px;">Referentie <strong style="color:${INK};">${escapeHtml(data.bookingRef)}</strong></p>
     <table style="width:100%;border-collapse:collapse;border-top:1px solid rgba(31,39,48,0.10);">
-      ${detailRow("Type", escapeHtml(rideTypeLabel(data.rideType)))}
+      ${detailRow("Type", escapeHtml(rideTypeLabel(data.rideType, "nl")))}
       ${detailRow("Route", route(data))}
-      ${detailRow("Datum", escapeHtml(formatDate(data.date)))}
+      ${detailRow("Datum", escapeHtml(nlDate))}
       ${detailRow("Tijd", escapeHtml(data.time))}
-      ${detailRow("Prijs", escapeHtml(formatPrice(data)))}
+      ${detailRow("Prijs", escapeHtml(nlPrice))}
+      ${detailRow("Taal klantmail", data.locale === "en" ? "Engels" : "Nederlands")}
       ${detailRow("Offerte op aanvraag", data.quoteOnRequest ? "Ja" : "Nee")}
       ${detailRow("Passagiers", String(data.persons))}
       ${detailRow("Bagage", data.luggage ? escapeHtml(data.luggage) : "—")}
@@ -202,7 +280,7 @@ function opsHtml(data: BookingEmailData): string {
       ${detailRow("Telefoon", `<a href="tel:${escapeHtml(data.customerPhone)}" style="color:${ACCENT};text-decoration:none;">${escapeHtml(data.customerPhone)}</a>`)}
       ${detailRow("E-mail", `<a href="mailto:${escapeHtml(data.customerEmail)}" style="color:${ACCENT};text-decoration:none;">${escapeHtml(data.customerEmail)}</a>`)}
     </table>`;
-  return shell(`Nieuwe boeking ${data.bookingRef}`, inner);
+  return shell({ title: `Nieuwe boeking ${data.bookingRef}`, inner, lang: "nl", tagline: "T4XI — premium elektrisch vervoer" });
 }
 
 /** Rendert beide mails (subjects + HTML). Puur — handig voor test/preview. */
@@ -212,10 +290,11 @@ export function renderBookingEmails(data: BookingEmailData): {
   customerSubject: string;
   customerHtml: string;
 } {
+  const c = CUSTOMER_COPY[data.locale];
   return {
     opsSubject: `Nieuwe boeking ${data.bookingRef} — ${data.pickup} → ${data.dropoff}`,
     opsHtml: opsHtml(data),
-    customerSubject: `Je boeking bij T4XI — ${data.bookingRef}`,
+    customerSubject: c.subject(data.bookingRef),
     customerHtml: customerHtml(data),
   };
 }
