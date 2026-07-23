@@ -4,5 +4,1011 @@
     "nl": "Nederlands",
     "en": "Engels",
     "actief": "Huidige taal"
+  },
+  "nav": {
+    "vloot": "Vloot",
+    "diensten": "Diensten",
+    "tarieven": "Tarieven",
+    "dagtochten": "Dagtochten",
+    "partner": "Partner",
+    "overOns": "Over ons",
+    "boekEenRit": "Boek een rit",
+    "bel": "Bel T4XI",
+    "whatsapp": "WhatsApp T4XI",
+    "naarHome": "T4XI — naar homepage",
+    "hoofdnav": "Hoofdnavigatie",
+    "mobieleNav": "Mobiele navigatie",
+    "menuOpen": "Menu openen",
+    "menuDicht": "Menu sluiten",
+    "whatsappOns": "WhatsApp ons",
+    "naarInhoud": "Naar de inhoud"
+  },
+  "footer": {
+    "tagline": "Arrive composed.",
+    "omschrijving": "Premium taxivervoer in Amsterdam en Rotterdam. Tesla Model Y en Lynk & Co 01. Vaste prijzen, 24/7 beschikbaar.",
+    "vastePrijs": "Vaste prijs vooraf — geen taxameter, geen surge pricing.",
+    "dienstenKop": "Diensten",
+    "schiphol": "Schiphol vervoer",
+    "zakelijk": "Zakelijk vervoer",
+    "prive": "Privéritten",
+    "evenementen": "Evenementen",
+    "dagtochten": "Dagtochten",
+    "memberships": "Memberships",
+    "t4xiKop": "T4XI",
+    "wagenpark": "Ons wagenpark",
+    "bedrijven": "Voor bedrijven",
+    "partnerWorden": "Partner worden",
+    "tarieven": "Tarieven",
+    "overOns": "Over ons",
+    "boeken": "Boek een rit",
+    "contactKop": "Contact",
+    "steden": "Amsterdam & Rotterdam",
+    "beschikbaar": "24/7 beschikbaar",
+    "rechten": "Alle rechten voorbehouden",
+    "onderdeelVan": "Onderdeel van",
+    "juridisch": "Juridisch",
+    "privacy": "Privacyverklaring",
+    "voorwaarden": "Algemene voorwaarden",
+    "email": "E-mail T4XI"
+  },
+  "sticky": {
+    "label": "Snelle acties",
+    "boeken": "Rit boeken",
+    "bellen": "Bellen",
+    "whatsapp": "WhatsApp"
+  },
+  "booking": {
+    "tabEnkel": "Enkele rit",
+    "tabRetour": "Retour",
+    "tabLuchthaven": "Luchthaven",
+    "tabDagtocht": "Dagtocht",
+    "van": "Van",
+    "naar": "Naar",
+    "vertrekadresPh": "Vertrekadres",
+    "bestemmingPh": "Bestemming",
+    "datum": "Datum",
+    "tijd": "Tijd",
+    "voertuig": "Voertuig",
+    "passagiers": "Passagiers",
+    "bagage": "Bagage",
+    "bagageHand": "Handbagage",
+    "bagage12": "1–2 koffers",
+    "bagage3": "3 koffers — alleen bij max. 3 passagiers",
+    "bagageOverleg": "Meer bagage / grotere koffers — eerst afstemmen",
+    "vluchtAankomend": "Aankomend vluchtnummer",
+    "vluchtVertrekkend": "Vertrekkend vluchtnummer",
+    "verplicht": "— verplicht",
+    "vluchtHelpAankomst": "Wij volgen uw vluchtstatus en passen het ophaalmoment aan wanneer uw vlucht vertraagd is.",
+    "vluchtHelpVertrek": "Wij gebruiken uw vluchtnummer om de rit op uw vertrektijd te plannen.",
+    "aasKop": "Inclusief Airport Arrival Service",
+    "aas1": "Wij volgen uw vluchtstatus",
+    "aas2": "60 minuten wachttijd inbegrepen vanaf de geregistreerde landing",
+    "aas3": "Persoonlijke afstemming van de ophaallocatie",
+    "aasNa": "Na de landing ontvangt u van ons via WhatsApp of telefoon de exacte ophaallocatie, met de naam van uw chauffeur en het voertuig.",
+    "adresDetectie": "Automatisch herkende adresgegevens",
+    "postcode": "Postcode",
+    "stad": "Stad",
+    "stadsdeel": "Stadsdeel",
+    "geschattePrijs": "Geschatte prijs",
+    "prijsIdle": "Vul adressen in",
+    "prijsLaden": "Prijs berekenen…",
+    "prijsVast": "Vaste prijs vooraf",
+    "prijsRetour": "Retour — vaste prijs vooraf",
+    "prijsOpAanvraag": "Offerte op aanvraag",
+    "opAanvraag": "Op aanvraag",
+    "prijsFout": "Prijs tijdelijk niet beschikbaar",
+    "inclusiefKop": "Inclusief:",
+    "inclusiefTekst": "vaste prijs, maximaal 4 passagiers exclusief chauffeur. Bij 4 passagiers adviseren wij 2 grote koffers + 2 handbagage.",
+    "naam": "Naam",
+    "naamPh": "Volledige naam",
+    "telefoon": "Telefoon",
+    "email": "E-mail",
+    "emailPh": "uw@email.nl",
+    "verzenden": "Boeking bevestigen",
+    "bezig": "Bezig met verzenden…",
+    "ofBel": "Of bel",
+    "valAdres": "Vul een ophaaladres en bestemming in.",
+    "valVluchtAankomst": "Vul uw aankomende vluchtnummer in — daarmee volgen wij uw vlucht en passen wij het ophaalmoment aan.",
+    "valVluchtVertrek": "Vul uw vertrekkende vluchtnummer in, zodat wij de rit daarop kunnen plannen.",
+    "succesRef": "Boeking ontvangen — referentie",
+    "succesOpAanvraag": "Deze route krijgt een offerte op aanvraag. Wij bevestigen prijs en tijd via WhatsApp of e-mail.",
+    "succesBevestiging": "Wij bevestigen uw rit via WhatsApp of e-mail.",
+    "foutFallback": "Er ging iets mis. Probeer het opnieuw of bel ons.",
+    "foutVerbinding": "Geen verbinding. Controleer je internet of bel ons.",
+    "honeypot": "Website (niet invullen)"
+  },
+  "autocomplete": {
+    "zoeken": "Adressen zoeken…",
+    "leeg": "Geen adressen gevonden. Controleer de spelling.",
+    "fout": "Zoeken lukt even niet. Controleer je verbinding en probeer opnieuw."
+  },
+  "tarieven": {
+    "kicker": "Vaste tarieven — geen taxameter, geen verrassing",
+    "kop1": "Elke rit heeft",
+    "kop2": "zijn prijs.",
+    "intro": "Prijzen voor de enkele rit in onze executive-klasse: Tesla Model Y (volledig elektrisch) of Lynk & Co 01 (plug-in hybride). Retour staat per route vermeld. Nachttarief (23:00–06:00) +15%. Alle bedragen inclusief btw, maximaal 4 passagiers exclusief chauffeur.",
+    "vertrek": "Vertrek",
+    "vanuit": "Vanuit {stad}",
+    "naarSchiphol": "Naar Schiphol",
+    "overigeLuchthavens": "Overige luchthavens",
+    "intercity": "Intercity",
+    "andereBestemmingVraag": "Andere bestemming vanuit {stad}?",
+    "vraagVastePrijs": "Vraag een vaste prijs aan",
+    "nietBeschikbaar": "Tarieven zijn momenteel niet beschikbaar.",
+    "routeNietGevonden": "Staat uw route er niet bij?",
+    "ofBel": "— of bel",
+    "adviesbagage": ". Adviesbagage: 2 grote koffers + 2 handbagage bij 4 passagiers, of 3 grote koffers bij maximaal 3 passagiers.",
+    "retour": "retour",
+    "km": "km"
+  },
+  "kiezer": {
+    "kop": "Kies een bestemming",
+    "steden": "Steden",
+    "attracties": "Attracties & bezienswaardigheden",
+    "andere": "Andere bestemming",
+    "ariaBestemmingen": "Bestemmingen vanuit {stad}",
+    "prijsOpAanvraag": "Prijs op aanvraag",
+    "retour": "retour",
+    "andereUitleg": "Elk ander adres, hotel of bekende locatie. Vul uw bestemming in — bestaat er een vaste prijs, dan ziet u die direct op de boekingspagina; anders ontvangt u een offerte op aanvraag.",
+    "bestemmingVanuit": "Bestemming vanuit {stad}",
+    "anderePh": "Bijv. Hilton Schiphol of Efteling, Kaatsheuvel",
+    "bekijkVastePrijs": "Bekijk vaste prijs"
+  },
+  "home": {
+    "arrivalLabel": "Aankomst",
+    "arrivalKicker": "Executive Airport Mobility — Nederland",
+    "arrivalVoice": "Van voordeur",
+    "arrivalEcho": "tot vertrekhal.",
+    "arrivalNote": "Premium rit met vaste prijs vooraf. Rustig elektrisch vervoer, professionele chauffeur en heldere afspraken over passagiers en bagage.",
+    "arrivalStamp1": "24/7 beschikbaar",
+    "arrivalStamp2": "geldige taxichauffeurskaart",
+    "arrivalStamp3": "100% elektrisch",
+    "arrivalStamp4": "vaste prijs vooraf",
+    "recogLabel": "Herkenning — de T4XI beleving",
+    "recogKicker": "De T4XI beleving",
+    "recogVoice": "Rust, overzicht en comfort",
+    "recogEcho": "vanaf het eerste contact.",
+    "recogNote": "Een premium rit begint niet bij instappen, maar bij eenvoudig boeken, heldere communicatie en weten waar u aan toe bent.",
+    "vow1Titel": "Vaste prijs vooraf.",
+    "vow1Tekst": "Geen taxameterstress. U ziet vooraf de prijs op basis van vertrekpunt, bestemming, postcodegebied en bagage.",
+    "vow2Titel": "Ontspannen onderweg.",
+    "vow2Tekst": "Stil elektrisch vervoer, nette chauffeur, rustige rijstijl en ruimte voor een representatieve rit.",
+    "vow3Titel": "Schiphol zonder gedoe.",
+    "vow3Tekst": "Afspraak, ophaaltijd en bagage vooraf afgestemd. Bij luchthavenritten rekenen we met realistische reistijd.",
+    "vow4Titel": "Gemakkelijk boeken.",
+    "vow4Tekst": "Adres invullen, prijs bekijken en boeken. Wij bevestigen uw rit via WhatsApp of e-mail.",
+    "certLabel": "Zekerheid — vaste tarieven",
+    "certKicker": "Vaste tarieven — geen taxameter, geen verrassing",
+    "certVoice": "Elke rit heeft zijn prijs.",
+    "certEcho": "Vooraf. Zwart op wit.",
+    "certNote": "Enkele rit; retour ×1,8 · nachttarief (23:00–06:00) +15%. Eerlijk voor u én voor de chauffeur — zonder platformcommissies.",
+    "ledgerNaar": "naar",
+    "ledgerVast": "vast",
+    "ledgerAlle": "Alle vaste tarieven en routes",
+    "ledgerOnbekend": "onbekende route? Offerte op aanvraag",
+    "journeyLabel": "De rit — ons wagenpark",
+    "journeyKicker": "Ons wagenpark — 100% elektrisch onderweg",
+    "journeyVoice": "Tesla Model Y.",
+    "journeyEcho": "Stil als de afspraak zelf.",
+    "journeyNote": "Het vlaggenschip van de vloot: volledig elektrisch, ruim interieur en indrukwekkend rijbereik. Zakelijk of particulier — de Model Y zet de toon.",
+    "figuurAlt": "Tesla Model Y — volledig elektrisch, premium interieur",
+    "annBagage": "Bagage: 2 grote koffers + 2 handbagage",
+    "annPassagiers": "4 passagiers, excl. chauffeur",
+    "specAandrijving": "Aandrijving",
+    "specBeschikbaar": "Beschikbaar",
+    "specChauffeurs": "Chauffeurs",
+    "specChauffeursWaarde": "Taxichauffeurskaart",
+    "specRegios": "Regio's",
+    "ookActief": "Ook actief",
+    "lynkDetails": "plug-in hybrid · panoramadak · zakelijk & bruiloften",
+    "proofLabel": "Bewijs — onze belofte",
+    "proofQuote": "De prijs die u ziet,",
+    "proofAccent": "is de prijs die u betaalt.",
+    "proofStamp1": "Vaste prijs vooraf",
+    "proofStamp2": "file en wachttijd zijn ons risico",
+    "proofStamp3": "geen taxameter, geen surge pricing",
+    "proofOnder1": "Geldige Nederlandse taxichauffeurskaart",
+    "proofOnder2": "100% elektrisch",
+    "proofOnder3": "vluchtstatus wordt gevolgd bij luchthavenritten",
+    "invLabel": "Uitnodiging — boek uw rit",
+    "invKicker": "Nu — uw rit",
+    "invVoice": "Waar moet u zijn?",
+    "invCta": "Boek uw rit — vaste prijs",
+    "invBel": "of bel +31 6 34 74 45 22",
+    "padDiensten": "Diensten",
+    "padDagtochten": "Dagtochten",
+    "padZakelijk": "Zakelijk",
+    "padMemberships": "Memberships",
+    "padTarieven": "Tarieven",
+    "padPartner": "Partner worden",
+    "invStamp1": "Bevestiging via WhatsApp of e-mail",
+    "invStamp2": "iDEAL, pin of contant",
+    "invStamp3": "vaste prijs, geen taxameter"
+  },
+  "zin": {
+    "voor": "Ik reis van",
+    "tussen": "naar",
+    "phVertrek": "Almere Poort",
+    "phBestemming": "Schiphol",
+    "ariaVertrek": "Vertrek",
+    "ariaBestemming": "Bestemming",
+    "vastePrijs": "Uw vaste prijs",
+    "inclBtw": "incl. btw",
+    "berekenen": "Prijs berekenen…",
+    "opAanvraag": "Offerte op aanvraag",
+    "opAanvraagNa": "wij bevestigen de prijs persoonlijk",
+    "fout": "Prijs even niet beschikbaar",
+    "foutNa": "bel of app ons",
+    "leeg": "Vul de zin aan",
+    "leegNa": "vaste prijs, geen taxameter",
+    "bevestig": "Bevestig de rit"
+  },
+  "fair": {
+    "kicker": "Onze belofte",
+    "kop1": "Jij betaalt eerlijk.",
+    "kop2": "De chauffeur verdient eerlijk.",
+    "intro": "Bij veel grote platformen gaat een aanzienlijk deel van de ritprijs naar commissie en platformkosten. T4XI kiest voor een eerlijker model: transparante prijzen, lokale service en een chauffeur die normaal kan verdienen.",
+    "anderePlatforms": "Andere platforms",
+    "chauffeur": "Chauffeur",
+    "platformAfdracht": "Platform afdracht",
+    "t4xiKosten": "T4XI (operationele kosten)",
+    "citaat": "“Wij bouwen T4XI rond de ritervaring: een nette auto, duidelijke communicatie, vaste prijzen en een chauffeur die met aandacht rijdt. Eerlijk voor de klant én eerlijk voor de chauffeur.”",
+    "watBetekent": "Wat dit betekent voor jou",
+    "punt1": "Transparante vaste prijs — geen surge pricing",
+    "punt2": "Gemotiveerde chauffeur die eerlijk verdient",
+    "punt3": "Lokaal bedrijf — geld blijft in Nederland",
+    "punt4": "Kwaliteitsservice, geen anoniem platform",
+    "cta": "Boek eerlijk vervoer"
+  },
+  "producten": {
+    "heroKicker": "Meer dan een rit",
+    "heroKop1": "Vaste mobiliteit,",
+    "heroKop2": "voorspelbare kosten",
+    "heroIntro": "T4XI maakt regelmatig luchthaven- en zakelijk vervoer voorspelbaar. U boekt sneller, betaalt een vaste prijs en krijgt duidelijke afspraken over chauffeur, voertuig, passagiers en bagage.",
+    "ctaZakelijk": "Zakelijk",
+    "heroStats": [
+      "Membership vanaf",
+      "Strippenkaart 10 ritten",
+      "Beschikbaar",
+      "Diensten"
+    ],
+    "mKop1": "Nooit meer",
+    "mKop2": "nadenken over Schiphol",
+    "mIntro": "Vlieg je regelmatig? Met een T4XI Airport Membership staat er altijd een auto voor je klaar — voor een vast maandbedrag. Geen last-minute boeken, geen prijsstijging bij grote files, geen gedoe.",
+    "mTiers": [
+      {
+        "name": "Frequent",
+        "price": "€279",
+        "per": "/maand",
+        "desc": "4 Schiphol-ritten · Vaste vertrekregio, daluren mogelijk"
+      },
+      {
+        "name": "Business",
+        "price": "€549",
+        "per": "/maand",
+        "desc": "8 Schiphol-ritten · 2 vaste adressen, prioriteit"
+      },
+      {
+        "name": "First Class",
+        "price": "Maatwerk",
+        "per": "/maand",
+        "desc": "Voor directie en teams · Maandfactuur, SLA en vaste afspraken"
+      }
+    ],
+    "mPerks": [
+      "Vaste maandprijs — ook bij vertraging, files of vroeg vertrek",
+      "Vluchttijden worden automatisch gemonitord",
+      "Ophaal bij jouw adres — geen looproute",
+      "Ongebruikte ritten rollen 1 maand door",
+      "Altijd opzegbaar — geen jaarcontract"
+    ],
+    "mTblHead": [
+      "Per maand: 8 Schiphol-ritten",
+      "Los boeken",
+      "T4XI Business"
+    ],
+    "mTblRows": [
+      [
+        "Vaste maandprijs",
+        "✕",
+        "✓"
+      ],
+      [
+        "Prijs vooraf vastgelegd",
+        "Per rit opnieuw",
+        "Ja"
+      ],
+      [
+        "Indicatie losse kosten (8 × €79)",
+        "± €632",
+        "€549"
+      ],
+      [
+        "Voordeel per maand",
+        "—",
+        "± €83 + prioriteit"
+      ]
+    ],
+    "zEyebrow": "Zakelijk",
+    "zKop1": "Ritcredits voor",
+    "zKop2": "uw hele team",
+    "zIntro": "Koop een blok ritcredits voor uw bedrijf. Medewerkers boeken zelf hun rit via T4XI — u ontvangt één overzichtelijke factuur per maand. Geen declaraties, geen bonnetjes, geen gedoe.",
+    "zTiers": [
+      {
+        "name": "Starter",
+        "price": "€499",
+        "per": " incl.",
+        "desc": "10 ritten · 1 gebruiker"
+      },
+      {
+        "name": "Team",
+        "price": "€899",
+        "per": " incl.",
+        "desc": "20 ritten · 5 gebruikers, €45/rit"
+      },
+      {
+        "name": "Corporate",
+        "price": "€1.599",
+        "per": " incl.",
+        "desc": "40 ritten · Onbeperkte gebruikers, €40/rit"
+      }
+    ],
+    "zPerks": [
+      "Één maandfactuur op bedrijfsnaam — BTW-vriendelijk",
+      "Meerdere medewerkers boeken op één account",
+      "Dashboard met ritoverzicht per medewerker",
+      "Credits geldig 6 maanden",
+      "Prioriteitsboeking — altijd beschikbaarheid"
+    ],
+    "zIdeaal": "Ideaal voor",
+    "zTags": [
+      "Consultancy bureaus",
+      "Advocatenkantoren",
+      "Internationale bedrijven",
+      "Recruiters",
+      "Accountantskantoren"
+    ],
+    "hEyebrow": "Hotelcontract",
+    "hKop1": "Uw gasten verdienen",
+    "hKop2": "premium vervoer",
+    "hIntro": "T4XI wordt vaste transferpartner van uw hotel, boutique hotel of aparthotel. Uw concierge boekt direct via ons dashboard — uw gasten stappen in een schone Tesla of Lynk & Co 01.",
+    "hPerks": [
+      "Branded service — uw hotel, ons vervoer",
+      "Eigen hotelportal voor reserveringen",
+      "Maandfactuur of per rit — uw keuze",
+      "24/7 beschikbaar voor late check-outs en vroege vluchten",
+      "Vaste chauffeur voor uw hotel mogelijk",
+      "Maandrapportage voor uw administratie"
+    ],
+    "hHoe": "Hoe het werkt",
+    "hSteps": [
+      "Concierge logt in op het T4XI hotelportaal",
+      "Rit invoeren: naam gast, vlucht, ophaaltijd",
+      "Gast ontvangt bevestiging + chauffeursnaam",
+      "Maandfactuur automatisch naar uw boekhouding"
+    ],
+    "eEyebrow": "Event Shuttles",
+    "eKop1": "Eén aanspreekpunt",
+    "eKop2": "voor uw hele event",
+    "eIntro": "Van bruiloften tot bedrijfsevents — T4XI regelt het vervoer. U heeft één aanspreekpunt, één factuur en de zekerheid dat uw gasten op tijd aankomen.",
+    "events": [
+      {
+        "name": "Bruiloft",
+        "desc": "Van ophalen van de bruid tot het vervoer van gasten naar de receptie. Lynk & Co 01 of Tesla — allebei geschikt voor het grote moment.",
+        "details": [
+          "Dagdeel of volledige dag",
+          "Vaste chauffeur voor bruidspaar",
+          "Geduldige wachttijd voor fotografie"
+        ],
+        "price": "Vanaf €299 per dag"
+      },
+      {
+        "name": "Bedrijfsevent",
+        "desc": "Meerdere ritten voor directie, sprekers of VIP-gasten. Wij coördineren de planning — u concentreert zich op het event.",
+        "details": [
+          "Meerdere ritten tegelijk mogelijk",
+          "Één factuur achteraf",
+          "Live ritoverzicht voor organisator"
+        ],
+        "price": "Op aanvraag — ritpakket"
+      },
+      {
+        "name": "Congres & Conference",
+        "desc": "Sprekers en internationale gasten ophalen van Schiphol en brengen naar de locatie. Naambordje bij aankomst en wij volgen de vluchtstatus.",
+        "details": [
+          "Vluchtmonitoring inbegrepen",
+          "Naambordje ophaal op Schiphol",
+          "Engelstalige service beschikbaar"
+        ],
+        "price": "Per rit of dagpakket"
+      },
+      {
+        "name": "VIP & Gala",
+        "desc": "Galabals, award ceremonies, VIP-ontvangsten. Stijlvol vervoer dat past bij de gelegenheid — chauffeur in formeel pak op aanvraag.",
+        "details": [
+          "Formele kledingscode op aanvraag",
+          "Discrete, stille service",
+          "Wachten inbegrepen"
+        ],
+        "price": "Op aanvraag"
+      },
+      {
+        "name": "Toeristische Dagtocht",
+        "desc": "Brugge, Brussel, Antwerpen, Keulen — T4XI rijdt u naar de mooiste bestemmingen in de Benelux en Duitsland. Alles in één dag, vaste prijs.",
+        "details": [
+          "Deur-tot-deur, geen tussenstops",
+          "Max. 4 passagiers",
+          "All-in dagtarief"
+        ],
+        "price": "Vanaf €349 all-in"
+      }
+    ],
+    "formMembership": {
+      "title": "Membership aanvragen",
+      "intro": "Kies je pakket en wij nemen binnen 24 uur contact op.",
+      "success": "Aanvraag ontvangen — wij bellen je morgen!",
+      "cta": "Membership aanvragen",
+      "note": "Geen jaarcontract. Altijd opzegbaar.",
+      "naam": "Naam",
+      "naamPl": "Volledige naam",
+      "tel": "Telefoon",
+      "email": "E-mail",
+      "emailPl": "uw@email.nl",
+      "loc": "Vertreklocatie",
+      "locPl": "Bijv. Almere Stad",
+      "ritten": "Gem. ritten/maand",
+      "rittenOpts": [
+        "1–3 ritten",
+        "4–6 ritten",
+        "7–10 ritten",
+        "10+ ritten"
+      ],
+      "pakket": "Pakket voorkeur",
+      "pakketOpts": [
+        "Frequent — €279/maand (4 ritten)",
+        "Business — €549/maand (8 ritten)",
+        "Executive — maatwerk"
+      ]
+    },
+    "formZakelijk": {
+      "title": "Strippenkaart aanvragen",
+      "intro": "Zakelijk, inclusief factuur op naam en BTW-nummer.",
+      "success": "Aanvraag ontvangen — offerte binnen 1 werkdag!",
+      "cta": "Offerte aanvragen",
+      "contact": "Contactpersoon",
+      "contactPl": "Naam",
+      "functie": "Functie",
+      "functiePl": "Bijv. Office Manager",
+      "bedrijf": "Bedrijfsnaam",
+      "bedrijfPl": "Uw bedrijfsnaam",
+      "email": "E-mail",
+      "emailPl": "zakelijk@bedrijf.nl",
+      "tel": "Telefoon",
+      "size": "Aantal medewerkers",
+      "sizeOpts": [
+        "1–5",
+        "6–20",
+        "21–50",
+        "50+"
+      ],
+      "pakket": "Pakket voorkeur",
+      "pakketOpts": [
+        "Starter — €499 (10 ritten)",
+        "Team — €899 (20 ritten)",
+        "Corporate — €1.599 (40 ritten)",
+        "Maatwerk — ik wil een offerte op maat"
+      ],
+      "route": "Gebruikelijk traject",
+      "routePl": "Bijv. Amsterdam/Almere → Schiphol"
+    },
+    "formHotel": {
+      "title": "Partnerschap bespreken",
+      "intro": "We plannen een kennismakingsgesprek en stellen een contract op maat op.",
+      "success": "Aanvraag ontvangen — wij plannen een kennismakingsgesprek!",
+      "cta": "Kennismaking inplannen",
+      "naam": "Naam",
+      "naamPl": "Uw naam",
+      "hotel": "Hotel naam",
+      "hotelPl": "Hotel naam",
+      "email": "E-mail",
+      "emailPl": "info@uwhotel.nl",
+      "tel": "Telefoon",
+      "kamers": "Aantal kamers",
+      "kamersOpts": [
+        "<20 kamers",
+        "20–50",
+        "51–100",
+        "100+"
+      ],
+      "loc": "Locatie hotel",
+      "locPl": "Stad en adres",
+      "vraag": "Hoe kunnen wij helpen?",
+      "vraagPl": "Bijv: wij zoeken een vaste chauffeur voor Schipholtransfers van onze gasten, 10–15 ritten per week..."
+    }
+  },
+  "boekenPagina": {
+    "kicker": "Direct reserveren",
+    "kop1": "Plan uw",
+    "kop2": "rit nu",
+    "intro": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+    "f1": "Vaste prijs vooraf — geen taxameter",
+    "f2": "Geldige Nederlandse taxichauffeurskaart",
+    "f3": "Bevestiging via WhatsApp of e-mail",
+    "f4": "iDEAL, pin of contant",
+    "f5": "Wij volgen uw vluchtstatus bij vertraging"
+  },
+  "contact": {
+    "kicker": "Bereikbaarheid",
+    "kop1": "Neem",
+    "kop2": "contact op",
+    "belOns": "Bel ons",
+    "emailKop": "E-mail",
+    "beschikbaarheid": "Beschikbaarheid",
+    "dagNacht": "Dag & nacht, 7/7",
+    "snelste": "Snelste manier",
+    "whatsappCta": "Direct WhatsApp-en",
+    "dagNachtBereikbaar": "Dag en nacht bereikbaar",
+    "waText": "Hallo T4XI, ik wil graag een rit boeken.",
+    "faqKicker": "Veelgestelde vragen",
+    "faqKop1": "Heeft u",
+    "faqKop2": "vragen?"
+  },
+  "nietGevonden": {
+    "kop": "Deze pagina bestaat niet",
+    "tekst": "Het adres klopt niet of de pagina is verplaatst.",
+    "naarHome": "Naar de homepage"
+  },
+  "fout": {
+    "label": "Fout",
+    "kop": "Er ging iets mis",
+    "tekst": "Probeer het opnieuw. Blijft het misgaan, bel ons dan — we helpen je direct verder.",
+    "opnieuw": "Probeer opnieuw",
+    "bel": "Bel 0634 74 45 22"
+  },
+  "diensten": {
+    "kicker": "Onze diensten",
+    "kop1": "Voor elke rit",
+    "kop2": "de juiste service",
+    "d1Titel": "Schiphol transfer",
+    "d1Tekst": "Vaste prijs, vluchtmonitoring en ophalen bij aankomst. Nooit meer stress op de luchthaven.",
+    "d1F1": "Vluchtmonitoring",
+    "d1F2": "Vaste prijs",
+    "d1F3": "24/7",
+    "d1Cta": "Boek transfer",
+    "d2Titel": "Zakelijk vervoer",
+    "d2Tekst": "Facturering, vaste chauffeur en maandelijkse contracten. Professioneel van deur tot deur.",
+    "d2F1": "Factuur op rekening",
+    "d2F2": "Vaste chauffeur",
+    "d2F3": "Maandcontract",
+    "d2Cta": "Meer info",
+    "d3Titel": "Privéritten",
+    "d3Tekst": "Naar een diner, evenement of afspraak. Stijlvol vervoer voor elke gelegenheid.",
+    "d3F1": "Directe boeking",
+    "d3F2": "Vaste prijs vooraf",
+    "d3F3": "Transparante prijs",
+    "d3Cta": "Nu boeken",
+    "d4Titel": "Evenementen",
+    "d4Tekst": "Bruiloften, gala's en bedrijfsevents. Meerdere voertuigen, één aanspreekpunt.",
+    "d4F1": "Meerdere voertuigen",
+    "d4F2": "Persoonlijk contact",
+    "d4F3": "Maatwerk",
+    "d4Cta": "Offerte aanvragen"
+  },
+  "waarom": {
+    "kicker": "Waarom T4XI",
+    "kop1": "Kwaliteit die",
+    "kop2": "u voelt",
+    "u1Titel": "Wij volgen uw vlucht",
+    "u1Tekst": "Vertraagd? Wij volgen uw vluchtstatus en passen het ophaalmoment aan. Na de landing is 60 minuten wachttijd inbegrepen.",
+    "u2Titel": "Luxe voertuigen",
+    "u2Tekst": "Tesla Model Y en Lynk & Co 01. Geen standaard taxi — premium comfort voor elke rit.",
+    "u3Titel": "Professionele chauffeurs",
+    "u3Tekst": "Uw chauffeur beschikt over een geldige Nederlandse taxichauffeurskaart. Discreet, ervaren en representatief.",
+    "u4Titel": "Transparante tarieven",
+    "u4Tekst": "Vaste prijs vóór de rit. Geen taxameter, bagage vooraf zichtbaar afgestemd, geen verborgen kosten."
+  },
+  "zakelijk": {
+    "kicker": "Voor bedrijven",
+    "kop1": "T4XI voor",
+    "kop2": "zakelijke klanten",
+    "intro": "Van maandelijkse contracten tot eenmalige boardroomritten. T4XI biedt bedrijven een betrouwbare, representatieve mobiliteitsoplossing met volledige ontzorging.",
+    "p1Titel": "Facturatie op rekening",
+    "p1Sub": "Maandelijkse factuur, geen gedoe met declaraties",
+    "p2Titel": "Vaste chauffeur",
+    "p2Sub": "Uw medewerkers kennen hun chauffeur persoonlijk",
+    "p3Titel": "Maandelijkse ritten",
+    "p3Sub": "Volumekorting vanaf 10 ritten per maand",
+    "p4Titel": "Zakelijk account",
+    "p4Sub": "Dashboard, ritoverzicht en directe support",
+    "contactCta": "Neem contact op",
+    "accountKop": "Zakelijk account",
+    "f1": "Maandelijkse factuur",
+    "f2": "Dedicated chauffeur",
+    "f3": "Ritregistratie & overzicht",
+    "f4": "24/7 prioriteitssupport",
+    "f5": "Volumekorting",
+    "f6": "Onbeperkte ritten",
+    "vertrouwen": "Meer dan 40 bedrijven vertrouwen op T4XI voor hun dagelijkse mobiliteitsbehoeften.",
+    "aanvragen": "Vraag zakelijk account aan"
+  },
+  "faq": {
+    "v1": "Hoe boek ik een taxi?",
+    "a1": "Via het formulier op deze pagina, WhatsApp of telefonisch. Wij bevestigen uw rit per e-mail of WhatsApp.",
+    "v2": "Rijdt T4XI naar Schiphol?",
+    "a2": "Absoluut. Wij monitoren vluchttijden en passen de ophaaltijd aan bij vertraging. Beschikbaar vanuit Amsterdam en Rotterdam.",
+    "v3": "Welke voertuigen heeft T4XI?",
+    "a3": "In Amsterdam: Lynk & Co 01 (Plug-in Hybrid SUV) en Tesla Model Y (elektrisch). In Rotterdam: Tesla Model Y. Alle voertuigen zijn nieuw en luxe ingericht.",
+    "v4": "Hoe betaal ik?",
+    "a4": "Via iDEAL (vooraf), pin in de auto of contant. Zakelijke factuur per maand is ook mogelijk.",
+    "v5": "Wat zijn de dagtochten?",
+    "a5": "T4XI biedt toeristische dagtochten vanuit Amsterdam en Rotterdam naar bestemmingen in België, Nederland, Duitsland en Luxemburg — o.a. Brugge, Keulen, Gent en Luxemburg-Stad."
+  },
+  "overOns": {
+    "kicker": "Over ons",
+    "kop1": "Premium vervoer,",
+    "kop2": "elektrisch gedreven",
+    "alinea1": "T4XI is onderdeel van Noir Driving Services, opgericht in Almere. We rijden uitsluitend elektrisch en geloven dat premium vervoer transparant hoort te zijn: een vaste prijs vooraf, een chauffeur die op tijd is en een auto die stil en comfortabel rijdt.",
+    "alinea2": "Arrive with confidence — dat is geen slogan, dat is de afspraak.",
+    "interieurAlt": "Interieur van de Tesla Model Y — minimalistisch, ruim en stil"
+  },
+  "dagtochten": {
+    "heroKicker": "Vanuit Amsterdam, Almere & Rotterdam",
+    "heroKop1": "Ontdek Europa",
+    "heroKop2": "op uw eigen tempo",
+    "heroIntro": "Laat T4XI u comfortabel brengen naar de mooiste bestemmingen in de Benelux en Duitsland. Culinaire steden, historische kernen en verborgen parels — allemaal in één dag.",
+    "landNL": "Nederland",
+    "landBE": "België",
+    "landLU": "Luxemburg",
+    "landDE": "Duitsland",
+    "reisgebieden": "Onze reisgebieden",
+    "reisKop1": "Vier landen,",
+    "reisKop2": "eindeloos veel mooie plekken",
+    "alle": "Alle dagtochten",
+    "kiesKop1": "Kies uw",
+    "kiesKop2": "droombestemming",
+    "kiesIntro": "Alle routes vertrekken vanuit Amsterdam, Almere of Rotterdam en kunnen worden gecombineerd met een retourrit of meerdaagse trip.",
+    "disclaimer": "Alle dagtochten worden persoonlijk bevestigd. De vermelde pakketprijzen gelden voor de standaardarrangementen; eventuele maatwerkwensen stemmen wij vooraf met u af. Maximaal 4 passagiers exclusief chauffeur. Adviesbagage: 2 grote koffers + 2 handbagage bij 4 passagiers, of 3 grote koffers bij maximaal 3 passagiers.",
+    "maatKicker": "Op maat gemaakte tour",
+    "maatKop1": "Uw eigen",
+    "maatKop2": "droomroute",
+    "maatIntro": "Heeft u een specifieke bestemming of combinatie in gedachten die niet in ons standaard aanbod staat? Wij stellen graag een route op maat samen — inclusief gids, lunchtips en verborgen pareltjes.",
+    "maat1": "Multi-dag trips mogelijk",
+    "maat2": "Meerdere stops op één dag",
+    "maat3": "Gidsinformatie en routeadvies inbegrepen",
+    "maat4": "Zakelijk & groepsarrangement op aanvraag",
+    "vraagKop": "Vraag een dagtocht aan",
+    "vraagIntro": "Iedere dagtocht stemmen wij persoonlijk met u af. Laat ons weten wat u in gedachten heeft:",
+    "vraag1": "gewenste datum",
+    "vraag2": "vertrekplaats",
+    "vraag3": "groepsgrootte",
+    "vraag4": "eventuele maatwerkwensen",
+    "vraagNa": "Wij bevestigen de beschikbaarheid, planning en definitieve pakketprijs persoonlijk voordat de rit vaststaat.",
+    "waTekst": "Hallo T4XI, ik wil graag een dagtocht aanvragen.",
+    "introLabel": "Dagtochten introductie",
+    "reisLabel": "Onze reisgebieden",
+    "meestGeboekt": "Meest geboekt",
+    "aanvragenCta": "Dagtocht aanvragen"
+  },
+  "routes": {
+    "filterAlle": "Alle routes",
+    "filterAria": "Filter op land",
+    "passagiers": "1–4 passagiers",
+    "details": "Details & programma",
+    "aanvragen": "Dagtocht aanvragen",
+    "retourAuto": "retour, voor de gehele auto",
+    "opAanvraag": "Op aanvraag",
+    "programma": "Indicatief dagprogramma",
+    "programmaNa": "De volgorde en samenstelling stemmen wij met u af. De definitieve planning ontvangt u na bevestiging van uw reservering.",
+    "retourPrijs": "Retourprijs",
+    "heleAuto": "voor de gehele auto (max. 4 passagiers)",
+    "maatwerk": "planning en prijs stemmen wij op maat af",
+    "sluiten": "Sluiten",
+    "detailsBekijken": "Details bekijken"
+  },
+  "partner": {
+    "heroKicker": "Word partner van T4XI",
+    "heroKop1": "Rij meer.",
+    "heroKop2pre": "Verdien",
+    "heroKop2em": "eerlijk.",
+    "heroIntro": "Bij andere taxiplatforms verdwijnt tot 35% van elke rit naar het platform. Bij T4XI rijdt het geld direct naar jou. Kies je pakket, meld je aan, en rij al binnen 5 werkdagen.",
+    "ctaPakketten": "Bekijk pakketten",
+    "ctaBereken": "Bereken je verdienst",
+    "heroStats": [
+      "Naar chauffeur",
+      "Dagen onboarding",
+      "Support",
+      "Instap mogelijk"
+    ],
+    "compareLabel": "Vergelijking verdienst chauffeur",
+    "compareAnder": "Andere platforms — rit van €79",
+    "compareChauffeur": "Chauffeur",
+    "comparePlatform": "Platform",
+    "compareAnderSub": "35% verdwijnt naar een buitenlands platform",
+    "compareT4xi": "T4XI Pro — zelfde rit van €79",
+    "compareMeer": "€18,17 meer per rit",
+    "compareMeerNa": " — bij 75 ritten/maand = +€1.363",
+    "compareBadge": "+€1.363",
+    "compareBadgeNa": "extra per maand met T4XI Pro",
+    "hoeEyebrow": "Zo simpel werkt het",
+    "hoeKop1": "Van aanmelding",
+    "hoeKop2": "tot eerste rit",
+    "stappen": [
+      {
+        "titel": "Aanmelden",
+        "tekst": "Vul het formulier in met je gegevens, voertuig en gewenste pakket. Wij nemen binnen 24 uur contact op."
+      },
+      {
+        "titel": "Screening & onboarding",
+        "tekst": "VOG-check, voertuigkeuring en een korte introductie. In 3–5 werkdagen ben je volledig operationeel."
+      },
+      {
+        "titel": "Ritaanbiedingen ontvangen",
+        "tekst": "Via het dashboard ontvang je directe ritaanbiedingen in jouw regio. Accepteren met één tik."
+      },
+      {
+        "titel": "Wekelijks uitbetaald",
+        "tekst": "Elke week automatische uitbetaling. Transparant overzicht per rit, geen verborgen inhoudingen."
+      }
+    ],
+    "pakEyebrow": "Kies je pakket",
+    "pakKop1": "Verdien eerlijk,",
+    "pakKop2": "kies wat past",
+    "pakSub": "Geen instapkosten als je klein wilt beginnen. Schaal op zodra je meer ritten maakt — lagere commissie = meer in jouw zak.",
+    "perMaand": "maand",
+    "meestGekozen": "Meest gekozen",
+    "kies": "Kies",
+    "ritten75": "75 ritten",
+    "commissies": [
+      "20% commissie per rit",
+      "12% commissie per rit",
+      "8% commissie per rit",
+      "5% commissie · meerdere auto's"
+    ],
+    "earns": [
+      "€4.661/maand",
+      "€5.134/maand",
+      "€5.424/maand",
+      "€16.726/maand"
+    ],
+    "fleetEarn": "225 ritten",
+    "fleetFeatures": [
+      "Alles van Elite",
+      "Meerdere voertuigen",
+      "Fleet dashboard",
+      "Dedicated account manager",
+      "B2B contracten toegang",
+      "Maandfactuur klanten",
+      "Co-branded marketing"
+    ],
+    "planFeatures": [
+      "Directe ritaanbiedingen",
+      "Eigen dashboard",
+      "Wekelijkse uitbetaling",
+      "Gratis onboarding",
+      "Prioriteitsritten",
+      "Zakelijke klanten",
+      "Fleet dashboard"
+    ],
+    "calcEyebrow": "Bereken jouw verdienst",
+    "calcKop1": "Hoeveel kun jij",
+    "calcKop2": "verdienen?",
+    "ctEyebrow": "Chauffeurstool",
+    "ctKop1": "Uw platform,",
+    "ctKop2": "uw gereedschap",
+    "ctSub": "T4XI is ook een betaalde tool voor professionele chauffeurs. Geen hoge commissie, wel een volledig digitaal platform om uw taxibedrijf te runnen — boekingen, betalingen, klanten en rapporten op één plek.",
+    "tools": [
+      {
+        "name": "Eigen Dashboard",
+        "desc": "Ritten beheren, klanten bijhouden, beschikbaarheid instellen. Alles via mobiel of desktop."
+      },
+      {
+        "name": "Ritaanbiedingen",
+        "desc": "Ontvang directe ritaanbiedingen in uw regio. Accepteer met één tik, weiger zonder gevolgen."
+      },
+      {
+        "name": "Wekelijkse Uitbetaling",
+        "desc": "Elke week automatisch uitbetaald. Transparant overzicht per rit, geen verrassingen."
+      },
+      {
+        "name": "Eigen Klanten",
+        "desc": "Vaste klanten die via T4XI boeken worden aan u gekoppeld. Uw relatie, ons platform."
+      },
+      {
+        "name": "Facturen & Admin",
+        "desc": "Automatische ritfacturen, maandoverzicht voor uw boekhouder en BTW-rapportage."
+      },
+      {
+        "name": "Omzetinzicht",
+        "desc": "Zie hoeveel u verdient per dag, week en maand. Vergelijk met vorige periodes."
+      },
+      {
+        "name": "Klantbeoordelingen",
+        "desc": "Bouw een reputatie op via verified reviews. Hogere score = meer prioriteitsritten."
+      },
+      {
+        "name": "Support",
+        "desc": "Directe support via WhatsApp. Geen ticketsysteem, geen wachttijden — een echte persoon."
+      }
+    ],
+    "tableTitel": "Kies uw abonnement",
+    "tableFeature": "Feature",
+    "tableRows": [
+      [
+        "Ritaanbiedingen",
+        "✓",
+        "✓",
+        "✓",
+        "✓"
+      ],
+      [
+        "Eigen dashboard",
+        "✓",
+        "✓",
+        "✓",
+        "✓"
+      ],
+      [
+        "Wekelijkse uitbetaling",
+        "✓",
+        "✓",
+        "✓",
+        "✓"
+      ],
+      [
+        "Prioriteitsritten",
+        "✕",
+        "✓",
+        "✓",
+        "✓"
+      ],
+      [
+        "Zakelijke klanten",
+        "✕",
+        "✓",
+        "✓",
+        "✓"
+      ],
+      [
+        "Fleet dashboard",
+        "✕",
+        "✕",
+        "✕",
+        "✓"
+      ],
+      [
+        "Account manager",
+        "✕",
+        "✕",
+        "✕",
+        "✓"
+      ],
+      [
+        "Verdienst bij 75 ritten (€79)",
+        "€4.661",
+        "€5.134",
+        "€5.424",
+        "€5.576"
+      ]
+    ],
+    "tableCta": "Nu aanmelden als chauffeur",
+    "reqEyebrow": "Wat heb je nodig",
+    "reqKop1": "Vereisten om",
+    "reqKop2": "te rijden",
+    "reqSub": "T4XI werkt alleen met gecertificeerde, gescreende chauffeurs. Dat beschermt jou én onze klanten.",
+    "vereisten": [
+      {
+        "title": "Chauffeurskaart (CCV)",
+        "text": "Verplicht in Nederland voor betaald personenvervoer."
+      },
+      {
+        "title": "VOG-verklaring",
+        "text": "Verklaring Omtrent Gedrag — wij helpen bij aanvragen."
+      },
+      {
+        "title": "Goedgekeurd voertuig",
+        "text": "Max. 4 jaar oud, schoon en gekeurd. Eigen auto of lease."
+      },
+      {
+        "title": "Taxivergunning (TCA)",
+        "text": "Verplicht voor openbaar taxivervoer. Wij ondersteunen bij aanvraag."
+      },
+      {
+        "title": "KVK-inschrijving",
+        "text": "Als zzp'er of via eigen bv. Helpen wij bij indien nodig."
+      },
+      {
+        "title": "Smartphone",
+        "text": "Android of iPhone voor het T4XI chauffeursdashboard."
+      }
+    ],
+    "formEyebrow": "Direct aanmelden",
+    "formKop1": "Klaar om",
+    "formKop2": "te starten?",
+    "formIntro": "Vul het formulier in — wij nemen binnen 24 uur contact op voor een kennismakingsgesprek en lopen de onboarding met je door.",
+    "formChecklist": [
+      "Onboarding in 3–5 werkdagen",
+      "Wekelijkse uitbetaling, geen wachttijd",
+      "VOG-screening verplicht — kwaliteitsborging",
+      "Eigen voertuig of vloot — beide welkom",
+      "Altijd opzegbaar — geen jaarcontract"
+    ],
+    "earnBlokLabel": "Bij 75 ritten × €79",
+    "earnRows": [
+      {
+        "val": "€4.661",
+        "label": "Starter"
+      },
+      {
+        "val": "€5.134",
+        "label": "Pro ✓ aanbevolen"
+      },
+      {
+        "val": "€5.424",
+        "label": "Elite"
+      },
+      {
+        "val": "€5.576",
+        "label": "Fleet"
+      }
+    ],
+    "calcLabelRitten": "Ritten per maand",
+    "calcLabelPrijs": "Gem. ritprijs (€)",
+    "calcLabelPakket": "Jouw pakket",
+    "calcRes": [
+      "Bruto omzet",
+      "Netto verdienst",
+      "Bij Andere platforms (65%)",
+      "Extra per maand"
+    ],
+    "calcFoot": "Netto verdienst = omzet − commissie − maandbedrag. Vergelijking op basis van 65% chauffeursaandeel bij grote platforms.",
+    "pakLabels": [
+      "Starter — €0 + 20%",
+      "Pro — €99 + 12%",
+      "Elite — €199 + 8%",
+      "Fleet — €299 + 5%"
+    ],
+    "formSent": "Aanmelding ontvangen — wij bellen je binnen 24 uur!",
+    "fNaam": "Naam *",
+    "fNaamPl": "Volledige naam",
+    "fTel": "Telefoon *",
+    "fEmail": "E-mail",
+    "fEmailPl": "uw@email.nl",
+    "fAuto": "Voertuig",
+    "fAutoPl": "Bijv. Tesla Model Y 2023",
+    "fVerg": "Type vergunning",
+    "fVergOpts": [
+      "Selecteer...",
+      "Taxivergunning (TCA)",
+      "Chauffeurskaart + eigen voertuig",
+      "Eigen taxibedrijf / vloot",
+      "Nog niet — heb hulp nodig"
+    ],
+    "fRegio": "Werkgebied",
+    "fRegioOpts": [
+      "Selecteer regio...",
+      "Almere / Flevoland",
+      "Amsterdam",
+      "Rotterdam",
+      "Utrecht",
+      "Den Haag",
+      "Meerdere regio's"
+    ],
+    "fRittenWk": "Gem. ritten/week",
+    "fRittenOpts": [
+      "1–10 ritten",
+      "11–20 ritten",
+      "21–40 ritten",
+      "40+ ritten"
+    ],
+    "fPakket": "Gewenst pakket *",
+    "fPakketOpts": [
+      "Kies een pakket...",
+      "Starter — €0/maand + 20%",
+      "Pro — €99/maand + 12%",
+      "Elite — €199/maand + 8%",
+      "Fleet — €299/maand + 5%"
+    ],
+    "fSubmit": "Aanmelding versturen",
+    "fBel": "Of bel direct:"
   }
 }

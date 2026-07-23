@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * DE gedeelde adres-autocomplete — homepagehero, boekingsformulier en
@@ -136,6 +137,7 @@ export default function AddressAutocomplete({
   const [openList, setOpenList] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const listId = `${label.toLowerCase().replace(/\s/g, "-")}-listbox`;
+  const t = useTranslations("autocomplete");
 
   const { status, suggestions, clear } = useAddressSuggestions(query, dirty);
 
@@ -210,10 +212,9 @@ export default function AddressAutocomplete({
       </label>
 
       <p className="mt-1 min-h-[1rem] text-xs text-secondary" aria-live="polite">
-        {status === "loading" && "Adressen zoeken…"}
-        {status === "empty" && "Geen adressen gevonden. Controleer de spelling."}
-        {status === "error" &&
-          "Zoeken lukt even niet. Controleer je verbinding en probeer opnieuw."}
+        {status === "loading" && t("zoeken")}
+        {status === "empty" && t("leeg")}
+        {status === "error" && t("fout")}
       </p>
 
       {openList && suggestions.length > 0 && (

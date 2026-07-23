@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import Icon from "@/components/ui/Icon";
 
 const inputCls =
@@ -63,42 +64,44 @@ function FormShell({
 }
 
 export function MembershipForm() {
+  const t = useTranslations("producten.formMembership");
+  const rittenOpts = t.raw("rittenOpts") as string[];
+  const pakketOpts = t.raw("pakketOpts") as string[];
   return (
     <FormShell
-      title="Membership aanvragen"
-      intro="Kies je pakket en wij nemen binnen 24 uur contact op."
-      success="Aanvraag ontvangen — wij bellen je morgen!"
-      cta="Membership aanvragen"
-      note="Geen jaarcontract. Altijd opzegbaar."
+      title={t("title")}
+      intro={t("intro")}
+      success={t("success")}
+      cta={t("cta")}
+      note={t("note")}
     >
-      <Field id="m-naam" label="Naam">
-        <input id="m-naam" placeholder="Volledige naam" autoComplete="name" required className={inputCls} />
+      <Field id="m-naam" label={t("naam")}>
+        <input id="m-naam" placeholder={t("naamPl")} autoComplete="name" required className={inputCls} />
       </Field>
-      <Field id="m-tel" label="Telefoon">
+      <Field id="m-tel" label={t("tel")}>
         <input id="m-tel" type="tel" placeholder="+31 6 ..." autoComplete="tel" className={inputCls} />
       </Field>
       <div className="sm:col-span-2">
-        <Field id="m-email" label="E-mail">
-          <input id="m-email" type="email" placeholder="uw@email.nl" autoComplete="email" className={inputCls} />
+        <Field id="m-email" label={t("email")}>
+          <input id="m-email" type="email" placeholder={t("emailPl")} autoComplete="email" className={inputCls} />
         </Field>
       </div>
-      <Field id="m-loc" label="Vertreklocatie">
-        <input id="m-loc" placeholder="Bijv. Almere Stad" className={inputCls} />
+      <Field id="m-loc" label={t("loc")}>
+        <input id="m-loc" placeholder={t("locPl")} className={inputCls} />
       </Field>
-      <Field id="m-ritten" label="Gem. ritten/maand">
+      <Field id="m-ritten" label={t("ritten")}>
         <select id="m-ritten" className={inputCls}>
-          <option>1–3 ritten</option>
-          <option>4–6 ritten</option>
-          <option>7–10 ritten</option>
-          <option>10+ ritten</option>
+          {rittenOpts.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
         </select>
       </Field>
       <div className="sm:col-span-2">
-        <Field id="m-pakket" label="Pakket voorkeur">
-          <select id="m-pakket" defaultValue="Business — €549/maand (8 ritten)" className={inputCls}>
-            <option>Frequent — €279/maand (4 ritten)</option>
-            <option>Business — €549/maand (8 ritten)</option>
-            <option>Executive — maatwerk</option>
+        <Field id="m-pakket" label={t("pakket")}>
+          <select id="m-pakket" defaultValue={pakketOpts[1]} className={inputCls}>
+            {pakketOpts.map((o) => (
+              <option key={o}>{o}</option>
+            ))}
           </select>
         </Field>
       </div>
@@ -107,49 +110,50 @@ export function MembershipForm() {
 }
 
 export function StrippenkaartForm() {
+  const t = useTranslations("producten.formZakelijk");
+  const sizeOpts = t.raw("sizeOpts") as string[];
+  const pakketOpts = t.raw("pakketOpts") as string[];
   return (
     <FormShell
-      title="Strippenkaart aanvragen"
-      intro="Zakelijk, inclusief factuur op naam en BTW-nummer."
-      success="Aanvraag ontvangen — offerte binnen 1 werkdag!"
-      cta="Offerte aanvragen"
+      title={t("title")}
+      intro={t("intro")}
+      success={t("success")}
+      cta={t("cta")}
     >
-      <Field id="z-naam" label="Contactpersoon">
-        <input id="z-naam" placeholder="Naam" autoComplete="name" required className={inputCls} />
+      <Field id="z-naam" label={t("contact")}>
+        <input id="z-naam" placeholder={t("contactPl")} autoComplete="name" required className={inputCls} />
       </Field>
-      <Field id="z-func" label="Functie">
-        <input id="z-func" placeholder="Bijv. Office Manager" className={inputCls} />
+      <Field id="z-func" label={t("functie")}>
+        <input id="z-func" placeholder={t("functiePl")} className={inputCls} />
       </Field>
       <div className="sm:col-span-2">
-        <Field id="z-bedrijf" label="Bedrijfsnaam">
-          <input id="z-bedrijf" placeholder="Uw bedrijfsnaam" className={inputCls} />
+        <Field id="z-bedrijf" label={t("bedrijf")}>
+          <input id="z-bedrijf" placeholder={t("bedrijfPl")} className={inputCls} />
         </Field>
       </div>
-      <Field id="z-email" label="E-mail">
-        <input id="z-email" type="email" placeholder="zakelijk@bedrijf.nl" autoComplete="email" className={inputCls} />
+      <Field id="z-email" label={t("email")}>
+        <input id="z-email" type="email" placeholder={t("emailPl")} autoComplete="email" className={inputCls} />
       </Field>
-      <Field id="z-tel" label="Telefoon">
+      <Field id="z-tel" label={t("tel")}>
         <input id="z-tel" type="tel" placeholder="+31 6 ..." autoComplete="tel" className={inputCls} />
       </Field>
-      <Field id="z-size" label="Aantal medewerkers">
+      <Field id="z-size" label={t("size")}>
         <select id="z-size" className={inputCls}>
-          <option>1–5</option>
-          <option>6–20</option>
-          <option>21–50</option>
-          <option>50+</option>
+          {sizeOpts.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
         </select>
       </Field>
-      <Field id="z-pakket" label="Pakket voorkeur">
-        <select id="z-pakket" defaultValue="Team — €899 (20 ritten)" className={inputCls}>
-          <option>Starter — €499 (10 ritten)</option>
-          <option>Team — €899 (20 ritten)</option>
-          <option>Corporate — €1.599 (40 ritten)</option>
-          <option>Maatwerk — ik wil een offerte op maat</option>
+      <Field id="z-pakket" label={t("pakket")}>
+        <select id="z-pakket" defaultValue={pakketOpts[1]} className={inputCls}>
+          {pakketOpts.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
         </select>
       </Field>
       <div className="sm:col-span-2">
-        <Field id="z-route" label="Gebruikelijk traject">
-          <input id="z-route" placeholder="Bijv. Amsterdam/Almere → Schiphol" className={inputCls} />
+        <Field id="z-route" label={t("route")}>
+          <input id="z-route" placeholder={t("routePl")} className={inputCls} />
         </Field>
       </div>
     </FormShell>
@@ -157,45 +161,46 @@ export function StrippenkaartForm() {
 }
 
 export function HotelForm() {
+  const t = useTranslations("producten.formHotel");
+  const kamersOpts = t.raw("kamersOpts") as string[];
   return (
     <FormShell
-      title="Partnerschap bespreken"
-      intro="We plannen een kennismakingsgesprek en stellen een contract op maat op."
-      success="Aanvraag ontvangen — wij plannen een kennismakingsgesprek!"
-      cta="Kennismaking inplannen"
+      title={t("title")}
+      intro={t("intro")}
+      success={t("success")}
+      cta={t("cta")}
     >
-      <Field id="h-naam" label="Naam">
-        <input id="h-naam" placeholder="Uw naam" autoComplete="name" required className={inputCls} />
+      <Field id="h-naam" label={t("naam")}>
+        <input id="h-naam" placeholder={t("naamPl")} autoComplete="name" required className={inputCls} />
       </Field>
-      <Field id="h-hotel" label="Hotel naam">
-        <input id="h-hotel" placeholder="Hotel naam" className={inputCls} />
+      <Field id="h-hotel" label={t("hotel")}>
+        <input id="h-hotel" placeholder={t("hotelPl")} className={inputCls} />
       </Field>
       <div className="sm:col-span-2">
-        <Field id="h-email" label="E-mail">
-          <input id="h-email" type="email" placeholder="info@uwhotel.nl" autoComplete="email" className={inputCls} />
+        <Field id="h-email" label={t("email")}>
+          <input id="h-email" type="email" placeholder={t("emailPl")} autoComplete="email" className={inputCls} />
         </Field>
       </div>
-      <Field id="h-tel" label="Telefoon">
+      <Field id="h-tel" label={t("tel")}>
         <input id="h-tel" type="tel" placeholder="+31 6 ..." autoComplete="tel" className={inputCls} />
       </Field>
-      <Field id="h-kamers" label="Aantal kamers">
+      <Field id="h-kamers" label={t("kamers")}>
         <select id="h-kamers" className={inputCls}>
-          <option>&lt;20 kamers</option>
-          <option>20–50</option>
-          <option>51–100</option>
-          <option>100+</option>
+          {kamersOpts.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
         </select>
       </Field>
       <div className="sm:col-span-2">
-        <Field id="h-loc" label="Locatie hotel">
-          <input id="h-loc" placeholder="Stad en adres" className={inputCls} />
+        <Field id="h-loc" label={t("loc")}>
+          <input id="h-loc" placeholder={t("locPl")} className={inputCls} />
         </Field>
       </div>
       <div className="sm:col-span-2">
-        <Field id="h-vraag" label="Hoe kunnen wij helpen?">
+        <Field id="h-vraag" label={t("vraag")}>
           <textarea
             id="h-vraag"
-            placeholder="Bijv: wij zoeken een vaste chauffeur voor Schipholtransfers van onze gasten, 10–15 ritten per week..."
+            placeholder={t("vraagPl")}
             className={`${inputCls} min-h-24 resize-y py-3`}
           />
         </Field>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import ContactSection from "@/components/sections/ContactSection";
 import FaqList from "@/components/sections/FaqList";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import { useTranslations } from "next-intl";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
+  const t = useTranslations("contact");
   return (
     <>
       <ContactSection />
@@ -19,10 +21,10 @@ export default function ContactPage() {
           <ScrollReveal>
             <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
               <span aria-hidden="true" className="h-px w-4 bg-accent" />
-              Veelgestelde vragen
+              {t("faqKicker")}
             </p>
             <h2 id="faq-title" className="mb-12 mt-4 font-display text-display-lg font-bold text-ink">
-              Heeft u <span className="italic text-stone">vragen?</span>
+              {t("faqKop1")} <span className="italic text-stone">{t("faqKop2")}</span>
             </h2>
           </ScrollReveal>
           <FaqList />

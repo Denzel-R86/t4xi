@@ -76,7 +76,7 @@ const BRUGGE: Route = {
   ],
 };
 
-export const FEATURED = {
+const FEATURED_NL = {
   name: "Brugge",
   flag: "🇧🇪",
   countryName: "België",
@@ -92,7 +92,7 @@ export const FEATURED = {
   modal: BRUGGE,
 };
 
-export const ROUTES: Route[] = [
+const ROUTES: Route[] = [
   BRUGGE,
   {
     slug: "gent", name: "Gent", emoji: "🏛️", flag: "🇧🇪", country: "be", countryName: "België",
@@ -323,7 +323,348 @@ export function routeCount(country: Country): number {
   return ROUTES.filter((r) => r.country === country).length;
 }
 
-export const COUNTRIES = LANDEN.map((l) => {
-  const n = routeCount(l.code);
-  return { ...l, count: `${n} route${n === 1 ? "" : "s"} beschikbaar` };
-});
+/* ═══════════════════════════════════════════════════════════════════════════
+ * ENGELSE LAAG (stap 4 — i18n)
+ *
+ * De Nederlandse data hierboven blijft de bron: prijzen, slugs, afstanden,
+ * emoji, vlaggen en volgorde staan één keer vast en veranderen niet. Deze laag
+ * levert UITSLUITEND de vertaalde tekstvelden (naam, landnaam, rijtijd-label,
+ * tagline, omschrijving, bagage, highlights, dagprogramma). Alles wat een prijs
+ * of route raakt komt onverkort uit de NL-structuur.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+export type Locale = "nl" | "en";
+
+type RouteCopy = {
+  name: string;
+  countryName: string;
+  duration: string;
+  tagline: string;
+  desc: string;
+  luggage: string;
+  highlights: string[];
+  itinerary: string[];
+};
+
+const EN_ROUTES: Record<string, RouteCopy> = {
+  brugge: {
+    name: "Bruges",
+    countryName: "Belgium",
+    duration: "3.2 h drive",
+    tagline: "The Venice of the North",
+    desc: "Bruges is one of the best-preserved medieval cities in Europe. Its canals, belfry and hand-crafted chocolates make it an unforgettable destination. T4XI takes you straight to the heart of this fairy-tale city.",
+    luggage: "Luggage by arrangement",
+    highlights: [],
+    itinerary: [
+      "Departure from Amsterdam, Almere or Rotterdam",
+      "Arrival at the Markt in Bruges — climb the Belfry (optional)",
+      "Canal-side stroll through the historic centre",
+      "Lunch on the Burg or the Markt",
+      "Choco-Story Museum or the Groeninge Museum",
+      "Free time: chocolatiers & the De Halve Maan brewery",
+      "Departure back to the Netherlands",
+      "Arrival home",
+    ],
+  },
+  gent: {
+    name: "Ghent",
+    countryName: "Belgium",
+    duration: "2.8 h drive",
+    tagline: "A medieval city with vibrant student life and the iconic Gravensteen.",
+    desc: "Ghent combines medieval grandeur with a lively student culture. The Gravensteen, the Graslei and the culinary Patershol quarter make it a perfect day trip.",
+    luggage: "Luggage by arrangement",
+    highlights: [
+      "Gravensteen (Castle of the Counts)",
+      "Korenmarkt & historic city centre",
+      "Patershol — the culinary quarter",
+      "MSK Ghent art museum",
+    ],
+    itinerary: [
+      "Departure from Amsterdam, Almere or Rotterdam",
+      "Arrival — start at the Gravensteen (castle)",
+      "Walk along the Graslei & Korenlei",
+      "Lunch in the Patershol",
+      "Design Museum Gent or SMAK",
+      "Free time & shopping for Tierenteyn mustard",
+      "Departure back to the Netherlands",
+      "Arrival home",
+    ],
+  },
+  brussel: {
+    name: "Brussels",
+    countryName: "Belgium",
+    duration: "2.7 h drive",
+    tagline: "The capital of Europe: the Grand-Place, Art Nouveau, the Atomium and Belgian fries.",
+    desc: "The capital of Europe is bursting with culture: the UNESCO Grand-Place, the Atomium, beautiful Art Nouveau architecture and, of course, the celebrated Belgian cuisine.",
+    luggage: "Luggage on request",
+    highlights: [
+      "Grand-Place — UNESCO World Heritage",
+      "Atomium & Mini-Europe",
+      "Royal Palace & Mont des Arts",
+      "Chocolate and beer tasting",
+    ],
+    itinerary: [
+      "Departure from Amsterdam, Almere or Rotterdam",
+      "Arrival — Grand-Place & Manneken Pis",
+      "Walk through the Galeries Royales Saint-Hubert",
+      "Lunch near the Place Sainte-Catherine",
+      "Atomium & Mini-Europe",
+      "Chocolate shops & waffle tasting",
+      "Departure back to the Netherlands",
+      "Arrival home",
+    ],
+  },
+  keulen: {
+    name: "Cologne",
+    countryName: "Germany",
+    duration: "3.1 h drive",
+    tagline: "The cathedral that touches the sky, in a city full of art, beer and Rhine romance.",
+    desc: "Cologne Cathedral dominates the skyline and is an absolute must-see. Pair it with modern art, a crossing of the Rhine and authentic Kölsch beer in a traditional Brauhaus.",
+    luggage: "Luggage by arrangement",
+    highlights: [
+      "Cologne Cathedral — UNESCO World Heritage",
+      "Museum Ludwig (modern art)",
+      "Rhine promenade & Altstadt",
+      "Kölsch beer tasting in a Brauhaus",
+    ],
+    itinerary: [
+      "Departure from Amsterdam, Almere or Rotterdam",
+      "Arrival in Cologne — visit to the cathedral",
+      "Walk through the Altstadt & along the Rhine promenade",
+      "Lunch in a traditional Brauhaus (Kölsch!)",
+      "Museum Ludwig or the Römisch-Germanisches Museum",
+      "Free time to shop on the Schildergasse",
+      "Departure back to the Netherlands",
+      "Arrival home",
+    ],
+  },
+  antwerpen: {
+    name: "Antwerp",
+    countryName: "Belgium",
+    duration: "2.2 h drive",
+    tagline: "A city of diamonds, fashion and harbours in one — Rubens and haute couture side by side.",
+    desc: "The diamond capital of the world and the fashion headquarters of the Benelux. From Rubens to contemporary fashion — Antwerp is compact and surprisingly diverse.",
+    luggage: "Luggage by arrangement",
+    highlights: [
+      "Rubens House & Royal Museum",
+      "Diamond District — the most exclusive quarter in the world",
+      "Grote Markt & the Cathedral of Our Lady",
+      "MoMu Fashion Museum",
+    ],
+    itinerary: [
+      "Departure from Amsterdam, Almere or Rotterdam",
+      "Arrival — Grote Markt & City Hall",
+      "Cathedral of Our Lady (Rubens altarpieces)",
+      "Lunch in the historic centre",
+      "Diamond District or the MoMu Fashion Museum",
+      "Zurenborg quarter — Art Nouveau architecture",
+      "Departure back to the Netherlands",
+      "Arrival home",
+    ],
+  },
+  rijnvallei: {
+    name: "Rhine Valley",
+    countryName: "Germany",
+    duration: "4.6 h drive",
+    tagline: "Castles on cliffs, vineyards and the mythical Lorelei rock along Europe's most beautiful river.",
+    desc: "The Upper Middle Rhine is officially a UNESCO World Heritage Site — and rightly so. Castle ruins on every hilltop, vineyards as far as the eye can see and the mystical Lorelei rock.",
+    luggage: "Luggage by arrangement",
+    highlights: [
+      "The Lorelei rock & the Boppard Rhine ferry",
+      "Rheinfels Castle (St. Goar)",
+      "Bacharach — a medieval wine town",
+      "Rüdesheim — wine tasting on the Drosselgasse",
+    ],
+    itinerary: [
+      "Early departure from Amsterdam, Almere or Rotterdam",
+      "Arrival in Bacharach — a medieval town",
+      "Rheinfels Castle (St. Goar) — a walk",
+      "Lunch with a view of the Rhine",
+      "Visit to the Lorelei rock",
+      "Rüdesheim — the Drosselgasse & wine tasting",
+      "Departure back to the Netherlands",
+      "Arrival home",
+    ],
+  },
+  luxemburg: {
+    name: "Luxembourg City",
+    countryName: "Luxembourg",
+    duration: "4.9 h drive",
+    tagline: "A UNESCO fortress city on a rock, with underground casemates and a refined culinary scene.",
+    desc: "This hidden gem is undeservedly little known. A fortress city on a rock, with underground casemates, a charming lower town and one of the highest standards of living in the world.",
+    luggage: "Luggage by arrangement",
+    highlights: [
+      "Bock Casemates — underground fortifications",
+      "Grund (the lower town) on the Alzette",
+      "Grand Ducal Palace",
+      "MUDAM — Musée d'Art Moderne",
+    ],
+    itinerary: [
+      "Early departure from Amsterdam, Almere or Rotterdam",
+      "Arrival — Chemin de la Corniche (panoramic walk)",
+      "Bock Casemates — underground fortifications",
+      "Lunch in Grund (the lower town)",
+      "Grand Ducal Palace & Place Guillaume II",
+      "MUDAM Museum of Modern Art",
+      "Departure back to the Netherlands",
+      "Arrival home",
+    ],
+  },
+  keukenhof: {
+    name: "Keukenhof & the Bulb Region",
+    countryName: "Netherlands",
+    duration: "45 min drive",
+    tagline: "Seven million flowers in one garden. The most colourful spectacle in the Netherlands.",
+    desc: "From March to May the Bulb Region colours like a giant painting. The Keukenhof is the world's largest flower garden, with more than 7 million bulb flowers.",
+    luggage: "Luggage by arrangement",
+    highlights: [
+      "Keukenhof Gardens (Mar–May)",
+      "Bulb fields along the N208",
+      "Keukenhof Castle",
+      "The Amsterdam Water Supply Dunes",
+    ],
+    itinerary: [
+      "Departure from Amsterdam",
+      "Arrival at the Keukenhof — opening",
+      "A walk through the gardens (3–4 h)",
+      "Lunch in the Keukenhof Restaurant",
+      "Drive through the bulb fields along the N208",
+      "Keukenhof Castle (exterior)",
+      "Return to Amsterdam",
+      "Arrival home",
+    ],
+  },
+  dusseldorf: {
+    name: "Düsseldorf",
+    countryName: "Germany",
+    duration: "2.7 h drive",
+    tagline: "Fashion, design and the Königsallee — Germany's most elegant shopping street.",
+    desc: "Düsseldorf is Germany's most elegant city — fashion, design and the famous \"Kö\" (Königsallee). Combine high-end shopping with art and an Altbier in the Altstadt.",
+    luggage: "Luggage by arrangement",
+    highlights: [
+      "Königsallee (the \"Kö\") — luxury shopping",
+      "Altstadt & Rhine promenade",
+      "Kunstsammlung NRW (K20 & K21)",
+      "MedienHafen — avant-garde architecture",
+    ],
+    itinerary: [
+      "Departure from Amsterdam, Almere or Rotterdam",
+      "Arrival — a walk along the Königsallee",
+      "Altstadt & Rhine promenade",
+      "Lunch in the MedienHafen",
+      "Kunstsammlung NRW K20 or K21",
+      "Free time to shop or the Japanisches Viertel",
+      "Departure back to the Netherlands",
+      "Arrival home",
+    ],
+  },
+  delft: {
+    name: "Delft & The Hague",
+    countryName: "Netherlands",
+    duration: "1 h drive",
+    tagline: "Delftware, Vermeer, the Mauritshuis — royal culture in a single day.",
+    desc: "A day full of Vermeer, Delftware and royal allure. From the picturesque canals of Delft to the prestigious Mauritshuis in The Hague — and then a beach walk in Scheveningen.",
+    luggage: "Luggage by arrangement",
+    highlights: [
+      "Royal Delft — De Porceleyne Fles",
+      "Mauritshuis — Girl with a Pearl Earring",
+      "Binnenhof & Hofvijver",
+      "Scheveningen beach",
+    ],
+    itinerary: [
+      "Departure from Amsterdam, Almere or Rotterdam",
+      "Arrival in Delft — Markt & Nieuwe Kerk",
+      "Royal Delft — De Porceleyne Fles",
+      "Lunch in Delft",
+      "Drive to The Hague — the Mauritshuis",
+      "Binnenhof & Hofvijver",
+      "Scheveningen beach (optional)",
+      "Departure back to Amsterdam",
+      "Arrival home",
+    ],
+  },
+};
+
+/** Vertaalde landomschrijvingen (naam + desc). Aantallen blijven afgeleid. */
+const EN_LANDEN: Record<Country, { name: string; desc: string }> = {
+  be: {
+    name: "Belgium",
+    desc: "From the canals of Bruges to the Art Nouveau of Brussels and the beers of Ghent. Belgium hides some of Europe's richest culture.",
+  },
+  nl: {
+    name: "Netherlands",
+    desc: "Tulip fields, windmills, the Rijksmuseum, the Keukenhof. Our own country keeps surprising and is perfect for a day trip from the city.",
+  },
+  de: {
+    name: "Germany",
+    desc: "Cologne's cathedral, the Rhine Valley, the Black Forest. Germany's fairy-tale landscapes begin just 2 to 3 hours' drive away.",
+  },
+  lu: {
+    name: "Luxembourg",
+    desc: "The mini-country with maximum impact: the fortress city of Luxembourg, the Ardennes and vineyards along the Moselle. Undiscovered and unforgettable.",
+  },
+};
+
+/** Engelse laag voor de uitgelichte dagtocht (Brugge). */
+const EN_FEATURED = {
+  name: "Bruges",
+  countryName: "Belgium",
+  title: "The Venice of the North",
+  desc: "A medieval city centre, celebrated canals and world-famous chocolate. Bruges is just over three hours' drive from Amsterdam — a full day trip with T4XI.",
+  points: [
+    "Around 3.2 hours' drive from Amsterdam",
+    "Up to 4 passengers excluding the driver",
+    "Door to door, no stops in between",
+    "Return package available",
+  ],
+};
+
+/** Legt de Engelse tekstlaag over een NL-route; NL blijft ongewijzigd. */
+function localizeRoute(r: Route, locale: Locale): Route {
+  if (locale === "nl") return r;
+  const c = EN_ROUTES[r.slug];
+  if (!c) return r;
+  return {
+    ...r,
+    name: c.name,
+    countryName: c.countryName,
+    duration: c.duration,
+    tagline: c.tagline,
+    desc: c.desc,
+    luggage: c.luggage,
+    highlights: c.highlights,
+    itinerary: c.itinerary,
+  };
+}
+
+/** DE routes voor een locale — prijzen/slugs/afstanden onveranderd. */
+export function getRoutes(locale: Locale): Route[] {
+  return ROUTES.map((r) => localizeRoute(r, locale));
+}
+
+/** De uitgelichte dagtocht (Brugge) voor een locale. */
+export function getFeatured(locale: Locale) {
+  if (locale === "nl") return FEATURED_NL;
+  return {
+    ...FEATURED_NL,
+    name: EN_FEATURED.name,
+    countryName: EN_FEATURED.countryName,
+    title: EN_FEATURED.title,
+    desc: EN_FEATURED.desc,
+    points: FEATURED_NL.points.map((p, i) => ({ ...p, text: EN_FEATURED.points[i] })),
+    modal: localizeRoute(BRUGGE, locale),
+  };
+}
+
+/** Landen met afgeleid routeaantal, vertaald per locale. */
+export function getCountries(locale: Locale) {
+  return LANDEN.map((l) => {
+    const n = routeCount(l.code);
+    const copy = locale === "nl" ? { name: l.name, desc: l.desc } : EN_LANDEN[l.code];
+    const count =
+      locale === "nl"
+        ? `${n} route${n === 1 ? "" : "s"} beschikbaar`
+        : `${n} route${n === 1 ? "" : "s"} available`;
+    return { ...l, name: copy.name, desc: copy.desc, count };
+  });
+}

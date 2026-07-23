@@ -52,6 +52,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Reveal, Odometer, usePrefersReducedMotion } from "./motion";
 import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
+import { useTranslations } from "next-intl";
 
 /* ── de ruggengraat ─────────────────────────────────────────────────────── */
 
@@ -220,6 +221,7 @@ export function Dash() {
  *  useRouteQuote): dit is dezelfde keten als het boekingsformulier, alleen in
  *  zin-presentatie. Vrije tekst blijft toegestaan. */
 export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: string }) {
+  const t = useTranslations("zin");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [activeField, setActiveField] = useState<"from" | "to" | null>(null);
@@ -330,8 +332,8 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
       {/* Bewust een <div>, geen <p>: de invulvelden dragen een <ul>-listbox en
           een <ul> mag in HTML niet binnen een <p> (hydration-fout). */}
       <div className="font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink">
-        Ik reis van {blank("from", from, setFrom, "Almere Poort", "Vertrek")} naar{" "}
-        {blank("to", to, setTo, "Schiphol", "Bestemming")}.
+        {t("voor")} {blank("from", from, setFrom, t("phVertrek"), t("ariaVertrek"))} {t("tussen")}{" "}
+        {blank("to", to, setTo, t("phBestemming"), t("ariaBestemming"))}.
       </div>
       <div
         className="mt-4 flex flex-wrap items-baseline gap-x-7 gap-y-3"
@@ -341,25 +343,25 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         <Stamp>
           {quote.status === "ready" ? (
             <>
-              Uw vaste prijs<Dash />
+              {t("vastePrijs")}<Dash />
               <b className="font-semibold text-ink">
                 €&nbsp;
                 <Odometer value={quote.price} />
               </b>
               <Dash />
-              incl. btw
+              {t("inclBtw")}
             </>
           ) : quote.status === "loading" ? (
-            <>Prijs berekenen…</>
+            <>{t("berekenen")}</>
           ) : quote.status === "onrequest" ? (
             <>
-              Offerte op aanvraag<Dash />wij bevestigen de prijs persoonlijk
+              {t("opAanvraag")}<Dash />{t("opAanvraagNa")}
             </>
           ) : quote.status === "error" ? (
-            <>Prijs even niet beschikbaar<Dash />bel of app ons</>
+            <>{t("fout")}<Dash />{t("foutNa")}</>
           ) : (
             <>
-              Vul de zin aan<Dash />vaste prijs, geen taxameter
+              {t("leeg")}<Dash />{t("leegNa")}
             </>
           )}
         </Stamp>
@@ -367,7 +369,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
           href={href}
           className="hz-confirm-btn px-7 py-3 text-[12px] font-medium uppercase tracking-[0.14em] text-ink no-underline"
         >
-          <span>Bevestig de rit</span>
+          <span>{t("bevestig")}</span>
         </Link>
       </div>
     </div>

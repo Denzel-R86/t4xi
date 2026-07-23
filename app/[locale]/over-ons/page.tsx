@@ -4,6 +4,7 @@ import FairBand from "@/components/sections/FairBand";
 import WhySection from "@/components/sections/WhySection";
 import ReviewsSection from "@/components/sections/ReviewsSection";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import { useTranslations } from "next-intl";
 
 export const metadata: Metadata = {
   title: "Over ons",
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default function OverOnsPage() {
+  const t = useTranslations("overOns");
   return (
     <>
       <section className="mx-auto max-w-site px-6 pb-4 pt-16 md:pt-24">
@@ -20,21 +22,16 @@ export default function OverOnsPage() {
           <ScrollReveal>
             <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
               <span aria-hidden="true" className="h-px w-4 bg-accent" />
-              Over ons
+              {t("kicker")}
             </p>
             <h1 className="mt-4 font-display text-display-lg font-bold text-ink">
-              Premium vervoer,
+              {t("kop1")}
               <br />
-              <span className="italic text-stone">elektrisch gedreven</span>
+              <span className="italic text-stone">{t("kop2")}</span>
             </h1>
             <div className="mt-6 max-w-2xl space-y-4 text-secondary">
-              <p>
-                T4XI is onderdeel van Noir Driving Services, opgericht in Almere.
-                We rijden uitsluitend elektrisch en geloven dat premium vervoer
-                transparant hoort te zijn: een vaste prijs vooraf, een chauffeur
-                die op tijd is en een auto die stil en comfortabel rijdt.
-              </p>
-              <p>Arrive with confidence — dat is geen slogan, dat is de afspraak.</p>
+              <p>{t("alinea1")}</p>
+              <p>{t("alinea2")}</p>
             </div>
           </ScrollReveal>
           {/* Interieur Tesla Model Y (gecureerd, T4XI): illustreert het "stil en
@@ -43,7 +40,7 @@ export default function OverOnsPage() {
             <figure className="relative aspect-[4/5] overflow-hidden rounded-fleet border border-line shadow-card-lg">
               <Image
                 src="/tesla-interieur.jpg"
-                alt="Interieur van de Tesla Model Y — minimalistisch, ruim en stil"
+                alt={t("interieurAlt")}
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover"

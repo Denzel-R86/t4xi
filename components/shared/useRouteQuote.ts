@@ -19,7 +19,7 @@ export type Airport = { isTransfer: boolean; direction: "arrival" | "departure" 
 export type Quote =
   | { status: "idle" | "loading" | "error"; airport?: Airport }
   | { status: "onrequest"; airport: Airport }
-  | { status: "ready"; amount: string; price: number; note: string; airport: Airport };
+  | { status: "ready"; amount: string; price: number; returnApplied: boolean; airport: Airport };
 
 export function useRouteQuote(
   pickup: AddressSuggestion | null,
@@ -56,7 +56,7 @@ export function useRouteQuote(
             status: "ready",
             amount: `€${data.price}`,
             price: Number(data.price),
-            note: data.returnApplied ? "Retour — vaste prijs vooraf" : "Vaste prijs vooraf",
+            returnApplied: Boolean(data.returnApplied),
             airport: {
               isTransfer: Boolean(data.isAirportTransfer),
               direction: data.flightDirection ?? null,

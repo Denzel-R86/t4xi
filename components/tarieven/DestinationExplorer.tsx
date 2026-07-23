@@ -8,6 +8,7 @@ import AddressAutocomplete, {
 } from "@/components/shared/AddressAutocomplete";
 import type { RateEntry } from "@/lib/pricing/rate-card";
 import type { OriginDestinationGroup } from "@/lib/destinations";
+import { useTranslations } from "next-intl";
 
 /**
  * Bestemmingskiezer per vertrekstad: Steden / Attracties & bezienswaardigheden /
@@ -24,10 +25,10 @@ import type { OriginDestinationGroup } from "@/lib/destinations";
 
 type Segment = "cities" | "attractions" | "other";
 
-const SEGMENTS: { key: Segment; label: string }[] = [
-  { key: "cities", label: "Steden" },
-  { key: "attractions", label: "Attracties & bezienswaardigheden" },
-  { key: "other", label: "Andere bestemming" },
+const SEGMENTS: { key: Segment; labelKey: "steden" | "attracties" | "andere" }[] = [
+  { key: "cities", labelKey: "steden" },
+  { key: "attractions", labelKey: "attracties" },
+  { key: "other", labelKey: "andere" },
 ];
 
 export default function DestinationExplorer({
@@ -40,6 +41,7 @@ export default function DestinationExplorer({
   /** Bestaande vaste intercityprijzen van deze vertrekstad (rate-card). */
   intercity: RateEntry[];
 }) {
+  const t = useTranslations("kiezer");
   const router = useRouter();
   const [segment, setSegment] = useState<Segment>("cities");
   const [other, setOther] = useState<AddressSuggestion | null>(null);
@@ -57,10 +59,10 @@ export default function DestinationExplorer({
   return (
     <div className="mt-9">
       <h3 className="text-[11px] font-medium uppercase tracking-[0.16em] text-secondary">
-        Kies een bestemming
+        {t("kop")}
       </h3>
 
-      <div role="tablist" aria-label={`Bestemmingen vanuit ${cityName}`} className="mt-3 flex flex-wrap gap-2">
+      <div role="tablist" aria-label={t("ariaBestemmingen", { stad: cityName })} className="mt-3 flex flex-wrap gap-2">
         {SEGMENTS.map((s) => (
           <button
             key={s.key}
@@ -73,7 +75,7 @@ export default function DestinationExplorer({
                 : "border-line bg-white/70 text-secondary hover:text-ink"
             }`}
           >
-            {s.label}
+            {t(s.labelKey)}
           </button>
         ))}
       </div>
@@ -97,7 +99,7 @@ export default function DestinationExplorer({
                   >
                     € {fixed.single}
                     {fixed.retour !== null && (
-                      <span className="ml-2 text-sm font-normal text-secondary">retour € {fixed.retour}</span>
+                      <span className="ml-2 text-sm font-normal text-secondary">{t("retour")} € {fixed.retour}</span>
                     )}
                   </Link>
                 ) : (
@@ -105,7 +107,7 @@ export default function DestinationExplorer({
                     href={bookingHref(o.searchValue)}
                     className="text-right text-sm text-secondary underline-offset-4 hover:text-ink hover:underline"
                   >
-                    Prijs op aanvraag
+                    {t("prijsOpAanvraag")}
                   </Link>
                 )}
               </li>
@@ -115,13 +117,11 @@ export default function DestinationExplorer({
       ) : (
         <div className="mt-4 max-w-xl border-t border-line pt-4">
           <p className="mb-2 text-sm text-secondary">
-            Elk ander adres, hotel of bekende locatie. Vul uw bestemming in — bestaat er een
-            vaste prijs, dan ziet u die direct op de boekingspagina; anders ontvangt u een
-            offerte op aanvraag.
+            {t("andereUitleg")}
           </p>
           <AddressAutocomplete
-            label={`Bestemming vanuit ${cityName}`}
-            placeholder="Bijv. Hilton Schiphol of Efteling, Kaatsheuvel"
+            label={t("bestemmingVanuit", { stad: cityName })}
+            placeholder={t("anderePh")}
             onSelect={setOther}
             onTextChange={setOtherText}
           />
@@ -131,7 +131,7 @@ export default function DestinationExplorer({
             onClick={() => otherValue && router.push(bookingHref(otherValue))}
             className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-md bg-accent px-6 text-sm font-medium text-white shadow-cta transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Bekijk vaste prijs
+            {t("bekijkVastePrijs")}
             <Icon name="arrow-right" size={14} />
           </button>
         </div>

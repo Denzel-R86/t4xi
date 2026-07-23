@@ -5,17 +5,19 @@ import { useEffect, useState } from "react";
 import Icon from "@/components/ui/Icon";
 import Wordmark from "@/components/ui/Wordmark";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 const nav = [
-  { href: "/#vloot", label: "Vloot", icon: "car" },
-  { href: "/diensten", label: "Diensten", icon: "briefcase" },
-  { href: "/tarieven", label: "Tarieven", icon: "credit-card" },
-  { href: "/dagtochten", label: "Dagtochten", icon: "map-pin" },
-  { href: "/partner", label: "Partner", icon: "users" },
-  { href: "/over-ons", label: "Over ons", icon: "user" },
-];
+  { href: "/#vloot", key: "vloot", icon: "car" },
+  { href: "/diensten", key: "diensten", icon: "briefcase" },
+  { href: "/tarieven", key: "tarieven", icon: "credit-card" },
+  { href: "/dagtochten", key: "dagtochten", icon: "map-pin" },
+  { href: "/partner", key: "partner", icon: "users" },
+  { href: "/over-ons", key: "overOns", icon: "user" },
+] as const;
 
 export default function Header() {
+  const t = useTranslations("nav");
   const [open, setOpen] = useState(false);
 
   // Escape sluit het mobiele menu
@@ -34,19 +36,19 @@ export default function Header() {
         <Link
           href="/"
           className="flex items-center text-ink"
-          aria-label="T4XI — naar homepage"
+          aria-label={t("naarHome")}
         >
           <Wordmark className="h-[22px] w-auto" title="" />
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex lg:pl-6" aria-label="Hoofdnavigatie">
+        <nav className="hidden items-center gap-1 lg:flex lg:pl-6" aria-label={t("hoofdnav")}>
           {nav.map((item) => (
             <Link
-              key={item.href}
+              key={item.key}
               href={item.href}
               className="rounded-md px-3 py-1.5 text-sm text-secondary transition-colors hover:bg-ink/5 hover:text-ink"
             >
-              {item.label}
+              {t(item.key)}
             </Link>
           ))}
         </nav>
@@ -56,7 +58,7 @@ export default function Header() {
           <a
             href="tel:+31634744522"
             className="hidden items-center gap-1.5 text-sm text-secondary transition-colors hover:text-ink sm:flex"
-            aria-label="Bel T4XI"
+            aria-label={t("bel")}
           >
             <Icon name="phone" size={17} />
             <span className="hidden xl:inline">+31 6 34 74 45 22</span>
@@ -65,7 +67,7 @@ export default function Header() {
             href="https://wa.me/31634744522"
             target="_blank"
             rel="noopener"
-            aria-label="WhatsApp T4XI"
+            aria-label={t("whatsapp")}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-whatsapp/10 text-whatsapp transition-transform hover:scale-110 hover:bg-whatsapp/20"
           >
             <Icon name="whatsapp" size={18} />
@@ -75,7 +77,7 @@ export default function Header() {
             className="inline-flex min-h-9 items-center gap-1.5 rounded-md bg-accent px-4 text-xs font-medium tracking-wide text-white shadow-cta transition-colors hover:bg-accent-hover"
           >
             <Icon name="calendar-check" size={15} />
-            Boek een rit
+            {t("boekEenRit")}
           </Link>
 
           <button
@@ -85,7 +87,7 @@ export default function Header() {
             aria-controls="mobile-nav"
             onClick={() => setOpen(!open)}
           >
-            <span className="sr-only">{open ? "Menu sluiten" : "Menu openen"}</span>
+            <span className="sr-only">{open ? t("menuDicht") : t("menuOpen")}</span>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               {open ? (
                 <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.5" />
@@ -101,18 +103,18 @@ export default function Header() {
         <nav
           id="mobile-nav"
           className="border-t border-line bg-card px-4 py-3 shadow-card lg:hidden"
-          aria-label="Mobiele navigatie"
+          aria-label={t("mobieleNav")}
         >
           <ul className="flex flex-col gap-0.5">
             {nav.map((item) => (
-              <li key={item.href}>
+              <li key={item.key}>
                 <Link
                   href={item.href}
                   className="flex items-center gap-3 rounded-md px-3 py-3 text-secondary hover:bg-fog hover:text-ink"
                   onClick={() => setOpen(false)}
                 >
                   <Icon name={item.icon} size={18} className="text-stone" />
-                  {item.label}
+                  {t(item.key)}
                 </Link>
               </li>
             ))}
@@ -137,7 +139,7 @@ export default function Header() {
                 className="flex items-center gap-3 rounded-md px-3 py-3 text-sm text-whatsapp hover:bg-fog"
               >
                 <Icon name="whatsapp" size={18} />
-                WhatsApp ons
+                {t("whatsappOns")}
               </a>
             </li>
             <li className="py-3">
@@ -147,7 +149,7 @@ export default function Header() {
                 onClick={() => setOpen(false)}
               >
                 <Icon name="calendar-check" size={16} />
-                Boek een rit
+                {t("boekEenRit")}
               </Link>
             </li>
           </ul>

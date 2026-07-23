@@ -7,12 +7,13 @@ import AddressAutocomplete, {
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import Icon from "@/components/ui/Icon";
 import { inferAddressMeta, type RitType } from "@/lib/booking-meta";
+import { useTranslations } from "next-intl";
 
-const TABS: { key: RitType; label: string }[] = [
-  { key: "enkel", label: "Enkele rit" },
-  { key: "retour", label: "Retour" },
-  { key: "luchthaven", label: "Luchthaven" },
-  { key: "dagtocht", label: "Dagtocht" },
+const TABS: { key: RitType; labelKey: "tabEnkel" | "tabRetour" | "tabLuchthaven" | "tabDagtocht" }[] = [
+  { key: "enkel", labelKey: "tabEnkel" },
+  { key: "retour", labelKey: "tabRetour" },
+  { key: "luchthaven", labelKey: "tabLuchthaven" },
+  { key: "dagtocht", labelKey: "tabDagtocht" },
 ];
 
 const VEHICLES = [
@@ -22,11 +23,11 @@ const VEHICLES = [
 ];
 
 const LUGGAGE = [
-  { value: "handbagage", label: "Handbagage" },
-  { value: "1-2-koffers", label: "1–2 koffers" },
-  { value: "3-koffers", label: "3 koffers — alleen bij max. 3 passagiers" },
-  { value: "overleg", label: "Meer bagage / grotere koffers — eerst afstemmen" },
-];
+  { value: "handbagage", labelKey: "bagageHand" },
+  { value: "1-2-koffers", labelKey: "bagage12" },
+  { value: "3-koffers", labelKey: "bagage3" },
+  { value: "overleg", labelKey: "bagageOverleg" },
+] as const;
 
 const inputCls =
   "min-h-[52px] w-full rounded-field border border-[rgba(31,39,48,0.14)] bg-field px-4 text-[15px] font-medium text-ink placeholder:font-normal placeholder:text-stone focus:border-accent focus:bg-white focus:shadow-[0_0_0_4px_rgba(40,49,59,0.10)] focus:outline-none";
@@ -46,6 +47,7 @@ export default function BookingSection({
   /** Deep-link (?dropoff=…). */
   initialDropoff?: string;
 } = {}) {
+  const t = useTranslations("booking");
   const [tab, setTab] = useState<RitType>("enkel");
   const [pickup, setPickup] = useState<AddressSuggestion | null>(
     initialPickup ? { id: "deeplink", label: initialPickup, source: "free" } : null
@@ -68,15 +70,13 @@ export default function BookingSection({
     e.preventDefault();
     if (loading) return; // geen dubbele submit
     if (!pickup || !dropoff) {
-      setSubmit({ status: "error", message: "Vul een ophaaladres en bestemming in." });
+      setSubmit({ status: "error", message: t("valAdres") });
       return;
     }
     if (needsFlight && flightNumber.trim() === "") {
       setSubmit({
         status: "error",
-        message: isArrival
-          ? "Vul uw aankomende vluchtnummer in — daarmee volgen wij uw vlucht en passen wij het ophaalmoment aan."
-          : "Vul uw vertrekkende vluchtnummer in, zodat wij de rit daarop kunnen plannen.",
+        message: isArrival ? t("valVluchtAankomst") : t("valVluchtVertrek"),
       });
       return;
     }
@@ -117,13 +117,13 @@ export default function BookingSection({
       } else {
         setSubmit({
           status: "error",
-          message: data.message ?? "Er ging iets mis. Probeer het opnieuw of bel ons.",
+          message: data.message ?? t("foutFallback"),
         });
       }
     } catch {
       setSubmit({
         status: "error",
-        message: "Geen verbinding. Controleer je internet of bel ons.",
+        message: t("foutVerbinding"),
       });
     }
   }
@@ -148,21 +148,21 @@ export default function BookingSection({
 
   const priceNote =
     quote.status === "idle"
-      ? "Vul adressen in"
+      ? t("prijsIdle")
       : quote.status === "loading"
-        ? "Prijs berekenen…"
+        ? t("prijsLaden")
         : quote.status === "ready"
-          ? quote.note
+          ? t(quote.returnApplied ? "prijsRetour" : "prijsVast")
           : quote.status === "onrequest"
-            ? "Offerte op aanvraag"
-            : "Prijs tijdelijk niet beschikbaar";
+            ? t("prijsOpAanvraag")
+            : t("prijsFout");
   const priceAmount =
     quote.status === "ready"
       ? quote.amount
       : quote.status === "loading"
         ? "…"
         : quote.status === "onrequest"
-          ? "Op aanvraag"
+          ? t("opAanvraag")
           : "—";
   const priceBig = quote.status === "ready" || quote.status === "idle" || quote.status === "error";
 
@@ -177,12 +177,10 @@ export default function BookingSection({
         <div className="mb-5 rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700" role="status" aria-live="polite">
           <div className="flex items-center justify-center gap-2 font-semibold">
             <Icon name="check" size={16} />
-            Boeking ontvangen — referentie {submit.bookingRef}
+            {t("succesRef")} {submit.bookingRef}
           </div>
           <p className="mt-1 text-green-700/90">
-            {submit.quoteOnRequest
-              ? "Deze route krijgt een offerte op aanvraag. Wij bevestigen prijs en tijd via WhatsApp of e-mail."
-              : "Wij bevestigen uw rit via WhatsApp of e-mail."}
+            {submit.quoteOnRequest ? t("succesOpAanvraag") : t("succesBevestiging")}
           </p>
         </div>
       )}
@@ -196,20 +194,20 @@ export default function BookingSection({
 
       {/* Rit-type tabs */}
       <div className="mb-5 flex flex-wrap gap-2" role="tablist">
-        {TABS.map((t) => (
+        {TABS.map((x) => (
           <button
-            key={t.key}
+            key={x.key}
             type="button"
             role="tab"
-            aria-selected={tab === t.key}
-            onClick={() => setTab(t.key)}
+            aria-selected={tab === x.key}
+            onClick={() => setTab(x.key)}
             className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-              tab === t.key
+              tab === x.key
                 ? "border-accent bg-accent text-white"
                 : "border-line bg-[#F4F1EB] text-[#4E565E] hover:text-ink"
             }`}
           >
-            {t.label}
+            __TABLABEL__
           </button>
         ))}
       </div>
@@ -218,7 +216,7 @@ export default function BookingSection({
         {/* Honeypot — verborgen voor mensen, zichtbaar voor bots. Blijft leeg bij
             echte gebruikers; als het gevuld is blokkeert /api/bookings stil. */}
         <div aria-hidden="true" style={{ display: "none" }}>
-          <label htmlFor="f-website">Website (niet invullen)</label>
+          <label htmlFor="f-website">{t("honeypot")}</label>
           <input
             id="f-website"
             type="text"
@@ -230,19 +228,19 @@ export default function BookingSection({
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 grid gap-1 sm:grid-cols-2 sm:gap-4">
-            <AddressAutocomplete label="Van" placeholder="Vertrekadres" onSelect={setPickup} initialValue={initialPickup} />
-            <AddressAutocomplete label="Naar" placeholder="Bestemming" onSelect={setDropoff} initialValue={initialDropoff} />
+            <AddressAutocomplete label={t("van")} placeholder={t("vertrekadresPh")} onSelect={setPickup} initialValue={initialPickup} />
+            <AddressAutocomplete label={t("naar")} placeholder={t("bestemmingPh")} onSelect={setDropoff} initialValue={initialDropoff} />
           </div>
           <div>
-            <label htmlFor="f-date" className={labelCls}>Datum</label>
+            <label htmlFor="f-date" className={labelCls}>{t("datum")}</label>
             <input id="f-date" name="datum" type="date" required className={inputCls} />
           </div>
           <div>
-            <label htmlFor="f-time" className={labelCls}>Tijd</label>
+            <label htmlFor="f-time" className={labelCls}>{t("tijd")}</label>
             <input id="f-time" name="tijd" type="time" defaultValue="08:00" className={inputCls} />
           </div>
           <div>
-            <label htmlFor="f-vehicle" className={labelCls}>Voertuig</label>
+            <label htmlFor="f-vehicle" className={labelCls}>{t("voertuig")}</label>
             <select
               id="f-vehicle"
               value={vehicle}
@@ -255,7 +253,7 @@ export default function BookingSection({
             </select>
           </div>
           <div>
-            <label htmlFor="f-persons" className={labelCls}>Passagiers</label>
+            <label htmlFor="f-persons" className={labelCls}>{t("passagiers")}</label>
             <input
               id="f-persons"
               type="number"
@@ -267,7 +265,7 @@ export default function BookingSection({
             />
           </div>
           <div className="sm:col-span-2">
-            <label htmlFor="f-luggage" className={labelCls}>Bagage</label>
+            <label htmlFor="f-luggage" className={labelCls}>{t("bagage")}</label>
             <select
               id="f-luggage"
               value={luggage}
@@ -275,7 +273,7 @@ export default function BookingSection({
               className={inputCls}
             >
               {LUGGAGE.map((l) => (
-                <option key={l.value} value={l.value}>{l.label}</option>
+                <option key={l.value} value={l.value}>{t(l.labelKey)}</option>
               ))}
             </select>
           </div>
@@ -289,8 +287,8 @@ export default function BookingSection({
           {needsFlight && (
             <div className="sm:col-span-2">
               <label htmlFor="f-flight" className={labelCls}>
-                {isArrival ? "Aankomend vluchtnummer" : "Vertrekkend vluchtnummer"}{" "}
-                <span className="text-accent">— verplicht</span>
+                {isArrival ? t("vluchtAankomend") : t("vluchtVertrekkend")}{" "}
+                <span className="text-accent">{t("verplicht")}</span>
               </label>
               <input
                 id="f-flight"
@@ -306,9 +304,7 @@ export default function BookingSection({
                 className={inputCls}
               />
               <p id="f-flight-help" className="mt-1.5 text-[12px] text-secondary">
-                {isArrival
-                  ? "Wij volgen uw vluchtstatus en passen het ophaalmoment aan wanneer uw vlucht vertraagd is."
-                  : "Wij gebruiken uw vluchtnummer om de rit op uw vertrektijd te plannen."}
+                {isArrival ? t("vluchtHelpAankomst") : t("vluchtHelpVertrek")}
               </p>
 
               {/*
@@ -319,22 +315,17 @@ export default function BookingSection({
               */}
               {isArrival && (
                 <div className="mt-3 rounded-field border border-line bg-fog px-4 py-3">
-                  <p className="text-xs font-bold text-ink">Inclusief Airport Arrival Service</p>
+                  <p className="text-xs font-bold text-ink">{t("aasKop")}</p>
                   <ul className="mt-2 flex flex-col gap-1.5 text-[12px] text-secondary">
-                    {[
-                      "Wij volgen uw vluchtstatus",
-                      "60 minuten wachttijd inbegrepen vanaf de geregistreerde landing",
-                      "Persoonlijke afstemming van de ophaallocatie",
-                    ].map((t) => (
-                      <li key={t} className="flex items-start gap-2">
+                    {(["aas1", "aas2", "aas3"] as const).map((k) => (
+                      <li key={k} className="flex items-start gap-2">
                         <Icon name="check" size={13} className="mt-0.5 shrink-0 text-accent" />
-                        {t}
+                        {t(k)}
                       </li>
                     ))}
                   </ul>
                   <p className="mt-2.5 border-t border-line pt-2.5 text-[12px] text-secondary">
-                    Na de landing ontvangt u van ons via WhatsApp of telefoon de exacte
-                    ophaallocatie, met de naam van uw chauffeur en het voertuig.
+                    {t("aasNa")}
                   </p>
                 </div>
               )}
@@ -343,11 +334,11 @@ export default function BookingSection({
         </div>
 
         {/* Adresdetectie */}
-        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3" aria-label="Automatisch herkende adresgegevens">
+        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3" aria-label={t("adresDetectie")}>
           {[
-            { key: "Postcode", value: meta?.postcode },
-            { key: "Stad", value: meta?.city },
-            { key: "Stadsdeel", value: meta?.district },
+            { key: t("postcode"), value: meta?.postcode },
+            { key: t("stad"), value: meta?.city },
+            { key: t("stadsdeel"), value: meta?.district },
           ].map((pill) => (
             <div key={pill.key} className="rounded-xl border border-line bg-fog px-3 py-2.5">
               <small className="block text-[10px] uppercase tracking-[0.12em] text-stone">{pill.key}</small>
@@ -364,10 +355,10 @@ export default function BookingSection({
           role="region"
           aria-live="polite"
           aria-busy={quote.status === "loading"}
-          aria-label="Geschatte prijs"
+          aria-label={t("geschattePrijs")}
         >
           <div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-stone">Geschatte prijs</div>
+            <div className="text-[10px] uppercase tracking-[0.14em] text-stone">{t("geschattePrijs")}</div>
             <div className="mt-0.5 text-xs text-secondary">{priceNote}</div>
           </div>
           <div className={`shrink-0 font-display font-bold text-accent ${priceBig ? "text-[28px]" : "text-base"}`}>
@@ -377,24 +368,22 @@ export default function BookingSection({
 
         {ready && (
           <p className="mt-3 rounded-xl border border-line bg-fog px-4 py-3 text-xs leading-relaxed text-secondary" aria-live="polite">
-            <strong className="text-ink">Inclusief:</strong> vaste prijs, maximaal 4
-            passagiers exclusief chauffeur. Bij 4 passagiers adviseren wij 2 grote
-            koffers + 2 handbagage.
+            <strong className="text-ink">{t("inclusiefKop")}</strong> {t("inclusiefTekst")}
           </p>
         )}
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="f-name" className={labelCls}>Naam</label>
-            <input id="f-name" name="naam" placeholder="Volledige naam" autoComplete="name" required className={inputCls} />
+            <label htmlFor="f-name" className={labelCls}>{t("naam")}</label>
+            <input id="f-name" name="naam" placeholder={t("naamPh")} autoComplete="name" required className={inputCls} />
           </div>
           <div>
-            <label htmlFor="f-phone" className={labelCls}>Telefoon</label>
+            <label htmlFor="f-phone" className={labelCls}>{t("telefoon")}</label>
             <input id="f-phone" name="telefoon" type="tel" placeholder="+31 6 ..." autoComplete="tel" className={inputCls} />
           </div>
           <div className="sm:col-span-2">
-            <label htmlFor="f-email" className={labelCls}>E-mail</label>
-            <input id="f-email" name="email" type="email" placeholder="uw@email.nl" autoComplete="email" className={inputCls} />
+            <label htmlFor="f-email" className={labelCls}>{t("email")}</label>
+            <input id="f-email" name="email" type="email" placeholder={t("emailPh")} autoComplete="email" className={inputCls} />
           </div>
         </div>
 
@@ -403,13 +392,13 @@ export default function BookingSection({
           disabled={loading}
           aria-busy={loading}
           className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-all hover:-translate-y-0.5 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
-          aria-label="Boeking bevestigen"
+          aria-label={t("verzenden")}
         >
           <Icon name="calendar-check" size={18} />
-          {loading ? "Bezig met verzenden…" : "Boeking bevestigen"}
+          {loading ? t("bezig") : t("verzenden")}
         </button>
         <p className="mt-3 text-center text-[13px] text-secondary">
-          Of bel{" "}
+          {t("ofBel")}{" "}
           <a href="tel:+31634744522" className="text-accent hover:underline">
             +31 6 34 74 45 22
           </a>

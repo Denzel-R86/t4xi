@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
 import Icon from "@/components/ui/Icon";
-import { FEATURED, ROUTES, type Country, type Route } from "@/lib/dagtochten";
+import { getFeatured, getRoutes, type Country, type Locale, type Route } from "@/lib/dagtochten";
 
 /**
  * Bestemmingsbeeld met terugval. Heeft de route een eigen foto
@@ -29,6 +30,9 @@ function RouteMedia({ route, sizes, emojiClass }: { route: Route; sizes: string;
 /** "Details bekijken"-knop van de featured Brugge-kaart, opent de routemodal. */
 export function FeaturedDetailsButton() {
   const [open, setOpen] = useState(false);
+  const locale = useLocale() as Locale;
+  const t = useTranslations("routes");
+  const featured = getFeatured(locale);
   return (
     <>
       <button
@@ -36,32 +40,35 @@ export function FeaturedDetailsButton() {
         onClick={() => setOpen(true)}
         className="flex min-h-11 flex-1 items-center justify-center rounded-md border border-line-strong bg-white/60 text-sm font-medium text-ink transition-colors hover:bg-white"
       >
-        Details bekijken
+        {t("detailsBekijken")}
       </button>
-      {open && <RouteModal route={FEATURED.modal} onClose={() => setOpen(false)} />}
+      {open && <RouteModal route={featured.modal} onClose={() => setOpen(false)} />}
     </>
   );
 }
-
-const FILTERS: { key: Country | "all"; label: string }[] = [
-  { key: "all", label: "Alle routes" },
-  { key: "be", label: "🇧🇪 België" },
-  { key: "nl", label: "🇳🇱 Nederland" },
-  { key: "de", label: "🇩🇪 Duitsland" },
-  { key: "lu", label: "🇱🇺 Luxemburg" },
-];
 
 /** Filterbare routegrid + detailmodal uit dagtochten.html. */
 export default function RoutesExplorer() {
   const [filter, setFilter] = useState<Country | "all">("all");
   const [modal, setModal] = useState<Route | null>(null);
+  const locale = useLocale() as Locale;
+  const t = useTranslations("routes");
+  const td = useTranslations("dagtochten");
 
-  const visible = ROUTES.filter((r) => filter === "all" || r.country === filter);
+  const FILTERS: { key: Country | "all"; label: string }[] = [
+    { key: "all", label: t("filterAlle") },
+    { key: "be", label: `🇧🇪 ${td("landBE")}` },
+    { key: "nl", label: `🇳🇱 ${td("landNL")}` },
+    { key: "de", label: `🇩🇪 ${td("landDE")}` },
+    { key: "lu", label: `🇱🇺 ${td("landLU")}` },
+  ];
+
+  const visible = getRoutes(locale).filter((r) => filter === "all" || r.country === filter);
 
   return (
     <>
       {/* Filterbalk (in bron onderdeel van de hero) */}
-      <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Filter op land">
+      <div className="flex flex-wrap justify-center gap-2" role="group" aria-label={t("filterAria")}>
         {FILTERS.map((f) => (
           <button
             key={f.key}
@@ -100,7 +107,7 @@ export default function RoutesExplorer() {
               <p className="mb-4 mt-1.5 text-[13px] leading-relaxed text-secondary">{r.tagline}</p>
               <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-secondary">
                 <span className="flex items-center gap-1.5"><Icon name="map-pin" size={13} className="text-accent" />{r.km}</span>
-                <span className="flex items-center gap-1.5"><Icon name="users" size={13} className="text-accent" />1–4 passagiers</span>
+                <span className="flex items-center gap-1.5"><Icon name="users" size={13} className="text-accent" />{t("passagiers")}</span>
                 <span className="flex items-center gap-1.5"><Icon name="luggage" size={13} className="text-accent" />{r.luggage}</span>
               </div>
               <ul className="mb-5 flex flex-col gap-1.5">
@@ -113,11 +120,11 @@ export default function RoutesExplorer() {
               </ul>
               <div className="mt-auto flex items-baseline gap-2 border-t border-line pt-4">
                 {r.onAanvraag ? (
-                  <span className="font-playfair text-[22px] font-bold text-accent">Op aanvraag</span>
+                  <span className="font-playfair text-[22px] font-bold text-accent">{t("opAanvraag")}</span>
                 ) : (
                   <>
                     <span className="font-playfair text-[28px] font-bold text-accent">{r.price}</span>
-                    <span className="text-xs text-secondary">retour, voor de gehele auto</span>
+                    <span className="text-xs text-secondary">{t("retourAuto")}</span>
                   </>
                 )}
               </div>
@@ -127,14 +134,14 @@ export default function RoutesExplorer() {
                   onClick={() => setModal(r)}
                   className="flex min-h-11 items-center justify-center rounded-md border border-line-strong bg-white/60 text-sm font-medium text-ink transition-colors hover:bg-white"
                 >
-                  Details &amp; programma
+                  {t("details")}
                 </button>
                 {/* Gewone <a>: in-page anker, native browserscroll — geen router nodig. */}
                 <a
                   href="#aanvragen"
                   className="flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium text-white shadow-cta transition-colors hover:bg-accent-hover"
                 >
-                  Dagtocht aanvragen
+                  {t("aanvragen")}
                 </a>
               </div>
             </div>
@@ -148,6 +155,7 @@ export default function RoutesExplorer() {
 }
 
 export function RouteModal({ route, onClose }: { route: Route; onClose: () => void }) {
+  const t = useTranslations("routes");
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -163,14 +171,14 @@ export function RouteModal({ route, onClose }: { route: Route; onClose: () => vo
       className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/70 p-5 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label={`Details ${route.name}`}
+      aria-label={`${t("details")} — ${route.name}`}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-card border border-line bg-card p-7 shadow-hero-card">
         <button
           type="button"
           onClick={onClose}
-          aria-label="Sluiten"
+          aria-label={t("sluiten")}
           className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-md bg-white/80 text-ink backdrop-blur-sm hover:bg-white"
         >
           <Icon name="x" size={18} />
@@ -185,11 +193,11 @@ export function RouteModal({ route, onClose }: { route: Route; onClose: () => vo
         </p>
         <h3 className="font-playfair text-2xl text-ink">{route.name}</h3>
         <p className="mt-2 inline-block rounded-full border border-line bg-fog px-3 py-1 text-xs text-secondary">
-          {route.duration.replace(" rijden", "")} · {route.km}
+          {route.duration.replace(/ (rijden|drive)$/, "")} · {route.km}
         </p>
         <p className="mt-4 text-sm leading-relaxed text-secondary">{route.desc}</p>
         <p className="mb-3 mt-6 text-[10px] uppercase tracking-[2px] text-accent">
-          Indicatief dagprogramma
+          {t("programma")}
         </p>
         <ul className="flex flex-col gap-2.5">
           {route.itinerary.map((onderdeel) => (
@@ -200,20 +208,19 @@ export function RouteModal({ route, onClose }: { route: Route; onClose: () => vo
           ))}
         </ul>
         <p className="mt-3 text-xs leading-[1.7] text-stone">
-          De volgorde en samenstelling stemmen wij met u af. De definitieve planning
-          ontvangt u na bevestiging van uw reservering.
+          {t("programmaNa")}
         </p>
         <div className="mt-6 flex items-baseline gap-2.5 border-t border-line pt-6">
           {route.onAanvraag ? (
             <>
-              <span className="font-playfair text-2xl font-bold text-accent">Op aanvraag</span>
-              <span className="text-xs text-secondary">planning en prijs stemmen wij op maat af</span>
+              <span className="font-playfair text-2xl font-bold text-accent">{t("opAanvraag")}</span>
+              <span className="text-xs text-secondary">{t("maatwerk")}</span>
             </>
           ) : (
             <>
-              <span className="text-xs uppercase tracking-wider text-stone">Retourprijs</span>
+              <span className="text-xs uppercase tracking-wider text-stone">{t("retourPrijs")}</span>
               <span className="font-playfair text-4xl font-bold text-accent">{route.price}</span>
-              <span className="text-xs text-secondary">voor de gehele auto (max. 4 passagiers)</span>
+              <span className="text-xs text-secondary">{t("heleAuto")}</span>
             </>
           )}
         </div>
@@ -223,7 +230,7 @@ export function RouteModal({ route, onClose }: { route: Route; onClose: () => vo
             onClick={onClose}
             className="flex min-h-11 items-center justify-center rounded-md border border-line-strong bg-white/60 text-sm font-medium text-ink hover:bg-white"
           >
-            Sluiten
+            {t("sluiten")}
           </button>
           {/* onClose sluit de modal, anders scrollt de achtergrond onzichtbaar weg. */}
           <a
@@ -231,7 +238,7 @@ export function RouteModal({ route, onClose }: { route: Route; onClose: () => vo
             onClick={onClose}
             className="flex min-h-11 items-center justify-center rounded-md bg-accent text-sm font-medium text-white shadow-cta hover:bg-accent-hover"
           >
-            Dagtocht aanvragen
+            {t("aanvragen")}
           </a>
         </div>
       </div>

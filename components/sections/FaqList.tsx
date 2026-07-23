@@ -2,37 +2,17 @@
 
 import { useState } from "react";
 import Icon from "@/components/ui/Icon";
-
-const FAQS = [
-  {
-    q: "Hoe boek ik een taxi?",
-    a: "Via het formulier op deze pagina, WhatsApp of telefonisch. Wij bevestigen uw rit per e-mail of WhatsApp.",
-  },
-  {
-    q: "Rijdt T4XI naar Schiphol?",
-    a: "Absoluut. Wij monitoren vluchttijden en passen de ophaaltijd aan bij vertraging. Beschikbaar vanuit Amsterdam en Rotterdam.",
-  },
-  {
-    q: "Welke voertuigen heeft T4XI?",
-    a: "In Amsterdam: Lynk & Co 01 (Plug-in Hybrid SUV) en Tesla Model Y (elektrisch). In Rotterdam: Tesla Model Y. Alle voertuigen zijn nieuw en luxe ingericht.",
-  },
-  {
-    q: "Hoe betaal ik?",
-    a: "Via iDEAL (vooraf), pin in de auto of contant. Zakelijke factuur per maand is ook mogelijk.",
-  },
-  {
-    q: "Wat zijn de dagtochten?",
-    a: "T4XI biedt toeristische dagtochten vanuit Amsterdam en Rotterdam naar bestemmingen in België, Nederland, Duitsland en Luxemburg — o.a. Brugge, Keulen, Gent en Luxemburg-Stad.",
-  },
-];
+import { useTranslations } from "next-intl";
 
 /** FAQ-accordeon uit het v14-bronbestand; accepteert optioneel eigen vragen. */
-export default function FaqList({ items = FAQS }: { items?: { q: string; a: string }[] }) {
+export default function FaqList({ items }: { items?: { q: string; a: string }[] }) {
+  const t = useTranslations("faq");
+  const faqs = items ?? ([1, 2, 3, 4, 5] as const).map((n) => ({ q: t(`v${n}`), a: t(`a${n}`) }));
   const [open, setOpen] = useState<number | null>(null);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-3">
-      {items.map((faq, i) => (
+      {faqs.map((faq, i) => (
         <div key={faq.q} className="overflow-hidden rounded-xl border border-line bg-card shadow-card">
           <button
             type="button"

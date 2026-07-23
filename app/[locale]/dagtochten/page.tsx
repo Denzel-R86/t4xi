@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import RoutesExplorer, { FeaturedDetailsButton } from "@/components/dagtochten/RoutesExplorer";
-import { COUNTRIES, FEATURED } from "@/lib/dagtochten";
+import { getCountries, getFeatured, type Locale } from "@/lib/dagtochten";
 import { BEDRIJF } from "@/lib/legal";
 
 export const metadata: Metadata = {
@@ -14,34 +15,37 @@ export const metadata: Metadata = {
   alternates: { canonical: "/dagtochten" },
 };
 
-const FLAGS = [
-  { flag: "🇳🇱", name: "Nederland" },
-  { flag: "🇧🇪", name: "België" },
-  { flag: "🇱🇺", name: "Luxemburg" },
-  { flag: "🇩🇪", name: "Duitsland" },
-];
+export default async function DagtochtenPage() {
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations("dagtochten");
+  const FEATURED = getFeatured(locale);
+  const COUNTRIES = getCountries(locale);
 
-export default function DagtochtenPage() {
+  const FLAGS = [
+    { flag: "🇳🇱", name: t("landNL") },
+    { flag: "🇧🇪", name: t("landBE") },
+    { flag: "🇱🇺", name: t("landLU") },
+    { flag: "🇩🇪", name: t("landDE") },
+  ];
+
   return (
     <>
       {/* ═══ HERO ═══ */}
-      <section className="relative overflow-hidden border-b border-line" aria-label="Dagtochten introductie">
+      <section className="relative overflow-hidden border-b border-line" aria-label={t("introLabel")}>
         <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(135deg,#F5F3F1_0%,#FFFFFF_54%,#E8E4DE_100%)]" />
         <div className="relative mx-auto max-w-4xl px-6 pb-14 pt-16 text-center lg:pb-20 lg:pt-24">
           <p className="flex items-center justify-center gap-3 text-eyebrow font-medium uppercase text-accent">
             <span aria-hidden="true" className="h-px w-8 bg-accent/40" />
-            Vanuit Amsterdam, Almere &amp; Rotterdam
+            {t("heroKicker")}
             <span aria-hidden="true" className="h-px w-8 bg-accent/40" />
           </p>
           <h1 className="mt-5 font-display text-display-xl font-bold text-ink">
-            Ontdek Europa
+            {t("heroKop1")}
             <br />
-            <em className="font-playfair italic text-accent">op uw eigen tempo</em>
+            <em className="font-playfair italic text-accent">{t("heroKop2")}</em>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-secondary">
-            Laat T4XI u comfortabel brengen naar de mooiste bestemmingen in de
-            Benelux en Duitsland. Culinaire steden, historische kernen en
-            verborgen parels — allemaal in één dag.
+            {t("heroIntro")}
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-2.5">
             {FLAGS.map((f) => (
@@ -62,7 +66,7 @@ export default function DagtochtenPage() {
               <div className="p-7 md:p-10">
                 <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3.5 py-2 text-xs font-medium text-white">
                   <Icon name="star" size={13} />
-                  Meest geboekt
+                  {t("meestGeboekt")}
                 </span>
                 <p className="mb-3 mt-4 text-[11px] uppercase tracking-[3px] text-accent">
                   {FEATURED.flag} {FEATURED.countryName}
@@ -86,7 +90,7 @@ export default function DagtochtenPage() {
                     href="#aanvragen"
                     className="flex min-h-11 flex-1 items-center justify-center rounded-md bg-accent text-sm font-medium text-white shadow-cta transition-colors hover:bg-accent-hover"
                   >
-                    Dagtocht aanvragen
+                    {t("aanvragenCta")}
                   </Link>
                 </div>
               </div>
@@ -112,17 +116,17 @@ export default function DagtochtenPage() {
       </section>
 
       {/* ═══ REISGEBIEDEN ═══ */}
-      <section className="border-y border-line bg-card/60 py-14 md:py-16" aria-label="Onze reisgebieden">
+      <section className="border-y border-line bg-card/60 py-14 md:py-16" aria-label={t("reisLabel")}>
         <div className="mx-auto max-w-site px-6">
           <ScrollReveal>
             <div className="mb-12 text-center">
               <p className="flex items-center justify-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
-                Onze reisgebieden
+                {t("reisgebieden")}
               </p>
               <h2 className="mt-4 font-display text-display-lg font-bold text-ink">
-                Vier landen,
+                {t("reisKop1")}
                 <br />
-                <em className="font-playfair italic text-stone">eindeloos veel mooie plekken</em>
+                <em className="font-playfair italic text-stone">{t("reisKop2")}</em>
               </h2>
             </div>
           </ScrollReveal>
@@ -147,21 +151,16 @@ export default function DagtochtenPage() {
           <ScrollReveal>
             <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
               <span aria-hidden="true" className="h-px w-4 bg-accent" />
-              Alle dagtochten
+              {t("alle")}
             </p>
             <h2 id="routes-titel" className="mt-4 font-display text-display-lg font-bold text-ink">
-              Kies uw <em className="font-playfair italic text-stone">droombestemming</em>
+              {t("kiesKop1")} <em className="font-playfair italic text-stone">{t("kiesKop2")}</em>
             </h2>
             <p className="mt-4 max-w-3xl text-[15px] leading-[1.8] text-secondary">
-              Alle routes vertrekken vanuit Amsterdam, Almere of Rotterdam en
-              kunnen worden gecombineerd met een retourrit of meerdaagse trip.
+              {t("kiesIntro")}
             </p>
             <p className="mb-10 mt-4 max-w-3xl rounded-xl border border-line bg-card px-4 py-3.5 text-sm font-medium leading-[1.7] text-ink">
-              Alle dagtochten worden persoonlijk bevestigd. De vermelde
-              pakketprijzen gelden voor de standaardarrangementen; eventuele
-              maatwerkwensen stemmen wij vooraf met u af. Maximaal 4 passagiers
-              exclusief chauffeur. Adviesbagage: 2 grote koffers + 2 handbagage
-              bij 4 passagiers, of 3 grote koffers bij maximaal 3 passagiers.
+              {t("disclaimer")}
             </p>
           </ScrollReveal>
           <RoutesExplorer />
@@ -178,26 +177,19 @@ export default function DagtochtenPage() {
           <ScrollReveal>
             <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
               <span aria-hidden="true" className="h-px w-4 bg-accent" />
-              Op maat gemaakte tour
+              {t("maatKicker")}
             </p>
             <h2 id="custom-titel" className="mt-4 font-display text-display-lg font-bold text-ink">
-              Uw eigen <em className="font-playfair italic text-stone">droomroute</em>
+              {t("maatKop1")} <em className="font-playfair italic text-stone">{t("maatKop2")}</em>
             </h2>
             <p className="mt-4 max-w-xl text-[15px] leading-[1.8] text-secondary">
-              Heeft u een specifieke bestemming of combinatie in gedachten die
-              niet in ons standaard aanbod staat? Wij stellen graag een route op
-              maat samen — inclusief gids, lunchtips en verborgen pareltjes.
+              {t("maatIntro")}
             </p>
             <ul className="mt-7 flex flex-col gap-3">
-              {[
-                "Multi-dag trips mogelijk",
-                "Meerdere stops op één dag",
-                "Gidsinformatie en routeadvies inbegrepen",
-                "Zakelijk & groepsarrangement op aanvraag",
-              ].map((t) => (
-                <li key={t} className="flex items-center gap-3 text-sm text-ink">
+              {[t("maat1"), t("maat2"), t("maat3"), t("maat4")].map((item) => (
+                <li key={item} className="flex items-center gap-3 text-sm text-ink">
                   <Icon name="check" size={16} className="shrink-0 text-accent" />
-                  {t}
+                  {item}
                 </li>
               ))}
             </ul>
@@ -226,35 +218,27 @@ export default function DagtochtenPage() {
 const KANAAL =
   "flex min-h-[52px] items-center gap-3 rounded-md border border-line-strong bg-white/60 px-4 text-[15px] font-medium text-ink transition-colors hover:bg-white";
 
-const WA_TEKST = encodeURIComponent(
-  "Hallo T4XI, ik wil graag een dagtocht aanvragen."
-);
-
-function DagtochtAanvraag() {
+async function DagtochtAanvraag() {
+  const t = await getTranslations("dagtochten");
+  const waTekst = encodeURIComponent(t("waTekst"));
   return (
     <div className="relative overflow-hidden rounded-[28px] border border-line bg-card p-6 shadow-hero-card md:p-7">
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[5px] bg-gradient-to-r from-accent via-stone to-stone-subtle" />
-      <p className="mb-5 text-[11px] uppercase tracking-[3px] text-accent">Vraag een dagtocht aan</p>
+      <p className="mb-5 text-[11px] uppercase tracking-[3px] text-accent">{t("vraagKop")}</p>
       <p className="text-[15px] leading-[1.8] text-secondary">
-        Iedere dagtocht stemmen wij persoonlijk met u af. Laat ons weten wat u in
-        gedachten heeft:
+        {t("vraagIntro")}
       </p>
       <ul className="mt-5 flex flex-col gap-2.5">
-        {[
-          "gewenste datum",
-          "vertrekplaats",
-          "groepsgrootte",
-          "eventuele maatwerkwensen",
-        ].map((t) => (
-          <li key={t} className="flex items-center gap-3 text-sm text-ink">
+        {[t("vraag1"), t("vraag2"), t("vraag3"), t("vraag4")].map((item) => (
+          <li key={item} className="flex items-center gap-3 text-sm text-ink">
             <Icon name="check" size={16} className="shrink-0 text-accent" />
-            {t}
+            {item}
           </li>
         ))}
       </ul>
       <div className="mt-7 grid gap-2.5">
         <a
-          href={`https://wa.me/31634744522?text=${WA_TEKST}`}
+          href={`https://wa.me/31634744522?text=${waTekst}`}
           target="_blank"
           rel="noopener noreferrer"
           className={KANAAL}
@@ -272,8 +256,7 @@ function DagtochtAanvraag() {
         </a>
       </div>
       <p className="mt-5 text-xs leading-[1.7] text-stone">
-        Wij bevestigen de beschikbaarheid, planning en definitieve pakketprijs
-        persoonlijk voordat de rit vaststaat.
+        {t("vraagNa")}
       </p>
     </div>
   );

@@ -3,6 +3,8 @@ import { Link } from "@/i18n/navigation";
 import "@/components/horizon/horizon.css";
 import FairBand from "@/components/sections/FairBand";
 import { loadRateCard, type CityRates, type RateEntry } from "@/lib/pricing/rate-card";
+import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import DestinationExplorer from "@/components/tarieven/DestinationExplorer";
 import { destinationGroupFor } from "@/lib/destinations";
 
@@ -43,6 +45,7 @@ export const metadata: Metadata = {
 const eur = (n: number) => `€ ${n}`;
 
 function RateRows({ entries }: { entries: RateEntry[] }) {
+  const t = useTranslations("tarieven");
   return (
     <ul className="mt-3 list-none">
       {entries.map((e) => (
@@ -54,13 +57,13 @@ function RateRows({ entries }: { entries: RateEntry[] }) {
             {e.from} <span className="text-stone">→</span> {e.to}
           </span>
           <span className="order-3 text-xs uppercase tracking-[0.1em] text-stone sm:order-none [font-variant-numeric:tabular-nums]">
-            {e.distanceKm} km
+            {e.distanceKm} {t("km")}
           </span>
           <span className="text-right font-display text-[15px] font-bold text-ink [font-variant-numeric:tabular-nums] sm:text-base">
             {eur(e.single)}
           </span>
           <span className="order-4 text-right text-sm text-secondary [font-variant-numeric:tabular-nums] sm:order-none">
-            {e.retour !== null ? <>retour {eur(e.retour)}</> : <>—</>}
+            {e.retour !== null ? <>{t("retour")} {eur(e.retour)}</> : <>—</>}
           </span>
         </li>
       ))}
@@ -69,6 +72,7 @@ function RateRows({ entries }: { entries: RateEntry[] }) {
 }
 
 function RouteGroup({ title, entries, cityName }: { title: string; entries: RateEntry[]; cityName: string }) {
+  const t = useTranslations("tarieven");
   return (
     <div className="mt-9">
       <h3 className="text-[11px] font-medium uppercase tracking-[0.16em] text-secondary">{title}</h3>
@@ -76,9 +80,9 @@ function RouteGroup({ title, entries, cityName }: { title: string; entries: Rate
         <RateRows entries={entries} />
       ) : (
         <p className="mt-3 border-t border-line pt-4 text-sm text-secondary">
-          Andere bestemming vanuit {cityName}?{" "}
+          {t("andereBestemmingVraag", { stad: cityName })}{" "}
           <Link href="/boeken" className="hz-guide-line text-ink no-underline">
-            Vraag een vaste prijs aan
+            {t("vraagVastePrijs")}
           </Link>
           .
         </p>
@@ -88,26 +92,27 @@ function RouteGroup({ title, entries, cityName }: { title: string; entries: Rate
 }
 
 function CitySection({ city }: { city: CityRates }) {
+  const t = useTranslations("tarieven");
   return (
     <section aria-labelledby={`stad-${city.citySlug}`} className="border-t border-ink/25 pt-12">
       <p className="flex items-center gap-3.5 text-[11px] font-medium uppercase tracking-[0.16em] text-secondary">
         <span aria-hidden="true" className="h-px w-8 bg-ink" />
-        Vertrek
+        {t("vertrek")}
       </p>
       <h2
         id={`stad-${city.citySlug}`}
         className="mt-3 font-display text-[clamp(30px,4.4vw,54px)] font-extrabold leading-none tracking-[-0.02em] text-ink"
       >
-        Vanuit {city.cityName}
+        {t("vanuit", { stad: city.cityName })}
       </h2>
-      <RouteGroup title="Naar Schiphol" entries={city.toSchiphol} cityName={city.cityName} />
+      <RouteGroup title={t("naarSchiphol")} entries={city.toSchiphol} cityName={city.cityName} />
       {/* Alleen tonen wanneer de stad zulke routes heeft (nu: Rotterdam The
           Hague Airport vanuit Amsterdam en Rotterdam). Vóór 2026-07-22 werden
           deze actieve routes nergens weergegeven. */}
       {city.otherAirports.length > 0 && (
-        <RouteGroup title="Overige luchthavens" entries={city.otherAirports} cityName={city.cityName} />
+        <RouteGroup title={t("overigeLuchthavens")} entries={city.otherAirports} cityName={city.cityName} />
       )}
-      <RouteGroup title="Intercity" entries={city.intercity} cityName={city.cityName} />
+      <RouteGroup title={t("intercity")} entries={city.intercity} cityName={city.cityName} />
       {(() => {
         const group = destinationGroupFor(city.citySlug);
         return group ? (
@@ -119,6 +124,7 @@ function CitySection({ city }: { city: CityRates }) {
 }
 
 export default async function TarievenPage() {
+  const t = await getTranslations("tarieven");
   const cities = await loadRateCard();
 
   return (
@@ -127,17 +133,15 @@ export default async function TarievenPage() {
         <header className="max-w-3xl">
           <p className="flex items-center gap-3.5 text-[11px] font-medium uppercase tracking-[0.16em] text-secondary">
             <span aria-hidden="true" className="h-px w-8 bg-ink" />
-            Vaste tarieven — geen taxameter, geen verrassing
+            {t("kicker")}
           </p>
           <h1 className="mt-6 font-display text-[clamp(40px,7vw,96px)] font-extrabold leading-[0.98] tracking-[-0.03em] text-ink">
-            Elke rit heeft
+            {t("kop1")}
             <br />
-            <span className="font-light text-stone">zijn prijs.</span>
+            <span className="font-light text-stone">{t("kop2")}</span>
           </h1>
           <p className="mt-6 text-secondary">
-            Prijzen voor de enkele rit in onze executive-klasse: Tesla Model Y (volledig elektrisch) of Lynk &amp; Co 01
-            (plug-in hybride). Retour staat per route vermeld. Nachttarief (23:00–06:00) +15%. Alle bedragen inclusief
-            btw, maximaal 4 passagiers exclusief chauffeur.
+            {t("intro")}
           </p>
         </header>
 
@@ -146,9 +150,9 @@ export default async function TarievenPage() {
             cities.map((city) => <CitySection key={city.citySlug} city={city} />)
           ) : (
             <p className="border-t border-ink/25 pt-12 text-secondary">
-              Tarieven zijn momenteel niet beschikbaar.{" "}
+              {t("nietBeschikbaar")}{" "}
               <Link href="/boeken" className="hz-guide-line text-ink no-underline">
-                Vraag een vaste prijs aan
+                {t("vraagVastePrijs")}
               </Link>
               .
             </p>
@@ -156,15 +160,15 @@ export default async function TarievenPage() {
         </div>
 
         <p className="mt-16 border-t border-line pt-6 text-[13px] leading-relaxed text-secondary">
-          Staat uw route er niet bij?{" "}
+          {t("routeNietGevonden")}{" "}
           <Link href="/boeken" className="hz-guide-line text-ink no-underline">
-            Vraag een vaste prijs aan
+            {t("vraagVastePrijs")}
           </Link>{" "}
-          — of bel{" "}
+          {t("ofBel")}{" "}
           <a href="tel:+31634744522" className="hz-guide-line text-ink no-underline">
             +31 6 34 74 45 22
           </a>
-          . Adviesbagage: 2 grote koffers + 2 handbagage bij 4 passagiers, of 3 grote koffers bij maximaal 3 passagiers.
+          {t("adviesbagage")}
         </p>
       </main>
       <FairBand />
