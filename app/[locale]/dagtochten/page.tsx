@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo-locale";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
@@ -8,12 +8,9 @@ import RoutesExplorer, { FeaturedDetailsButton } from "@/components/dagtochten/R
 import { getCountries, getFeatured, type Locale } from "@/lib/dagtochten";
 import { BEDRIJF } from "@/lib/legal";
 
-export const metadata: Metadata = {
-  title: "Dagtochten",
-  description:
-    "Toeristische dagtochten vanuit Amsterdam, Almere en Rotterdam naar België, Nederland, Duitsland en Luxemburg. Deur-tot-deur, vaste all-in prijs.",
-  alternates: { canonical: "/dagtochten" },
-};
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMetadata(params.locale, "/dagtochten", "dagtochtenTitle", "dagtochtenDesc");
+}
 
 export default async function DagtochtenPage() {
   const locale = (await getLocale()) as Locale;

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo-locale";
 import Image from "next/image";
 import FairBand from "@/components/sections/FairBand";
 import WhySection from "@/components/sections/WhySection";
@@ -6,12 +6,9 @@ import ReviewsSection from "@/components/sections/ReviewsSection";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { useTranslations } from "next-intl";
 
-export const metadata: Metadata = {
-  title: "Over ons",
-  description:
-    "T4XI is een initiatief van Noir Driving Services — premium elektrisch vervoer. Eerlijk voor de klant én voor de chauffeur.",
-  alternates: { canonical: "/over-ons" },
-};
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMetadata(params.locale, "/over-ons", "overOnsTitle", "overOnsDesc");
+}
 
 export default function OverOnsPage() {
   const t = useTranslations("overOns");

@@ -1,16 +1,13 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo-locale";
 import { getTranslations } from "next-intl/server";
 import Image from "next/image";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { EarningsCalculator, PartnerSignupForm } from "@/components/partner/PartnerInteractive";
 
-export const metadata: Metadata = {
-  title: "Partner worden",
-  description:
-    "Word chauffeurspartner van T4XI. 90%+ van elke rit naar jou, onboarding in 5 dagen, wekelijkse uitbetaling. Kies je pakket vanaf €0/maand.",
-  alternates: { canonical: "/partner" },
-};
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMetadata(params.locale, "/partner", "partnerTitle", "partnerDesc");
+}
 
 /** Vaste, taalneutrale structuur (icons, cijfers, booleans). Tekst komt uit i18n. */
 const HERO_STAT_NUMS = ["90%+", "5", "24/7", "€0"];

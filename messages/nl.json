@@ -21,7 +21,8 @@
     "menuOpen": "Menu openen",
     "menuDicht": "Menu sluiten",
     "whatsappOns": "WhatsApp ons",
-    "naarInhoud": "Naar de inhoud"
+    "naarInhoud": "Naar de inhoud",
+    "skipLink": "Naar de inhoud"
   },
   "footer": {
     "tagline": "Arrive composed.",
@@ -1010,5 +1011,25 @@
     ],
     "fSubmit": "Aanmelding versturen",
     "fBel": "Of bel direct:"
+  },
+  "seo": {
+    "dienstenTitle": "Diensten",
+    "dienstenDesc": "Schiphol transfers, zakelijk vervoer, privéritten en evenementen — premium elektrisch taxivervoer voor elke situatie.",
+    "tarievenTitle": "Tarieven",
+    "tarievenDesc": "Vaste T4XI-tarieven vanuit Amsterdam, Rotterdam, Almere en Utrecht. Naar Schiphol en intercity — enkele rit en retour, geen verrassingen.",
+    "boekenTitle": "Boek een rit",
+    "boekenDesc": "Boek uw premium elektrische taxi. Vul ophaal- en bestemmingsadres in en zie direct uw vaste prijs.",
+    "dagtochtenTitle": "Dagtochten",
+    "dagtochtenDesc": "Toeristische dagtochten vanuit Amsterdam, Almere en Rotterdam naar België, Nederland, Duitsland en Luxemburg. Deur-tot-deur, vaste all-in prijs.",
+    "partnerTitle": "Partner worden",
+    "partnerDesc": "Word chauffeurspartner van T4XI. 90%+ van elke rit naar jou, onboarding in 5 dagen, wekelijkse uitbetaling. Kies je pakket vanaf €0/maand.",
+    "productenTitle": "Mobiliteitsproducten",
+    "productenDesc": "Airport Memberships, zakelijke strippenkaarten, hotelcontracten en event shuttles. Vaste mobiliteit met voorspelbare kosten.",
+    "contactTitle": "Contact",
+    "contactDesc": "Neem contact op met T4XI: bel, mail of WhatsApp. Dag en nacht bereikbaar voor vragen en boekingen.",
+    "overOnsTitle": "Over ons",
+    "overOnsDesc": "T4XI is een initiatief van Noir Driving Services — premium elektrisch vervoer. Eerlijk voor de klant én voor de chauffeur.",
+    "homeTitle": "T4XI — Premium taxi & elektrische mobiliteit",
+    "homeDesc": "T4XI is het premium Nederlandse taxiplatform. 100% elektrisch, vaste tarieven, professionele chauffeurs. Arrive with confidence."
   }
 }

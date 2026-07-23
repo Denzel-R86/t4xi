@@ -21,7 +21,8 @@
     "menuOpen": "Open menu",
     "menuDicht": "Close menu",
     "whatsappOns": "WhatsApp us",
-    "naarInhoud": "Skip to content"
+    "naarInhoud": "Skip to content",
+    "skipLink": "Skip to content"
   },
   "footer": {
     "tagline": "Arrive composed.",
@@ -1010,5 +1011,25 @@
     ],
     "fSubmit": "Submit application",
     "fBel": "Or call directly:"
+  },
+  "seo": {
+    "dienstenTitle": "Services",
+    "dienstenDesc": "Schiphol transfers, business travel, private rides and events — a premium electric taxi service for every occasion.",
+    "tarievenTitle": "Rates",
+    "tarievenDesc": "Fixed T4XI fares from Amsterdam, Rotterdam, Almere and Utrecht. To Schiphol and intercity — one-way and return, no surprises.",
+    "boekenTitle": "Book a ride",
+    "boekenDesc": "Book your premium electric taxi. Enter your pick-up and destination and see your fixed price instantly.",
+    "dagtochtenTitle": "Day trips",
+    "dagtochtenDesc": "Sightseeing day trips from Amsterdam, Almere and Rotterdam to Belgium, the Netherlands, Germany and Luxembourg. Door to door, a fixed all-in price.",
+    "partnerTitle": "Become a partner",
+    "partnerDesc": "Become a driver partner of T4XI. 90%+ of every ride to you, onboarding in 5 days, weekly payouts. Choose your package from €0/month.",
+    "productenTitle": "Mobility products",
+    "productenDesc": "Airport memberships, business ride passes, hotel contracts and event shuttles. Fixed mobility with predictable costs.",
+    "contactTitle": "Contact",
+    "contactDesc": "Get in touch with T4XI: call, email or WhatsApp. Reachable day and night for questions and bookings.",
+    "overOnsTitle": "About us",
+    "overOnsDesc": "T4XI is an initiative of Noir Driving Services — premium electric transport. Fair to the customer and to the driver.",
+    "homeTitle": "T4XI — Premium taxi & electric mobility",
+    "homeDesc": "T4XI is the premium Dutch taxi platform. 100% electric, fixed fares, professional drivers. Arrive with confidence."
   }
 }

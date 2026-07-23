@@ -1,15 +1,12 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo-locale";
 import ContactSection from "@/components/sections/ContactSection";
 import FaqList from "@/components/sections/FaqList";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { useTranslations } from "next-intl";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description:
-    "Neem contact op met T4XI: bel, mail of WhatsApp. Dag en nacht bereikbaar voor vragen en boekingen.",
-  alternates: { canonical: "/contact" },
-};
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMetadata(params.locale, "/contact", "contactTitle", "contactDesc");
+}
 
 export default function ContactPage() {
   const t = useTranslations("contact");

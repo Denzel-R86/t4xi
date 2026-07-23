@@ -1,15 +1,12 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo-locale";
 import { getTranslations } from "next-intl/server";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { MembershipForm, StrippenkaartForm, HotelForm } from "@/components/producten/ProductForms";
 
-export const metadata: Metadata = {
-  title: "Mobiliteitsproducten",
-  description:
-    "Airport Memberships, zakelijke strippenkaarten, hotelcontracten en event shuttles. Vaste mobiliteit met voorspelbare kosten.",
-  alternates: { canonical: "/producten" },
-};
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMetadata(params.locale, "/producten", "productenTitle", "productenDesc");
+}
 
 /** Taalneutrale cijfers/iconen; alle tekst komt uit i18n. */
 const HERO_STAT_NUMS = ["€279", "€899", "24/7", "4"];

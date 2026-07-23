@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo-locale";
 import { Link } from "@/i18n/navigation";
 import "@/components/horizon/horizon.css";
 import FairBand from "@/components/sections/FairBand";
@@ -35,12 +35,9 @@ import { destinationGroupFor } from "@/lib/destinations";
  */
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Tarieven",
-  description:
-    "Vaste T4XI-tarieven vanuit Amsterdam, Rotterdam, Almere en Utrecht. Naar Schiphol en intercity — enkele rit en retour, geen verrassingen.",
-  alternates: { canonical: "/tarieven" },
-};
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMetadata(params.locale, "/tarieven", "tarievenTitle", "tarievenDesc");
+}
 
 const eur = (n: number) => `€ ${n}`;
 

@@ -3,7 +3,7 @@ import Script from "next/script";
 import { notFound } from "next/navigation";
 import { Outfit, Inter, Playfair_Display } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { localeMetadata } from "@/lib/seo-locale";
 import "../globals.css";
@@ -42,24 +42,24 @@ const playfair = Playfair_Display({
 });
 
 /**
- * Metadatafundering per locale (stap 3): canonical, hreflang-alternates en
- * og:locale komen uit de centrale helper. De teksten blijven in deze stap
- * bewust Nederlands — vertaling volgt in stap 4, geen machinevertaling nu.
+ * Metadatafundering per locale: canonical, hreflang-alternates, og:locale en
+ * de homepage-titel/omschrijving komen uit de centrale helper en de
+ * `seo`-namespace, per taal (stap 5).
  */
-export function generateMetadata({ params }: { params: { locale: string } }): Metadata {
+export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
   const locale = hasLocale(routing.locales, params.locale) ? params.locale : routing.defaultLocale;
+  const t = await getTranslations({ locale, namespace: "seo" });
   const base = localeMetadata({
     locale,
     path: "/",
-    title: "T4XI — Premium taxi & elektrische mobiliteit",
-    description:
-      "T4XI is het premium Nederlandse taxiplatform. 100% elektrisch, vaste tarieven, professionele chauffeurs. Arrive with confidence.",
+    title: t("homeTitle"),
+    description: t("homeDesc"),
   });
   return {
     ...base,
     metadataBase: new URL("https://t4xi.nl"),
     title: {
-      default: "T4XI — Premium taxi & elektrische mobiliteit",
+      default: t("homeTitle"),
       template: "%s — T4XI",
     },
     robots: { index: true, follow: true },
@@ -96,7 +96,7 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
   params,
 }: Readonly<{ children: React.ReactNode; params: { locale: string } }>) {
@@ -104,6 +104,9 @@ export default function RootLayout({
   if (!hasLocale(routing.locales, locale)) notFound();
   // Maakt statische rendering per locale mogelijk (next-intl).
   setRequestLocale(locale);
+  // Skip-link staat buiten de NextIntlClientProvider; server-side vertaling via
+  // dezelfde i18n-architectuur (geen losse locale-check).
+  const t = await getTranslations({ locale, namespace: "nav" });
   // suppressHydrationWarning hoort op <html>: het `js-detect`-script draait
   // `beforeInteractive` en zet de class `js` vóórdat React hydrateert. React
   // vergelijkt dan een DOM mét die class tegen een render zónder, en meldt
@@ -139,7 +142,7 @@ export default function RootLayout({
           href="#content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-fog focus:outline-none focus:ring-2 focus:ring-accent"
         >
-          Naar de inhoud
+          {t("skipLink")}
         </a>
         <NextIntlClientProvider>
           <Header />

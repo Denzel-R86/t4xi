@@ -1,15 +1,12 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo-locale";
 import BookingSection from "@/components/booking/BookingSection";
 import { useTranslations } from "next-intl";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
-export const metadata: Metadata = {
-  title: "Boek een rit",
-  description:
-    "Boek uw premium elektrische taxi. Vul ophaal- en bestemmingsadres in en zie direct uw vaste prijs.",
-  alternates: { canonical: "/boeken" },
-};
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMetadata(params.locale, "/boeken", "boekenTitle", "boekenDesc");
+}
 
 const FEATURES = [
   { icon: "lock", key: "f1" },

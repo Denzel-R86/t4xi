@@ -1,15 +1,12 @@
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo-locale";
 import ServicesSection from "@/components/sections/ServicesSection";
 import WhySection from "@/components/sections/WhySection";
 import ZakelijkSection from "@/components/sections/ZakelijkSection";
 import ProductsTeaser from "@/components/sections/ProductsTeaser";
 
-export const metadata: Metadata = {
-  title: "Diensten",
-  description:
-    "Schiphol transfers, zakelijk vervoer, privéritten en evenementen — premium elektrisch taxivervoer voor elke situatie.",
-  alternates: { canonical: "/diensten" },
-};
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMetadata(params.locale, "/diensten", "dienstenTitle", "dienstenDesc");
+}
 
 export default function DienstenPage() {
   return (
