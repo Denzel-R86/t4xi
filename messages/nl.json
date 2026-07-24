@@ -116,7 +116,8 @@
     "succesBevestiging": "Wij bevestigen uw rit via WhatsApp of e-mail.",
     "foutFallback": "Er ging iets mis. Probeer het opnieuw of bel ons.",
     "foutVerbinding": "Geen verbinding. Controleer je internet of bel ons.",
-    "honeypot": "Website (niet invullen)"
+    "honeypot": "Website (niet invullen)",
+    "succesBetaalIntro": "Uw aanvraag is geregistreerd. Rond hieronder de betaling af — daarna bevestigen wij uw rit."
   },
   "autocomplete": {
     "zoeken": "Adressen zoeken…",
@@ -1039,5 +1040,28 @@
     "privacyDesc": "Hoe T4XI omgaat met uw persoonsgegevens: welke gegevens wij verzamelen bij een boeking, waarvoor wij ze gebruiken en met welke partijen wij ze delen.",
     "voorwaardenTitle": "Algemene voorwaarden",
     "voorwaardenDesc": "De voorwaarden waaronder T4XI vervoer levert: vaste prijzen, luchthavenbeleid bij vluchtvertraging, bagage en aansprakelijkheid."
+  },
+  "betaling": {
+    "pendingKop": "Betaling ontvangen",
+    "pending": "We controleren de bevestiging.",
+    "formulierLaden": "Betaalformulier laden…",
+    "opnieuw": "Opnieuw proberen",
+    "opnieuwZin": "Probeer het opnieuw.",
+    "route": "Route",
+    "ritType": "Type rit",
+    "retour": "Retour",
+    "enkeleRit": "Enkele rit",
+    "passagiers": "Passagiers",
+    "teBetalen": "Te betalen",
+    "betaalKnop": "Nu betalen",
+    "bezig": "Bezig…",
+    "verwerkt": "Betaling wordt verwerkt.",
+    "beveiligd": "Beveiligd door Stripe",
+    "startFailed": "Betaling kon niet worden gestart.",
+    "checkDetails": "Controleer je betaalgegevens.",
+    "couldNotComplete": "Betaling kon niet worden voltooid.",
+    "rateLimited": "Te veel pogingen. Probeer het over een paar minuten opnieuw.",
+    "unavailable": "Betalen is tijdelijk niet beschikbaar.",
+    "kop": "Betaling"
   }
 }
