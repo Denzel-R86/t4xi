@@ -252,6 +252,9 @@ export async function POST(request: Request) {
 
   const row = Array.isArray(data) ? data[0] : data;
   const bookingRef = row?.booking_ref as string | undefined;
+  // Intern UUID: capability-sleutel voor de betaalstap. Alleen aan de
+  // boekingseigenaar teruggegeven (in de response op zijn eigen boeking).
+  const bookingId = row?.booking_id as string | undefined;
   if (!bookingRef) {
     return json(500, {
       ok: false,
@@ -301,6 +304,7 @@ export async function POST(request: Request) {
   return json(201, {
     ok: true,
     bookingRef,
+    bookingId,
     status: "pending",
     quoteOnRequest,
     price: priceEuros,

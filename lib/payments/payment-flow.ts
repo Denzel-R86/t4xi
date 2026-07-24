@@ -16,38 +16,30 @@ import type { Locale } from "@/i18n/routing";
  */
 
 export type PaymentRide = {
+  /** Alleen voor de samenvattingsweergave; NIET de prijsautoriteit. */
   pickup: string;
   dropoff: string;
   returnTrip: boolean;
   passengers: number;
   locale: Locale;
-  /** Optioneel correlatielabel (booking ref); nooit autorisatiebewijs. */
-  bookingReference?: string | null;
+  /**
+   * Server-trusted capability: het interne booking_id (UUID). create-intent
+   * zoekt de boeking hierop op. De publieke, raadbare booking_ref is bewust GEEN
+   * lookup-/autorisatie-sleutel.
+   */
+  bookingId: string;
 };
 
-/** Nieuwe attempt-UUID per expliciete betaalpoging. */
-export function newAttempt(): string {
-  return crypto.randomUUID();
-}
-
 /**
- * Body voor POST /api/payments/create-intent. Bevat bewust GEEN amount/currency:
- * die worden server-side bepaald. `attempt` wordt hier meegegeven (idempotency).
+ * Body voor POST /api/payments/create-intent. Bevat GEEN amount/currency én
+ * geen ritdata: het bedrag komt server-side uit de opgeslagen boekingsprijs;
+ * de boeking wordt geïdentificeerd via het interne `bookingId` (UUID).
  */
-export function buildCreateIntentBody(
-  ride: PaymentRide,
-  attempt: string
-): Record<string, unknown> {
-  const body: Record<string, unknown> = {
-    pickup: ride.pickup,
-    dropoff: ride.dropoff,
-    returnTrip: ride.returnTrip,
-    passengers: ride.passengers,
+export function buildCreateIntentBody(ride: PaymentRide): Record<string, unknown> {
+  return {
+    bookingId: ride.bookingId,
     locale: ride.locale,
-    attempt,
   };
-  if (ride.bookingReference) body.bookingReference = ride.bookingReference;
-  return body;
 }
 
 /** i18n-sleutels voor klantgerichte foutcopy (nooit ruwe Stripe-excepties). */

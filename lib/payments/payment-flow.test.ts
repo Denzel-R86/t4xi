@@ -4,7 +4,6 @@ import { readFileSync } from "node:fs";
 import type { Stripe } from "@stripe/stripe-js";
 import { createStripeLoader } from "@/lib/payments/stripe-client";
 import {
-  newAttempt,
   buildCreateIntentBody,
   mapCreateIntentError,
   mapStripeError,
@@ -18,8 +17,8 @@ import {
   type PaymentState,
 } from "@/lib/payments/payment-flow";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const intent: PaymentIntentInfo = { clientSecret: "pi_1_secret_x", paymentIntentId: "pi_1", amount: 7900, currency: "eur" };
+const RIDE = { pickup: "Almere", dropoff: "Schiphol", returnTrip: true, passengers: 2, locale: "nl" as const, bookingId: "11111111-1111-4111-8111-111111111111" };
 const ready: PaymentState = { status: "ready", intent, error: null };
 const processing: PaymentState = { status: "processing", intent, error: null };
 
@@ -53,35 +52,15 @@ test("2 · ontbrekende publishable key: dev rejecteert, prod resolvet null zonde
   assert.equal(calls, 0);
 });
 
-// ── 3. nieuwe payment attempt genereert UUID ───────────────────────────────────
+// ── 4. create-intent request: geen amount/ritdata, wel booking_ref + locale ─────
 
-test("3 · newAttempt genereert een geldige, unieke UUID", () => {
-  const a = newAttempt();
-  const b = newAttempt();
-  assert.match(a, UUID_RE);
-  assert.match(b, UUID_RE);
-  assert.notEqual(a, b);
-});
-
-// ── 4. create-intent request bevat geen client amount ──────────────────────────
-
-test("4 · create-intent body bevat geen amount/currency, wel de vereiste velden", () => {
-  const body = buildCreateIntentBody(
-    { pickup: "Almere", dropoff: "Schiphol", returnTrip: true, passengers: 2, locale: "nl", bookingReference: "T4-AB12CD" },
-    "11111111-1111-4111-8111-111111111111"
-  );
-  assert.equal("amount" in body, false);
-  assert.equal("currency" in body, false);
-  assert.equal("price" in body, false);
-  assert.deepEqual(
-    { pickup: body.pickup, dropoff: body.dropoff, returnTrip: body.returnTrip, passengers: body.passengers, locale: body.locale },
-    { pickup: "Almere", dropoff: "Schiphol", returnTrip: true, passengers: 2, locale: "nl" }
-  );
-  assert.equal(body.attempt, "11111111-1111-4111-8111-111111111111");
-  assert.equal(body.bookingReference, "T4-AB12CD");
-  // geen bookingReference-key als die ontbreekt
-  const noRef = buildCreateIntentBody({ pickup: "A", dropoff: "B", returnTrip: false, passengers: 1, locale: "en" }, "x");
-  assert.equal("bookingReference" in noRef, false);
+test("4 · create-intent body bevat geen amount/ritdata/booking_ref, wel booking_id + locale", () => {
+  const body = buildCreateIntentBody(RIDE);
+  for (const k of ["amount", "currency", "price", "pickup", "dropoff", "returnTrip", "passengers", "bookingReference"]) {
+    assert.equal(k in body, false, `${k} mag niet in de body`);
+  }
+  assert.equal(body.bookingId, "11111111-1111-4111-8111-111111111111");
+  assert.equal(body.locale, "nl");
 });
 
 // ── 5. server response amount wordt in UI gebruikt ─────────────────────────────
@@ -100,8 +79,8 @@ test("5 · het serverbedrag uit create-intent wordt bewaard en getoond (geen cli
 // ── 6 & 7. locale nl/en ────────────────────────────────────────────────────────
 
 test("6/7 · locale nl en en worden doorgegeven en naar Elements gemapt", () => {
-  assert.equal(buildCreateIntentBody({ pickup: "A", dropoff: "B", returnTrip: false, passengers: 1, locale: "nl" }, "x").locale, "nl");
-  assert.equal(buildCreateIntentBody({ pickup: "A", dropoff: "B", returnTrip: false, passengers: 1, locale: "en" }, "x").locale, "en");
+  assert.equal(buildCreateIntentBody({ ...RIDE, locale: "nl" }).locale, "nl");
+  assert.equal(buildCreateIntentBody({ ...RIDE, locale: "en" }).locale, "en");
   assert.equal(elementsLocale("nl"), "nl");
   assert.equal(elementsLocale("en"), "en");
 });

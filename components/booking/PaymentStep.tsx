@@ -8,7 +8,6 @@ import Icon from "@/components/ui/Icon";
 import { getStripe } from "@/lib/payments/stripe-client";
 import {
   buildCreateIntentBody,
-  newAttempt,
   mapCreateIntentError,
   mapStripeError,
   paymentReducer,
@@ -54,12 +53,11 @@ export default function PaymentStep({ ride }: { ride: PaymentRide }) {
 
   async function startIntent() {
     dispatch({ type: "createStart" });
-    const attempt = newAttempt(); // nieuwe UUID per (her)start van de poging
     try {
       const res = await fetch("/api/payments/create-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildCreateIntentBody(ride, attempt)),
+        body: JSON.stringify(buildCreateIntentBody(ride)),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && typeof data.clientSecret === "string") {

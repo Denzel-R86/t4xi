@@ -64,7 +64,7 @@ export default function BookingSection({
 
   type SubmitState =
     | { status: "idle" | "loading" }
-    | { status: "success"; bookingRef: string; quoteOnRequest: boolean; price: number | null }
+    | { status: "success"; bookingRef: string; bookingId: string | null; quoteOnRequest: boolean; price: number | null }
     | { status: "error"; message: string };
   const [submit, setSubmit] = useState<SubmitState>({ status: "idle" });
   const loading = submit.status === "loading";
@@ -129,6 +129,7 @@ export default function BookingSection({
         setSubmit({
           status: "success",
           bookingRef: data.bookingRef,
+          bookingId: typeof data.bookingId === "string" ? data.bookingId : null,
           quoteOnRequest: Boolean(data.quoteOnRequest),
           price: typeof data.price === "number" ? data.price : null,
         });
@@ -205,7 +206,7 @@ export default function BookingSection({
 
           {/* Betaalstap — alleen bij een vaste prijs. De prijsautoriteit blijft
               server-side: PaymentStep haalt het bedrag op via create-intent. */}
-          {!submit.quoteOnRequest && submit.price !== null && pickup && dropoff && (
+          {!submit.quoteOnRequest && submit.price !== null && submit.bookingId && pickup && dropoff && (
             <div className="mt-4">
               <PaymentStep
                 ride={{
@@ -214,7 +215,7 @@ export default function BookingSection({
                   returnTrip: tab === "retour",
                   passengers: persons,
                   locale: locale as Locale,
-                  bookingReference: submit.bookingRef,
+                  bookingId: submit.bookingId,
                 }}
               />
             </div>
