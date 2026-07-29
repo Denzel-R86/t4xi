@@ -10,6 +10,9 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Activeert instrumentation.ts (boot-tijd environment-guard). In Next 14.2 nog
+  // achter een experimental-flag; vanaf Next 15 standaard.
+  experimental: { instrumentationHook: true },
   // Security headers conform T4XI CLAUDE.md security-eisen
   async headers() {
     return [

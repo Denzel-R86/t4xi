@@ -142,13 +142,51 @@ export function assertSupabaseNotProductionInNonProd(
 }
 
 /**
- * Boot-guard: leest process.env en past beide invarianten toe. Roep dit aan op
- * een server-boot-pad (bv. de dev:staging-runner) zodat een fout-geconfigureerde
- * omgeving meteen faalt in plaats van stil naar productie/live te praten.
- * Leest geen enkele sleutel uit; geeft nooit een secret terug.
+ * Strikte PRODUCTIE-eisen (puur, testbaar). No-op buiten productie.
+ * Fail-closed: een productie-omgeving MOET expliciet en volledig kloppen, anders
+ * gooit de guard. Meldingen noemen alleen de variabelenaam + classificatie —
+ * NOOIT een waarde.
+ *
+ *   1. APP_ENV expliciet 'production' (niet enkel de NODE_ENV-fallback);
+ *   2. Stripe live/live (sk_live_ + pk_live_);
+ *   3. STRIPE_WEBHOOK_SECRET aanwezig met whsec_-prefix;
+ *   4. NEXT_PUBLIC_SUPABASE_URL wijst naar de productie-ref.
+ */
+export function assertProductionRequirements(env: EnvLike = process.env): void {
+  if (getAppEnv(env) !== "production") return;
+
+  const explicit = (env.APP_ENV ?? env.NEXT_PUBLIC_APP_ENV ?? "").trim().toLowerCase();
+  if (explicit !== "production" && explicit !== "prod") {
+    throw new Error("[env-guard] productie vereist expliciet APP_ENV=production.");
+  }
+  if (stripeKeyMode(env.STRIPE_SECRET_KEY) !== "live") {
+    throw new Error("[env-guard] productie vereist een live STRIPE_SECRET_KEY (sk_live_).");
+  }
+  if (stripeKeyMode(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) !== "live") {
+    throw new Error("[env-guard] productie vereist een live NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (pk_live_).");
+  }
+  if (!(env.STRIPE_WEBHOOK_SECRET ?? "").trim().startsWith("whsec_")) {
+    throw new Error("[env-guard] productie vereist STRIPE_WEBHOOK_SECRET met whsec_-prefix.");
+  }
+  const ref = extractSupabaseRef(env.NEXT_PUBLIC_SUPABASE_URL);
+  if (ref !== PRODUCTION_SUPABASE_REF) {
+    throw new Error(
+      "[env-guard] productie vereist de productie-Supabase-ref in NEXT_PUBLIC_SUPABASE_URL " +
+        `(classificatie: ${ref === null ? "unknown" : ref === PRODUCTION_SUPABASE_REF ? "production" : "non-production"}).`
+    );
+  }
+}
+
+/**
+ * Boot-guard: leest process.env en past alle invarianten toe. Bedoeld voor een
+ * server-boot-pad (Next.js `instrumentation.ts` en de dev:staging-runner), zodat
+ * een fout-geconfigureerde omgeving meteen faalt in plaats van stil naar
+ * productie/live te praten. Leest geen enkele sleutel uit; geeft nooit een
+ * secret terug.
  */
 export function assertSafeEnvironment(env: EnvLike = process.env): void {
   const appEnv = getAppEnv(env);
   assertStripeEnvironment(appEnv, env.STRIPE_SECRET_KEY, env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
   assertSupabaseNotProductionInNonProd(appEnv, env.NEXT_PUBLIC_SUPABASE_URL);
+  assertProductionRequirements(env);
 }

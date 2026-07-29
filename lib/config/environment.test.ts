@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   getAppEnv,
   isProductionEnv,
@@ -7,6 +8,7 @@ import {
   assertStripeEnvironment,
   extractSupabaseRef,
   assertSupabaseNotProductionInNonProd,
+  assertProductionRequirements,
   assertSafeEnvironment,
   PRODUCTION_SUPABASE_REF,
   type AppEnv,
@@ -102,9 +104,9 @@ test("10 · development + test/test + non-prod Supabase → pass", () => {
   );
 });
 
-test("11 · production + live/live + productie Supabase → pass", () => {
+test("11 · production + live/live + whsec + productie Supabase → pass", () => {
   assert.doesNotThrow(() =>
-    assertSafeEnvironment({ APP_ENV: "production", STRIPE_SECRET_KEY: SK_LIVE, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: PK_LIVE, NEXT_PUBLIC_SUPABASE_URL: PROD_URL })
+    assertSafeEnvironment({ APP_ENV: "production", STRIPE_SECRET_KEY: SK_LIVE, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: PK_LIVE, STRIPE_WEBHOOK_SECRET: "whsec_x", NEXT_PUBLIC_SUPABASE_URL: PROD_URL })
   );
 });
 
@@ -161,4 +163,73 @@ test("Supabase: staging-ref toegestaan; productie-ref in productie toegestaan", 
   assert.doesNotThrow(() => assertSupabaseNotProductionInNonProd("production", PROD_URL));
   assert.equal(extractSupabaseRef(PROD_URL), PRODUCTION_SUPABASE_REF);
   assert.equal(extractSupabaseRef("not-a-url"), null);
+});
+
+// ── Strikte productie-eisen (Sprint 7.6 — boot-hardening) ───────────────────────
+
+const PROD_OK = {
+  APP_ENV: "production",
+  STRIPE_SECRET_KEY: SK_LIVE,
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: PK_LIVE,
+  STRIPE_WEBHOOK_SECRET: "whsec_SYNTHETIC000",
+  NEXT_PUBLIC_SUPABASE_URL: PROD_URL,
+};
+
+test("P1 · volledige, correcte productie-config → pass", () => {
+  assert.doesNotThrow(() => assertProductionRequirements({ ...PROD_OK }));
+});
+
+test("P2 · productie zonder expliciete APP_ENV (alleen NODE_ENV) → reject", () => {
+  assert.throws(
+    () => assertProductionRequirements({ ...PROD_OK, APP_ENV: undefined, NODE_ENV: "production" }),
+    /APP_ENV=production/
+  );
+});
+
+test("P3 · productie + test Stripe-keys → reject", () => {
+  assert.throws(() => assertProductionRequirements({ ...PROD_OK, STRIPE_SECRET_KEY: SK_TEST }), /live STRIPE_SECRET_KEY/);
+  assert.throws(() => assertProductionRequirements({ ...PROD_OK, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: PK_TEST }), /live NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY/);
+});
+
+test("P4 · productie zonder/verkeerde webhook-secret → reject", () => {
+  assert.throws(() => assertProductionRequirements({ ...PROD_OK, STRIPE_WEBHOOK_SECRET: undefined }), /STRIPE_WEBHOOK_SECRET/);
+  assert.throws(() => assertProductionRequirements({ ...PROD_OK, STRIPE_WEBHOOK_SECRET: "sk_live_x" }), /STRIPE_WEBHOOK_SECRET/);
+});
+
+test("P5 · productie met staging/onbekende Supabase-ref → reject", () => {
+  assert.throws(() => assertProductionRequirements({ ...PROD_OK, NEXT_PUBLIC_SUPABASE_URL: STAGING_URL }), /productie-Supabase-ref/);
+  assert.throws(() => assertProductionRequirements({ ...PROD_OK, NEXT_PUBLIC_SUPABASE_URL: "" }), /productie-Supabase-ref/);
+});
+
+test("P6 · staging/development → no-op (geen strikte prod-eisen)", () => {
+  assert.doesNotThrow(() => assertProductionRequirements({ APP_ENV: "staging" }));
+  assert.doesNotThrow(() => assertProductionRequirements({ APP_ENV: "development" }));
+  assert.doesNotThrow(() => assertProductionRequirements({})); // dev-fallback
+});
+
+test("P7 · prod-eis-meldingen bevatten nooit een sleutel/secret-waarde", () => {
+  const cases = [
+    { ...PROD_OK, STRIPE_SECRET_KEY: SK_TEST },
+    { ...PROD_OK, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: PK_TEST },
+    { ...PROD_OK, STRIPE_WEBHOOK_SECRET: "whsec_LEAKME999" },
+    { ...PROD_OK, NEXT_PUBLIC_SUPABASE_URL: STAGING_URL },
+  ];
+  for (const env of cases) {
+    try {
+      assertProductionRequirements(env);
+      assert.fail("verwacht een fout");
+    } catch (e) {
+      const msg = (e as Error).message;
+      for (const secret of [SK_TEST, PK_TEST, "whsec_LEAKME999", SK_LIVE, PK_LIVE]) {
+        assert.ok(!msg.includes(secret), `melding lekt een waarde: ${msg}`);
+      }
+    }
+  }
+});
+
+test("P8 · instrumentation.ts roept de boot-guard aan en is build-veilig", () => {
+  const src = readFileSync("instrumentation.ts", "utf8");
+  assert.match(src, /assertSafeEnvironment\(\)/); // guard wordt aangeroepen
+  assert.match(src, /NEXT_RUNTIME/); // alleen node-runtime
+  assert.match(src, /phase-production-build/); // niet tijdens build
 });
