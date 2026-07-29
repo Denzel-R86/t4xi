@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AddressAutocomplete, {
   type AddressSuggestion,
 } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
+import PaymentStep from "@/components/booking/PaymentStep";
 import Icon from "@/components/ui/Icon";
 import { inferAddressMeta, type RitType } from "@/lib/booking-meta";
 import { useLocale, useTranslations } from "next-intl";
+import type { Locale } from "@/i18n/routing";
 
 const TABS: { key: RitType; labelKey: "tabEnkel" | "tabRetour" | "tabLuchthaven" | "tabDagtocht" }[] = [
   { key: "enkel", labelKey: "tabEnkel" },
@@ -62,10 +64,22 @@ export default function BookingSection({
 
   type SubmitState =
     | { status: "idle" | "loading" }
-    | { status: "success"; bookingRef: string; quoteOnRequest: boolean; price: number | null }
+    | { status: "success"; bookingRef: string; bookingId: string | null; quoteOnRequest: boolean; price: number | null }
     | { status: "error"; message: string };
   const [submit, setSubmit] = useState<SubmitState>({ status: "idle" });
   const loading = submit.status === "loading";
+
+  // Anti-stale betaling: zodra prijsbepalende ritdata wijzigt ná een geslaagde
+  // boeking, is de aangemaakte boeking (bookingRef) én de betaalstap verouderd.
+  // We resetten dan naar "idle" zodat de klant opnieuw boekt en een verse
+  // PaymentIntent op de nieuwe gegevens ontstaat — nooit stilzwijgend het oude
+  // bedrag/bookingRef hergebruiken.
+  useEffect(() => {
+    setSubmit((s) => (s.status === "success" ? { status: "idle" } : s));
+    // Alleen de velden die de serverprijs bepalen (create-intent herberekent
+    // op pickup/dropoff/returnTrip/passengers).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickup?.label, dropoff?.label, tab, persons]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -115,6 +129,7 @@ export default function BookingSection({
         setSubmit({
           status: "success",
           bookingRef: data.bookingRef,
+          bookingId: typeof data.bookingId === "string" ? data.bookingId : null,
           quoteOnRequest: Boolean(data.quoteOnRequest),
           price: typeof data.price === "number" ? data.price : null,
         });
@@ -178,14 +193,33 @@ export default function BookingSection({
       />
 
       {submit.status === "success" && (
-        <div className="mb-5 rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700" role="status" aria-live="polite">
-          <div className="flex items-center justify-center gap-2 font-semibold">
-            <Icon name="check" size={16} />
-            {t("succesRef")} {submit.bookingRef}
+        <div className="mb-5">
+          <div className="rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700" role="status" aria-live="polite">
+            <div className="flex items-center justify-center gap-2 font-semibold">
+              <Icon name="check" size={16} />
+              {t("succesRef")} {submit.bookingRef}
+            </div>
+            <p className="mt-1 text-green-700/90">
+              {submit.quoteOnRequest ? t("succesOpAanvraag") : t("succesBetaalIntro")}
+            </p>
           </div>
-          <p className="mt-1 text-green-700/90">
-            {submit.quoteOnRequest ? t("succesOpAanvraag") : t("succesBevestiging")}
-          </p>
+
+          {/* Betaalstap — alleen bij een vaste prijs. De prijsautoriteit blijft
+              server-side: PaymentStep haalt het bedrag op via create-intent. */}
+          {!submit.quoteOnRequest && submit.price !== null && submit.bookingId && pickup && dropoff && (
+            <div className="mt-4">
+              <PaymentStep
+                ride={{
+                  pickup: pickup.label,
+                  dropoff: dropoff.label,
+                  returnTrip: tab === "retour",
+                  passengers: persons,
+                  locale: locale as Locale,
+                  bookingId: submit.bookingId,
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -211,7 +245,7 @@ export default function BookingSection({
                 : "border-line bg-[#F4F1EB] text-[#4E565E] hover:text-ink"
             }`}
           >
-            __TABLABEL__
+            {t(x.labelKey)}
           </button>
         ))}
       </div>

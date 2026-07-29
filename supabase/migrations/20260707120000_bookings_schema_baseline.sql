@@ -17,7 +17,9 @@
 
 BEGIN;
 
--- uuid_generate_v4() vereist de uuid-ossp extensie (reeds aanwezig op remote).
+-- uuid-ossp blijft aanwezig voor bestaande/afhankelijke objecten; de id-default
+-- hieronder gebruikt gen_random_uuid() (core Postgres, resolveert altijd — ook op
+-- een verse DB waar uuid-ossp in schema 'extensions' buiten de search_path staat).
 create extension if not exists "uuid-ossp";
 
 -- ── Sequence voor het booking-referentienummer ──────────────────────────────
@@ -25,7 +27,7 @@ create sequence if not exists public.booking_ref_seq start with 1000;
 
 -- ── Tabel ───────────────────────────────────────────────────────────────────
 create table if not exists public.bookings (
-  id             uuid primary key default uuid_generate_v4(),
+  id             uuid primary key default gen_random_uuid(),
   booking_ref    text not null unique,
   ride_type      text not null default 'direct',
   from_address   text not null,

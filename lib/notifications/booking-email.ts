@@ -22,6 +22,12 @@
 // `import "server-only"` kan later, zodra dat pakket als dependency is opgenomen.)
 
 import type { Locale } from "@/i18n/routing";
+import { normalizeLocale } from "@/lib/i18n/locale";
+
+// Behoudt het bestaande export-oppervlak: de booking-route importeert
+// `normalizeLocale` uit deze module. De implementatie staat sinds stap 7.2
+// centraal in lib/i18n/locale, gedeeld met de betaal-endpoints.
+export { normalizeLocale };
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const DEFAULT_FROM = "T4XI <onboarding@resend.dev>";
@@ -95,11 +101,6 @@ const CUSTOMER_COPY = {
     tagline: "T4XI — premium electric transport",
   },
 } as const;
-
-/** Valideert onbetrouwbare invoer tot een ondersteunde locale; anders NL. */
-export function normalizeLocale(input: unknown): Locale {
-  return input === "en" ? "en" : "nl";
-}
 
 export type BookingEmailData = {
   bookingRef: string;

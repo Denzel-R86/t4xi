@@ -116,7 +116,8 @@
     "succesBevestiging": "We will confirm your ride via WhatsApp or email.",
     "foutFallback": "Something went wrong. Please try again or call us.",
     "foutVerbinding": "No connection. Check your internet or call us.",
-    "honeypot": "Website (do not fill in)"
+    "honeypot": "Website (do not fill in)",
+    "succesBetaalIntro": "Your request is registered. Complete payment below — we’ll confirm your ride afterwards."
   },
   "autocomplete": {
     "zoeken": "Searching addresses…",
@@ -1039,5 +1040,35 @@
     "privacyDesc": "How T4XI handles your personal data: what we collect when you book, what we use it for and which parties we share it with.",
     "voorwaardenTitle": "Terms and conditions",
     "voorwaardenDesc": "The terms under which T4XI provides transport: fixed prices, airport policy for flight delays, luggage and liability."
+  },
+  "betaling": {
+    "pendingKop": "Payment received",
+    "pending": "We’re confirming your booking.",
+    "formulierLaden": "Loading payment form…",
+    "opnieuw": "Try again",
+    "opnieuwZin": "Please try again.",
+    "route": "Route",
+    "ritType": "Ride type",
+    "retour": "Return",
+    "enkeleRit": "One-way",
+    "passagiers": "Passengers",
+    "teBetalen": "Amount due",
+    "betaalKnop": "Pay now",
+    "bezig": "Processing…",
+    "verwerkt": "Processing payment.",
+    "beveiligd": "Secured by Stripe",
+    "startFailed": "Payment could not be started.",
+    "checkDetails": "Please check your payment details.",
+    "couldNotComplete": "Payment could not be completed.",
+    "rateLimited": "Too many attempts. Please try again in a few minutes.",
+    "unavailable": "Payments are temporarily unavailable.",
+    "kop": "Payment",
+    "confirmedKop": "Payment confirmed",
+    "confirmedBody": "Your payment of {amount} has been confirmed. We’re finalising your booking.",
+    "failedKop": "Payment failed",
+    "failedBody": "The payment did not go through. Please try again or use another payment method.",
+    "canceledKop": "Payment canceled",
+    "canceledBody": "The payment was canceled.",
+    "unconfirmedBody": "Your payment is still being processed. You’ll receive the final confirmation by email."
   }
 }

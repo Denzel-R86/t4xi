@@ -5,6 +5,7 @@
   "description": "T4XI.nl — Premium Dutch taxi & electric mobility platform",
   "scripts": {
     "dev": "next dev",
+    "dev:staging": "tsx scripts/dev-staging.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -13,17 +14,21 @@
     "brain:analyze": "tsx scripts/brain-analyze.ts",
     "brain:simulate": "tsx scripts/brain-simulate.ts",
     "test:brain": "tsx --test lib/pricing-brain/brain.test.ts",
-    "test:rates": "tsx --test lib/pricing/*.test.ts"
+    "test:rates": "tsx --test lib/pricing/*.test.ts",
+    "test:payments": "tsx --test lib/payments/*.test.ts"
   },
   "dependencies": {
     "@sanity/image-url": "^1.0.2",
+    "@stripe/react-stripe-js": "^6.8.0",
+    "@stripe/stripe-js": "^9.12.0",
     "@supabase/ssr": "^0.5.0",
     "@supabase/supabase-js": "^2.45.0",
     "next": "^14.2.5",
     "next-intl": "^4.13.3",
     "next-sanity": "^9.4.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "stripe": "^22.3.2"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
