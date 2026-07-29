@@ -13,6 +13,9 @@ import {
   isBusy,
   elementsLocale,
   formatAmount,
+  mapServerStatus,
+  POLL_INTERVAL_MS,
+  POLL_MAX_MS,
   type PaymentIntentInfo,
   type PaymentState,
 } from "@/lib/payments/payment-flow";
@@ -137,14 +140,15 @@ test("14 · geslaagde confirm → pending (geen definitieve bevestiging)", () =>
 
 // ── 15. UI claimt nergens definitieve server-side bevestiging ──────────────────
 
-test("15 · pending-copy is neutraal; geen definitieve bevestigingsclaim", () => {
+test("15 · pending-copy is neutraal; definitieve claim alleen in de 'confirmed'-tak", () => {
   assert.doesNotMatch(nl.pending, /bevestigd\b/i);
   assert.doesNotMatch(en.pending, /\bconfirmed\b/i);
   assert.match(nl.pending, /controleren/i);
   assert.match(en.pending, /confirming/i);
-  // de component rendert geen letterlijke "confirmed/definitief bevestigd"-claim
-  assert.doesNotMatch(paymentStepSrc, /\bconfirmed\b/i);
+  // "confirmed" komt in de component alleen voor als de server-gereconcilieerde
+  // status (stap 7.5), niet als losse client-side claim.
   assert.doesNotMatch(paymentStepSrc, /definitief bevestigd/i);
+  assert.match(paymentStepSrc, /state\.status === "confirmed"/);
 });
 
 // ── 16. clientSecret wordt niet gelogd ─────────────────────────────────────────
@@ -181,4 +185,62 @@ test("16b · booking-success intro claimt geen definitieve bevestiging bij opens
   assert.match(enBooking.succesBetaalIntro, /payment/i);
   // de vaste-prijs-tak gebruikt deze intro, niet de oude "wij bevestigen"-copy
   assert.match(bookingSrc, /submit\.quoteOnRequest \? t\("succesOpAanvraag"\) : t\("succesBetaalIntro"\)/);
+});
+
+// ── stap 7.5: reconciliation / polling ─────────────────────────────────────────
+
+const pending: PaymentState = { status: "pending", intent, error: null };
+
+test("R1 · server payment_status → reconciliation-uitkomst", () => {
+  assert.equal(mapServerStatus("paid"), "confirmed");
+  assert.equal(mapServerStatus("failed"), "failed");
+  assert.equal(mapServerStatus("canceled"), "canceled");
+  for (const s of ["unpaid", "pending", "processing", "", "weird"]) {
+    assert.equal(mapServerStatus(s), "keep", `status=${s}`);
+  }
+});
+
+test("R2 · reducer: server-uitkomsten vanuit pending", () => {
+  assert.equal(paymentReducer(pending, { type: "serverConfirmed" }).status, "confirmed");
+  assert.equal(paymentReducer(pending, { type: "serverFailed" }).status, "failed");
+  assert.equal(paymentReducer(pending, { type: "serverCanceled" }).status, "canceled");
+  assert.equal(paymentReducer(pending, { type: "pollTimeout" }).status, "unconfirmed");
+  // bedrag blijft bewaard voor de bevestigingsweergave
+  assert.equal(paymentReducer(pending, { type: "serverConfirmed" }).intent?.amount, 7900);
+});
+
+test("R3 · retryPayment na failed → terug naar ready (zelfde intent)", () => {
+  const failed = paymentReducer(pending, { type: "serverFailed" });
+  const back = paymentReducer(failed, { type: "retryPayment" });
+  assert.equal(back.status, "ready");
+  assert.equal(back.intent?.clientSecret, "pi_1_secret_x");
+});
+
+test("R4 · polling is begrensd (geen oneindige polling)", () => {
+  assert.ok(POLL_INTERVAL_MS >= 1000 && POLL_INTERVAL_MS <= 5000);
+  assert.ok(POLL_MAX_MS >= 20000 && POLL_MAX_MS <= 90000);
+  assert.ok(POLL_MAX_MS / POLL_INTERVAL_MS <= 40); // eindig aantal polls
+});
+
+test("R5 · alleen 'confirmed' toont een definitieve betaalclaim in de UI", () => {
+  // de confirmed-copy verschijnt uitsluitend in de status==='confirmed'-tak
+  assert.match(paymentStepSrc, /state\.status === "confirmed"[\s\S]{0,400}confirmedKop/);
+  // pending blijft neutraal (geen definitieve claim)
+  assert.doesNotMatch(nl.pending, /\bbevestigd\b/i);
+  assert.doesNotMatch(en.pending, /\bconfirmed\b/i);
+  // confirmed-copy bestaat in beide talen
+  assert.ok(nl.confirmedKop && en.confirmedKop && nl.confirmedBody.includes("{amount}") && en.confirmedBody.includes("{amount}"));
+});
+
+test("R6 · geen Stripe redirect-params als autoriteit; server-status wordt gepolld", () => {
+  assert.match(paymentStepSrc, /\/api\/payments\/status\?bookingId=/);
+  assert.doesNotMatch(paymentStepSrc, /redirect_status|payment_intent_client_secret|searchParams\.get\(/);
+});
+
+test("R7 · getoond bedrag komt uit de server-intent (geen clientbedrag)", () => {
+  // confirmedBody interpoleert het serverbedrag uit state.intent
+  assert.match(paymentStepSrc, /confirmedBody",\s*\{ amount: formatAmount\(state\.intent/);
+  const norm = (v: string) => v.replace(/\s/g, "");
+  assert.equal(norm(formatAmount(7900, "eur", "nl")), "€79,00");
+  assert.equal(norm(formatAmount(7900, "eur", "en")), "€79.00");
 });
