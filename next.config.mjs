@@ -25,11 +25,15 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+              // Stripe.js (Payment Element) wordt geladen van js.stripe.com.
+              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.stripe.com`,
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self'",
               "img-src 'self' data: https:",
-              "connect-src 'self' https://*.supabase.co https://api.pdok.nl https://places.googleapis.com",
+              // Stripe-API voor de Payment Element; overige = bestaande bronnen.
+              "connect-src 'self' https://*.supabase.co https://api.pdok.nl https://places.googleapis.com https://api.stripe.com",
+              // Payment Element + 3D Secure draaien in Stripe-iframes.
+              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
             ].join("; "),
           },
         ],
