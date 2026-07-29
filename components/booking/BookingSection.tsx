@@ -245,7 +245,7 @@ export default function BookingSection({
                 : "border-line bg-[#F4F1EB] text-[#4E565E] hover:text-ink"
             }`}
           >
-            __TABLABEL__
+            {t(x.labelKey)}
           </button>
         ))}
       </div>
