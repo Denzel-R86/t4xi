@@ -5,6 +5,7 @@
   "description": "T4XI.nl — Premium Dutch taxi & electric mobility platform",
   "scripts": {
     "dev": "next dev",
+    "dev:staging": "tsx scripts/dev-staging.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

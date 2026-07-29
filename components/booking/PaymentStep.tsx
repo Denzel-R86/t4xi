@@ -16,6 +16,9 @@ import {
   isBusy,
   elementsLocale,
   formatAmount,
+  mapServerStatus,
+  POLL_INTERVAL_MS,
+  POLL_MAX_MS,
   type PaymentRide,
   type PaymentErrorKey,
 } from "@/lib/payments/payment-flow";
@@ -25,8 +28,12 @@ import {
  *
  * Kleinste integratiepunt: verschijnt in BookingSection nadat een boeking met een
  * vaste prijs is aangemaakt. De prijsautoriteit blijft server-side — het bedrag
- * komt uit de create-intent-respons, niet uit clientdata. Na `confirmPayment`
- * claimt de UI GEEN definitieve bevestiging (webhook volgt in stap 7.4).
+ * komt uit de create-intent-respons, niet uit clientdata.
+ *
+ * Na `confirmPayment` (stap 7.3) staat de UI op "pending" en pollt dan de
+ * SERVER-status (stap 7.5) tot 'paid' → definitieve betaalbevestiging. De
+ * client-side uitkomst en Stripe redirect-params zijn nooit autoriteit; alleen
+ * de webhook-gezette server-status telt.
  */
 
 const APPEARANCE: Appearance = {
@@ -92,7 +99,92 @@ export default function PaymentStep({ ride }: { ride: PaymentRide }) {
     void startIntent();
   }
 
+  // Reconciliation: zodra we in "pending" staan (na client-side confirmPayment),
+  // pollen we de SERVER-status tot een eindtoestand of timeout. De client-side
+  // uitkomst en redirect-params zijn nooit autoriteit — alleen deze server-status.
+  useEffect(() => {
+    if (state.status !== "pending") return;
+    const started = Date.now();
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+
+    async function poll() {
+      if (!active) return;
+      try {
+        const res = await fetch(`/api/payments/status?bookingId=${encodeURIComponent(ride.bookingId)}`, { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          const mapped = mapServerStatus(String(data?.status ?? ""));
+          if (mapped === "confirmed") return void dispatch({ type: "serverConfirmed" });
+          if (mapped === "failed") return void dispatch({ type: "serverFailed" });
+          if (mapped === "canceled") return void dispatch({ type: "serverCanceled" });
+        }
+      } catch {
+        // Netwerkfout tijdens polling: negeren en binnen de limiet opnieuw proberen.
+      }
+      if (Date.now() - started >= POLL_MAX_MS) return void dispatch({ type: "pollTimeout" });
+      timer = setTimeout(poll, POLL_INTERVAL_MS);
+    }
+
+    timer = setTimeout(poll, POLL_INTERVAL_MS);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.status]);
+
   // ── render ───────────────────────────────────────────────────────────────
+  // Server-gereconcilieerde eindtoestanden. ALLEEN 'confirmed' toont een
+  // definitieve betaalclaim (payment ≠ transport confirmation).
+  if (state.status === "confirmed") {
+    return (
+      <div className="rounded-lg border border-green-600/40 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700" role="status" aria-live="polite">
+        <div className="flex items-center justify-center gap-2 font-semibold">
+          <Icon name="check" size={16} />
+          {t("confirmedKop")}
+        </div>
+        <p className="mt-1 text-green-700/90">
+          {t("confirmedBody", { amount: formatAmount(state.intent?.amount ?? 0, state.intent?.currency ?? "eur", ride.locale) })}
+        </p>
+      </div>
+    );
+  }
+
+  if (state.status === "failed") {
+    return (
+      <div className="rounded-2xl border border-line bg-card p-5">
+        <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600" role="alert" aria-live="assertive">
+          <Icon name="x" size={15} />
+          <span><strong className="font-semibold">{t("failedKop")}</strong> — {t("failedBody")}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => dispatch({ type: "retryPayment" })}
+          className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-accent text-sm font-medium text-white shadow-cta transition-colors hover:bg-accent-hover"
+        >
+          {t("opnieuw")}
+        </button>
+      </div>
+    );
+  }
+
+  if (state.status === "canceled") {
+    return (
+      <div className="rounded-2xl border border-line bg-fog px-5 py-4 text-center text-sm text-secondary" role="status" aria-live="polite">
+        <strong className="font-semibold text-ink">{t("canceledKop")}</strong>
+        <p className="mt-1">{t("canceledBody")}</p>
+      </div>
+    );
+  }
+
+  if (state.status === "unconfirmed") {
+    return (
+      <div className="rounded-2xl border border-line bg-fog px-5 py-4 text-center text-sm text-secondary" role="status" aria-live="polite">
+        {t("unconfirmedBody")}
+      </div>
+    );
+  }
   if (state.status === "pending") {
     return (
       <div className="rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700" role="status" aria-live="polite">

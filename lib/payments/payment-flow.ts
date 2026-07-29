@@ -77,7 +77,13 @@ export type PaymentStatus =
   | "ready"
   | "processing"
   | "requiresAction"
-  | "pending";
+  | "pending"
+  // Server-gereconcilieerde eindtoestanden (stap 7.5) — alleen deze mogen een
+  // definitieve betaalclaim tonen; nooit client-side confirmPayment of redirect-params.
+  | "confirmed"
+  | "failed"
+  | "canceled"
+  | "unconfirmed"; // polling-timeout: nog in behandeling
 
 export type PaymentState = {
   status: PaymentStatus;
@@ -95,6 +101,12 @@ export type PaymentAction =
   | { type: "confirmError"; messageKey: PaymentErrorKey }
   | { type: "requiresAction" }
   | { type: "confirmPending" }
+  // Reconciliation-uitkomsten uit de server-status (polling).
+  | { type: "serverConfirmed" }
+  | { type: "serverFailed" }
+  | { type: "serverCanceled" }
+  | { type: "pollTimeout" }
+  | { type: "retryPayment" }
   | { type: "reset" };
 
 /**
@@ -125,12 +137,38 @@ export function paymentReducer(state: PaymentState, action: PaymentAction): Paym
     case "confirmPending":
       if (!state.intent) return state;
       return { status: "pending", intent: state.intent, error: null };
+    // Reconciliation: eindtoestanden komen UITSLUITEND uit de server-status.
+    case "serverConfirmed":
+      return { status: "confirmed", intent: state.intent, error: null };
+    case "serverFailed":
+      return { status: "failed", intent: state.intent, error: null };
+    case "serverCanceled":
+      return { status: "canceled", intent: state.intent, error: null };
+    case "pollTimeout":
+      // Timeout is geen fout: betaling wordt nog verwerkt (neutraal).
+      return { status: "unconfirmed", intent: state.intent, error: null };
+    case "retryPayment":
+      // Na 'failed' opnieuw proberen op dezelfde PaymentIntent.
+      if (!state.intent) return state;
+      return { status: "ready", intent: state.intent, error: null };
     case "reset":
       return initialPaymentState;
     default:
       return state;
   }
 }
+
+/** Vertaalt de server-payment_status naar de client-reconciliation-uitkomst. */
+export function mapServerStatus(apiStatus: string): "confirmed" | "failed" | "canceled" | "keep" {
+  if (apiStatus === "paid") return "confirmed";
+  if (apiStatus === "failed") return "failed";
+  if (apiStatus === "canceled") return "canceled";
+  return "keep"; // unpaid / pending / processing → blijven pollen (binnen de limiet)
+}
+
+/** Polling-cadans: elke ~2,5s, maximaal ~60s. Geen oneindige polling. */
+export const POLL_INTERVAL_MS = 2500;
+export const POLL_MAX_MS = 60_000;
 
 /** De betaalknop mag alleen indrukbaar zijn met een klaarstaande intent. */
 export function canSubmitPayment(state: PaymentState): boolean {

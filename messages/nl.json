@@ -1062,6 +1062,13 @@
     "couldNotComplete": "Betaling kon niet worden voltooid.",
     "rateLimited": "Te veel pogingen. Probeer het over een paar minuten opnieuw.",
     "unavailable": "Betalen is tijdelijk niet beschikbaar.",
-    "kop": "Betaling"
+    "kop": "Betaling",
+    "confirmedKop": "Betaling bevestigd",
+    "confirmedBody": "Je betaling van {amount} is bevestigd. We ronden je boeking af.",
+    "failedKop": "Betaling mislukt",
+    "failedBody": "De betaling is niet gelukt. Probeer het opnieuw of gebruik een andere betaalmethode.",
+    "canceledKop": "Betaling geannuleerd",
+    "canceledBody": "De betaling is geannuleerd.",
+    "unconfirmedBody": "De betaling wordt nog verwerkt. Je ontvangt de definitieve bevestiging per e-mail."
   }
 }

@@ -1062,6 +1062,13 @@
     "couldNotComplete": "Payment could not be completed.",
     "rateLimited": "Too many attempts. Please try again in a few minutes.",
     "unavailable": "Payments are temporarily unavailable.",
-    "kop": "Payment"
+    "kop": "Payment",
+    "confirmedKop": "Payment confirmed",
+    "confirmedBody": "Your payment of {amount} has been confirmed. We’re finalising your booking.",
+    "failedKop": "Payment failed",
+    "failedBody": "The payment did not go through. Please try again or use another payment method.",
+    "canceledKop": "Payment canceled",
+    "canceledBody": "The payment was canceled.",
+    "unconfirmedBody": "Your payment is still being processed. You’ll receive the final confirmation by email."
   }
 }

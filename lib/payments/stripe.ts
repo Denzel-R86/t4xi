@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { assertStripeEnvironment, getAppEnv } from "@/lib/config/environment";
 
 /**
  * DE centrale server-side Stripe-client (betalingen — sprint 1, fundering).
@@ -43,6 +44,10 @@ export function getStripeServer(): Stripe {
       "STRIPE_SECRET_KEY ontbreekt. Zet de testsleutel in .env.local (zie .env.example)."
     );
   }
+  // Omgevings-guard: weiger een onveilige APP_ENV/secret/publishable-combinatie
+  // (bv. live-sleutel in staging, of secret/publishable-modus die uiteenloopt)
+  // voordat er ook maar één Stripe-call vertrekt (Sprint 7.5 — FASE D).
+  assertStripeEnvironment(getAppEnv(), key, process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
   const client = new Stripe(key, {
     apiVersion: API_VERSION,
     typescript: true,
