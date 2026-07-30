@@ -260,6 +260,22 @@ en de `DROP`-rollback bewijzen; **productie nooit blind** muteren.
 | adjustments | aparte tabel i.p.v. JSONB | **`price_snapshot_adjustments`** (FK, cascade; code/label/amount/taxable/vat_rate/sort_order) |
 | DB-constraints | alleen structureel | `total=subtotal`-CHECK **verwijderd**; DB doet alleen integer/`>=0`/`EUR`/temporeel; financiële invariant → app-laag + tests |
 
+## 12c. Indexstrategie — review vóór staging (Denzel, 2026-07-30)
+
+Uitsluitend indexen voor het eerstvolgende querypatroon; geen preventieve/speculatieve.
+
+| Tabel.kolom(men) | Indexnaam | Status | Querypatroon | Motivatie / kosten |
+|------------------|-----------|--------|--------------|--------------------|
+| `price_snapshots(quote_id)` | *(PK, auto)* | automatisch | `WHERE quote_id = ?` (lock-lookup) | PostgreSQL maakt bij de PK automatisch een unieke B-tree. **Geen extra index toevoegen.** |
+| `price_snapshots(expires_at)` | `price_snapshots_expires_at_idx` | **behouden** | `WHERE expires_at < now() - 48h` (GC-sweep verlopen, niet-geboekte snapshots) | B-tree past bij een range-scan op timestamp. PK dekt dit niet (ander predicaat). Kost: 1 index-write per insert + opslag; aanvaardbaar voor de cleanup. |
+| `price_snapshots(created_at)` | — | **verwijderd** | geen | Redundant met `expires_at` (= `created_at`+15 min) voor de leeftijd-sweep. Geen aparte query/sort op `created_at`. Blijft audit-kolom, ongeïndexeerd tot een query 'm nodig heeft. |
+| `price_snapshots(booking_id)` | — | **niet toegevoegd** | n.v.t. | Kolom bestaat niet; de relatie komt pas in 7.6.3C (en dan als `bookings.quote_id`, niet hier). Geen vooruitlopende index. |
+| `price_snapshot_adjustments(quote_id, sort_order)` | `price_snapshot_adjustments_quote_id_sort_order_idx` | **behouden (samengesteld)** | `WHERE quote_id = ? ORDER BY sort_order` | Eén samengestelde index dient het geordende leespatroon én — via de `quote_id`-prefix — de FK-lookup/cascade (FK's krijgen geen auto-index). **Geen aparte `(quote_id)`-index ernaast.** Kost: 1 index-write per adjustment-insert. |
+| `price_snapshot_adjustments(code/label/taxable/vat_rate/amount_cents)` | — | **niet toegevoegd** | geen | Geen huidig filter-/rapportagepatroon. Toevoegen zodra een aantoonbaar rapportage-/filterpatroon bestaat. |
+
+Netto: **2 expliciete indexen** (`price_snapshots_expires_at_idx`,
+`price_snapshot_adjustments_quote_id_sort_order_idx`) + de automatische PK-indexen.
+
 ## 13. Bevestigde beslissingen (Denzel, 2026-07-30)
 
 1. **Snapshot-moment:** Optie B — bij preview. ✅

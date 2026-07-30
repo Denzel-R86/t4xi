@@ -110,8 +110,12 @@ comment on table public.price_snapshot_adjustments is
 --   created_at-index komt pas als een query 'm echt nodig heeft. De lock-lookup gaat via
 --   de PK (quote_id) en heeft geen extra index nodig.
 create index if not exists price_snapshots_expires_at_idx on public.price_snapshots(expires_at);
--- Child: FK-lookup "regels van deze snapshot" (Postgres indexeert FK-kolommen niet auto).
-create index if not exists price_snapshot_adjustments_quote_id_idx on public.price_snapshot_adjustments(quote_id);
+-- Child: samengestelde index voor het enige verwachte leespatroon
+--   `WHERE quote_id = ? ORDER BY sort_order`. De quote_id-prefix bedient tevens de
+--   FK-lookup/cascade (Postgres indexeert FK-kolommen niet automatisch), dus één
+--   index volstaat — geen aparte (quote_id)-index ernaast.
+create index if not exists price_snapshot_adjustments_quote_id_sort_order_idx
+  on public.price_snapshot_adjustments(quote_id, sort_order);
 
 -- ── 4. RLS ──────────────────────────────────────────────────────────────────
 -- RLS aan, BEWUST GEEN anon/authenticated policy → deny-by-default. Alle toegang
