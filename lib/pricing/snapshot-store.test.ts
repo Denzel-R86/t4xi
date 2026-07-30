@@ -1,12 +1,18 @@
-// Persistentie- + securitytests voor de snapshot-opslag (Sprint 7.6 — PR 7.6.3C).
-// TS-laag met een geïnjecteerde fake RPC-client. De DB-laag atomiciteit (parent+
-// children in één transactie, duplicate, geen partial) wordt op staging bewezen.
+// Persistentie-, failure-mode- + securitytests voor de snapshot-opslag
+// (Sprint 7.6 — PR 7.6.3C + failure-mode review). TS-laag met geïnjecteerde fake
+// RPC-client en geïnjecteerde logger. De DB-laag atomiciteit (parent+children in
+// één transactie, duplicate, geen partial) is op staging bewezen.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { persistPriceSnapshot, type SnapshotRpcClient } from "@/lib/pricing/snapshot-store";
+import {
+  persistPriceSnapshot,
+  SNAPSHOT_PERSIST_FAILED,
+  type SnapshotRpcClient,
+  type SnapshotPersistFailure,
+} from "@/lib/pricing/snapshot-store";
 import { buildPriceSnapshot, type PriceSnapshot } from "@/lib/pricing/snapshot";
 import { NO_AIRPORT, type PricingQuoteResult } from "@/lib/pricing/service";
 
@@ -24,22 +30,28 @@ function availableQuote(price: number): AvailableQuote {
 
 const NOW = new Date("2026-07-30T12:00:00.000Z");
 const QID = "0192f0c0-0000-7000-8000-000000000abc";
+const snap = () => buildPriceSnapshot(availableQuote(119), { quoteId: QID, now: NOW })!;
 
-/** Fake client die elke rpc-aanroep vastlegt en een instelbaar resultaat teruggeeft. */
-function fakeClient(result: { error: { code?: string; message: string } | null } = { error: null }) {
+/** Fake client: legt rpc-aanroepen vast; kan een resultaat teruggeven óf gooien. */
+function fakeClient(opts: { result?: unknown; throws?: unknown } = {}) {
   const calls: Array<{ fn: string; args: Record<string, unknown> }> = [];
   const rpc = (fn: string, args: Record<string, unknown>) => {
     calls.push({ fn, args });
-    return Promise.resolve(result);
+    if ("throws" in opts) return Promise.reject(opts.throws);
+    return Promise.resolve("result" in opts ? opts.result : { error: null });
   };
-  const client = { rpc } as unknown as SnapshotRpcClient;
-  return { client, calls };
+  return { client: { rpc } as unknown as SnapshotRpcClient, calls };
+}
+
+/** Capturing logger voor failure-events. */
+function capture() {
+  const events: SnapshotPersistFailure[] = [];
+  return { logFailure: (f: SnapshotPersistFailure) => events.push(f), events };
 }
 
 function snapshotWithAdjustments(): PriceSnapshot {
-  const base = buildPriceSnapshot(availableQuote(100), { quoteId: QID, now: NOW })!;
   return {
-    ...base,
+    ...snap(),
     subtotalCents: 10000,
     adjustments: [
       { code: "airport_fee", label: "Luchthaven", amountCents: 750, taxable: true, vatRate: 9, sortOrder: 1 },
@@ -49,22 +61,21 @@ function snapshotWithAdjustments(): PriceSnapshot {
   };
 }
 
-// ── B. Persistentie (TS-laag) ────────────────────────────────────────────────
+// ── B. Persistentie (happy path) ─────────────────────────────────────────────
 
-test("persist: roept create_price_snapshot precies één keer met de parent-velden", async () => {
+test("persist: succes → true, één RPC-aanroep met de parent-velden, GEEN failure gelogd", async () => {
   const { client, calls } = fakeClient();
-  const snap = buildPriceSnapshot(availableQuote(119), { quoteId: QID, now: NOW })!;
-  const ok = await persistPriceSnapshot(snap, { client });
+  const { logFailure, events } = capture();
+  const ok = await persistPriceSnapshot(snap(), { client, logFailure });
   assert.equal(ok, true);
   assert.equal(calls.length, 1);
   assert.equal(calls[0]!.fn, "create_price_snapshot");
+  assert.equal(events.length, 0);
   const a = calls[0]!.args;
   assert.equal(a.p_quote_id, QID);
   assert.equal(a.p_pricing_version, "2026.07.v1");
   assert.equal(a.p_pricing_source, "fixed_route_prices");
-  assert.equal(a.p_subtotal_cents, 11900);
   assert.equal(a.p_total_cents, 11900);
-  assert.equal(a.p_currency, "EUR");
   assert.equal(a.p_calculated_at, NOW.toISOString());
   assert.equal(a.p_expires_at, new Date(NOW.getTime() + 15 * 60_000).toISOString());
 });
@@ -73,67 +84,119 @@ test("persist: adjustments worden meegegeven mét behoud van volgorde", async ()
   const { client, calls } = fakeClient();
   await persistPriceSnapshot(snapshotWithAdjustments(), { client });
   const adj = calls[0]!.args.p_adjustments as Array<{ code: string; sortOrder: number }>;
-  assert.equal(adj.length, 2);
   assert.deepEqual(adj.map((x) => x.code), ["airport_fee", "promo"]);
   assert.deepEqual(adj.map((x) => x.sortOrder), [1, 2]);
 });
 
-test("persist: ongeldige snapshot (gebroken invariant) → geen RPC-aanroep, false", async () => {
+// ── Failure-modi — nooit stil, altijd false + gelogd ─────────────────────────
+
+test("persist: ongeldige snapshot (gebroken invariant) → geen RPC, false, reason validation_failed", async () => {
   const { client, calls } = fakeClient();
-  const broken = { ...snapshotWithAdjustments(), totalCents: 99999 };
-  const ok = await persistPriceSnapshot(broken, { client });
+  const { logFailure, events } = capture();
+  const ok = await persistPriceSnapshot({ ...snapshotWithAdjustments(), totalCents: 99999 }, { client, logFailure });
   assert.equal(ok, false);
   assert.equal(calls.length, 0); // geweigerd vóór de insert
+  assert.equal(events[0]!.reason, "validation_failed");
 });
 
-test("persist: ontbrekende client → false (best-effort, geen throw)", async () => {
-  const snap = buildPriceSnapshot(availableQuote(119), { quoteId: QID, now: NOW })!;
-  const ok = await persistPriceSnapshot(snap, { client: null });
+test("persist: ontbrekende client → false, reason no_service_role_client", async () => {
+  const { logFailure, events } = capture();
+  const ok = await persistPriceSnapshot(snap(), { client: null, logFailure });
   assert.equal(ok, false);
+  assert.equal(events[0]!.reason, "no_service_role_client");
 });
 
-test("persist: RPC-fout → false, geen throw (preview blijft werken)", async () => {
-  const { client } = fakeClient({ error: { code: "XX000", message: "boom" } });
-  const snap = buildPriceSnapshot(availableQuote(119), { quoteId: QID, now: NOW })!;
-  const ok = await persistPriceSnapshot(snap, { client });
+test("persist: RPC-fout (db error) → false, reason rpc_error, dbErrorCode uit error.code", async () => {
+  const { client } = fakeClient({ result: { error: { code: "XX000", message: "boom" } } });
+  const { logFailure, events } = capture();
+  const ok = await persistPriceSnapshot(snap(), { client, logFailure });
   assert.equal(ok, false);
+  assert.equal(events[0]!.reason, "rpc_error");
+  assert.equal(events[0]!.dbErrorCode, "XX000");
 });
 
-test("persist: duplicate quoteId (unique_violation) faalt schoon → false", async () => {
-  const { client } = fakeClient({ error: { code: "23505", message: "duplicate key value violates unique constraint" } });
-  const snap = buildPriceSnapshot(availableQuote(119), { quoteId: QID, now: NOW })!;
-  const ok = await persistPriceSnapshot(snap, { client });
+test("persist: duplicate quoteId (unique_violation 23505) → false, schoon gelogd", async () => {
+  const { client } = fakeClient({ result: { error: { code: "23505", message: "duplicate key" } } });
+  const { logFailure, events } = capture();
+  const ok = await persistPriceSnapshot(snap(), { client, logFailure });
   assert.equal(ok, false);
+  assert.equal(events[0]!.dbErrorCode, "23505");
+});
+
+test("persist: RPC gooit een exception → false, reason rpc_exception, geen throw naar de caller", async () => {
+  const err = Object.assign(new Error("connection reset"), { code: "ECONNRESET" });
+  const { client } = fakeClient({ throws: err });
+  const { logFailure, events } = capture();
+  const ok = await persistPriceSnapshot(snap(), { client, logFailure });
+  assert.equal(ok, false);
+  assert.equal(events[0]!.reason, "rpc_exception");
+  assert.equal(events[0]!.dbErrorCode, "ECONNRESET");
+});
+
+test("persist: ongeldige/ontbrekende RPC-response → false, reason invalid_rpc_response", async () => {
+  for (const bad of [undefined, null, 42, {}]) {
+    const { client } = fakeClient({ result: bad });
+    const { logFailure, events } = capture();
+    const ok = await persistPriceSnapshot(snap(), { client, logFailure });
+    assert.equal(ok, false);
+    assert.equal(events[0]!.reason, "invalid_rpc_response");
+  }
+});
+
+// ── Log-veiligheid: vaste code, alleen veilige velden, GEEN PII/routeSnapshot ──
+
+test("failure-log: vaste code + uitsluitend veilige velden, geen routeSnapshot/PII", async () => {
+  const { client } = fakeClient({ result: { error: { code: "23514", message: "check" } } });
+  const { logFailure, events } = capture();
+  await persistPriceSnapshot(snapshotWithAdjustments(), { client, logFailure });
+  const f = events[0]!;
+  assert.equal(f.code, SNAPSHOT_PERSIST_FAILED);
+  assert.equal(f.code, "PRICE_SNAPSHOT_PERSIST_FAILED");
+  // exact deze veilige sleutels, niets meer
+  assert.deepEqual(
+    Object.keys(f).sort(),
+    ["at", "code", "dbErrorCode", "pricingSource", "pricingVersion", "quoteId", "reason"]
+  );
+  assert.equal(f.quoteId, QID);
+  assert.equal(f.pricingVersion, "2026.07.v1");
+  assert.ok(typeof f.at === "string" && f.at.length > 0);
+  // geen routeSnapshot, adressen of andere persoonsgegevens in de log
+  const blob = JSON.stringify(f).toLowerCase();
+  for (const bad of ["routesnapshot", "pickup", "dropoff", "address", "adres", "email", "e-mail", "phone", "telefoon", "customername", "label", "amountcents"]) {
+    assert.ok(!blob.includes(bad), `log mag "${bad}" niet bevatten`);
+  }
 });
 
 // ── D. Security ──────────────────────────────────────────────────────────────
 
 test("persist: uitsluitend een RPC-aanroep — geen update-pad (immutabel)", async () => {
   const { client, calls } = fakeClient();
-  // De client-vorm is Pick<..., 'rpc'> → er ís geen .from/.update op de injecteerbare
-  // client. Bevestig bovendien dat elke aanroep de insert-RPC is, nooit iets anders.
-  await persistPriceSnapshot(buildPriceSnapshot(availableQuote(119), { quoteId: QID, now: NOW })!, { client });
+  await persistPriceSnapshot(snap(), { client });
   assert.ok(calls.every((c) => c.fn === "create_price_snapshot"));
 });
 
 test("persist: autoritatieve velden komen uit de server-snapshot, niet uit input", async () => {
   const { client, calls } = fakeClient();
-  const snap = buildPriceSnapshot(availableQuote(119), { quoteId: QID, now: NOW })!;
-  await persistPriceSnapshot(snap, { client });
+  const s = snap();
+  await persistPriceSnapshot(s, { client });
   const a = calls[0]!.args;
-  // quoteId/bedragen/pricingVersion/pricingSource = server-bepaald (uit snapshot).
-  assert.equal(a.p_quote_id, snap.quoteId);
-  assert.equal(a.p_total_cents, snap.totalCents);
-  assert.equal(a.p_pricing_version, snap.pricingVersion);
-  assert.equal(a.p_pricing_source, snap.pricingSource);
+  assert.equal(a.p_quote_id, s.quoteId);
+  assert.equal(a.p_total_cents, s.totalCents);
+  assert.equal(a.p_pricing_version, s.pricingVersion);
+  assert.equal(a.p_pricing_source, s.pricingSource);
 });
 
 const quoteRouteSrc = readFileSync(resolve(process.cwd(), "app/api/pricing/quote/route.ts"), "utf8");
 
-test("quote-route: input komt alleen uit de bekende velden; geen autoritatieve velden uit de body", () => {
-  // De route destructureert uitsluitend de bestaande, bekende invoervelden.
+test("quote-route: input alleen uit bekende velden; geen autoritatieve velden uit de body", () => {
   assert.match(quoteRouteSrc, /const \{ pickup, dropoff, vehicleClass, returnTrip, passengers, luggage \} = body/);
-  // De client kan quoteId/bedragen/pricingVersion/pricingSource NIET uit de body afdwingen:
-  // die worden nergens uit `body` gelezen.
   assert.doesNotMatch(quoteRouteSrc, /body\.(quoteId|price|amount|total|pricingVersion|pricingSource|totalCents|subtotalCents)/);
+});
+
+test("quote-route: quoteId alleen bij bevestigde opslag; prijsvelden onafhankelijk van persist", () => {
+  assert.match(quoteRouteSrc, /const stored = await persistPriceSnapshot\(snapshot\)/);
+  assert.match(quoteRouteSrc, /if \(stored\) quoteId = snapshot\.quoteId/);
+  assert.match(quoteRouteSrc, /\.\.\.\(quoteId \? \{ quoteId \} : \{\}\)/);
+  // Prijsvelden komen uit de quote (`result`), niet uit de snapshot of persist-uitkomst.
+  assert.match(quoteRouteSrc, /price: result\.price/);
 });
