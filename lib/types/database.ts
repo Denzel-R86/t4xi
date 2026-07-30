@@ -213,6 +213,7 @@ export type Database = {
           notes: string | null
           persons: number | null
           price_euros: number | null
+          quote_id: string | null
           ride_date: string
           ride_time: string
           ride_type: string
@@ -237,6 +238,7 @@ export type Database = {
           notes?: string | null
           persons?: number | null
           price_euros?: number | null
+          quote_id?: string | null
           ride_date: string
           ride_time: string
           ride_type?: string
@@ -261,6 +263,7 @@ export type Database = {
           notes?: string | null
           persons?: number | null
           price_euros?: number | null
+          quote_id?: string | null
           ride_date?: string
           ride_time?: string
           ride_type?: string
