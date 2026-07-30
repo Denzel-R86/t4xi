@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 /**
- * T4XI productie-env preflight — MODES ONLY.
- * ──────────────────────────────────────────
- * Rapporteert uitsluitend modes/prefixes/refs/classificatie — NOOIT volledige
- * waarden, ook niet bij een fout. Bedoeld om vóór livegang te bevestigen dat de
- * productie-omgeving de juiste variabelen gebruikt.
+ * T4XI productie-env preflight — MODES ONLY, drie-staten.
+ * ──────────────────────────────────────────────────────
+ * Rapporteert nooit volledige waarden. Staten per check:
+ *   ✓ PASS          — leesbaar en inhoudelijk correct
+ *   ⚠ UNVERIFIABLE  — variabele aanwezig maar waarde niet uitleesbaar (Vercel "Sensitive")
+ *   ✗ FAIL          — ontbreekt, leeg waar dat niet mag, of inhoudelijk fout
  *
- * Veilige flow:
+ * UNVERIFIABLE blokkeert de merge NIET: de boot-guard (assertSafeEnvironment in
+ * instrumentation.ts) verifieert de echte waarde bij server-start. Alleen
+ * server-secrets kunnen "Sensitive"/UNVERIFIABLE zijn; publieke NEXT_PUBLIC_*-vars
+ * en APP_ENV zijn dat nooit → daar geldt leeg/ontbrekend gewoon als FAIL.
+ *
+ * Flow:
  *   vercel env pull .env.production.local --environment=production
  *   node scripts/check-production-env.mjs
  *   rm .env.production.local
  *
- * `.env.production.local` is git-ignored (.env*.local). Exit 0 = PASS, 1 = FAIL,
- * 2 = bestand niet gevonden.
+ * Exit: 0 = PASS · 2 = UNVERIFIABLE (geen FAIL) · 1 = FAIL · 3 = bestand niet gevonden.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -35,16 +40,7 @@ function loadEnv(file) {
   return env;
 }
 
-/** Modus uit het prefix — nooit de sleutel zelf. */
-function stripeMode(key) {
-  const k = (key ?? "").trim();
-  if (!k) return "missing";
-  if (/^(sk|pk|rk)_test_/.test(k)) return "test";
-  if (/^(sk|pk|rk)_live_/.test(k)) return "live";
-  return "unknown";
-}
-
-/** Project-ref uit de Supabase-URL (ref is niet-geheim; staat in de publieke URL). */
+/** Project-ref uit de Supabase-URL (niet-geheim; staat in de publieke URL). */
 function supabaseRef(url) {
   const m = (url ?? "").trim().match(/^https?:\/\/([a-z0-9]+)\.supabase\.(?:co|in|net)\b/i);
   return m ? m[1].toLowerCase() : null;
@@ -55,49 +51,59 @@ const env = loadEnv(path);
 if (!env) {
   console.error(`\n✗ Bestand niet gevonden: ${FILE}`);
   console.error("  Draai eerst: vercel env pull .env.production.local --environment=production\n");
-  process.exit(2);
+  process.exit(3);
 }
 
-const secret = stripeMode(env.STRIPE_SECRET_KEY);
-const publishable = stripeMode(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-const whsec = (env.STRIPE_WEBHOOK_SECRET ?? "").trim();
-const webhook = whsec ? (whsec.startsWith("whsec_") ? "present (whsec_)" : "present (WRONG PREFIX)") : "missing";
-const appEnv = ((env.APP_ENV ?? env.NEXT_PUBLIC_APP_ENV ?? "").trim()) || "(unset)";
-const ref = supabaseRef(env.NEXT_PUBLIC_SUPABASE_URL ?? env.SUPABASE_URL);
-const classification = ref === PROD_SUPABASE_REF ? "production" : ref === STAGING_SUPABASE_REF ? "staging" : "unknown";
-const serviceRolePresent = Boolean((env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim());
+/**
+ * Drie-staten-classificatie voor één variabele.
+ *   ontbrekend                → FAIL
+ *   aanwezig maar leeg + sensitive  → UNVERIFIABLE (Vercel Sensitive: value niet uitleesbaar)
+ *   aanwezig maar leeg + publiek    → FAIL
+ *   leesbaar                  → validator → PASS/FAIL
+ */
+function stateOf(key, { sensitive = false, validator = () => true } = {}) {
+  if (!(key in env)) return "FAIL";
+  const v = (env[key] ?? "").trim();
+  if (v === "") return sensitive ? "UNVERIFIABLE" : "FAIL";
+  return validator(v) ? "PASS" : "FAIL";
+}
 
-// PASS-criteria voor een PRODUCTIE-deploy.
 const checks = [
-  ["APP_ENV = production", appEnv === "production"],
-  ["Stripe secret mode = live", secret === "live"],
-  ["Stripe publishable mode = live", publishable === "live"],
-  ["Webhook secret present + whsec_ prefix", webhook === "present (whsec_)"],
-  ["Supabase project-ref = productie", ref === PROD_SUPABASE_REF],
-  ["Supabase project-ref != staging", ref !== STAGING_SUPABASE_REF],
-  ["Service-role key present", serviceRolePresent],
+  ["APP_ENV = production",                          stateOf("APP_ENV", { validator: (v) => v.toLowerCase() === "production" })],
+  ["STRIPE_SECRET_KEY = sk_live_",                  stateOf("STRIPE_SECRET_KEY", { sensitive: true, validator: (v) => v.startsWith("sk_live_") })],
+  ["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = pk_live_", stateOf("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", { validator: (v) => v.startsWith("pk_live_") })],
+  ["STRIPE_WEBHOOK_SECRET = whsec_",                stateOf("STRIPE_WEBHOOK_SECRET", { sensitive: true, validator: (v) => v.startsWith("whsec_") })],
+  ["NEXT_PUBLIC_SUPABASE_URL = productie-ref",      stateOf("NEXT_PUBLIC_SUPABASE_URL", { validator: (v) => supabaseRef(v) === PROD_SUPABASE_REF })],
+  ["NEXT_PUBLIC_SUPABASE_URL != staging-ref",       stateOf("NEXT_PUBLIC_SUPABASE_URL", { validator: (v) => supabaseRef(v) !== STAGING_SUPABASE_REF })],
+  ["NEXT_PUBLIC_SUPABASE_ANON_KEY present",         stateOf("NEXT_PUBLIC_SUPABASE_ANON_KEY")],
+  ["SUPABASE_SERVICE_ROLE_KEY present",             stateOf("SUPABASE_SERVICE_ROLE_KEY", { sensitive: true })],
 ];
-const pass = checks.every(([, ok]) => ok);
+
+const SYM = { PASS: "✓", FAIL: "✗", UNVERIFIABLE: "⚠" };
+const anyFail = checks.some(([, s]) => s === "FAIL");
+const anyUnv = checks.some(([, s]) => s === "UNVERIFIABLE");
+const result = anyFail ? "FAIL" : anyUnv ? "UNVERIFIABLE" : "PASS";
+const exitCode = anyFail ? 1 : anyUnv ? 2 : 0;
+
+const ref = supabaseRef(env.NEXT_PUBLIC_SUPABASE_URL);
+const classification = ref === PROD_SUPABASE_REF ? "production" : ref === STAGING_SUPABASE_REF ? "staging" : "unknown";
 
 console.log("\nT4XI productie-env preflight (modes only — geen waarden)\n");
-console.log(`  APP_ENV:                 ${appEnv}`);
-console.log(`  classificatie:           ${classification}`);
-console.log(`  Stripe secret mode:      ${secret}`);
-console.log(`  Stripe publishable mode: ${publishable}`);
-console.log(`  Webhook secret:          ${webhook}`);
-console.log(`  Supabase project-ref:    ${ref ?? "(onherkenbaar)"}`);
-console.log(`  Service-role key:        ${serviceRolePresent ? "present" : "missing"}`);
-console.log("");
-for (const [name, ok] of checks) console.log(`  ${ok ? "✓" : "✗"} ${name}`);
+console.log(`  classificatie (uit Supabase-URL): ${classification}\n`);
+for (const [name, s] of checks) console.log(`  ${SYM[s]} ${name}  [${s}]`);
 
-// ── Informatief: e-mail/ops (NIET boot-kritisch → geen invloed op PASS/FAIL) ──
-// Ontbreekt RESEND_API_KEY → transactionele mails worden overgeslagen, maar de
-// boeking/betaling blijft werken. Daarom een waarschuwing, geen FAIL.
+// Informatief: e-mail/ops (nooit boot-kritisch → geen invloed op het resultaat).
 const present = (k) => Boolean((env[k] ?? "").trim());
-console.log("\n  ── e-mail/ops (informatief, geen invloed op PASS/FAIL) ──");
+console.log("\n  ── e-mail/ops (informatief, geen invloed op resultaat) ──");
 console.log(`  ${present("RESEND_API_KEY") ? "✓" : "⚠"} RESEND_API_KEY ${present("RESEND_API_KEY") ? "present" : "missing → mails worden overgeslagen"}`);
-console.log(`  ${present("RESEND_FROM") ? "✓" : "•"} RESEND_FROM    ${present("RESEND_FROM") ? "present" : "(unset → default onboarding@resend.dev sandbox)"}`);
+console.log(`  ${present("RESEND_FROM") ? "✓" : "•"} RESEND_FROM    ${present("RESEND_FROM") ? "present" : "(unset → default onboarding@resend.dev)"}`);
 console.log(`  ${present("OPS_EMAIL") ? "✓" : "•"} OPS_EMAIL      ${present("OPS_EMAIL") ? "present" : "(unset → default booking@t4xi.nl)"}`);
 
-console.log(`\n  RESULTAAT: ${pass ? "PASS" : "FAIL"}  (gate = boot-guard-eisen; e-mail/ops apart hierboven)\n`);
-process.exit(pass ? 0 : 1);
+console.log(`\n  RESULTAAT: ${result}`);
+if (result === "UNVERIFIABLE") {
+  console.log("  Geen FAIL — enkel Sensitive-secrets niet uitleesbaar; de boot-guard verifieert bij runtime. Merge is toegestaan.");
+} else if (result === "FAIL") {
+  console.log("  Eén of meer vars ontbreken/onjuist — corrigeer in Vercel vóór de merge.");
+}
+console.log("");
+process.exit(exitCode);
