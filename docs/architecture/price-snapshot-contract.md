@@ -29,18 +29,22 @@ maar worden hier niet gebouwd.
 
 Voorgesteld contract (TypeScript-vorm; nog niet geïmplementeerd):
 
+De snapshot is **genormaliseerd**: `price_snapshots` (de kop) + de child-tabel
+`price_snapshot_adjustments` (de regels). In-memory ziet dat er zo uit:
+
 ```ts
 type PriceSnapshot = {
-  quoteId: string;            // UUID v7 (v4 fallback); niet-oplopend, niet-afleidbaar
+  quoteId: string;            // door de APPLICATIE gegenereerd (UUID v7); GEEN DB-default,
+                              // precies één generator; niet-oplopend, nooit client-aangeleverd
   pricingVersion: string;     // "2026.07.v1" — inert in 7.6.3 (opgeslagen, niet vertakt)
   pricingSource: PricingSource; // vandaag altijd "fixed_route_prices"
   currency: "EUR";
 
   // ── Geld: uitsluitend integer cents (geen floats) ──
   subtotalCents: number;      // basis (vandaag: de fixed-route prijs) in cents
-  adjustments: PriceAdjustment[]; // additief; leeg in 7.6.3 (nog geen toeslagen)
-  totalCents: number;         // = subtotalCents + Σ adjustments[].amountCents
+  totalCents: number;         // = subtotalCents + Σ adjustments[].amountCents (invariant in app-laag)
 
+  adjustments: PriceSnapshotAdjustment[]; // relationeel geladen; leeg in 7.6.3
   routeSnapshot: RouteSnapshot;
   calculatedAt: string;       // ISO-8601 UTC — wanneer de prijs is BEREKEND
   expiresAt: string;          // calculatedAt + 15 min — quote-lock geldigheidsvenster
@@ -50,19 +54,20 @@ type PriceSnapshot = {
 // Vandaag alleen "fixed_route_prices"; de rest is forward-compatible en maakt
 // audits/support later eenvoudiger. Nog geen logica; uitsluitend opslag/labeling.
 type PricingSource =
-  | "fixed_route_prices"
-  | "dynamic"
-  | "manual"
-  | "hotel_rate"
-  | "airport_rate"
-  | "contract_rate"
-  | "promotion";
+  | "fixed_route_prices" | "dynamic" | "manual"
+  | "hotel_rate" | "airport_rate" | "contract_rate" | "promotion";
 
-type PriceAdjustment = {
-  code: string;               // machine-leesbaar, bv. "return_discount" (toekomst)
+// Aparte tabel price_snapshot_adjustments (NIET als JSONB) → sorteren, filteren,
+// rapporteren, BTW uitsplitsen, toeslagen analyseren, support. Leeg in 7.6.3.
+type PriceSnapshotAdjustment = {
+  id: string;                 // DB-gegenereerde surrogate-PK (interne, niet-flow-spannende id)
+  quoteId: string;            // FK → price_snapshots.quote_id (ON DELETE CASCADE)
+  code: string;               // machine-leesbaar, bv. "return_discount"
   label: string;              // klantzichtbaar
-  amountCents: number;        // + = toeslag, − = korting; additief, nooit verborgen
+  amountCents: number;        // + = toeslag, − = korting (mag negatief); additief, nooit verborgen
   taxable: boolean;
+  vatRate: number | null;     // voor BTW-uitsplitsing/rapportage
+  sortOrder: number;          // weergavevolgorde
 };
 
 type RouteSnapshot = {
@@ -106,10 +111,12 @@ toegestane waarden, zodat de kolom nu al gevalideerd én uitbreidbaar is.
 
 ## 4. `quoteId` — levensduur & lock
 
-- **Generatie:** server-side **UUID v7** (tijd-geordend; `gen_random_uuid()`/UUID v4
-  als fallback zolang v7 niet beschikbaar is). Niet-oplopend, niet-afleidbaar, geen
-  hash, geen numerieke ID. **Nooit** door de client aangeleverd. De DB-kolom heeft
-  `default gen_random_uuid()` zodat inserts veilig zijn; de app mag een v7 meegeven.
+- **Generatie — één strategie:** de **applicatie** genereert de `quote_id` precies
+  één keer bij het maken van de snapshot (**UUID v7**, tijd-geordend; v4 als fallback
+  zolang v7 niet beschikbaar is). De **DB-kolom heeft géén default** → er is precies
+  één generator, geen dubbele bron. Niet-oplopend, niet-afleidbaar, geen hash, geen
+  numerieke ID, en **nooit** door de client aangeleverd (de server genereert intern,
+  niet uit de request-body).
 - **Stabiliteit:** één `quoteId` loopt ongewijzigd door: quote → booking →
   PaymentIntent-metadata → webhook-verwerking → bevestiging → e-mail → dashboard →
   factuur. Iedereen leest hetzelfde record.
@@ -149,18 +156,27 @@ Optie A is de kleinste stap maar levert niet de volledige lock — daarom niet g
 
 ## 6. Geldrepresentatie & invarianten
 
-1. **Alle bedragen in integer cents.** Geen floats in de snapshot. Conversie blijft
-   via de bestaande `eurosToCents` (één afronding, `Math.round(euros*100)`).
-2. `totalCents === subtotalCents + Σ adjustments[].amountCents` — hard afdwingen.
-3. `adjustments` is **strikt additief en expliciet**; geen verborgen dubbele
-   toepassing (zakelijke beslissing #1). In 7.6.3 is de array **leeg**.
-4. `currency === "EUR"`.
-5. Een vastgelegde snapshot is **immutabel**: latere tariefwijzigingen raken 'm niet.
-   In 7.6.3B afgedwongen op grant-niveau (service_role krijgt `SELECT/INSERT/DELETE`,
-   **geen `UPDATE`**).
-6. `pricingVersion`, `pricingSource` en `quoteId` zijn verplicht en niet-leeg zodra
-   een snapshot bestaat.
-7. `expiresAt > calculatedAt`; `expiresAt = calculatedAt + 15 min` (quote-lock-venster).
+**Structureel (in de DB, 7.6.3B) — uitsluitend vorm, geen financieel oordeel:**
+
+1. **Alle bedragen in integer cents.** Geen floats. Conversie via `eurosToCents`
+   (één afronding, `Math.round(euros*100)`).
+2. `subtotal_cents >= 0`, `total_cents >= 0`. Een adjustment-`amount_cents` **mag
+   negatief** zijn (korting) → daar geen tekencheck.
+3. `currency = 'EUR'`.
+4. `expires_at > calculated_at` (temporeel-structureel).
+5. Snapshot **immutabel** — afgedwongen op grant-niveau (service_role:
+   `SELECT/INSERT/DELETE`, **geen `UPDATE`**), op zowel de kop- als de child-tabel.
+6. `pricingVersion`, `pricingSource` en `quoteId` zijn `NOT NULL`.
+
+**Financieel (in de applicatielaag + tests, 7.6.3C) — bewust NIET in CHECK-constraints:**
+
+7. `totalCents === subtotalCents + Σ adjustments[].amountCents`. De DB oordeelt niet
+   inhoudelijk over de prijs; de berekening wordt met retour/nacht/parkeren/wachttijd/
+   tussenstops/airport-fee/korting te complex (en is cross-table). App + tests bewaken 'm.
+8. `adjustments` zijn **strikt additief en expliciet**; geen verborgen dubbele
+   toepassing (zakelijke beslissing #1). Leeg in 7.6.3.
+9. `expiresAt = calculatedAt + 15 min` (quote-lock-venster; DB heeft dit als default,
+   app zet 't expliciet).
 
 ## 7. Dataflow (doel, ná 7.6.3C–E)
 
@@ -194,7 +210,7 @@ Eén bron, door iedereen gelezen. Geen enkele consument herberekent.
 | Sub-PR | Inhoud | Status | Muteert productie? |
 |--------|--------|--------|---------------------|
 | **7.6.3A** | Dit ontwerpdocument. Geen code, geen DB. | ✅ opgeleverd | nee |
-| **7.6.3B** | Additieve tabel `price_snapshots` + rollbackplan. **Nog niet gebruikt.** | ⬅ deze PR | nee (staging eerst; prod nooit blind) |
+| **7.6.3B** | Additieve tabellen `price_snapshots` + `price_snapshot_adjustments` + rollbackplan. **Nog niet gebruikt.** | ⬅ deze PR | nee (staging eerst; prod nooit blind) |
 | 7.6.3C | `calculateBookingPrice` → snapshot; booking refereert `quoteId` | gepland | ja (gedrag) |
 | 7.6.3D | Stripe gebruikt uitsluitend `snapshot.totalCents` | gepland | ja (gedrag) |
 | 7.6.3E | Bevestiging, e-mail, dashboard lezen exact dezelfde snapshot | gepland | ja (gedrag) |
@@ -213,25 +229,35 @@ Eén bron, door iedereen gelezen. Geen enkele consument herberekent.
 
 ## 11. Scope van 7.6.3B (database)
 
-Uitsluitend: de additieve tabel `price_snapshots`, constraints, indexen, RLS + grants,
-en het rollbackplan. **Geen** runtimecode, booking-logica, Stripe-wijziging, UI,
-RPC of deploy. De tabel wordt nergens gelezen/geschreven in deze PR.
+Uitsluitend: de additieve tabellen `price_snapshots` + `price_snapshot_adjustments`,
+constraints, indexen, RLS + grants, en het rollbackplan. **Geen** runtimecode,
+booking-logica, Stripe-wijziging, UI, RPC of deploy. De tabellen worden nergens
+gelezen/geschreven in deze PR.
 
 ## 12. Rollbackplan (7.6.3B)
 
-De migratie is puur additief (één nieuwe tabel, geen wijziging aan bestaande
-objecten of data). Terugdraaien is een schone `DROP`:
+De migratie is puur additief (twee nieuwe tabellen, geen wijziging aan bestaande
+objecten of data). Terugdraaien is een schone `DROP` (child eerst i.v.m. de FK):
 
 ```sql
--- Rollback 7.6.3B — verwijdert uitsluitend de nieuwe, ongebruikte tabel.
+-- Rollback 7.6.3B — verwijdert uitsluitend de nieuwe, ongebruikte tabellen.
 begin;
+drop table if exists public.price_snapshot_adjustments;
 drop table if exists public.price_snapshots;
 commit;
 ```
 
-Veilig omdat de tabel in 7.6.3B door geen enkele code wordt gebruikt (geen FK's
-wijzen ernaar vóór 7.6.3C). Validatie: **eerst op staging** toepassen en de
-`DROP`-rollback bewijzen; **productie nooit blind** muteren.
+Veilig omdat de tabellen in 7.6.3B door geen enkele code worden gebruikt (geen
+externe FK's wijzen ernaar vóór 7.6.3C). Validatie: **eerst op staging** toepassen
+en de `DROP`-rollback bewijzen; **productie nooit blind** muteren.
+
+## 12b. Design-review 7.6.3B — verwerkt (Denzel, 2026-07-30)
+
+| Punt | Aanbeveling | Resolutie |
+|------|-------------|-----------|
+| quoteId-strategie | één generator, niet beide | **App genereert altijd** (UUID v7), DB-kolom zonder default → één bron, geen client-id |
+| adjustments | aparte tabel i.p.v. JSONB | **`price_snapshot_adjustments`** (FK, cascade; code/label/amount/taxable/vat_rate/sort_order) |
+| DB-constraints | alleen structureel | `total=subtotal`-CHECK **verwijderd**; DB doet alleen integer/`>=0`/`EUR`/temporeel; financiële invariant → app-laag + tests |
 
 ## 13. Bevestigde beslissingen (Denzel, 2026-07-30)
 
