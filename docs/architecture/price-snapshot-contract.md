@@ -198,9 +198,12 @@ Eén bron, door iedereen gelezen. Geen enkele consument herberekent.
 
 ## 8. Relatie tot bestaande code
 
-- `calculateBookingPrice()` blijft het enige entrypoint. In 7.6.3C wordt de
-  **pass-through** een **snapshot-producent**; `contractVersion` klapt dan van
-  `"legacy-passthrough"` → `"v2"`. Tot die PR verandert er niets aan runtime-gedrag.
+- `calculateBookingPrice()` blijft het enige entrypoint. In 7.6.3C **produceert** het
+  ook een snapshot (additief), maar de `quote` blijft de bindende uitkomst.
+  `contractVersion` blijft daarom `"legacy-passthrough"` in 7.6.3C en klapt naar
+  `"v2"` zodra de snapshot **bindend** wordt (booking/Stripe lezen de snapshot —
+  7.6.3D/E). *(Refinement t.o.v. de eerdere planning die de flip al in 7.6.3C zette;
+  de quote is in 7.6.3C nog leidend, dus de marker blijft nog even legacy.)*
 - Backward-compat: boekingen zonder snapshot (alle bestaande) blijven geldig; de
   snapshot is **additief** en optioneel tot de flow er echt op leunt.
 - Geen wijziging aan `getPricingQuote()`, RPC's, of Stripe-afleiding in 7.6.3A.
@@ -275,6 +278,72 @@ Uitsluitend indexen voor het eerstvolgende querypatroon; geen preventieve/specul
 
 Netto: **2 expliciete indexen** (`price_snapshots_expires_at_idx`,
 `price_snapshot_adjustments_quote_id_sort_order_idx`) + de automatische PK-indexen.
+
+## 12d. Runtime-implementatie (PR 7.6.3C) — concreet gemaakt
+
+Maakt reeds goedgekeurde ontwerpdetails concreet; geen nieuwe architectuurkeuzes.
+
+- **Snapshot-productie:** `calculateBookingPrice()` levert bij een beschikbare quote
+  additief een `snapshot` (naast `quote`). `quoteId` = **server-side UUID v7**
+  (`lib/pricing/snapshot.ts::uuidv7`, geen client-invoer). `PRICING_VERSION =
+  "2026.07.v1"` staat als **centrale constante** in `lib/pricing/snapshot.ts`.
+- **Tijd:** één vast `now`-moment → `calculatedAt = createdAt = now`,
+  `expiresAt = now + 15 min`.
+- **Geld:** integer cents via de bestaande `eurosToCents`. 7.6.3C: geen adjustments →
+  `subtotalCents = totalCents`. App-laag valideert `total = subtotal + Σ adjustments`
+  vóór opslag (`validateSnapshot`); de DB doet dit bewust niet.
+- **`pricingSource`-mapping** (`mapPricingSource`): `quote.source
+  "fixed_route_prices"` → `pricingSource "fixed_route_prices"`. Onbekende bron →
+  `null` → **geen snapshot** (nooit een vrije string buiten het DB-contract).
+- **Transactiemechanisme:** de SECURITY DEFINER RPC
+  `create_price_snapshot(...)` (migratie `20260730130000`) schrijft parent +
+  children in **één transactie** (atomair; geen losse client-inserts). EXECUTE
+  alleen `service_role`. Aangeroepen via `persistPriceSnapshot` (best-effort: de
+  preview breekt nooit; `quoteId` wordt alleen teruggegeven bij bevestigde opslag).
+- **`routeSnapshot.validFrom`:** nog `null` in 7.6.3C — `getPricingQuote()` levert
+  dit veld nog niet en dat pad blijft ongewijzigd. **Gevolg: volledige
+  tariefreconstructie is nog NIET gegarandeerd.** Dit moet uiterlijk worden opgelost
+  **vóórdat de snapshot als financiële bron voor booking, betaling of facturatie
+  wordt gebruikt** (7.6.3D e.v.). Wordt gevuld zodra de quote de `valid_from` van de
+  tariefregel meegeeft.
+
+## 12e. Failure-modus & degradatie (PR 7.6.3C — tijdelijk)
+
+De snapshot-opslag is in 7.6.3C **best-effort met expliciete degradatie**, geen
+stille fout:
+
+- **Backward compatible:** faalt de opslag, dan blijft de quote-preview werken en
+  geeft **HTTP 200 zonder `quoteId`**. `quoteId` wordt **nooit** teruggegeven tenzij
+  de RPC de opslag heeft bevestigd.
+- **Nooit stil:** elk faalpad (ontbrekende service-role client, validatiefout,
+  RPC-fout, RPC-exception, ongeldige RPC-response) logt de **vaste code
+  `PRICE_SNAPSHOT_PERSIST_FAILED`** via de server-logger (`console.error`, door
+  Vercel/log-drain opgevangen → alert/telling op die code).
+- **Alleen veilige metadata in de log:** `reason`, `quoteId` (ondoorzichtige UUID,
+  geen PII), `pricingVersion`, `pricingSource`, `dbErrorCode`, `at`. **Geen**
+  `routeSnapshot`, adressen, namen, e-mail, telefoon of andere persoonsgegevens; en
+  nooit de rauwe DB-`message` (alleen de code). Er bestaat (nog) geen
+  correlation/request-ID in de codebase, dus die wordt niet gelogd.
+- **Atomair bij fout:** een RPC-fout laat geen gedeeltelijke parent/children achter
+  (op staging bewezen) en wijzigt de bestaande prijsvelden niet.
+- **Tijdelijk:** vanaf de booking-koppeling (7.6.3D e.v.) wordt een geldige,
+  gepersisteerde `quoteId` **VERPLICHT** voor de nieuwe bookingflow; **daarna wordt
+  deze legacy fallback (200 zonder quoteId) verwijderd.**
+
+## 12f. Productierollout-volgorde (DB vóór runtime)
+
+Productie (`ajdsiklxfmmgisdvarhv`) heeft **7.6.3B (tabellen) noch de RPC-migratie**
+nog. De 7.6.3C-runtime moet **niet actief** zijn vóór de database gereed is. Vaste
+volgorde bij de latere productie-uitrol (nu NIETS op productie uitvoeren):
+
+1. **Database eerst** — pas op productie toe, in deze volgorde:
+   `20260730120000_price_snapshots` → `20260730130000_create_price_snapshot_rpc`.
+2. **Verifieer** tabellen, RLS/grants en de RPC (EXECUTE alleen `service_role`).
+3. **Dan pas** de Vercel-deployment met de 7.6.3C-runtime promoveren.
+
+Veiligheidsnet: wordt de runtime tóch eerder actief, dan degradeert hij netjes
+(`PRICE_SNAPSHOT_PERSIST_FAILED`, 200 zonder `quoteId`) — maar de juiste volgorde
+voorkomt die foutruis en zorgt dat snapshots meteen persisteren.
 
 ## 13. Bevestigde beslissingen (Denzel, 2026-07-30)
 

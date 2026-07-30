@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { calculateBookingPrice } from "@/lib/pricing/engine";
+import { persistPriceSnapshot } from "@/lib/pricing/snapshot-store";
 import {
   type PricingQuoteInput,
   type PricingQuoteResult,
   type UnavailableReason,
 } from "@/lib/pricing/service";
+import type { PriceSnapshot } from "@/lib/pricing/snapshot";
 
 /**
  * POST /api/pricing/quote
@@ -97,11 +99,15 @@ export async function POST(request: Request) {
     ...(luggage !== undefined ? { luggage } : {}),
   };
 
-  // 3. Offerte ophalen via de centrale prijsfunctie (pass-through om getPricingQuote;
-  //    service logt zelf; logging blokkeert de offerte nooit)
+  // 3. Offerte ophalen via de centrale prijsfunctie (quote = pass-through om
+  //    getPricingQuote; service logt zelf; logging blokkeert de offerte nooit).
+  //    ADDITIEF (7.6.3C): de bijbehorende immutable snapshot wordt meegeleverd.
   let result: PricingQuoteResult;
+  let snapshot: PriceSnapshot | null;
   try {
-    result = (await calculateBookingPrice(input)).quote;
+    const computed = await calculateBookingPrice(input);
+    result = computed.quote;
+    snapshot = computed.snapshot;
   } catch {
     // Onverwachte serverfout — geen prijs lekken, geen fallback tonen.
     return NextResponse.json(
@@ -112,6 +118,14 @@ export async function POST(request: Request) {
 
   // 4. Resultaat → HTTP
   if (result.available) {
+    // Snapshot ATOMAIR opslaan (best-effort: blokkeert de offerte nooit). Alleen
+    // wanneer de opslag door de DB bevestigd is, geven we quoteId terug — nooit een
+    // niet-opgeslagen id. quoteId is ADDITIEF: bestaande clients negeren het gewoon.
+    let quoteId: string | undefined;
+    if (snapshot) {
+      const stored = await persistPriceSnapshot(snapshot);
+      if (stored) quoteId = snapshot.quoteId;
+    }
     return NextResponse.json(
       {
         available: true,
@@ -133,6 +147,8 @@ export async function POST(request: Request) {
         isAirportPickup: result.airport.isAirportPickup,
         isAirportDropoff: result.airport.isAirportDropoff,
         flightDirection: result.airport.flightDirection,
+        // ADDITIEF (7.6.3C): quote-lock identifier; alleen aanwezig bij bevestigde opslag.
+        ...(quoteId ? { quoteId } : {}),
       },
       { status: 200 }
     );
