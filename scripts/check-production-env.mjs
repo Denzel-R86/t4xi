@@ -61,22 +61,28 @@ if (!env) {
  *   aanwezig maar leeg + publiek    → FAIL
  *   leesbaar                  → validator → PASS/FAIL
  */
-function stateOf(key, { sensitive = false, validator = () => true } = {}) {
+function stateOf(key, { validator = () => true } = {}) {
   if (!(key in env)) return "FAIL";
+
   const v = (env[key] ?? "").trim();
-  if (v === "") return sensitive ? "UNVERIFIABLE" : "FAIL";
+  // Vercel `env pull` maskeert waarden als "[SENSITIVE]"/"Encrypted" — óók publieke
+  // vars (APP_ENV, NEXT_PUBLIC_*). Die zijn dan niet uitleesbaar → UNVERIFIABLE
+  // i.p.v. een false FAIL. De boot-guard verifieert de echte waarde bij runtime.
+  const hiddenByVercel = v === "" || v === "[SENSITIVE]" || v === "Encrypted";
+  if (hiddenByVercel) return "UNVERIFIABLE";
+
   return validator(v) ? "PASS" : "FAIL";
 }
 
 const checks = [
   ["APP_ENV = production",                          stateOf("APP_ENV", { validator: (v) => v.toLowerCase() === "production" })],
-  ["STRIPE_SECRET_KEY = sk_live_",                  stateOf("STRIPE_SECRET_KEY", { sensitive: true, validator: (v) => v.startsWith("sk_live_") })],
+  ["STRIPE_SECRET_KEY = sk_live_",                  stateOf("STRIPE_SECRET_KEY", { validator: (v) => v.startsWith("sk_live_") })],
   ["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = pk_live_", stateOf("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", { validator: (v) => v.startsWith("pk_live_") })],
-  ["STRIPE_WEBHOOK_SECRET = whsec_",                stateOf("STRIPE_WEBHOOK_SECRET", { sensitive: true, validator: (v) => v.startsWith("whsec_") })],
+  ["STRIPE_WEBHOOK_SECRET = whsec_",                stateOf("STRIPE_WEBHOOK_SECRET", { validator: (v) => v.startsWith("whsec_") })],
   ["NEXT_PUBLIC_SUPABASE_URL = productie-ref",      stateOf("NEXT_PUBLIC_SUPABASE_URL", { validator: (v) => supabaseRef(v) === PROD_SUPABASE_REF })],
   ["NEXT_PUBLIC_SUPABASE_URL != staging-ref",       stateOf("NEXT_PUBLIC_SUPABASE_URL", { validator: (v) => supabaseRef(v) !== STAGING_SUPABASE_REF })],
   ["NEXT_PUBLIC_SUPABASE_ANON_KEY present",         stateOf("NEXT_PUBLIC_SUPABASE_ANON_KEY")],
-  ["SUPABASE_SERVICE_ROLE_KEY present",             stateOf("SUPABASE_SERVICE_ROLE_KEY", { sensitive: true })],
+  ["SUPABASE_SERVICE_ROLE_KEY present",             stateOf("SUPABASE_SERVICE_ROLE_KEY")],
 ];
 
 const SYM = { PASS: "✓", FAIL: "✗", UNVERIFIABLE: "⚠" };
