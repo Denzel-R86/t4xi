@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { calculateBookingPrice } from "@/lib/pricing/engine";
 import {
-  getPricingQuote,
   type PricingQuoteInput,
   type PricingQuoteResult,
   type UnavailableReason,
@@ -97,10 +97,11 @@ export async function POST(request: Request) {
     ...(luggage !== undefined ? { luggage } : {}),
   };
 
-  // 3. Offerte ophalen (service logt zelf; logging blokkeert de offerte nooit)
+  // 3. Offerte ophalen via de centrale prijsfunctie (pass-through om getPricingQuote;
+  //    service logt zelf; logging blokkeert de offerte nooit)
   let result: PricingQuoteResult;
   try {
-    result = await getPricingQuote(input);
+    result = (await calculateBookingPrice(input)).quote;
   } catch {
     // Onverwachte serverfout — geen prijs lekken, geen fallback tonen.
     return NextResponse.json(

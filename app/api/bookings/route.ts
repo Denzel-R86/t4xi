@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { getPricingQuote } from "@/lib/pricing/service";
+import { calculateBookingPrice } from "@/lib/pricing/engine";
 import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
 
@@ -17,8 +17,9 @@ import { rateLimit, clientIp } from "@/lib/security/rate-limit";
  *
  * Flow:
  *   1. input valideren (types + formaten)
- *   2. pickup/dropoff normaliseren en de AUTORITATIEVE prijs ophalen via
- *      getPricingQuote() (bron van waarheid: fixed_route_prices)
+ *   2. pickup/dropoff normaliseren en de AUTORITATIEVE prijs ophalen via de
+ *      centrale calculateBookingPrice() (pass-through om getPricingQuote;
+ *      bron van waarheid: fixed_route_prices)
  *   3. onbekende route → geen prijs, maar de lead wél vastleggen als
  *      "Offerte op aanvraag" (quoteOnRequest = true)
  *   4. te veel passagiers/bagage voor de klasse → 422 (niet vastleggen)
@@ -156,9 +157,11 @@ export async function POST(request: Request) {
   const coord = (v: unknown): number | null =>
     typeof v === "number" && Number.isFinite(v) ? v : null;
 
-  // 3. Autoritatieve prijs ophalen (retour = ride_type 'retour')
+  // 3. Autoritatieve prijs ophalen via de centrale prijsfunctie (retour = ride_type
+  //    'retour'). calculateBookingPrice is een pass-through om getPricingQuote: zelfde
+  //    server-side bron (fixed_route_prices), zelfde bedrag. De client stuurt nooit een prijs.
   const returnTrip = rideType === "retour";
-  const quote = await getPricingQuote({ pickup, dropoff, returnTrip, passengers: persons });
+  const quote = (await calculateBookingPrice({ pickup, dropoff, returnTrip, passengers: persons })).quote;
 
   let priceEuros: number | null = null;
   let quoteOnRequest = true;
