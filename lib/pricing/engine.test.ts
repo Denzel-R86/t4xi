@@ -126,12 +126,13 @@ test("retour: toegepaste prijs = returnPrice, ongewijzigd doorgegeven", async ()
 
 // ── 2. Contract-marker + geen gefabriceerde V2-velden ────────────────────────
 
-test("contractVersion is legacy-passthrough en er zijn géén extra financiële velden", async () => {
+test("contractVersion is legacy-passthrough; result heeft quote + additieve snapshot, geen andere velden", async () => {
   const { getQuote } = stub(availableFixed(57));
   const res = await calculateBookingPrice({ pickup: "a", dropoff: "b" }, { getQuote });
   assert.equal(res.contractVersion, "legacy-passthrough");
-  // Uitsluitend pass-through-velden — geen breakdown/adjustments/total die gedrag beïnvloeden.
-  assert.deepEqual(Object.keys(res).sort(), ["contractVersion", "quote"]);
+  // quote blijft pass-through; snapshot is de enige additieve toevoeging (7.6.3C).
+  // Geen breakdown/adjustments/total óp het wrapper-niveau die `quote` beïnvloeden.
+  assert.deepEqual(Object.keys(res).sort(), ["contractVersion", "quote", "snapshot"]);
 });
 
 // ── 3. Fallback blijft uit (route zonder actieve vaste prijs) ────────────────
