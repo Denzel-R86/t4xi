@@ -89,5 +89,15 @@ console.log(`  Supabase project-ref:    ${ref ?? "(onherkenbaar)"}`);
 console.log(`  Service-role key:        ${serviceRolePresent ? "present" : "missing"}`);
 console.log("");
 for (const [name, ok] of checks) console.log(`  ${ok ? "✓" : "✗"} ${name}`);
-console.log(`\n  RESULTAAT: ${pass ? "PASS" : "FAIL"}\n`);
+
+// ── Informatief: e-mail/ops (NIET boot-kritisch → geen invloed op PASS/FAIL) ──
+// Ontbreekt RESEND_API_KEY → transactionele mails worden overgeslagen, maar de
+// boeking/betaling blijft werken. Daarom een waarschuwing, geen FAIL.
+const present = (k) => Boolean((env[k] ?? "").trim());
+console.log("\n  ── e-mail/ops (informatief, geen invloed op PASS/FAIL) ──");
+console.log(`  ${present("RESEND_API_KEY") ? "✓" : "⚠"} RESEND_API_KEY ${present("RESEND_API_KEY") ? "present" : "missing → mails worden overgeslagen"}`);
+console.log(`  ${present("RESEND_FROM") ? "✓" : "•"} RESEND_FROM    ${present("RESEND_FROM") ? "present" : "(unset → default onboarding@resend.dev sandbox)"}`);
+console.log(`  ${present("OPS_EMAIL") ? "✓" : "•"} OPS_EMAIL      ${present("OPS_EMAIL") ? "present" : "(unset → default booking@t4xi.nl)"}`);
+
+console.log(`\n  RESULTAAT: ${pass ? "PASS" : "FAIL"}  (gate = boot-guard-eisen; e-mail/ops apart hierboven)\n`);
 process.exit(pass ? 0 : 1);
