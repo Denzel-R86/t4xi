@@ -217,10 +217,11 @@ Eén bron, door iedereen gelezen. Geen enkele consument herberekent.
 
 ## 10. Opschoning (garbage collection)
 
-- Snapshots **zonder** booking → verwijderen **na 48 uur** (`created_at < now()-48h`
-  en geen booking die de `quote_id` refereert). De cleanup-job komt in 7.6.3C+,
-  zodra `bookings.quote_id` bestaat; de index op `created_at`/`expires_at` staat er
-  in 7.6.3B al klaar voor.
+- Snapshots **zonder** booking → verwijderen **na 48 uur** (leeftijd-sweep op
+  `expires_at < now()-48h` — functioneel gelijk aan `created_at`, maar `expires_at`
+  is de geïndexeerde kolom — en geen booking die de `quote_id` refereert). De
+  cleanup-job komt in 7.6.3C+, zodra `bookings.quote_id` bestaat; de index op
+  `expires_at` staat er in 7.6.3B al klaar voor.
 - Snapshots **met** booking → **nooit** verwijderen zolang wettelijke
   bewaartermijnen gelden.
 - `expiresAt` (15 min) is het **quote-lock-venster**, los van de 48u-GC: een quote

@@ -103,11 +103,14 @@ create table if not exists public.price_snapshot_adjustments (
 comment on table public.price_snapshot_adjustments is
   'Genormaliseerde, additieve prijscorrecties per snapshot (toeslagen/kortingen). Leeg in 7.6.3. Server-only; immutabel. amount_cents mag negatief zijn (korting).';
 
--- ── 3. INDEXEN ────────────────────────────────────────────────────────────────
--- Op de snapshot: voor de latere 48u-GC (created_at) en het lock-venster (expires_at).
+-- ── 3. INDEXEN (uitsluitend voor verwachte querypatronen — geen "voor de zekerheid") ──
+-- Snapshot: expires_at bedient de latere leeftijd-sweep (GC van verlopen, niet-geboekte
+--   snapshots). created_at blijft als audit-kolom bestaan maar wordt NIET geïndexeerd —
+--   de sweep draait op expires_at (= created_at + 15 min; functioneel identiek). Een
+--   created_at-index komt pas als een query 'm echt nodig heeft. De lock-lookup gaat via
+--   de PK (quote_id) en heeft geen extra index nodig.
 create index if not exists price_snapshots_expires_at_idx on public.price_snapshots(expires_at);
-create index if not exists price_snapshots_created_at_idx on public.price_snapshots(created_at);
--- Op de child: FK-lookups per snapshot.
+-- Child: FK-lookup "regels van deze snapshot" (Postgres indexeert FK-kolommen niet auto).
 create index if not exists price_snapshot_adjustments_quote_id_idx on public.price_snapshot_adjustments(quote_id);
 
 -- ── 4. RLS ──────────────────────────────────────────────────────────────────
