@@ -1,9 +1,10 @@
-# Price Snapshot Contract — ontwerp (PR 7.6.3A)
+# Price Snapshot Contract (PR 7.6.3A ontwerp · 7.6.3B database)
 
-**Status:** ONTWERP. Dit document beschrijft het datamodel en de invarianten voor
-de persistente prijs-snapshot en de quote-lock. **Er wordt niets geïmplementeerd,
-niets gemigreerd en niets opgeslagen.** Het dient als contractreview vóór PR 7.6.3B
-(database) überhaupt geschreven wordt.
+**Status:** ONTWERP VASTGESTELD. Alle kernkeuzes zijn door Denzel bevestigd
+(2026-07-30, zie §11). De bijbehorende **additieve** migratie (`price_snapshots`)
+is geschreven in PR 7.6.3B — **datamodel + migratie + rollbackplan only**, geen
+runtimecode, geen booking-/Stripe-/UI-wijziging, geen deploy. De tabel wordt in
+7.6.3B nog **niet gebruikt**.
 
 **Voorloper:** [`booking-price-contract.md`](booking-price-contract.md) (PR 7.6.2) —
 `calculateBookingPrice()` is nu het enige runtime-entrypoint voor klantprijzen, een
@@ -30,8 +31,9 @@ Voorgesteld contract (TypeScript-vorm; nog niet geïmplementeerd):
 
 ```ts
 type PriceSnapshot = {
-  quoteId: string;            // server-side gegenereerd; stabiel door de hele flow
-  pricingVersion: string;     // bv. "2026.07.v1" — inert in 7.6.3 (opgeslagen, niet vertakt)
+  quoteId: string;            // UUID v7 (v4 fallback); niet-oplopend, niet-afleidbaar
+  pricingVersion: string;     // "2026.07.v1" — inert in 7.6.3 (opgeslagen, niet vertakt)
+  pricingSource: PricingSource; // vandaag altijd "fixed_route_prices"
   currency: "EUR";
 
   // ── Geld: uitsluitend integer cents (geen floats) ──
@@ -40,8 +42,21 @@ type PriceSnapshot = {
   totalCents: number;         // = subtotalCents + Σ adjustments[].amountCents
 
   routeSnapshot: RouteSnapshot;
-  createdAt: string;          // ISO-8601 UTC — moment van vastleggen
+  calculatedAt: string;       // ISO-8601 UTC — wanneer de prijs is BEREKEND
+  expiresAt: string;          // calculatedAt + 15 min — quote-lock geldigheidsvenster
+  createdAt: string;          // ISO-8601 UTC — wanneer de rij is vastgelegd (audit)
 };
+
+// Vandaag alleen "fixed_route_prices"; de rest is forward-compatible en maakt
+// audits/support later eenvoudiger. Nog geen logica; uitsluitend opslag/labeling.
+type PricingSource =
+  | "fixed_route_prices"
+  | "dynamic"
+  | "manual"
+  | "hotel_rate"
+  | "airport_rate"
+  | "contract_rate"
+  | "promotion";
 
 type PriceAdjustment = {
   code: string;               // machine-leesbaar, bv. "return_discount" (toekomst)
@@ -80,10 +95,21 @@ snapshot nooit.
   reconstructie, toekomstige prijswijzigingen, A/B-pricing, audits, support en
   compliance. Achteraf toevoegen zou hermigratie van bestaande boekingen vergen.
 
+### 3b. `pricingSource` (nu al vastleggen)
+
+Naast `pricingVersion` legt elke snapshot vast **waar de prijs vandaan komt**.
+Vandaag is dat altijd `"fixed_route_prices"`. Het veld is forward-compatible voor
+`dynamic`, `manual`, `hotel_rate`, `airport_rate`, `contract_rate`, `promotion`.
+Nog **geen logica** — alleen opslag/labeling — maar het maakt audits en support
+later aanzienlijk eenvoudiger. De migratie borgt dit met een `CHECK` op de
+toegestane waarden, zodat de kolom nu al gevalideerd én uitbreidbaar is.
+
 ## 4. `quoteId` — levensduur & lock
 
-- **Generatie:** server-side (bv. UUID v4 of `gen_random_uuid()` in de DB),
-  **nooit** door de client aangeleverd.
+- **Generatie:** server-side **UUID v7** (tijd-geordend; `gen_random_uuid()`/UUID v4
+  als fallback zolang v7 niet beschikbaar is). Niet-oplopend, niet-afleidbaar, geen
+  hash, geen numerieke ID. **Nooit** door de client aangeleverd. De DB-kolom heeft
+  `default gen_random_uuid()` zodat inserts veilig zijn; de app mag een v7 meegeven.
 - **Stabiliteit:** één `quoteId` loopt ongewijzigd door: quote → booking →
   PaymentIntent-metadata → webhook-verwerking → bevestiging → e-mail → dashboard →
   factuur. Iedereen leest hetzelfde record.
@@ -92,10 +118,15 @@ snapshot nooit.
   `snapshot.totalCents` (via de bestaande server-side afleiding), nooit met een
   client-bedrag.
 
-## 5. Kernbeslissing vóór 7.6.3B — wanneer ontstaat de snapshot?
+## 5. Kernbeslissing — wanneer ontstaat de snapshot? → **BESLIST: Optie B (bij preview)**
 
-Dit bepaalt het datamodel en moet expliciet gekozen worden vóór er een migratie
-geschreven wordt.
+Denzel heeft gekozen voor **Optie B**: `preview → persistente snapshot → quoteId →
+booking → Stripe → mail/dashboard/factuur`. Dit levert de volledige quote-lock
+(preview == booking == Stripe == bevestiging). De client krijgt alleen een
+**ondoorzichtige `quoteId`** terug; bij booking haalt de server de snapshot
+**server-side** op en gebruikt `totalCents` daaruit — de client stuurt nooit een
+bedrag. Geldigheidsvenster **15 minuten**; verlopen/onbekende `quoteId` → verse
+server-berekening (zoals nu). De onderstaande afweging blijft ter documentatie.
 
 | | **Optie A — bij acceptatie (booking)** | **Optie B — bij preview** |
 |---|---|---|
@@ -114,8 +145,7 @@ gebruikt `totalCents` daaruit — de client stuurt nooit een bedrag. Snapshots
 krijgen een **geldigheidsvenster** (bv. quote geldig N minuten); verlopen of
 onbekende `quoteId` → val terug op een verse server-berekening (zoals nu).
 
-Optie A is de kleinste stap maar levert niet de volledige lock. De keuze is aan
-Denzel; dit document schrijft nog geen migratie.
+Optie A is de kleinste stap maar levert niet de volledige lock — daarom niet gekozen.
 
 ## 6. Geldrepresentatie & invarianten
 
@@ -126,7 +156,11 @@ Denzel; dit document schrijft nog geen migratie.
    toepassing (zakelijke beslissing #1). In 7.6.3 is de array **leeg**.
 4. `currency === "EUR"`.
 5. Een vastgelegde snapshot is **immutabel**: latere tariefwijzigingen raken 'm niet.
-6. `pricingVersion` en `quoteId` zijn verplicht en niet-leeg zodra een snapshot bestaat.
+   In 7.6.3B afgedwongen op grant-niveau (service_role krijgt `SELECT/INSERT/DELETE`,
+   **geen `UPDATE`**).
+6. `pricingVersion`, `pricingSource` en `quoteId` zijn verplicht en niet-leeg zodra
+   een snapshot bestaat.
+7. `expiresAt > calculatedAt`; `expiresAt = calculatedAt + 15 min` (quote-lock-venster).
 
 ## 7. Dataflow (doel, ná 7.6.3C–E)
 
@@ -155,26 +189,57 @@ Eén bron, door iedereen gelezen. Geen enkele consument herberekent.
   snapshot is **additief** en optioneel tot de flow er echt op leunt.
 - Geen wijziging aan `getPricingQuote()`, RPC's, of Stripe-afleiding in 7.6.3A.
 
-## 9. Voorgestelde PR-opdeling 7.6.3 (alleen 7.6.3A wordt nu opgeleverd)
+## 9. PR-opdeling 7.6.3
 
-| Sub-PR | Inhoud | Muteert productie? |
-|--------|--------|---------------------|
-| **7.6.3A** | **Dit ontwerpdocument. Geen code, geen DB.** | **nee** |
-| 7.6.3B | Additieve tabel(len)/kolommen (`price_snapshots`), nog niet gebruikt | migratie op staging eerst |
-| 7.6.3C | `calculateBookingPrice` → snapshot; booking refereert `quoteId` | ja (gedrag) |
-| 7.6.3D | Stripe gebruikt uitsluitend `snapshot.totalCents` | ja (gedrag) |
-| 7.6.3E | Bevestiging, e-mail, dashboard, factuur lezen exact dezelfde snapshot | ja (gedrag) |
+| Sub-PR | Inhoud | Status | Muteert productie? |
+|--------|--------|--------|---------------------|
+| **7.6.3A** | Dit ontwerpdocument. Geen code, geen DB. | ✅ opgeleverd | nee |
+| **7.6.3B** | Additieve tabel `price_snapshots` + rollbackplan. **Nog niet gebruikt.** | ⬅ deze PR | nee (staging eerst; prod nooit blind) |
+| 7.6.3C | `calculateBookingPrice` → snapshot; booking refereert `quoteId` | gepland | ja (gedrag) |
+| 7.6.3D | Stripe gebruikt uitsluitend `snapshot.totalCents` | gepland | ja (gedrag) |
+| 7.6.3E | Bevestiging, e-mail, dashboard lezen exact dezelfde snapshot | gepland | ja (gedrag) |
 
-## 10. Expliciet buiten scope van 7.6.3A
+## 10. Opschoning (garbage collection)
 
-Geen database-, schema-, RPC-, UI-, Stripe-, voertuig-, notes- of tussenstop­wijziging.
-Geen actieve toeslagen. Geen dynamische fallback. Geen code. Uitsluitend dit ontwerp.
+- Snapshots **zonder** booking → verwijderen **na 48 uur** (`created_at < now()-48h`
+  en geen booking die de `quote_id` refereert). De cleanup-job komt in 7.6.3C+,
+  zodra `bookings.quote_id` bestaat; de index op `created_at`/`expires_at` staat er
+  in 7.6.3B al klaar voor.
+- Snapshots **met** booking → **nooit** verwijderen zolang wettelijke
+  bewaartermijnen gelden.
+- `expiresAt` (15 min) is het **quote-lock-venster**, los van de 48u-GC: een quote
+  ouder dan 15 min is niet meer geldig voor booking, maar de rij mag nog 48u blijven
+  bestaan voor audit/hergebruik-detectie.
 
-## 11. Open beslissingen voor Denzel (vóór 7.6.3B)
+## 11. Scope van 7.6.3B (database)
 
-1. **Snapshot-moment:** Optie A (bij acceptatie) of B (bij preview, aanbevolen)?
-2. **Geldigheidsvenster** van een preview-quote (bv. 15/30/60 min) — alleen relevant bij Optie B.
-3. **`quoteId`-type:** UUID (DB-`gen_random_uuid()`) akkoord?
-4. **`pricingVersion`-startwaarde:** `"2026.07.v1"` akkoord, en waar leeft de constante (pricing-engine)?
-5. **Opschoning** van niet-geboekte preview-snapshots (TTL/cron) — nodig bij Optie B.
-6. **Facturen** binnen 7.6.3E-scope, of pas in de latere compliance-stap (#9 in de roadmap)?
+Uitsluitend: de additieve tabel `price_snapshots`, constraints, indexen, RLS + grants,
+en het rollbackplan. **Geen** runtimecode, booking-logica, Stripe-wijziging, UI,
+RPC of deploy. De tabel wordt nergens gelezen/geschreven in deze PR.
+
+## 12. Rollbackplan (7.6.3B)
+
+De migratie is puur additief (één nieuwe tabel, geen wijziging aan bestaande
+objecten of data). Terugdraaien is een schone `DROP`:
+
+```sql
+-- Rollback 7.6.3B — verwijdert uitsluitend de nieuwe, ongebruikte tabel.
+begin;
+drop table if exists public.price_snapshots;
+commit;
+```
+
+Veilig omdat de tabel in 7.6.3B door geen enkele code wordt gebruikt (geen FK's
+wijzen ernaar vóór 7.6.3C). Validatie: **eerst op staging** toepassen en de
+`DROP`-rollback bewijzen; **productie nooit blind** muteren.
+
+## 13. Bevestigde beslissingen (Denzel, 2026-07-30)
+
+1. **Snapshot-moment:** Optie B — bij preview. ✅
+2. **Geldigheidsvenster:** 15 minuten; daarna verse quote + nieuw `quoteId` + nieuw snapshot. ✅
+3. **`quoteId`-type:** UUID v7 (v4 fallback); niet-oplopend/afleidbaar. ✅
+4. **`pricingVersion`:** start `"2026.07.v1"`, later één centrale constante `PRICING_VERSION` (geen logica, alleen opslag). ✅
+5. **Opschoning:** niet-geboekte snapshots na 48u; geboekte nooit (bewaartermijnen). ✅
+6. **`pricingSource`** toegevoegd (nu `fixed_route_prices`, forward-compatible). ✅
+7. **`calculatedAt` + `expiresAt`** toegevoegd naast `createdAt`. ✅
+8. **Facturen:** buiten 7.6.3-scope (latere compliance-/facturatiesprint), maar de architectuur laat facturen later hetzelfde snapshot lezen. ✅
