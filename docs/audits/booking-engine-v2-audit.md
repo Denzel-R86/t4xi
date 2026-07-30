@@ -104,6 +104,13 @@ sendBookingEmails() ──▶ Resend (klant + ops), prijs = price_euros (server)
 
 **Client-side prijsberekeningen:** geen. `useRouteQuote` en `PaymentStep` tonen alleen server-waarden.
 
+> **Implementatie-update (PR 7.6.2, 2026-07-30):** entrypoints 5 en 6 roepen `getPricingQuote`
+> niet langer direct aan, maar via de nieuwe centrale functie
+> `lib/pricing/engine.ts::calculateBookingPrice` — een **pure pass-through** (byte/waarde-identieke
+> uitkomst, geen prijs-/afronding-/fallbackwijziging). `engine.ts` is nu de enige runtime-caller van
+> `getPricingQuote`. Het "2e quote-berekening / preview ≠ booking (temporeel)"-risico blijft ongewijzigd
+> bestaan tot de quote-lock (PR 7.6.3+). Contract: `docs/architecture/booking-price-contract.md`.
+
 ## 5. Huidige toeslagenmatrix
 
 | Component | Bestaat? | Waar | Actief in runtime? | Volgorde | Identiek in quote/booking/Stripe/DB? | Tests |
