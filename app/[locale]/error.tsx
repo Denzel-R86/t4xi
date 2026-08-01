@@ -35,7 +35,7 @@ export default function GlobalError({
         </button>
         <a
           href="tel:+31634744522"
-          className="rounded-full border border-line bg-card px-7 py-3.5 text-sm font-medium text-ink hover:border-stone"
+          className="rounded-md border border-line bg-card px-7 py-3.5 text-sm font-medium text-ink hover:border-stone"
         >
           {t("bel")}
         </a>

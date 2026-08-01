@@ -13,7 +13,10 @@ export default function Footer() {
     { href: "mailto:booking@t4xi.nl", label: t("email"), icon: "mail" },
   ];
   return (
-    <footer className="bg-ink text-fog">
+    <footer className="bg-ink text-fog pb-[calc(72px_+_env(safe-area-inset-bottom))] lg:pb-0">
+      {/* Bodem-clearance voor de vaste mobiele StickyCta (fixed bottom-0, lg:hidden):
+          zonder deze ruimte dekt de balk de laatste footerregels (KvK, juridisch) af.
+          Vervalt op lg, waar de StickyCta niet bestaat. */}
       <div className="mx-auto max-w-site px-6 pb-10 pt-16">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div>
