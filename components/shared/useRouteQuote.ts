@@ -14,7 +14,14 @@ import type { AddressSuggestion } from "@/components/shared/AddressAutocomplete"
  * serverwaarheid reageert (Sprint 11.1).
  */
 
-export type Airport = { isTransfer: boolean; direction: "arrival" | "departure" | null };
+export type Airport = {
+  isTransfer: boolean;
+  direction: "arrival" | "departure" | null;
+  /** Vertrek is een luchthaven → heenrit is een aankomst. */
+  pickupIsAirport: boolean;
+  /** Bestemming is een luchthaven → retourrit is een aankomst. */
+  dropoffIsAirport: boolean;
+};
 
 export type Quote =
   | { status: "idle" | "loading" | "error"; airport?: Airport }
@@ -60,6 +67,8 @@ export function useRouteQuote(
             airport: {
               isTransfer: Boolean(data.isAirportTransfer),
               direction: data.flightDirection ?? null,
+              pickupIsAirport: Boolean(data.pickupIsAirport),
+              dropoffIsAirport: Boolean(data.dropoffIsAirport),
             },
           });
         } else {
@@ -69,6 +78,8 @@ export function useRouteQuote(
             airport: {
               isTransfer: Boolean(data.isAirportTransfer),
               direction: data.flightDirection ?? null,
+              pickupIsAirport: Boolean(data.pickupIsAirport),
+              dropoffIsAirport: Boolean(data.dropoffIsAirport),
             },
           });
         }

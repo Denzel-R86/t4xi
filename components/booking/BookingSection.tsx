@@ -6,8 +6,16 @@ import AddressAutocomplete, {
 } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import PaymentStep from "@/components/booking/PaymentStep";
+import FlightFields from "@/components/booking/FlightFields";
 import Icon from "@/components/ui/Icon";
-import { inferAddressMeta, type RitType } from "@/lib/booking-meta";
+import {
+  inferAddressMeta,
+  flightFieldRules,
+  buildBookingPayload,
+  validateBookingForm,
+  type RitType,
+  type BookingValidationError,
+} from "@/lib/booking-meta";
 import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
 
@@ -84,29 +92,44 @@ export default function BookingSection({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (loading) return; // geen dubbele submit
-    if (!pickup || !dropoff) {
-      setSubmit({ status: "error", message: t("valAdres") });
-      return;
-    }
-    if (needsFlight && flightNumber.trim() === "") {
-      setSubmit({
-        status: "error",
-        message: isArrival ? t("valVluchtAankomst") : t("valVluchtVertrek"),
-      });
-      return;
-    }
 
     const form = new FormData(e.currentTarget);
-    const payload = {
+    const outboundDate = String(form.get("datum") ?? "");
+    const outboundTime = String(form.get("tijd") ?? "");
+
+    // Eén zuivere validatie — dezelfde regels die de server opnieuw afdwingt.
+    const error = validateBookingForm({
+      hasPickup: Boolean(pickup),
+      hasDropoff: Boolean(dropoff),
+      isReturn,
+      flightRules,
+      outboundFlight: flightNumber,
+      returnFlight: returnFlightNumber,
+      outboundDate,
+      outboundTime,
+      returnDate,
+      returnTime,
+    });
+    if (error) {
+      setSubmit({ status: "error", message: validationMessage(error) });
+      return;
+    }
+    // Na de validatie zijn beide adressen aanwezig; dit narrowt het type.
+    if (!pickup || !dropoff) return;
+
+    const payload = buildBookingPayload({
       rideType: tab,
       pickup: pickup.label,
       dropoff: dropoff.label,
-      date: String(form.get("datum") ?? ""),
-      time: String(form.get("tijd") ?? ""),
+      date: outboundDate,
+      time: outboundTime,
       vehicle,
       persons,
       luggage,
-      flightNumber: needsFlight ? flightNumber.trim() : "",
+      flightNumber,
+      returnDate,
+      returnTime,
+      returnFlightNumber,
       customerName: String(form.get("naam") ?? ""),
       customerPhone: String(form.get("telefoon") ?? ""),
       customerEmail: String(form.get("email") ?? ""),
@@ -115,7 +138,8 @@ export default function BookingSection({
       locale,
       // Honeypot: leeg bij echte gebruikers; bots vullen dit → API blokkeert stil.
       website: String(form.get("website") ?? ""),
-    };
+      flightRules,
+    });
 
     setSubmit({ status: "loading" });
     try {
@@ -156,14 +180,42 @@ export default function BookingSection({
   // Live richtprijs én luchthavencontext via de GEDEELDE quote-flow
   // (components/shared/useRouteQuote.ts) — dezelfde keten als de homepagehero.
   const quote = useRouteQuote(pickup, dropoff, { returnTrip: tab === "retour", passengers: persons });
-  const [flightNumber, setFlightNumber] = useState("");
 
-  // Het vluchtnummerveld verschijnt zodra de engine zegt dat één zijde een
-  // luchthaven is — ook bij "offerte op aanvraag". Ritten vanaf Schiphol hebben nog
-  // geen vaste route, maar de aankomst moet wél gevolgd kunnen worden.
+  // Vluchtnummers staan in state (niet in FormData): zo blijven ze bewaard bij
+  // tijdelijke formulierwijzigingen — van tab wisselen of een veld dat even
+  // verborgen raakt wist een eerder ingevoerd nummer niet.
+  const [flightNumber, setFlightNumber] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+  const [returnTime, setReturnTime] = useState("");
+  const [returnFlightNumber, setReturnFlightNumber] = useState("");
+
+  // Per ritdeel bepaalt de luchthavencontext (server-side afgeleid) of het
+  // vluchtnummer verplicht/optioneel/verborgen is — óók bij "offerte op aanvraag".
+  // De regel volgt de vertrek-/bestemmingslocatie, niet een "airport transfer"-label.
   const airport = quote.airport;
-  const needsFlight = Boolean(airport?.isTransfer);
-  const isArrival = airport?.direction === "arrival";
+  const isReturn = tab === "retour";
+  const flightRules = flightFieldRules({
+    pickupIsAirport: Boolean(airport?.pickupIsAirport),
+    dropoffIsAirport: Boolean(airport?.dropoffIsAirport),
+    isReturn,
+  });
+  // Heenrit is verplicht ⟺ vertrek is een luchthaven (aankomst monitoren).
+  const outboundIsArrival = Boolean(airport?.pickupIsAirport);
+
+  function validationMessage(code: BookingValidationError): string {
+    switch (code) {
+      case "address":
+        return t("valAdres");
+      case "flight_outbound":
+        return t("valVluchtAankomst");
+      case "return_datetime_missing":
+        return t("valRetourDatumTijd");
+      case "return_not_after_outbound":
+        return t("valRetourNaHeen");
+      case "flight_return":
+        return t("valRetourVlucht");
+    }
+  }
 
   const priceNote =
     quote.status === "idle"
@@ -317,58 +369,24 @@ export default function BookingSection({
           </div>
 
           {/*
-            Vluchtnummer — verschijnt uitsluitend bij luchthavenritten, zodra de
-            prijsengine heeft bevestigd dat herkomst of bestemming een luchthaven is.
-            Zonder dit nummer kan T4XI de belofte "wij volgen uw vluchtstatus" niet
-            waarmaken, daarom is het veld daar verplicht.
+            Vlucht- en retourvelden. Welke verplicht/optioneel/verborgen zijn volgt
+            de vertrek-/bestemmingslocatie via flightFieldRules — niet een label.
           */}
-          {needsFlight && (
-            <div className="sm:col-span-2">
-              <label htmlFor="f-flight" className={labelCls}>
-                {isArrival ? t("vluchtAankomend") : t("vluchtVertrekkend")}{" "}
-                <span className="text-accent">{t("verplicht")}</span>
-              </label>
-              <input
-                id="f-flight"
-                name="vluchtnummer"
-                value={flightNumber}
-                onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
-                placeholder="KL1234"
-                autoComplete="off"
-                spellCheck={false}
-                maxLength={8}
-                required
-                aria-describedby="f-flight-help"
-                className={inputCls}
-              />
-              <p id="f-flight-help" className="mt-1.5 text-[12px] text-secondary">
-                {isArrival ? t("vluchtHelpAankomst") : t("vluchtHelpVertrek")}
-              </p>
-
-              {/*
-                Airport Arrival Service — uitsluitend bij een OPHALING. De klant ziet
-                wat inbegrepen is, niet waaruit de kosten bestaan: geen parkeerbedrag
-                en geen aparte toeslagregel. Het prijsmodel is nog niet vastgesteld,
-                dus hier staan bewust geen bedragen.
-              */}
-              {isArrival && (
-                <div className="mt-3 rounded-field border border-line bg-fog px-4 py-3">
-                  <p className="text-xs font-bold text-ink">{t("aasKop")}</p>
-                  <ul className="mt-2 flex flex-col gap-1.5 text-[12px] text-secondary">
-                    {(["aas1", "aas2", "aas3"] as const).map((k) => (
-                      <li key={k} className="flex items-start gap-2">
-                        <Icon name="check" size={13} className="mt-0.5 shrink-0 text-accent" />
-                        {t(k)}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-2.5 border-t border-line pt-2.5 text-[12px] text-secondary">
-                    {t("aasNa")}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+          <FlightFields
+            flightRules={flightRules}
+            outboundIsArrival={outboundIsArrival}
+            isReturn={isReturn}
+            flightNumber={flightNumber}
+            onFlightNumber={setFlightNumber}
+            returnDate={returnDate}
+            onReturnDate={setReturnDate}
+            returnTime={returnTime}
+            onReturnTime={setReturnTime}
+            returnFlightNumber={returnFlightNumber}
+            onReturnFlightNumber={setReturnFlightNumber}
+            inputCls={inputCls}
+            labelCls={labelCls}
+          />
         </div>
 
         {/* Adresdetectie */}

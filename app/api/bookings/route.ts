@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { calculateBookingPrice } from "@/lib/pricing/engine";
 import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
+import { isReturnAfterOutbound, returnFlightDirection } from "@/lib/booking-meta";
 
 /**
  * POST /api/bookings
@@ -42,6 +43,8 @@ const HONEYPOT_FIELD = "website";
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+/** Zelfde patroon als het boekingsformulier en de create_booking RPC. */
+const FLIGHT_RE = /^[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?$/;
 
 type Body = Record<string, unknown>;
 
@@ -129,6 +132,10 @@ export async function POST(request: Request) {
   // "kl 1234" en "KL-1234" dezelfde waarde opleveren. De RPC normaliseert nog een
   // keer — de database is de laatste verdedigingslinie, niet de eerste.
   const flightNumber = str(body.flightNumber).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  // Retourgegevens (alleen betekenisvol bij ride_type 'retour').
+  const returnDate = str(body.returnDate);
+  const returnTime = str(body.returnTime);
+  const returnFlightNumber = str(body.returnFlightNumber).toUpperCase().replace(/[^A-Z0-9]/g, "");
 
   if (pickup.length < 3) return bad("Ophaaladres is verplicht (min. 3 tekens).");
   if (dropoff.length < 3) return bad("Bestemming is verplicht (min. 3 tekens).");
@@ -154,13 +161,24 @@ export async function POST(request: Request) {
     persons = body.persons;
   }
 
+  // Retour: datum/tijd verplicht en strikt later dan de heenrit. Server-side
+  // afgedwongen — de client kan de check niet omzeilen.
+  const isReturnTrip = rideType === "retour";
+  if (isReturnTrip) {
+    if (!DATE_RE.test(returnDate)) return bad("Retourdatum is verplicht (YYYY-MM-DD).");
+    if (!TIME_RE.test(returnTime)) return bad("Retourtijd is verplicht (HH:MM).");
+    if (!isReturnAfterOutbound(date, time, returnDate, returnTime)) {
+      return bad("De retourrit moet later zijn dan de heenrit.");
+    }
+  }
+
   const coord = (v: unknown): number | null =>
     typeof v === "number" && Number.isFinite(v) ? v : null;
 
   // 3. Autoritatieve prijs ophalen via de centrale prijsfunctie (retour = ride_type
   //    'retour'). calculateBookingPrice is een pass-through om getPricingQuote: zelfde
   //    server-side bron (fixed_route_prices), zelfde bedrag. De client stuurt nooit een prijs.
-  const returnTrip = rideType === "retour";
+  const returnTrip = isReturnTrip;
   const quote = (await calculateBookingPrice({ pickup, dropoff, returnTrip, passengers: persons })).quote;
 
   let priceEuros: number | null = null;
@@ -183,34 +201,53 @@ export async function POST(request: Request) {
   // unknown_location / route_not_fixed / data_unavailable → lead vastleggen als
   // "Offerte op aanvraag" (prijs null). We verliezen de klant niet.
 
-  // 3b. Vluchtnummer — verplicht zodra één zijde een luchthaven is.
+  // 3b. Vluchtnummer — per ritdeel, VERPLICHT alleen wanneer de chauffeur een
+  // AANKOMENDE vlucht moet monitoren. Dat is zo wanneer dat ritdeel VÁNAF een
+  // luchthaven vertrekt. Náár een luchthaven toe (departure) is het nummer nuttig
+  // maar niet verplicht — we slaan het dan op zodra het is meegegeven.
   //
-  // T4XI belooft de vluchtstatus te volgen en het ophaalmoment aan te passen bij
-  // vertraging. Die belofte wordt handmatig uitgevoerd en is zonder vluchtnummer
-  // onuitvoerbaar. Het veld is hier dus geen formaliteit: zonder nummer kan de
-  // dienst niet geleverd worden.
+  // OOK bij "offerte op aanvraag": ritten vanaf Schiphol hebben nog geen vaste
+  // route, maar de aankomst moet gevolgd kunnen worden. De luchthavencontext komt
+  // uit de service (locatietype), niet uit `available` of uit een label.
   //
-  // OOK bij "offerte op aanvraag". Ritten vanaf Schiphol hebben nog geen vaste
-  // route, dus `quote.available` is false — maar het blijft een luchthavenrit.
-  // De luchthavencontext komt daarom uit de service en niet uit `available`.
-  //
-  // De richting wordt server-side afgeleid en nooit door de klant gekozen:
-  // luchthaven als vertrek → arrival, luchthaven als bestemming → departure.
+  // De richting wordt server-side afgeleid en nooit door de klant gekozen.
   const airport = quote.airport;
-  if (airport.isAirportTransfer && flightNumber === "") {
+
+  // Heenrit: verplicht ⟺ vertrek is een luchthaven (aankomst).
+  if (airport.pickupIsAirport && flightNumber === "") {
     return bad(
-      airport.isAirportPickup
-        ? "Vul uw aankomende vluchtnummer in — daarmee volgen wij uw vlucht en passen wij het ophaalmoment aan."
-        : "Vul uw vertrekkende vluchtnummer in, zodat wij de rit daarop kunnen plannen."
+      "Vul uw aankomende vluchtnummer in — daarmee volgen wij uw vlucht en passen wij het ophaalmoment aan."
     );
   }
-  if (flightNumber !== "" && !/^[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?$/.test(flightNumber)) {
+  if (flightNumber !== "" && !FLIGHT_RE.test(flightNumber)) {
     return bad("Vluchtnummer lijkt niet te kloppen. Bijvoorbeeld: KL1234.");
   }
-  // Een vluchtnummer zonder luchthaven aan een van beide zijden slaat nergens op;
-  // we slaan het dan niet op in plaats van het stilzwijgend te bewaren.
+
+  // Retourrit: verplicht ⟺ bestemming is een luchthaven (de retourrit pikt daar op
+  // → aankomst). Alleen relevant bij een retourrit.
+  if (isReturnTrip && airport.dropoffIsAirport && returnFlightNumber === "") {
+    return bad(
+      "Vul uw retourvluchtnummer in — de retourrit vertrekt vanaf de luchthaven, zodat wij uw aankomst kunnen volgen."
+    );
+  }
+  if (returnFlightNumber !== "" && !FLIGHT_RE.test(returnFlightNumber)) {
+    return bad("Retourvluchtnummer lijkt niet te kloppen. Bijvoorbeeld: KL1234.");
+  }
+
+  // Opslag: een vluchtnummer zonder luchthaven aan dat ritdeel slaat nergens op —
+  // dan bewaren we het niet in plaats van het stilzwijgend mee te schrijven.
   const flightDirection = airport.isAirportTransfer ? airport.flightDirection : null;
   const flightNumberToStore = airport.isAirportTransfer ? flightNumber : "";
+
+  // Retourdeel keert de rit om (pickt op bij de heen-dropoff). Richting + opslag
+  // volgen dezelfde logica, maar met omgekeerde zijden.
+  const returnDir = isReturnTrip
+    ? returnFlightDirection({
+        pickupIsAirport: airport.pickupIsAirport,
+        dropoffIsAirport: airport.dropoffIsAirport,
+      })
+    : null;
+  const returnFlightToStore = isReturnTrip && returnDir !== null ? returnFlightNumber : "";
 
   // 4. Schrijven via service-role RPC
   const supabase = serviceRoleClient();
@@ -241,6 +278,11 @@ export async function POST(request: Request) {
     p_to_lon: coord(body.toLon),
     p_flight_number: flightNumberToStore || null,
     p_flight_direction: flightDirection,
+    // Retourgegevens — additief (migratie 20260801). Null bij een enkele rit.
+    p_return_date: isReturnTrip ? returnDate : null,
+    p_return_time: isReturnTrip ? returnTime : null,
+    p_return_flight_number: returnFlightToStore || null,
+    p_return_flight_direction: returnFlightToStore ? returnDir : null,
   });
 
   if (error) {
