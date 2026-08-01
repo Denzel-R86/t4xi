@@ -8,6 +8,7 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import FaqList from "@/components/sections/FaqList";
 import RateTable from "@/components/seo/RateTable";
 import { STEDEN } from "@/lib/seo-steden";
+import { localeUrl } from "@/lib/seo-locale";
 import { loadRateCard } from "@/lib/pricing/rate-card";
 
 /**
@@ -33,12 +34,40 @@ export const dynamic = "force-dynamic";
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const stad = STEDEN.find((s) => s.slug === params.slug);
   if (!stad) return {};
+
+  // Geen bedrag in de title: twee van de vijf steden hebben geen stadsbrede prijs,
+  // en een titel die veroudert is precies het probleem dat we hier oplossen.
+  const title = `Taxi ${stad.naam} → Schiphol — vaste prijs vooraf`;
+  const description = stad.metaDescription;
+
+  // Open Graph en Twitter EXPLICIET per pagina. Zonder deze blokken erven de
+  // landingspagina's de og:title/og:url/og:description van de root-layout (de
+  // homepage), waardoor een gedeelde stad-URL als de homepage previewt. og:image
+  // en twitter:image blijven uit de bestandsconventie (app/opengraph-image.png).
+  //
+  // Bewust NIET via localeMetadata(): die helper voegt hreflang-alternates toe,
+  // terwijl deze pagina's Nederlandstalig-only zijn en zonder `languages`
+  // consolideren via de canonical. We hergebruiken alleen localeUrl() voor een
+  // absolute, locale-loze og:url die de canonical spiegelt.
+  const url = localeUrl("nl", `/${stad.slug}`);
+
   return {
-    // Geen bedrag in de title: twee van de vijf steden hebben geen stadsbrede prijs,
-    // en een titel die veroudert is precies het probleem dat we hier oplossen.
-    title: `Taxi ${stad.naam} → Schiphol — vaste prijs vooraf`,
-    description: stad.metaDescription,
+    title,
+    description,
     alternates: { canonical: `/${stad.slug}` },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      siteName: "T4XI",
+      locale: "nl_NL",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 
