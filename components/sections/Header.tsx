@@ -1,6 +1,6 @@
 "use client";
 
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import Icon from "@/components/ui/Icon";
 import Wordmark from "@/components/ui/Wordmark";
@@ -19,6 +19,15 @@ const nav = [
 export default function Header() {
   const t = useTranslations("nav");
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Actieve pagina markeren. Puur-hash links naar de homepage (bijv. /#vloot)
+  // krijgen bewust GEEN actieve staat: er is geen "Home"-item, dus dat zou op de
+  // homepage het verkeerde item oplichten. usePathname is locale-agnostisch.
+  const isActive = (href: string) => {
+    const path = href.split("#")[0];
+    return path !== "/" && pathname === path;
+  };
 
   // Escape sluit het mobiele menu
   useEffect(() => {
@@ -46,7 +55,12 @@ export default function Header() {
             <Link
               key={item.key}
               href={item.href}
-              className="rounded-md px-3 py-1.5 text-sm text-secondary transition-colors hover:bg-ink/5 hover:text-ink"
+              aria-current={isActive(item.href) ? "page" : undefined}
+              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                isActive(item.href)
+                  ? "bg-ink/[0.06] font-medium text-ink"
+                  : "text-secondary hover:bg-ink/5 hover:text-ink"
+              }`}
             >
               {t(item.key)}
             </Link>
@@ -110,7 +124,12 @@ export default function Header() {
               <li key={item.key}>
                 <Link
                   href={item.href}
-                  className="flex items-center gap-3 rounded-md px-3 py-3 text-secondary hover:bg-fog hover:text-ink"
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                  className={`flex items-center gap-3 rounded-md px-3 py-3 transition-colors ${
+                    isActive(item.href)
+                      ? "bg-fog font-medium text-ink"
+                      : "text-secondary hover:bg-fog hover:text-ink"
+                  }`}
                   onClick={() => setOpen(false)}
                 >
                   <Icon name={item.icon} size={18} className="text-stone" />

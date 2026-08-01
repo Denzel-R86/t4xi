@@ -217,6 +217,26 @@ export default function AddressAutocomplete({
         {status === "error" && t("fout")}
       </p>
 
+      {/* Skeleton tijdens de eerste zoekopdracht: premium laadgevoel i.p.v. een
+          lege sprong. Alleen als er nog geen (verouderde) lijst staat, zodat de
+          skeleton nooit over echte suggesties valt. De aria-live <p> hierboven
+          doet de schermlezer-aankondiging; de skeleton is puur visueel. */}
+      {status === "loading" && !openList && (
+        <div
+          className="absolute z-20 mt-2 w-full overflow-hidden rounded-field border border-line bg-card shadow-card"
+          aria-hidden="true"
+        >
+          {[68, 52, 60].map((w, i) => (
+            <div key={i} className="px-4 py-3">
+              <span
+                className="block h-3.5 animate-pulse rounded bg-line motion-reduce:animate-none"
+                style={{ width: `${w}%` }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
       {openList && suggestions.length > 0 && (
         <ul
           id={listId}

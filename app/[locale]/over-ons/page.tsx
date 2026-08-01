@@ -39,6 +39,7 @@ export default function OverOnsPage() {
                 src="/tesla-interieur.jpg"
                 alt={t("interieurAlt")}
                 fill
+                priority
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover"
               />

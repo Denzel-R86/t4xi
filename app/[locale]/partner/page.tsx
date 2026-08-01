@@ -111,6 +111,8 @@ export default async function PartnerPage() {
                 alt="T4XI vloot — Tesla Model Y en Lynk & Co 01"
                 width={1200}
                 height={675}
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 className="h-auto w-full object-cover"
               />
             </div>
