@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
+import schipholAvond from "@/public/schiphol-avond.jpg";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import FaqList from "@/components/sections/FaqList";
@@ -220,9 +221,10 @@ export default async function SeoLandingPage({ params }: { params: { slug: strin
         {/* Schiphol-platform bij avond (gecureerd, T4XI). De navy-avondtinten
             sluiten aan op bg-ink; de overlay houdt de fog-tekst leesbaar. */}
         <Image
-          src="/schiphol-avond.jpg"
+          src={schipholAvond}
           alt=""
           fill
+          placeholder="blur"
           sizes="100vw"
           className="object-cover object-center opacity-40"
         />

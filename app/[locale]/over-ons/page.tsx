@@ -1,5 +1,6 @@
 import { pageMetadata } from "@/lib/seo-locale";
 import Image from "next/image";
+import interieur from "@/public/tesla-interieur.jpg";
 import FairBand from "@/components/sections/FairBand";
 import WhySection from "@/components/sections/WhySection";
 import ReviewsSection from "@/components/sections/ReviewsSection";
@@ -36,10 +37,11 @@ export default function OverOnsPage() {
           <ScrollReveal delay={150}>
             <figure className="relative aspect-[4/5] overflow-hidden rounded-fleet border border-line shadow-card-lg">
               <Image
-                src="/tesla-interieur.jpg"
+                src={interieur}
                 alt={t("interieurAlt")}
                 fill
                 priority
+                placeholder="blur"
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover"
               />

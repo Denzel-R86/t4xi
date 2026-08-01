@@ -1,6 +1,7 @@
 import { pageMetadata } from "@/lib/seo-locale";
 import { getTranslations } from "next-intl/server";
 import Image from "next/image";
+import renders from "@/public/renders.jpg";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { EarningsCalculator, PartnerSignupForm } from "@/components/partner/PartnerInteractive";
@@ -107,11 +108,12 @@ export default async function PartnerPage() {
           <div>
             <div className="overflow-hidden rounded-card border border-line shadow-card-lg">
               <Image
-                src="/renders.jpg"
+                src={renders}
                 alt="T4XI vloot — Tesla Model Y en Lynk & Co 01"
                 width={1200}
                 height={675}
                 priority
+                placeholder="blur"
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="h-auto w-full object-cover"
               />
