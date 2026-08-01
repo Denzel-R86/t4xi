@@ -47,7 +47,7 @@
 
 import "./horizon.css";
 import { Link } from "@/i18n/navigation";
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Reveal, Odometer, usePrefersReducedMotion } from "./motion";
 import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
@@ -437,7 +437,8 @@ export function EditorialFigure({
   annotations,
   specs,
 }: {
-  src: string;
+  /** string = losse pad (geen blur); StaticImageData = static import (blur). */
+  src: string | StaticImageData;
   alt: string;
   annotations?: { text: string; side: "left" | "right"; top: string }[];
   specs?: { k: string; v: string }[];
@@ -445,7 +446,7 @@ export function EditorialFigure({
   return (
     <figure>
       <div className="hz-frame aspect-[16/9] md:aspect-[21/9]">
-        <Image src={src} alt={alt} fill sizes="90vw" className="object-cover saturate-[0.9] contrast-[0.96]" />
+        <Image src={src} alt={alt} fill sizes="90vw" placeholder={typeof src === "object" ? "blur" : "empty"} className="object-cover saturate-[0.9] contrast-[0.96]" />
         <span className="hz-frame-wash" aria-hidden="true" />
         {annotations?.map((a) => (
           <span

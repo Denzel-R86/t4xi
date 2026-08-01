@@ -16,6 +16,9 @@ import {
 } from "@/components/horizon/patterns";
 import { loadRateCard, type CityRates } from "@/lib/pricing/rate-card";
 import { getTranslations } from "next-intl/server";
+// Static import → Next genereert een blurDataURL bij build (geen dependency,
+// asset zelf ongewijzigd). Gebruikt als blur-placeholder in de EditorialFigure.
+import teslaFleet from "@/public/tesla_model_y_black.jpg";
 
 /**
  * Homepage — eerste uitspraak in de Horizon Design Language (v1).
@@ -193,7 +196,7 @@ export default async function HomePage() {
         below={
           <Reveal>
             <EditorialFigure
-              src="/tesla_model_y_black.jpg"
+              src={teslaFleet}
               alt={t("figuurAlt")}
               annotations={[
                 { text: t("annBagage"), side: "left", top: "16%" },
