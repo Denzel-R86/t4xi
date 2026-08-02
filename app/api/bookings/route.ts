@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { calculateBookingPrice } from "@/lib/pricing/engine";
 import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
+import { buildMonitoringInsert, registerFlightMonitoring } from "@/lib/flight-monitoring/service";
 
 /**
  * POST /api/bookings
@@ -303,6 +304,19 @@ export async function POST(request: Request) {
   } catch (e) {
     console.error("[bookings] notificatie-laag fout:", e instanceof Error ? e.message : e);
   }
+
+  // 5b. Vluchtmonitoring (best-effort, Sprint 7.8A): registreer elke luchthavenrit
+  //     met vluchtnummer zodat de poller de status kan volgen. Mag de boeking nooit
+  //     breken; idempotent via UNIQUE booking_id. Geen pricing/Stripe.
+  await registerFlightMonitoring(
+    supabase,
+    buildMonitoringInsert({
+      bookingId,
+      flightNumber: flightNumberToStore,
+      scheduleDate: date,
+      direction: flightDirection,
+    })
+  );
 
   return json(201, {
     ok: true,
