@@ -20,6 +20,19 @@ const DEFAULT_TIMEOUT_MS = 8000;
 
 export type SchipholCredentials = { appId: string; apiKey: string };
 
+/**
+ * Parseert de HTTP `Retry-After`-header: een geheel aantal seconden, of een
+ * HTTP-datum. Retourneert seconden (>= 0) of undefined bij een lege/ongeldige waarde.
+ */
+export function parseRetryAfter(value: string | null): number | undefined {
+  const raw = (value ?? "").trim();
+  if (raw === "") return undefined;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  const when = Date.parse(raw);
+  if (Number.isNaN(when)) return undefined;
+  return Math.max(0, Math.ceil((when - Date.now()) / 1000));
+}
+
 /** Injecteerbare afhankelijkheden — maakt de client testbaar zonder netwerk. */
 export type SchipholClientDeps = {
   fetchImpl?: typeof fetch;
@@ -33,7 +46,7 @@ export type SchipholClientResult =
   | { ok: true; status: number; data: RawSchipholFlightsResponse }
   | { ok: false; reason: "not_configured" }
   | { ok: false; reason: "unauthorized"; status: number }
-  | { ok: false; reason: "http_error"; status: number }
+  | { ok: false; reason: "http_error"; status: number; retryAfterSeconds?: number }
   | { ok: false; reason: "network_error" }
   | { ok: false; reason: "invalid_json"; status: number };
 
@@ -100,7 +113,11 @@ export async function fetchSchipholFlights(
     return { ok: false, reason: "unauthorized", status: res.status };
   }
   if (!res.ok) {
-    return { ok: false, reason: "http_error", status: res.status };
+    // 429: honoreer de Retry-After-header (seconden of HTTP-datum) zodat de
+    // poller gericht kan backoff'en in plaats van blind opnieuw te proberen.
+    const retryAfterSeconds =
+      res.status === 429 ? parseRetryAfter(res.headers.get("retry-after")) : undefined;
+    return { ok: false, reason: "http_error", status: res.status, ...(retryAfterSeconds !== undefined ? { retryAfterSeconds } : {}) };
   }
 
   try {

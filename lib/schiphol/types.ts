@@ -92,7 +92,7 @@ export type FlightLookupResult =
   | { status: "not_found" }
   | { status: "not_configured" }
   | { status: "unauthorized" }
-  | { status: "upstream_error"; upstreamStatus: number | null };
+  | { status: "upstream_error"; upstreamStatus: number | null; retryAfterSeconds?: number };
 
 /** Uitkomst van de health-check tegen de Schiphol-API. */
 export type SchipholHealth = {
