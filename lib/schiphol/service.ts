@@ -135,6 +135,11 @@ function lookupFromClientFailure(
     case "network_error":
       return { status: "upstream_error", upstreamStatus: null };
     case "http_error":
+      return {
+        status: "upstream_error",
+        upstreamStatus: result.status,
+        ...(result.retryAfterSeconds !== undefined ? { retryAfterSeconds: result.retryAfterSeconds } : {}),
+      };
     case "invalid_json":
       return { status: "upstream_error", upstreamStatus: result.status };
   }

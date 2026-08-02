@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { pollActiveFlightsWithSupabase } from "@/lib/flight-monitoring/service";
 
@@ -33,6 +34,14 @@ function providedSecret(request: Request): string {
   return auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
 }
 
+/** Constant-time vergelijking; lengteverschil faalt zonder timingSafeEqual te gooien. */
+function secretsMatch(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
+
 export async function POST(request: Request) {
   const secret = (process.env.FLIGHT_MONITOR_SECRET ?? "").trim();
   if (!secret) {
@@ -41,7 +50,7 @@ export async function POST(request: Request) {
       { status: 503 }
     );
   }
-  if (providedSecret(request) !== secret) {
+  if (!secretsMatch(providedSecret(request), secret)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 

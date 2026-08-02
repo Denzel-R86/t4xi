@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { calculateBookingPrice } from "@/lib/pricing/engine";
 import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
-import { buildMonitoringInsert, registerFlightMonitoring } from "@/lib/flight-monitoring/service";
+import { buildRegistration, registerFlightMonitoring } from "@/lib/flight-monitoring/service";
 
 /**
  * POST /api/bookings
@@ -310,7 +310,7 @@ export async function POST(request: Request) {
   //     breken; idempotent via UNIQUE booking_id. Geen pricing/Stripe.
   await registerFlightMonitoring(
     supabase,
-    buildMonitoringInsert({
+    buildRegistration({
       bookingId,
       flightNumber: flightNumberToStore,
       scheduleDate: date,

@@ -13,10 +13,15 @@ import {
   getFlightStatus,
   checkSchipholHealth,
 } from "./service";
-import { fetchSchipholFlights } from "./client";
+import { fetchSchipholFlights, parseRetryAfter } from "./client";
 import type { RawSchipholFlight } from "./types";
 
 const CREDS = { appId: "test-id", apiKey: "test-key" };
+
+/** fetchImpl die een specifieke status + headers teruggeeft. */
+function fetchWith(status: number, headers: Record<string, string>): typeof fetch {
+  return (async () => new Response("{}", { status, headers })) as unknown as typeof fetch;
+}
 
 /** Bouwt een fetchImpl die één vaste Response teruggeeft. */
 function fakeFetch(status: number, body: unknown): typeof fetch {
@@ -256,4 +261,40 @@ test("checkSchipholHealth — geen credentials → not_configured (geen netwerk)
     if (saved.id !== undefined) process.env.SCHIPHOL_APP_ID = saved.id;
     if (saved.key !== undefined) process.env.SCHIPHOL_API_KEY = saved.key;
   }
+});
+
+// ── 429 Retry-After ──────────────────────────────────────────────────────────
+
+test("parseRetryAfter — seconden, HTTP-datum en ongeldige waarden", () => {
+  assert.equal(parseRetryAfter("120"), 120);
+  assert.equal(parseRetryAfter(""), undefined);
+  assert.equal(parseRetryAfter(null), undefined);
+  assert.equal(parseRetryAfter("niet-een-getal"), undefined);
+  const future = new Date(Date.now() + 60_000).toUTCString();
+  const parsed = parseRetryAfter(future);
+  assert.ok(parsed !== undefined && parsed >= 55 && parsed <= 61, `datum → ~60s, kreeg ${parsed}`);
+});
+
+test("fetchSchipholFlights — 429 levert http_error met retryAfterSeconds", async () => {
+  const r = await fetchSchipholFlights({ flightName: "KL1234" }, {
+    fetchImpl: fetchWith(429, { "retry-after": "90" }),
+    credentials: CREDS,
+  });
+  assert.equal(r.ok, false);
+  if (r.ok) return;
+  assert.equal(r.reason, "http_error");
+  if (r.reason !== "http_error") return;
+  assert.equal(r.status, 429);
+  assert.equal(r.retryAfterSeconds, 90);
+});
+
+test("getFlightStatus — 429 → upstream_error met retryAfterSeconds doorgegeven", async () => {
+  const r = await getFlightStatus("KL1234", {}, {
+    fetchImpl: fetchWith(429, { "retry-after": "45" }),
+    credentials: CREDS,
+  });
+  assert.equal(r.status, "upstream_error");
+  if (r.status !== "upstream_error") return;
+  assert.equal(r.upstreamStatus, 429);
+  assert.equal(r.retryAfterSeconds, 45);
 });
