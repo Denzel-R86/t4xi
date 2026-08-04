@@ -298,3 +298,9 @@ test("getFlightStatus — 429 → upstream_error met retryAfterSeconds doorgegev
   assert.equal(r.upstreamStatus, 429);
   assert.equal(r.retryAfterSeconds, 45);
 });
+
+test("getFlightStatus — 204 No Content → not_found (lege trefferset)", async () => {
+  const noContent = (async () => new Response(null, { status: 204 })) as unknown as typeof fetch;
+  const r = await getFlightStatus("ZZ9999", {}, { fetchImpl: noContent, credentials: CREDS });
+  assert.equal(r.status, "not_found");
+});

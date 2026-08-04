@@ -117,7 +117,30 @@
     "foutFallback": "Er ging iets mis. Probeer het opnieuw of bel ons.",
     "foutVerbinding": "Geen verbinding. Controleer je internet of bel ons.",
     "honeypot": "Website (niet invullen)",
-    "succesBetaalIntro": "Uw aanvraag is geregistreerd. Rond hieronder de betaling af — daarna bevestigen wij uw rit."
+    "succesBetaalIntro": "Uw aanvraag is geregistreerd. Rond hieronder de betaling af — daarna bevestigen wij uw rit.",
+    "flightCard": {
+      "searching": "Zoeken…",
+      "notFoundTitle": "Vluchtnummer niet gevonden.",
+      "notFoundHint": "Controleer de invoer.",
+      "example": "Voorbeeld",
+      "error": "Vluchtinformatie is tijdelijk niet beschikbaar.",
+      "landing": "Landing",
+      "departure": "Vertrek",
+      "newLanding": "Nieuwe landing",
+      "newDeparture": "Nieuwe vertrektijd",
+      "delayMin": "+{count} min",
+      "terminal": "Terminal",
+      "gate": "Gate",
+      "lastUpdate": "Laatste update",
+      "tracking": "Wij volgen deze vlucht automatisch.",
+      "status": {
+        "scheduled": "Op schema",
+        "delayed": "Vertraagd",
+        "cancelled": "Geannuleerd",
+        "landed": "Geland",
+        "departed": "Vertrokken"
+      }
+    }
   },
   "autocomplete": {
     "zoeken": "Adressen zoeken…",

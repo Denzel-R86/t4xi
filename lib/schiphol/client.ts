@@ -120,6 +120,12 @@ export async function fetchSchipholFlights(
     return { ok: false, reason: "http_error", status: res.status, ...(retryAfterSeconds !== undefined ? { retryAfterSeconds } : {}) };
   }
 
+  // 204 No Content: Schiphol antwoordt zo wanneer er GEEN vlucht op de query
+  // matcht. Dat is een lege trefferset (→ not_found), geen fout of ongeldige JSON.
+  if (res.status === 204) {
+    return { ok: true, status: 204, data: { flights: [] } };
+  }
+
   try {
     const data = (await res.json()) as RawSchipholFlightsResponse;
     return { ok: true, status: res.status, data };
