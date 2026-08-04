@@ -19,7 +19,17 @@ export type Airport = { isTransfer: boolean; direction: "arrival" | "departure" 
 export type Quote =
   | { status: "idle" | "loading" | "error"; airport?: Airport }
   | { status: "onrequest"; airport: Airport }
-  | { status: "ready"; amount: string; price: number; returnApplied: boolean; airport: Airport };
+  | {
+      status: "ready";
+      amount: string;
+      price: number;
+      returnApplied: boolean;
+      airport: Airport;
+      /** Backend-bevestigde afstand (km) — 0 als de engine er geen levert. */
+      distanceKm: number;
+      /** Backend-bevestigde geschatte reistijd (min) — 0 als onbekend. */
+      estimatedDurationMin: number;
+    };
 
 export function useRouteQuote(
   pickup: AddressSuggestion | null,
@@ -57,6 +67,8 @@ export function useRouteQuote(
             amount: `€${data.price}`,
             price: Number(data.price),
             returnApplied: Boolean(data.returnApplied),
+            distanceKm: Number(data.distanceKm) || 0,
+            estimatedDurationMin: Number(data.estimatedDurationMin) || 0,
             airport: {
               isTransfer: Boolean(data.isAirportTransfer),
               direction: data.flightDirection ?? null,
