@@ -43,22 +43,30 @@ const labelCls = "mb-1.5 block text-xs font-bold text-secondary";
 export default function BookingSection({
   initialPickup,
   initialDropoff,
+  initialReturn,
+  initialPersons,
 }: {
   /** Deep-link (?pickup=…): veld vooraf gevuld, prijs rekent direct. */
   initialPickup?: string;
   /** Deep-link (?dropoff=…). */
   initialDropoff?: string;
+  /** Deep-link (?retour=1): start op de retour-tab. */
+  initialReturn?: boolean;
+  /** Deep-link (?persons=…): aantal passagiers vooraf ingevuld (1–4). */
+  initialPersons?: number;
 } = {}) {
   const t = useTranslations("booking");
   const locale = useLocale();
-  const [tab, setTab] = useState<RitType>("enkel");
+  const [tab, setTab] = useState<RitType>(initialReturn ? "retour" : "enkel");
   const [pickup, setPickup] = useState<AddressSuggestion | null>(
     initialPickup ? { id: "deeplink", label: initialPickup, source: "free" } : null
   );
   const [dropoff, setDropoff] = useState<AddressSuggestion | null>(
     initialDropoff ? { id: "deeplink", label: initialDropoff, source: "free" } : null
   );
-  const [persons, setPersons] = useState(1);
+  const [persons, setPersons] = useState(
+    initialPersons && initialPersons >= 1 ? Math.min(4, Math.floor(initialPersons)) : 1
+  );
   const [luggage, setLuggage] = useState("handbagage");
   const [vehicle, setVehicle] = useState(VEHICLES[0]);
 

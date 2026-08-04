@@ -31,6 +31,9 @@ export default function BoekenPage({
     (Array.isArray(v) ? v[0] : v)?.trim() || undefined;
   const initialPickup = first(searchParams?.pickup) ?? first(searchParams?.van);
   const initialDropoff = first(searchParams?.dropoff) ?? first(searchParams?.naar);
+  const initialReturn = first(searchParams?.retour) === "1";
+  const personsRaw = first(searchParams?.persons);
+  const initialPersons = personsRaw && /^\d+$/.test(personsRaw) ? Number(personsRaw) : undefined;
   const t = useTranslations("boekenPagina");
   return (
     <section className="mx-auto grid max-w-site items-start gap-12 px-6 py-16 md:py-24 lg:grid-cols-2">
@@ -57,7 +60,12 @@ export default function BoekenPage({
         </ul>
       </div>
       <ScrollReveal>
-        <BookingSection initialPickup={initialPickup} initialDropoff={initialDropoff} />
+        <BookingSection
+          initialPickup={initialPickup}
+          initialDropoff={initialDropoff}
+          initialReturn={initialReturn}
+          initialPersons={initialPersons}
+        />
       </ScrollReveal>
     </section>
   );

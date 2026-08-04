@@ -224,6 +224,14 @@ export default async function SeoLandingPage({ params }: { params: { slug: strin
                 Staat jouw plaatsnaam er niet bij? Bel of WhatsApp ons — wij
                 rijden ook vanuit omliggende gemeenten voor een offerte op maat.
               </p>
+              <p className="mt-6 text-secondary">
+                Benieuwd naar het exacte bedrag voor jouw rit?{" "}
+                <Link href="/tarieven" className="font-medium text-ink underline underline-offset-4 hover:opacity-80">
+                  Bereken uw vaste taxitarief
+                </Link>{" "}
+                — kies uw ophaaladres, eventuele tussenstops en bestemming en zie
+                direct de vaste prijs.
+              </p>
             </div>
           </ScrollReveal>
         </div>
