@@ -1158,8 +1158,7 @@
     "faqV2": "Do you charge surge pricing or a night rate?",
     "faqA2": "Never surge pricing. Rides between 23:00 and 06:00 carry a night rate of +15%, already included in your price—no surprises afterwards.",
     "faqV3": "What if there's no automatic price?",
-    "faqA3": "For routes or stops without a fixed price we'll gladly make a proposal. Request it via WhatsApp or email and we'll include your entered details automatically.",
-    "catalogusKop": "Full rate overview"
+    "faqA3": "For routes or stops without a fixed price we'll gladly make a proposal. Request it via WhatsApp or email and we'll include your entered details automatically."
   },
   "fairFare": {
     "kicker": "Our promise",
