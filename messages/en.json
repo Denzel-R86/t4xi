@@ -117,7 +117,30 @@
     "foutFallback": "Something went wrong. Please try again or call us.",
     "foutVerbinding": "No connection. Check your internet or call us.",
     "honeypot": "Website (do not fill in)",
-    "succesBetaalIntro": "Your request is registered. Complete payment below — we’ll confirm your ride afterwards."
+    "succesBetaalIntro": "Your request is registered. Complete payment below — we’ll confirm your ride afterwards.",
+    "flightCard": {
+      "searching": "Searching…",
+      "notFoundTitle": "Flight number not found.",
+      "notFoundHint": "Please check your input.",
+      "example": "Example",
+      "error": "Flight information is temporarily unavailable.",
+      "landing": "Landing",
+      "departure": "Departure",
+      "newLanding": "New landing time",
+      "newDeparture": "New departure time",
+      "delayMin": "+{count} min",
+      "terminal": "Terminal",
+      "gate": "Gate",
+      "lastUpdate": "Last update",
+      "tracking": "We track this flight automatically.",
+      "status": {
+        "scheduled": "On schedule",
+        "delayed": "Delayed",
+        "cancelled": "Cancelled",
+        "landed": "Landed",
+        "departed": "Departed"
+      }
+    }
   },
   "autocomplete": {
     "zoeken": "Searching addresses…",

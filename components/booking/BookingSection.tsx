@@ -6,6 +6,7 @@ import AddressAutocomplete, {
 } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import PaymentStep from "@/components/booking/PaymentStep";
+import FlightCard from "@/components/booking/FlightCard";
 import Icon from "@/components/ui/Icon";
 import { inferAddressMeta, type RitType } from "@/lib/booking-meta";
 import { useLocale, useTranslations } from "next-intl";
@@ -352,6 +353,10 @@ export default function BookingSection({
               <p id="f-flight-help" className="mt-1.5 text-[12px] text-secondary">
                 {isArrival ? t("vluchtHelpAankomst") : t("vluchtHelpVertrek")}
               </p>
+
+              {/* Live vluchtkaart (7.9A): debounced check op /api/flights/* zodra
+                  een vluchtnummer is ingevoerd. Read-only; wijzigt de boeking niet. */}
+              <FlightCard flightNumber={flightNumber} />
 
               {/*
                 Airport Arrival Service — uitsluitend bij een OPHALING. De klant ziet
