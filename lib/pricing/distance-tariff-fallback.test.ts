@@ -149,16 +149,79 @@ test("routing-fout (fetch gooit) → getDrivingRoute geeft null", async () => {
   }
 });
 
-test("routing-status != OK → getDrivingRoute geeft null", async () => {
+test("Routes API v2: geen route in de response → getDrivingRoute geeft null", async () => {
   const prevKey = process.env.GOOGLE_MAPS_API_KEY;
   const prevFetch = globalThis.fetch;
   process.env.GOOGLE_MAPS_API_KEY = "test-key";
   globalThis.fetch = (async () => ({
     ok: true,
-    json: async () => ({ status: "ZERO_RESULTS", routes: [] }),
+    json: async () => ({ routes: [] }),
   })) as unknown as typeof fetch;
   try {
     assert.equal(await getDrivingRoute("A", "B"), null);
+  } finally {
+    globalThis.fetch = prevFetch;
+    if (prevKey !== undefined) process.env.GOOGLE_MAPS_API_KEY = prevKey;
+    else delete process.env.GOOGLE_MAPS_API_KEY;
+  }
+});
+
+test("Routes API v2: non-2xx HTTP → getDrivingRoute geeft null", async () => {
+  const prevKey = process.env.GOOGLE_MAPS_API_KEY;
+  const prevFetch = globalThis.fetch;
+  process.env.GOOGLE_MAPS_API_KEY = "test-key";
+  globalThis.fetch = (async () => ({
+    ok: false,
+    status: 400,
+    json: async () => ({}),
+  })) as unknown as typeof fetch;
+  try {
+    assert.equal(await getDrivingRoute("A", "B"), null);
+  } finally {
+    globalThis.fetch = prevFetch;
+    if (prevKey !== undefined) process.env.GOOGLE_MAPS_API_KEY = prevKey;
+    else delete process.env.GOOGLE_MAPS_API_KEY;
+  }
+});
+
+test("Routes API v2: POST computeRoutes met field mask, key in header (niet in URL), parse distanceMeters/duration", async () => {
+  const prevKey = process.env.GOOGLE_MAPS_API_KEY;
+  const prevFetch = globalThis.fetch;
+  process.env.GOOGLE_MAPS_API_KEY = "test-key";
+
+  let seenUrl = "";
+  let seenInit: RequestInit | undefined;
+  globalThis.fetch = (async (url: string, init?: RequestInit) => {
+    seenUrl = String(url);
+    seenInit = init;
+    return {
+      ok: true,
+      json: async () => ({ routes: [{ distanceMeters: 20000, duration: "1800s" }] }),
+    };
+  }) as unknown as typeof fetch;
+
+  try {
+    const route = await getDrivingRoute("Amsterdam", "Utrecht");
+    // 20 km, 30 min uit 20000 m / 1800 s
+    assert.deepEqual(route, { distanceKm: 20, durationMin: 30 });
+
+    // Endpoint + methode
+    assert.equal(seenUrl, "https://routes.googleapis.com/directions/v2:computeRoutes");
+    assert.equal(seenInit?.method, "POST");
+
+    // Key uitsluitend in de header, NOOIT in de URL
+    const headers = (seenInit?.headers ?? {}) as Record<string, string>;
+    assert.equal(headers["X-Goog-Api-Key"], "test-key");
+    assert.equal(headers["X-Goog-FieldMask"], "routes.distanceMeters,routes.duration");
+    assert.ok(!seenUrl.includes("test-key"), "API-key mag niet in de URL staan");
+
+    // Body: DRIVE, traffic-aware, gepland vertrektijdstip
+    const body = JSON.parse(String(seenInit?.body));
+    assert.equal(body.travelMode, "DRIVE");
+    assert.equal(body.routingPreference, "TRAFFIC_AWARE");
+    assert.ok(typeof body.departureTime === "string" && body.departureTime.length > 0);
+    assert.equal(body.origin.address, "Amsterdam");
+    assert.equal(body.destination.address, "Utrecht");
   } finally {
     globalThis.fetch = prevFetch;
     if (prevKey !== undefined) process.env.GOOGLE_MAPS_API_KEY = prevKey;
