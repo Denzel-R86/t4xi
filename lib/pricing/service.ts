@@ -8,6 +8,8 @@ import {
 } from "@/lib/supabase/server";
 import type { Json, Tables, TablesInsert } from "@/lib/types/database";
 import { resolveLocationSlug } from "@/lib/pricing/location-aliases";
+import { getDrivingRoute, type DrivingRoute } from "@/lib/pricing/routing";
+import { priceFromDistance, DEFAULT_DISTANCE_TARIFF } from "@/lib/pricing/distance-tariff";
 
 /**
  * T4XI Pricing Service — v1 (App Router, server-side).
@@ -16,17 +18,16 @@ import { resolveLocationSlug } from "@/lib/pricing/location-aliases";
  * Voor vaste routes wordt de retourprijs RECHTSTREEKS uit `return_price` gelezen;
  * er wordt GEEN kortingsmodel toegepast.
  *
- * Fallback (regel-gebaseerd): bestaat intern (zie computeRuleBasedQuote), maar
- * geeft in v1 GEEN klantzichtbare prijs terug. Onbekende routes leveren
- * "offerte op aanvraag". De vlag FALLBACK_CUSTOMER_VISIBLE bewaakt dit.
- *
- * Geen externe afstandsbron: de service leidt zelf geen km/reistijd af.
+ * Fallback (afstand-tarief): bestaat er geen vaste route, dan wordt — mits een
+ * routing-API een echte rij-afstand + rijtijd levert — een BINDENDE prijs berekend
+ * met het door de eigenaar goedgekeurde cost-plus-tarief (zie distance-tariff.ts).
+ * Levert de routing niets op (geen key/fout/onbekend), dan blijft het "offerte op
+ * aanvraag". De afstandsbron is Google Directions (zie routing.ts).
  */
 
-// ── v1-schakelaar: fallback-prijzen NIET tonen aan klanten ──────────────────
-const FALLBACK_CUSTOMER_VISIBLE = false as const;
-
 const DEFAULT_VEHICLE_CLASS = "executive-ev";
+
+const round2 = (n: number): number => Math.round(n * 100) / 100;
 const QUOTE_ON_REQUEST_MESSAGE = "Offerte op aanvraag";
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -111,7 +112,7 @@ export function airportContext(
 export type PricingQuoteResult =
   | {
       available: true;
-      source: "fixed_route_prices";
+      source: "fixed_route_prices" | "distance_tariff";
       /** toegepaste prijs (retour indien gevraagd én beschikbaar, anders enkel) */
       price: number;
       singlePrice: number;
@@ -126,7 +127,7 @@ export type PricingQuoteResult =
       /** @deprecated gebruik `airport.isAirportTransfer` — blijft voor bestaande callers. */
       isAirportTransfer: boolean;
       airport: AirportContext;
-      dataSource: "supabase";
+      dataSource: "supabase" | "routing";
     }
   | {
       available: false;
@@ -193,15 +194,50 @@ export async function getPricingQuote(
   return result;
 }
 
+/**
+ * Injecteerbare afhankelijkheden van de kern-resolver. Default (productie) is de
+ * echte Supabase-read + Google Directions; tests leveren fakes zodat de
+ * beslislogica — vaste route leidend, afstand-fallback, retour, offerte-op-aanvraag
+ * — zonder database of netwerk bewijsbaar is.
+ */
+export type ResolveQuoteDeps = {
+  findLocation: (raw: string) => Promise<LocationRow | null>;
+  findVehicleClass: (code: string) => Promise<VehicleClassRow | null>;
+  findFixedRoute: (
+    pickupId: string,
+    dropoffId: string,
+    vehicleClassId: string
+  ) => Promise<FixedRouteRow | null>;
+  getRoute: (origin: string, destination: string) => Promise<DrivingRoute | null>;
+};
+
 async function resolveQuote(
   input: PricingQuoteInput
+): Promise<PricingQuoteResult> {
+  const supabase = createPricingReadClient();
+  if (!supabase) return unavailable("data_unavailable");
+
+  const deps: ResolveQuoteDeps = {
+    findLocation: (raw) => findLocation(supabase, raw),
+    findVehicleClass: (code) => findVehicleClass(supabase, code),
+    findFixedRoute: (pickupId, dropoffId, vehicleClassId) =>
+      findFixedRoute(supabase, pickupId, dropoffId, vehicleClassId),
+    getRoute: getDrivingRoute,
+  };
+  return resolveQuoteWith(input, deps);
+}
+
+/**
+ * Kern-resolver met injecteerbare afhankelijkheden (zie ResolveQuoteDeps).
+ * Geëxporteerd voor tests; productie loopt via resolveQuote/getPricingQuote.
+ */
+export async function resolveQuoteWith(
+  input: PricingQuoteInput,
+  deps: ResolveQuoteDeps
 ): Promise<PricingQuoteResult> {
   const pickupRaw = (input.pickup ?? "").trim();
   const dropoffRaw = (input.dropoff ?? "").trim();
   if (!pickupRaw || !dropoffRaw) return unavailable("invalid_input");
-
-  const supabase = createPricingReadClient();
-  if (!supabase) return unavailable("data_unavailable");
 
   const classCode = slugify(input.vehicleClass ?? DEFAULT_VEHICLE_CLASS) || DEFAULT_VEHICLE_CLASS;
 
@@ -210,73 +246,140 @@ async function resolveQuote(
   let vehicleClass: VehicleClassRow | null;
   try {
     [pickup, dropoff, vehicleClass] = await Promise.all([
-      findLocation(supabase, pickupRaw),
-      findLocation(supabase, dropoffRaw),
-      findVehicleClass(supabase, classCode),
+      deps.findLocation(pickupRaw),
+      deps.findLocation(dropoffRaw),
+      deps.findVehicleClass(classCode),
     ]);
   } catch {
     return unavailable("data_unavailable");
   }
 
-  if (!pickup || !dropoff) return unavailable("unknown_location");
-  if (!vehicleClass) return unavailable("unknown_location");
-
-  // Vanaf hier zijn beide locaties bekend, dus kennen we de luchthavencontext —
-  // ook als er straks geen vaste route blijkt te bestaan. Een rit vanaf Schiphol
-  // zonder tarief blijft een luchthavenrit met vluchtnummerplicht.
+  // Best-effort luchthavencontext — airportContext is null-veilig. Ook zonder vaste
+  // route (of zonder herkende locatie) blijft een Schiphol-rit een luchthavenrit
+  // met vluchtnummerplicht.
   const airport = airportContext(pickup, dropoff);
 
-  // Capaciteitscontrole (zacht): past de vraag binnen de klasse?
+  // Capaciteitscontrole (zacht): alleen hard toetsen als de klasse bekend is.
   const passengers = input.passengers ?? 1;
   const luggage = input.luggage ?? 0;
-  if (passengers > vehicleClass.max_passengers || luggage > vehicleClass.max_luggage) {
+  if (
+    vehicleClass &&
+    (passengers > vehicleClass.max_passengers || luggage > vehicleClass.max_luggage)
+  ) {
     return unavailable("capacity_exceeded", airport);
   }
 
-  // 1. Vaste route = bron van waarheid
-  let fixed: FixedRouteRow | null;
-  try {
-    fixed = await findFixedRoute(supabase, pickup.id, dropoff.id, vehicleClass.id);
-  } catch {
-    return unavailable("data_unavailable", airport);
+  // 1. Vaste route = bron van waarheid (alleen als beide locaties én klasse bekend zijn).
+  if (pickup && dropoff && vehicleClass) {
+    let fixed: FixedRouteRow | null;
+    try {
+      fixed = await deps.findFixedRoute(pickup.id, dropoff.id, vehicleClass.id);
+    } catch {
+      return unavailable("data_unavailable", airport);
+    }
+
+    if (fixed) {
+      const wantReturn = input.returnTrip === true;
+      const returnPrice = fixed.return_price ?? null;
+      const returnApplied = wantReturn && returnPrice !== null;
+      const price = returnApplied ? (returnPrice as number) : fixed.price;
+
+      return {
+        available: true,
+        source: "fixed_route_prices",
+        price,
+        singlePrice: fixed.price,
+        returnPrice,
+        returnApplied,
+        currency: "EUR",
+        vatRate: fixed.vat_rate,
+        distanceKm: fixed.distance_km,
+        estimatedDurationMin: fixed.estimated_duration_min,
+        vehicleClass: vehicleClass.code,
+        route: {
+          pickupSlug: pickup.slug,
+          dropoffSlug: dropoff.slug,
+          label: fixed.source_label,
+        },
+        isAirportTransfer: airport.isAirportTransfer,
+        airport,
+        dataSource: "supabase",
+      };
+    }
   }
 
-  if (fixed) {
-    const wantReturn = input.returnTrip === true;
-    const returnPrice = fixed.return_price ?? null;
-    const returnApplied = wantReturn && returnPrice !== null;
-    const price = returnApplied ? (returnPrice as number) : fixed.price;
+  // 2. Geen vaste route → afstand-tarief (bindende prijs) mits de routing-API een
+  //    echte rij-afstand levert. Werkt óók voor vrije adressen die niet in
+  //    `locations` staan; Google Directions accepteert vrije-tekstadressen.
+  const byDistance = await tryDistanceTariff(
+    deps.getRoute,
+    input,
+    pickupRaw,
+    dropoffRaw,
+    classCode,
+    pickup,
+    dropoff,
+    vehicleClass,
+    airport
+  );
+  if (byDistance) return byDistance;
 
-    return {
-      available: true,
-      source: "fixed_route_prices",
-      price,
-      singlePrice: fixed.price,
-      returnPrice,
-      returnApplied,
-      currency: "EUR",
-      vatRate: fixed.vat_rate,
-      distanceKm: fixed.distance_km,
-      estimatedDurationMin: fixed.estimated_duration_min,
-      vehicleClass: vehicleClass.code,
-      route: {
-        pickupSlug: pickup.slug,
-        dropoffSlug: dropoff.slug,
-        label: fixed.source_label,
-      },
-      isAirportTransfer: airport.isAirportTransfer,
-      airport,
-      dataSource: "supabase",
-    };
-  }
-
-  // 2. Geen vaste route → regel-gebaseerde fallback (intern, v1: niet zichtbaar)
-  const ruleBased = await computeRuleBasedQuote();
-  if (FALLBACK_CUSTOMER_VISIBLE && ruleBased !== null) {
-    return ruleBased;
-  }
-
+  // 3. Niets bruikbaars → offerte op aanvraag. De reden hangt af van wat ontbrak.
+  if (!pickup || !dropoff || !vehicleClass) return unavailable("unknown_location", airport);
   return unavailable("route_not_fixed", airport);
+}
+
+/**
+ * Afstand-tarief fallback (BINDENDE prijs). Vraagt de werkelijke rij-afstand +
+ * rijtijd op bij de routing-API en rekent die door met het door de eigenaar
+ * goedgekeurde cost-plus-tarief (distance-tariff.ts). Retourneert `null` als de
+ * routing niets bruikbaars oplevert (geen key, fout, of onbekende route) — de
+ * caller valt dan terug op "offerte op aanvraag".
+ *
+ * Retour = 2× de enkele rit. Operationeel is een retour twee ritten; dit is een
+ * bewuste, door de eigenaar aanpasbare aanname. Er wordt hier GEEN retour-
+ * kortingsbeleid verzonnen.
+ */
+async function tryDistanceTariff(
+  getRoute: (origin: string, destination: string) => Promise<DrivingRoute | null>,
+  input: PricingQuoteInput,
+  pickupRaw: string,
+  dropoffRaw: string,
+  classCode: string,
+  pickup: LocationRow | null,
+  dropoff: LocationRow | null,
+  vehicleClass: VehicleClassRow | null,
+  airport: AirportContext
+): Promise<PricingQuoteResult | null> {
+  const route = await getRoute(pickupRaw, dropoffRaw);
+  if (!route) return null;
+
+  const single = priceFromDistance(route.distanceKm, route.durationMin);
+  const returnPrice = round2(single * 2);
+  const returnApplied = input.returnTrip === true;
+  const price = returnApplied ? returnPrice : single;
+
+  return {
+    available: true,
+    source: "distance_tariff",
+    price,
+    singlePrice: single,
+    returnPrice,
+    returnApplied,
+    currency: "EUR",
+    vatRate: DEFAULT_DISTANCE_TARIFF.vatRate,
+    distanceKm: route.distanceKm,
+    estimatedDurationMin: route.durationMin,
+    vehicleClass: vehicleClass?.code ?? classCode,
+    route: {
+      pickupSlug: pickup?.slug ?? slugify(pickupRaw),
+      dropoffSlug: dropoff?.slug ?? slugify(dropoffRaw),
+      label: null,
+    },
+    isAirportTransfer: airport.isAirportTransfer,
+    airport,
+    dataSource: "routing",
+  };
 }
 
 // ── Locatie-/klasse-resolutie ────────────────────────────────────────────────
@@ -378,19 +481,6 @@ async function findFixedRoute(
 }
 
 // ── Regel-gebaseerde fallback (INTERN — v1 niet klantzichtbaar) ──────────────
-
-/**
- * Placeholder voor de regel-gebaseerde prijsberekening (pricing_rules +
- * price_adjustments). In v1 uitgeschakeld voor klanten:
- *   - er is geen externe afstandsbron (km/reistijd ontbreken), en
- *   - de afronding/retourlogica is nog niet op T4XI gekalibreerd.
- * Retourneert daarom altijd null; de aanroeper geeft dan "offerte op aanvraag".
- * Bij het activeren (Stap 3+) leest deze functie pricing_rules/price_adjustments
- * en vereist distanceKm/estimatedDurationMin uit een afstandsbron.
- */
-async function computeRuleBasedQuote(): Promise<PricingQuoteResult | null> {
-  return null;
-}
 
 // ── Analytics-/auditlog ──────────────────────────────────────────────────────
 

@@ -38,7 +38,7 @@ export type RouteSnapshot = {
   vehicleClass: string;
   distanceKm: number | null;
   estimatedDurationMin: number | null;
-  source: "fixed_route_prices";
+  source: "fixed_route_prices" | "dynamic";
   sourceLabel: string | null;
   /** valid_from van de tariefregel — nog niet uit de quote beschikbaar in 7.6.3C. */
   validFrom: string | null;
@@ -67,15 +67,20 @@ type AvailableQuote = Extract<PricingQuoteResult, { available: true }>;
  * een onbekende bron — er wordt NOOIT een vrije/dynamische string doorgegeven die
  * buiten het database-contract valt. Vandaag is er precies één bron.
  *
- * Mapping (PR 7.6.3C):
+ * Mapping:
  *   quote.source "fixed_route_prices"  →  pricingSource "fixed_route_prices"
- * Toekomstige bronnen (dynamic/manual/hotel_rate/airport_rate/contract_rate/
- * promotion) worden hier toegevoegd zodra ze bestaan.
+ *   quote.source "distance_tariff"     →  pricingSource "dynamic"
+ * Een berekende afstandsprijs is per definitie een dynamische bron; "dynamic"
+ * zit al in het database-CHECK-contract, dus dit vereist geen migratie.
+ * Overige bronnen (manual/hotel_rate/airport_rate/contract_rate/promotion)
+ * worden hier toegevoegd zodra ze bestaan.
  */
 export function mapPricingSource(source: string): PricingSource | null {
   switch (source) {
     case "fixed_route_prices":
       return "fixed_route_prices";
+    case "distance_tariff":
+      return "dynamic";
     default:
       return null;
   }
@@ -117,7 +122,7 @@ export function buildPriceSnapshot(
       vehicleClass: quote.vehicleClass,
       distanceKm: quote.distanceKm,
       estimatedDurationMin: quote.estimatedDurationMin,
-      source: "fixed_route_prices",
+      source: pricingSource === "fixed_route_prices" ? "fixed_route_prices" : "dynamic",
       sourceLabel: quote.route.label,
       validFrom: null,
       returnApplied: quote.returnApplied,
