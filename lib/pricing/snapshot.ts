@@ -23,6 +23,22 @@ export type PricingSource =
   | "contract_rate"
   | "promotion";
 
+/** Exact het database-CHECK-domein — bron van waarheid voor geldige pricingSources. */
+const PRICING_SOURCES: readonly PricingSource[] = [
+  "fixed_route_prices",
+  "dynamic",
+  "manual",
+  "hotel_rate",
+  "airport_rate",
+  "contract_rate",
+  "promotion",
+];
+
+/** True als `value` een toegestane pricingSource is (het opgeslagen domein). */
+export function isPricingSource(value: string): value is PricingSource {
+  return (PRICING_SOURCES as readonly string[]).includes(value);
+}
+
 export type PriceSnapshotAdjustment = {
   code: string;
   label: string;
@@ -145,7 +161,10 @@ export function validateSnapshot(s: PriceSnapshot): SnapshotValidation {
   if (s.currency !== "EUR") return { ok: false, error: "currency must be EUR" };
   if (!isIntGte0(s.subtotalCents)) return { ok: false, error: "subtotalCents must be a non-negative integer" };
   if (!isIntGte0(s.totalCents)) return { ok: false, error: "totalCents must be a non-negative integer" };
-  if (mapPricingSource(s.pricingSource) === null) return { ok: false, error: `invalid pricingSource: ${s.pricingSource}` };
+  // Valideer tegen het OPGESLAGEN domein (pricingSource is hier al gemapt).
+  // NIET via mapPricingSource: dat verwacht een quote-bron, niet de pricingSource,
+  // en zou 'dynamic'/'manual'/… onterecht afkeuren.
+  if (!isPricingSource(s.pricingSource)) return { ok: false, error: `invalid pricingSource: ${s.pricingSource}` };
 
   for (const a of s.adjustments) {
     if (!Number.isInteger(a.amountCents)) {

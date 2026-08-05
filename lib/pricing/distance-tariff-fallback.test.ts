@@ -7,7 +7,7 @@ import {
 } from "@/lib/pricing/service";
 import { priceFromDistance } from "@/lib/pricing/distance-tariff";
 import { getDrivingRoute, resolveDepartureTime } from "@/lib/pricing/routing";
-import { mapPricingSource, buildPriceSnapshot } from "@/lib/pricing/snapshot";
+import { mapPricingSource, buildPriceSnapshot, validateSnapshot } from "@/lib/pricing/snapshot";
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -243,6 +243,16 @@ test("buildPriceSnapshot van een afstand-tarief-quote → pricingSource dynamic"
   assert.ok(snap, "snapshot moet gebouwd worden voor distance_tariff");
   assert.equal(snap?.pricingSource, "dynamic");
   assert.equal(snap?.routeSnapshot.source, "dynamic");
+});
+
+test("validateSnapshot accepteert een dynamic distance_tariff-snapshot (persist-regressie)", async () => {
+  const quote = await resolveQuoteWith(input(), baseDeps());
+  assert.equal(quote.available, true);
+  if (!quote.available) return;
+  const snap = buildPriceSnapshot(quote, { quoteId: "q-2", now: new Date("2026-07-20T10:00:00Z") });
+  assert.ok(snap);
+  const v = validateSnapshot(snap!);
+  assert.equal(v.ok, true, `dynamic-snapshot moet geldig zijn, kreeg: ${v.ok ? "" : v.error}`);
 });
 
 // ── Gepland vertrektijdstip (departureAt) ────────────────────────────────────
