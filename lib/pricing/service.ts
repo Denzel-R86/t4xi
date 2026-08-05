@@ -26,8 +26,6 @@ import { priceFromDistance, DEFAULT_DISTANCE_TARIFF } from "@/lib/pricing/distan
  */
 
 const DEFAULT_VEHICLE_CLASS = "executive-ev";
-
-const round2 = (n: number): number => Math.round(n * 100) / 100;
 const QUOTE_ON_REQUEST_MESSAGE = "Offerte op aanvraag";
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -368,8 +366,9 @@ async function tryDistanceTariff(
   const route = await getRoute(pickupRaw, dropoffRaw, input.departureAt);
   if (!route) return null;
 
+  // Enkel is al een heel bedrag (priceFromDistance rondt af); retour = 2× → ook heel.
   const single = priceFromDistance(route.distanceKm, route.durationMin);
-  const returnPrice = round2(single * 2);
+  const returnPrice = single * 2;
   const returnApplied = input.returnTrip === true;
   const price = returnApplied ? returnPrice : single;
 

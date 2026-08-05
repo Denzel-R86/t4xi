@@ -32,13 +32,16 @@ export const DEFAULT_DISTANCE_TARIFF: DistanceTariff = {
   vatRate: 9,
 };
 
-const round2 = (n: number): number => Math.round(n * 100) / 100;
-
 /**
- * Bindende ENKELE-rit prijs voor een afstand (km) + rijtijd (min). Onder de
- * minimumprijs wordt afgekapt. Niet-eindige/negatieve invoer telt als 0, zodat een
- * kapotte routing-schatting nooit tot een negatieve of NaN-prijs leidt — in het
- * ergste geval wordt het de minimumprijs.
+ * Bindende ENKELE-rit prijs voor een afstand (km) + rijtijd (min), in HELE euro's.
+ *
+ * Volgorde (afgesproken): (1) lineair tarief berekenen, (2) minimumprijs afdwingen
+ * op het ruwe bedrag, (3) pas dán normaal afronden naar de dichtstbijzijnde hele
+ * euro. Zo is de klantprijs altijd een rond bedrag (€32,86 → €33, €73,44 → €73) en
+ * kan het gelockte snapshot-totaal er exact mee overeenkomen.
+ *
+ * Niet-eindige/negatieve invoer telt als 0, zodat een kapotte routing-schatting
+ * nooit tot een negatieve of NaN-prijs leidt — in het ergste geval de minimumprijs.
  */
 export function priceFromDistance(
   distanceKm: number,
@@ -48,5 +51,6 @@ export function priceFromDistance(
   const km = Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : 0;
   const min = Number.isFinite(durationMin) && durationMin > 0 ? durationMin : 0;
   const raw = tariff.baseFare + km * tariff.perKm + min * tariff.perMinute;
-  return round2(Math.max(tariff.minimumFare, raw));
+  // Minimum op het ruwe bedrag, dan afronden naar hele euro's.
+  return Math.round(Math.max(tariff.minimumFare, raw));
 }
