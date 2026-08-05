@@ -43,6 +43,12 @@ export type PricingQuoteInput = {
   luggage?: number;
   /** retourrit gevraagd? */
   returnTrip?: boolean;
+  /**
+   * Gepland vertrektijdstip als UTC ISO-8601-instant (zie
+   * lib/pricing/departure-time.ts). Uitsluitend gebruikt voor traffic-aware
+   * routing bij het afstand-tarief. Ontbreekt/verleden → noodwaarde nu + 1 min.
+   */
+  departureAt?: string;
 };
 
 export type UnavailableReason =
@@ -208,7 +214,11 @@ export type ResolveQuoteDeps = {
     dropoffId: string,
     vehicleClassId: string
   ) => Promise<FixedRouteRow | null>;
-  getRoute: (origin: string, destination: string) => Promise<DrivingRoute | null>;
+  getRoute: (
+    origin: string,
+    destination: string,
+    departureAt?: string
+  ) => Promise<DrivingRoute | null>;
 };
 
 async function resolveQuote(
@@ -341,7 +351,11 @@ export async function resolveQuoteWith(
  * kortingsbeleid verzonnen.
  */
 async function tryDistanceTariff(
-  getRoute: (origin: string, destination: string) => Promise<DrivingRoute | null>,
+  getRoute: (
+    origin: string,
+    destination: string,
+    departureAt?: string
+  ) => Promise<DrivingRoute | null>,
   input: PricingQuoteInput,
   pickupRaw: string,
   dropoffRaw: string,
@@ -351,7 +365,7 @@ async function tryDistanceTariff(
   vehicleClass: VehicleClassRow | null,
   airport: AirportContext
 ): Promise<PricingQuoteResult | null> {
-  const route = await getRoute(pickupRaw, dropoffRaw);
+  const route = await getRoute(pickupRaw, dropoffRaw, input.departureAt);
   if (!route) return null;
 
   const single = priceFromDistance(route.distanceKm, route.durationMin);

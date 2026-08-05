@@ -189,7 +189,7 @@ test("persist: autoritatieve velden komen uit de server-snapshot, niet uit input
 const quoteRouteSrc = readFileSync(resolve(process.cwd(), "app/api/pricing/quote/route.ts"), "utf8");
 
 test("quote-route: input alleen uit bekende velden; geen autoritatieve velden uit de body", () => {
-  assert.match(quoteRouteSrc, /const \{ pickup, dropoff, vehicleClass, returnTrip, passengers, luggage \} = body/);
+  assert.match(quoteRouteSrc, /const \{ pickup, dropoff, vehicleClass, returnTrip, passengers, luggage, date, time \} = body/);
   assert.doesNotMatch(quoteRouteSrc, /body\.(quoteId|price|amount|total|pricingVersion|pricingSource|totalCents|subtotalCents)/);
 });
 

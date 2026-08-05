@@ -6,7 +6,7 @@ import {
   type PricingQuoteInput,
 } from "@/lib/pricing/service";
 import { priceFromDistance } from "@/lib/pricing/distance-tariff";
-import { getDrivingRoute } from "@/lib/pricing/routing";
+import { getDrivingRoute, resolveDepartureTime } from "@/lib/pricing/routing";
 import { mapPricingSource, buildPriceSnapshot } from "@/lib/pricing/snapshot";
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -243,4 +243,42 @@ test("buildPriceSnapshot van een afstand-tarief-quote → pricingSource dynamic"
   assert.ok(snap, "snapshot moet gebouwd worden voor distance_tariff");
   assert.equal(snap?.pricingSource, "dynamic");
   assert.equal(snap?.routeSnapshot.source, "dynamic");
+});
+
+// ── Gepland vertrektijdstip (departureAt) ────────────────────────────────────
+
+test("toekomstige boeking: geldige toekomstige departureAt wordt gebruikt", () => {
+  const now = Date.parse("2026-08-10T12:00:00Z");
+  const future = "2026-08-10T14:00:00.000Z";
+  assert.equal(resolveDepartureTime(future, now).toISOString(), future);
+});
+
+test("boeking dezelfde dag maar later: wordt gebruikt zolang in de toekomst", () => {
+  const now = Date.parse("2026-08-10T12:00:00Z");
+  const sameDayLater = "2026-08-10T12:05:00.000Z";
+  assert.equal(resolveDepartureTime(sameDayLater, now).toISOString(), sameDayLater);
+});
+
+test("verstreken vertrektijd → noodwaarde nu + 1 min", () => {
+  const now = Date.parse("2026-08-10T12:00:00Z");
+  const past = "2026-08-10T09:00:00.000Z";
+  assert.equal(resolveDepartureTime(past, now).getTime(), now + 60_000);
+});
+
+test("ontbrekende of ongeldige departureAt → noodwaarde nu + 1 min", () => {
+  const now = Date.parse("2026-08-10T12:00:00Z");
+  assert.equal(resolveDepartureTime(undefined, now).getTime(), now + 60_000);
+  assert.equal(resolveDepartureTime("geen-datum", now).getTime(), now + 60_000);
+});
+
+test("service leidt input.departureAt door naar de routing-laag", async () => {
+  let seen: string | undefined = "NIET-AANGEROEPEN";
+  const deps = baseDeps({
+    getRoute: async (_o, _d, departureAt) => {
+      seen = departureAt;
+      return { distanceKm: 20, durationMin: 30 };
+    },
+  });
+  await resolveQuoteWith(input({ departureAt: "2026-08-10T14:00:00.000Z" }), deps);
+  assert.equal(seen, "2026-08-10T14:00:00.000Z");
 });

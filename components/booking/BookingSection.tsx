@@ -70,6 +70,10 @@ export default function BookingSection({
   );
   const [luggage, setLuggage] = useState("handbagage");
   const [vehicle, setVehicle] = useState(VEHICLES[0]);
+  // Datum/tijd zijn controlled zodat de live richtprijs ze traffic-aware meestuurt
+  // (de submit blijft ze óók via FormData lezen — de name-attributen blijven staan).
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("08:00");
 
   type SubmitState =
     | { status: "idle" | "loading" }
@@ -164,7 +168,12 @@ export default function BookingSection({
 
   // Live richtprijs én luchthavencontext via de GEDEELDE quote-flow
   // (components/shared/useRouteQuote.ts) — dezelfde keten als de homepagehero.
-  const quote = useRouteQuote(pickup, dropoff, { returnTrip: tab === "retour", passengers: persons });
+  const quote = useRouteQuote(pickup, dropoff, {
+    returnTrip: tab === "retour",
+    passengers: persons,
+    date,
+    time,
+  });
   const [flightNumber, setFlightNumber] = useState("");
 
   // Het vluchtnummerveld verschijnt zodra de engine zegt dat één zijde een
@@ -280,11 +289,11 @@ export default function BookingSection({
           </div>
           <div>
             <label htmlFor="f-date" className={labelCls}>{t("datum")}</label>
-            <input id="f-date" name="datum" type="date" required className={inputCls} />
+            <input id="f-date" name="datum" type="date" required className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
             <label htmlFor="f-time" className={labelCls}>{t("tijd")}</label>
-            <input id="f-time" name="tijd" type="time" defaultValue="08:00" className={inputCls} />
+            <input id="f-time" name="tijd" type="time" className={inputCls} value={time} onChange={(e) => setTime(e.target.value)} />
           </div>
           <div>
             <label htmlFor="f-vehicle" className={labelCls}>{t("voertuig")}</label>

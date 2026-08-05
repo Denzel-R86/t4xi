@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { calculateBookingPrice } from "@/lib/pricing/engine";
+import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
 import { buildRegistration, registerFlightMonitoring } from "@/lib/flight-monitoring/service";
@@ -162,7 +163,12 @@ export async function POST(request: Request) {
   //    'retour'). calculateBookingPrice is een pass-through om getPricingQuote: zelfde
   //    server-side bron (fixed_route_prices), zelfde bedrag. De client stuurt nooit een prijs.
   const returnTrip = rideType === "retour";
-  const quote = (await calculateBookingPrice({ pickup, dropoff, returnTrip, passengers: persons })).quote;
+  // Gepland vertrek uit de al gevalideerde datum/tijd (Amsterdamse wandkloktijd →
+  // UTC ISO), zodat de bindende prijs traffic-aware met het echte ritmoment rekent.
+  const departureAt = amsterdamDepartureIso(date, time) ?? undefined;
+  const quote = (
+    await calculateBookingPrice({ pickup, dropoff, returnTrip, passengers: persons, departureAt })
+  ).quote;
 
   let priceEuros: number | null = null;
   let quoteOnRequest = true;

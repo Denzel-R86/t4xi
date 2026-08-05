@@ -22,6 +22,30 @@ export type DrivingRoute = {
 const COMPUTE_ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
 const TIMEOUT_MS = 4000;
 
+// Noodwaarde-voorsprong: `departureTime` moet in de toekomst liggen. Wanneer er
+// geen geldige toekomstige vertrektijd is, gebruiken we nu + 1 min — UITSLUITEND
+// als expliciete fallback, niet als reguliere waarde.
+const EMERGENCY_LEAD_MS = 60_000;
+
+/**
+ * Bepaalt het te versturen vertrektijdstip. Een geldige, in-de-toekomst liggende
+ * `departureAt` (ISO-8601) wint altijd. Ontbreekt die, is hij ongeldig of ligt hij
+ * in het verleden → noodwaarde `nu + 1 min`. Zo krijgt de Routes API traffic-aware
+ * altijd een bruikbaar toekomstig moment.
+ */
+export function resolveDepartureTime(
+  departureAt?: string,
+  now: number = Date.now()
+): Date {
+  if (departureAt) {
+    const parsed = new Date(departureAt);
+    if (!Number.isNaN(parsed.getTime()) && parsed.getTime() > now) {
+      return parsed;
+    }
+  }
+  return new Date(now + EMERGENCY_LEAD_MS);
+}
+
 // Alleen deze twee velden opvragen (verplichte field mask; scheelt kosten + payload).
 const FIELD_MASK = "routes.distanceMeters,routes.duration";
 
@@ -52,7 +76,7 @@ function parseDurationSeconds(duration: string | undefined): number | null {
 export async function getDrivingRoute(
   origin: string,
   destination: string,
-  departureTime: Date = new Date(Date.now() + 60_000)
+  departureAt?: string
 ): Promise<DrivingRoute | null> {
   const key = process.env.GOOGLE_MAPS_API_KEY;
   if (!key) return null;
@@ -67,7 +91,8 @@ export async function getDrivingRoute(
     travelMode: "DRIVE",
     // Traffic-aware routing; TRAFFIC_AWARE staat een gepland vertrektijdstip toe.
     routingPreference: "TRAFFIC_AWARE",
-    departureTime: departureTime.toISOString(),
+    // Gekozen ritmoment (UTC ISO) wint; anders de noodwaarde nu + 1 min.
+    departureTime: resolveDepartureTime(departureAt).toISOString(),
   };
 
   const controller = new AbortController();
