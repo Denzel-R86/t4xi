@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { calculateBookingPrice } from "@/lib/pricing/engine";
+import { resolveBookingPrice } from "@/lib/pricing/engine";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
+import type { AirportContext } from "@/lib/pricing/service";
+import { readPriceSnapshot, consumePriceSnapshot } from "@/lib/pricing/snapshot-store";
 import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
 import { buildRegistration, registerFlightMonitoring } from "@/lib/flight-monitoring/service";
@@ -159,36 +161,43 @@ export async function POST(request: Request) {
   const coord = (v: unknown): number | null =>
     typeof v === "number" && Number.isFinite(v) ? v : null;
 
-  // 3. Autoritatieve prijs ophalen via de centrale prijsfunctie (retour = ride_type
-  //    'retour'). calculateBookingPrice is een pass-through om getPricingQuote: zelfde
-  //    server-side bron (fixed_route_prices), zelfde bedrag. De client stuurt nooit een prijs.
+  // 3. Bindende prijs bepalen via de quote-lock-resolver (retour = ride_type
+  //    'retour'). De client stuurt NOOIT een prijs. resolveBookingPrice:
+  //      a) quoteId aanwezig → gebruikt exact het gelockte snapshotbedrag (geen
+  //         Google, geen herberekening; prijs/bron/btw/luchthaven uit de snapshot);
+  //      b) geen quoteId → alleen een deterministische vaste route of offerte-op-
+  //         aanvraag (routing UIT, dus nooit een bindende dynamische prijs zonder
+  //         geaccepteerde snapshot).
   const returnTrip = rideType === "retour";
-  // Gepland vertrek uit de al gevalideerde datum/tijd (Amsterdamse wandkloktijd →
-  // UTC ISO), zodat de bindende prijs traffic-aware met het echte ritmoment rekent.
-  const departureAt = amsterdamDepartureIso(date, time) ?? undefined;
-  const quote = (
-    await calculateBookingPrice({ pickup, dropoff, returnTrip, passengers: persons, departureAt })
-  ).quote;
+  const now = new Date();
+  const outcome = await resolveBookingPrice(
+    {
+      pickup,
+      dropoff,
+      returnTrip,
+      passengers: persons,
+      departureAt: amsterdamDepartureIso(date, time) ?? undefined,
+      quoteId: str(body.quoteId) || null,
+    },
+    { now, readSnapshot: readPriceSnapshot }
+  );
+  if (outcome.kind === "error") {
+    return json(outcome.status, { ok: false, error: outcome.error, message: outcome.message });
+  }
 
   let priceEuros: number | null = null;
   let quoteOnRequest = true;
-  let currency: "EUR" = "EUR";
   let returnApplied = false;
-
-  if (quote.available) {
-    priceEuros = quote.price;
-    currency = quote.currency;
-    returnApplied = quote.returnApplied;
+  let lockedQuoteId: string | null = null; // te consumeren snapshot (pad a)
+  const currency: "EUR" = "EUR";
+  const airport: AirportContext = outcome.airport;
+  if (outcome.kind === "priced") {
+    priceEuros = outcome.priceEuros;
+    returnApplied = outcome.returnApplied;
+    lockedQuoteId = outcome.lockedQuoteId;
     quoteOnRequest = false;
-  } else if (quote.reason === "capacity_exceeded") {
-    return json(422, {
-      ok: false,
-      error: "capacity_exceeded",
-      message: "Te veel passagiers of bagage voor deze voertuigklasse.",
-    });
   }
-  // unknown_location / route_not_fixed / data_unavailable → lead vastleggen als
-  // "Offerte op aanvraag" (prijs null). We verliezen de klant niet.
+  // outcome.kind === "on_request" → offerte op aanvraag (prijs null). Klant behouden.
 
   // 3b. Vluchtnummer — verplicht zodra één zijde een luchthaven is.
   //
@@ -203,7 +212,7 @@ export async function POST(request: Request) {
   //
   // De richting wordt server-side afgeleid en nooit door de klant gekozen:
   // luchthaven als vertrek → arrival, luchthaven als bestemming → departure.
-  const airport = quote.airport;
+  // `airport` is hierboven gezet: uit de snapshot (quote-lock) of uit de service.
   if (airport.isAirportTransfer && flightNumber === "") {
     return bad(
       airport.isAirportPickup
@@ -218,6 +227,23 @@ export async function POST(request: Request) {
   // we slaan het dan niet op in plaats van het stilzwijgend te bewaren.
   const flightDirection = airport.isAirportTransfer ? airport.flightDirection : null;
   const flightNumberToStore = airport.isAirportTransfer ? flightNumber : "";
+
+  // 3c. QUOTE-LOCK consumeren (idempotency / single-use). Pas NU, ná alle validatie
+  //     en vlak vóór het wegschrijven: wie de snapshot-rij atomair verwijdert mag
+  //     boeken. Een gelijktijdige of tweede submit met dezelfde quoteId krijgt null
+  //     → geen tweede boeking uit dezelfde bevestiging. De prijs is al vastgelegd
+  //     (== total_cents); dit bevestigt alleen dat de lock nog van ons is.
+  if (lockedQuoteId) {
+    const consumed = await consumePriceSnapshot(lockedQuoteId, now.toISOString());
+    if (!consumed) {
+      return json(409, {
+        ok: false,
+        error: "quote_already_used",
+        message: "Deze prijsofferte is al gebruikt of verlopen. Vernieuw de prijs voor een nieuwe boeking.",
+      });
+    }
+    priceEuros = consumed.totalCents / 100;
+  }
 
   // 4. Schrijven via service-role RPC
   const supabase = serviceRoleClient();

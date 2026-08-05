@@ -114,6 +114,9 @@ export default function BookingSection({
       rideType: tab,
       pickup: pickup.label,
       dropoff: dropoff.label,
+      // Quote-lock: het gelockte bedrag uit de getoonde prijs. De server bindt
+      // hierop en berekent niet opnieuw. Leeg bij offerte-op-aanvraag/onbekend.
+      quoteId: quote.status === "ready" ? quote.quoteId : null,
       date: String(form.get("datum") ?? ""),
       time: String(form.get("tijd") ?? ""),
       vehicle,

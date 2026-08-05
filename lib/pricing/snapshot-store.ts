@@ -14,10 +14,18 @@
 //   verdwijnt deze legacy fallback. Zie docs/architecture/price-snapshot-contract.md.
 // ─────────────────────────────────────────────────────────────────────────────
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { validateSnapshot, type PriceSnapshot } from "@/lib/pricing/snapshot";
+import {
+  validateSnapshot,
+  type PriceSnapshot,
+  type RouteSnapshot,
+  type StoredSnapshot,
+} from "@/lib/pricing/snapshot";
 
 /** Alleen `.rpc` is nodig → smalle, injecteerbare vorm voor tests. */
 export type SnapshotRpcClient = Pick<SupabaseClient, "rpc">;
+
+/** Alleen `.from` is nodig voor read/consume → smalle, injecteerbare vorm voor tests. */
+export type SnapshotTableClient = Pick<SupabaseClient, "from">;
 
 /** Vaste, alert-bare foutcode voor mislukte snapshot-opslag. */
 export const SNAPSHOT_PERSIST_FAILED = "PRICE_SNAPSHOT_PERSIST_FAILED" as const;
@@ -144,4 +152,78 @@ export async function persistPriceSnapshot(
   if (error) return fail("rpc_error", errorCodeOf(error));
 
   return true;
+}
+
+// ── Read + atomic consume (voor de booking-quote-lock) ───────────────────────
+
+export type ReadSnapshotDeps = { client?: SnapshotTableClient | null };
+
+const SNAPSHOT_COLS =
+  "quote_id, pricing_version, pricing_source, currency, subtotal_cents, total_cents, route_snapshot, calculated_at, expires_at";
+
+function rowToStored(row: Record<string, unknown>): StoredSnapshot {
+  return {
+    quoteId: String(row.quote_id),
+    pricingVersion: String(row.pricing_version),
+    pricingSource: String(row.pricing_source),
+    currency: String(row.currency),
+    subtotalCents: Number(row.subtotal_cents),
+    totalCents: Number(row.total_cents),
+    routeSnapshot: row.route_snapshot as RouteSnapshot,
+    calculatedAt: String(row.calculated_at),
+    expiresAt: String(row.expires_at),
+  };
+}
+
+/**
+ * Leest een snapshot NIET-destructief uit price_snapshots (service-role). Retourneert
+ * `null` als de quoteId niet bestaat, er geen client is, of de query faalt. Doet géén
+ * geldigheids-/vingerafdrukcontrole — dat is checkSnapshotUsable (puur).
+ */
+export async function readPriceSnapshot(
+  quoteId: string,
+  deps: ReadSnapshotDeps = {}
+): Promise<StoredSnapshot | null> {
+  const client = deps.client ?? serviceRoleClient();
+  if (!client) return null;
+  try {
+    const { data, error } = await client
+      .from("price_snapshots")
+      .select(SNAPSHOT_COLS)
+      .eq("quote_id", quoteId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return rowToStored(data as Record<string, unknown>);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * ATOMAIR consumeren (single-use / idempotency-slot). Verwijdert de snapshot in één
+ * DELETE … RETURNING, uitsluitend als hij nog niet verlopen is. De AANROEP DIE DE RIJ
+ * VERWIJDERT krijgt hem terug; een gelijktijdige of tweede aanroep (dubbele submit)
+ * krijgt `null` → er kan géén tweede boeking uit dezelfde bevestiging ontstaan. Geen
+ * schema-wijziging: de 15-minuten-vervaltabel is per definitie eenmalig bruikbaar.
+ */
+export async function consumePriceSnapshot(
+  quoteId: string,
+  nowIso: string,
+  deps: ReadSnapshotDeps = {}
+): Promise<StoredSnapshot | null> {
+  const client = deps.client ?? serviceRoleClient();
+  if (!client) return null;
+  try {
+    const { data, error } = await client
+      .from("price_snapshots")
+      .delete()
+      .eq("quote_id", quoteId)
+      .gt("expires_at", nowIso)
+      .select(SNAPSHOT_COLS)
+      .maybeSingle();
+    if (error || !data) return null;
+    return rowToStored(data as Record<string, unknown>);
+  } catch {
+    return null;
+  }
 }

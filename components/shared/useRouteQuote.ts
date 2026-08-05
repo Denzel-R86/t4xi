@@ -29,6 +29,13 @@ export type Quote =
       distanceKm: number;
       /** Backend-bevestigde geschatte reistijd (min) — 0 als onbekend. */
       estimatedDurationMin: number;
+      /**
+       * Quote-lock identifier van de opgeslagen prijs-snapshot. Wordt bij het
+       * bevestigen meegestuurd zodat de boeking exact dit gelockte bedrag gebruikt.
+       * `null` als de opslag niet is bevestigd (dan valt de boeking terug op vaste
+       * route / offerte-op-aanvraag).
+       */
+      quoteId: string | null;
     };
 
 export function useRouteQuote(
@@ -74,6 +81,7 @@ export function useRouteQuote(
             returnApplied: Boolean(data.returnApplied),
             distanceKm: Number(data.distanceKm) || 0,
             estimatedDurationMin: Number(data.estimatedDurationMin) || 0,
+            quoteId: typeof data.quoteId === "string" ? data.quoteId : null,
             airport: {
               isTransfer: Boolean(data.isAirportTransfer),
               direction: data.flightDirection ?? null,

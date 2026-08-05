@@ -25,6 +25,7 @@ function availableQuote(price: number): AvailableQuote {
     distanceKm: 61, estimatedDurationMin: 54, vehicleClass: "executive-ev",
     route: { pickupSlug: "rotterdam", dropoffSlug: "schiphol", label: "RTM → AMS" },
     isAirportTransfer: true, airport: NO_AIRPORT, dataSource: "supabase",
+    fingerprint: "rotterdam|schiphol|executive-ev|enkel",
   };
 }
 

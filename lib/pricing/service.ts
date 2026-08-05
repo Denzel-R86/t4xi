@@ -47,6 +47,14 @@ export type PricingQuoteInput = {
    * routing bij het afstand-tarief. Ontbreekt/verleden → noodwaarde nu + 1 min.
    */
   departureAt?: string;
+  /**
+   * INTERN. Standaard true. Op `false` slaat de service het afstand-tarief
+   * (Google-routing) over en levert alleen een vaste route óf "offerte op
+   * aanvraag". Gebruikt door de booking-tak ZONDER geldige prijs-snapshot: een
+   * dynamische prijs mag daar nooit bindend worden en Google mag niet opnieuw
+   * worden aangeroepen. De publieke quote-API zet dit nooit.
+   */
+  allowDistanceTariff?: boolean;
 };
 
 export type UnavailableReason =
@@ -132,6 +140,12 @@ export type PricingQuoteResult =
       isAirportTransfer: boolean;
       airport: AirportContext;
       dataSource: "supabase" | "routing";
+      /**
+       * Manipulatie-bestendige vingerafdruk van de prijsbepalende invoer
+       * (pickup/dropoff/klasse/retour). Wordt in de snapshot opgeslagen en bij het
+       * bevestigen van de boeking opnieuw berekend en vergeleken. Zie quoteFingerprint.
+       */
+      fingerprint: string;
     }
   | {
       available: false;
@@ -181,6 +195,27 @@ function unavailable(
   airport: AirportContext = NO_AIRPORT
 ): PricingQuoteResult {
   return { available: false, reason, message: QUOTE_ON_REQUEST_MESSAGE, airport };
+}
+
+/**
+ * Stabiele, manipulatie-bestendige vingerafdruk van de PRIJSBEPALENDE invoer:
+ * genormaliseerde pickup, dropoff, voertuigklasse en enkel/retour. Wordt bij het
+ * maken van de offerte in de snapshot opgeslagen en bij het bevestigen van de
+ * boeking IDENTIEK herberekend uit de boekingsaanvraag. Verschilt de fingerprint,
+ * dan hoort de snapshot niet bij deze rit → de boeking wordt geweigerd. Puur op de
+ * ruwe invoer (zelfde bij preview en booking); geen locatie-resolutie nodig.
+ */
+export function quoteFingerprint(input: {
+  pickup: string;
+  dropoff: string;
+  vehicleClass?: string;
+  returnTrip?: boolean;
+}): string {
+  const pickup = slugify(input.pickup ?? "");
+  const dropoff = slugify(input.dropoff ?? "");
+  const cls = slugify(input.vehicleClass ?? DEFAULT_VEHICLE_CLASS) || DEFAULT_VEHICLE_CLASS;
+  const ret = input.returnTrip === true ? "retour" : "enkel";
+  return [pickup, dropoff, cls, ret].join("|");
 }
 
 // ── Publieke service ─────────────────────────────────────────────────────────
@@ -312,6 +347,7 @@ export async function resolveQuoteWith(
         isAirportTransfer: airport.isAirportTransfer,
         airport,
         dataSource: "supabase",
+        fingerprint: quoteFingerprint(input),
       };
     }
   }
@@ -319,18 +355,24 @@ export async function resolveQuoteWith(
   // 2. Geen vaste route → afstand-tarief (bindende prijs) mits de routing-API een
   //    echte rij-afstand levert. Werkt óók voor vrije adressen die niet in
   //    `locations` staan; Google Directions accepteert vrije-tekstadressen.
-  const byDistance = await tryDistanceTariff(
-    deps.getRoute,
-    input,
-    pickupRaw,
-    dropoffRaw,
-    classCode,
-    pickup,
-    dropoff,
-    vehicleClass,
-    airport
-  );
-  if (byDistance) return byDistance;
+  //
+  //    OVERSLAAN wanneer allowDistanceTariff === false: de booking-tak zonder
+  //    geldige prijs-snapshot mag geen dynamische prijs binden en Google niet
+  //    opnieuw aanroepen. Dan valt de rit terug op "offerte op aanvraag".
+  if (input.allowDistanceTariff !== false) {
+    const byDistance = await tryDistanceTariff(
+      deps.getRoute,
+      input,
+      pickupRaw,
+      dropoffRaw,
+      classCode,
+      pickup,
+      dropoff,
+      vehicleClass,
+      airport
+    );
+    if (byDistance) return byDistance;
+  }
 
   // 3. Niets bruikbaars → offerte op aanvraag. De reden hangt af van wat ontbrak.
   if (!pickup || !dropoff || !vehicleClass) return unavailable("unknown_location", airport);
@@ -392,6 +434,7 @@ async function tryDistanceTariff(
     isAirportTransfer: airport.isAirportTransfer,
     airport,
     dataSource: "routing",
+    fingerprint: quoteFingerprint(input),
   };
 }
 

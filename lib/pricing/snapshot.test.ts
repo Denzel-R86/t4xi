@@ -33,6 +33,7 @@ function availableQuote(price: number, over: Partial<AvailableQuote> = {}): Avai
     isAirportTransfer: true,
     airport: { ...NO_AIRPORT, dropoffIsAirport: true, isAirportDropoff: true, isAirportTransfer: true },
     dataSource: "supabase",
+    fingerprint: "rotterdam|schiphol|executive-ev|enkel",
     ...over,
   };
 }
@@ -90,6 +91,8 @@ test("buildPriceSnapshot: routeSnapshot bevat de reconstructiedata", () => {
     validFrom: null, // 7.6.3C: nog niet uit de quote beschikbaar
     returnApplied: true,
     vatRate: 9,
+    fingerprint: "rotterdam|schiphol|executive-ev|enkel",
+    airport: { ...NO_AIRPORT, dropoffIsAirport: true, isAirportDropoff: true, isAirportTransfer: true },
   });
 });
 

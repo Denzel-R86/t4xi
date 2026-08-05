@@ -5,7 +5,7 @@
 // Contract: docs/architecture/price-snapshot-contract.md.
 // ─────────────────────────────────────────────────────────────────────────────
 import { eurosToCents } from "@/lib/payments/create-intent";
-import type { PricingQuoteResult } from "@/lib/pricing/service";
+import type { AirportContext, PricingQuoteResult } from "@/lib/pricing/service";
 
 /** Centrale prijsversie. Inert in 7.6.3 (opgeslagen, geen branch-logica). */
 export const PRICING_VERSION = "2026.07.v1";
@@ -60,6 +60,17 @@ export type RouteSnapshot = {
   validFrom: string | null;
   returnApplied: boolean;
   vatRate: number;
+  /**
+   * Manipulatie-bestendige vingerafdruk van de prijsbepalende invoer (zie
+   * quoteFingerprint in service.ts). Bij het bevestigen van de boeking opnieuw
+   * berekend en vergeleken; mismatch → boeking geweigerd.
+   */
+  fingerprint: string;
+  /**
+   * Luchthavencontext op offertemoment. Meegenomen zodat de booking de
+   * vluchtnummer-plicht kan afdwingen ZONDER de prijs opnieuw te berekenen.
+   */
+  airport: AirportContext;
 };
 
 export type PriceSnapshot = {
@@ -143,11 +154,56 @@ export function buildPriceSnapshot(
       validFrom: null,
       returnApplied: quote.returnApplied,
       vatRate: quote.vatRate,
+      fingerprint: quote.fingerprint,
+      airport: quote.airport,
     },
     calculatedAt,
     expiresAt,
     createdAt: calculatedAt,
   };
+}
+
+/**
+ * Vorm van een UITGELEZEN snapshot (uit price_snapshots). Zoals PriceSnapshot maar
+ * `pricingSource` is nog de ruwe DB-string en adjustments zijn hier niet nodig voor
+ * de prijs-lock (total_cents is bindend).
+ */
+export type StoredSnapshot = {
+  quoteId: string;
+  pricingVersion: string;
+  pricingSource: string;
+  currency: string;
+  subtotalCents: number;
+  totalCents: number;
+  routeSnapshot: RouteSnapshot;
+  calculatedAt: string;
+  expiresAt: string;
+};
+
+export type SnapshotUsability =
+  | { ok: true }
+  | { ok: false; reason: "expired" | "invalid_source" | "fingerprint_mismatch" };
+
+/**
+ * Pure controle of een uitgelezen snapshot bruikbaar is om een boeking te binden:
+ * niet verlopen, geldige prijsbron, en de vingerafdruk komt overeen met de actuele
+ * aanvraag. Geeft een specifieke reden bij afkeuring. `not_found`/`already_used`
+ * horen bij de IO-laag (read/consume), niet hier.
+ */
+export function checkSnapshotUsable(
+  s: StoredSnapshot,
+  opts: { now: Date; expectedFingerprint: string }
+): SnapshotUsability {
+  if (!(new Date(s.expiresAt).getTime() > opts.now.getTime())) {
+    return { ok: false, reason: "expired" };
+  }
+  if (!isPricingSource(s.pricingSource)) {
+    return { ok: false, reason: "invalid_source" };
+  }
+  if (s.routeSnapshot?.fingerprint !== opts.expectedFingerprint) {
+    return { ok: false, reason: "fingerprint_mismatch" };
+  }
+  return { ok: true };
 }
 
 export type SnapshotValidation = { ok: true } | { ok: false; error: string };
