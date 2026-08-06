@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { resolveBookingPrice } from "@/lib/pricing/engine";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
-import type { AirportContext } from "@/lib/pricing/service";
-import { readPriceSnapshot, consumePriceSnapshot } from "@/lib/pricing/snapshot-store";
+import { quoteFingerprint, type AirportContext } from "@/lib/pricing/service";
+import { readPriceSnapshot } from "@/lib/pricing/snapshot-store";
 import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
 import { buildRegistration, registerFlightMonitoring } from "@/lib/flight-monitoring/service";
@@ -228,24 +228,7 @@ export async function POST(request: Request) {
   const flightDirection = airport.isAirportTransfer ? airport.flightDirection : null;
   const flightNumberToStore = airport.isAirportTransfer ? flightNumber : "";
 
-  // 3c. QUOTE-LOCK consumeren (idempotency / single-use). Pas NU, ná alle validatie
-  //     en vlak vóór het wegschrijven: wie de snapshot-rij atomair verwijdert mag
-  //     boeken. Een gelijktijdige of tweede submit met dezelfde quoteId krijgt null
-  //     → geen tweede boeking uit dezelfde bevestiging. De prijs is al vastgelegd
-  //     (== total_cents); dit bevestigt alleen dat de lock nog van ons is.
-  if (lockedQuoteId) {
-    const consumed = await consumePriceSnapshot(lockedQuoteId, now.toISOString());
-    if (!consumed) {
-      return json(409, {
-        ok: false,
-        error: "quote_already_used",
-        message: "Deze prijsofferte is al gebruikt of verlopen. Vernieuw de prijs voor een nieuwe boeking.",
-      });
-    }
-    priceEuros = consumed.totalCents / 100;
-  }
-
-  // 4. Schrijven via service-role RPC
+  // 4. Wegschrijven via de service-role client. Twee paden:
   const supabase = serviceRoleClient();
   if (!supabase) {
     return json(503, {
@@ -255,26 +238,78 @@ export async function POST(request: Request) {
     });
   }
 
-  const { data, error } = await supabase.rpc("create_booking", {
-    p_ride_type: rideType,
-    p_from_address: pickup,
-    p_to_address: dropoff,
-    p_ride_date: date,
-    p_ride_time: time,
-    p_vehicle: vehicle || null,
-    p_persons: persons,
-    p_luggage: luggage || null,
-    p_price_euros: priceEuros,
-    p_customer_name: name,
-    p_customer_phone: phone,
-    p_customer_email: email,
-    p_from_lat: coord(body.fromLat),
-    p_from_lon: coord(body.fromLon),
-    p_to_lat: coord(body.toLat),
-    p_to_lon: coord(body.toLon),
-    p_flight_number: flightNumberToStore || null,
-    p_flight_direction: flightDirection,
-  });
+  let data: unknown;
+  let error: { message: string } | null;
+
+  if (lockedQuoteId) {
+    // a) QUOTE-LOCK → TRANSACTIONEEL + IDEMPOTENT: de RPC vergrendelt de snapshot,
+    //    valideert (bestaan/vervaldatum/ongebruikt/fingerprint/bron/capaciteit),
+    //    maakt de boeking met exact total_cents, markeert de snapshot als gebruikt
+    //    en koppelt hem. Retry met dezelfde quoteId → DEZELFDE boeking (geen tweede
+    //    boeking, geen tweede betaling, geen tweede Google-call).
+    ({ data, error } = await supabase.rpc("create_booking_from_snapshot", {
+      p_quote_id: lockedQuoteId,
+      p_expected_fingerprint: quoteFingerprint({ pickup, dropoff, returnTrip }),
+      p_ride_type: rideType,
+      p_from_address: pickup,
+      p_to_address: dropoff,
+      p_ride_date: date,
+      p_ride_time: time,
+      p_vehicle: vehicle || null,
+      p_persons: persons,
+      p_luggage: luggage || null,
+      p_customer_name: name,
+      p_customer_phone: phone,
+      p_customer_email: email,
+      p_from_lat: coord(body.fromLat),
+      p_from_lon: coord(body.fromLon),
+      p_to_lat: coord(body.toLat),
+      p_to_lon: coord(body.toLon),
+      p_flight_number: flightNumberToStore || null,
+      p_flight_direction: flightDirection,
+    }));
+    if (error) {
+      // Herkenbare quote-lock-fouten → duidelijke, klantvriendelijke validatiefout.
+      const lockMap: Record<string, [number, string, string]> = {
+        QUOTE_NOT_FOUND: [409, "quote_not_found", "Uw prijsofferte is niet (meer) gevonden. Vernieuw de prijs en probeer opnieuw."],
+        QUOTE_EXPIRED: [409, "quote_expired", "Uw prijs is verlopen. Vernieuw de prijs en accepteer die opnieuw."],
+        QUOTE_MISMATCH: [409, "quote_mismatch", "De rit is gewijzigd ten opzichte van de getoonde prijs. Vernieuw de prijs."],
+        QUOTE_INVALID_SOURCE: [422, "quote_invalid", "De prijsofferte is ongeldig. Vernieuw de prijs."],
+        CAPACITY_EXCEEDED: [422, "capacity_exceeded", "Te veel passagiers voor de gekozen voertuigklasse."],
+        QUOTE_CONSUMED_NO_BOOKING: [409, "quote_conflict", "De prijsofferte wordt al verwerkt. Probeer het zo opnieuw."],
+      };
+      for (const key of Object.keys(lockMap)) {
+        if (error.message.includes(key)) {
+          const [code, err, msg] = lockMap[key];
+          return json(code, { ok: false, error: err, message: msg });
+        }
+      }
+      // Anders: val door naar de generieke create_booking-foutafhandeling hieronder.
+    }
+  } else {
+    // b) Geen lock → deterministische vaste route of offerte-op-aanvraag (prijs uit
+    //    resolveBookingPrice, routing stond uit). Geen snapshot om te koppelen.
+    ({ data, error } = await supabase.rpc("create_booking", {
+      p_ride_type: rideType,
+      p_from_address: pickup,
+      p_to_address: dropoff,
+      p_ride_date: date,
+      p_ride_time: time,
+      p_vehicle: vehicle || null,
+      p_persons: persons,
+      p_luggage: luggage || null,
+      p_price_euros: priceEuros,
+      p_customer_name: name,
+      p_customer_phone: phone,
+      p_customer_email: email,
+      p_from_lat: coord(body.fromLat),
+      p_from_lon: coord(body.fromLon),
+      p_to_lat: coord(body.toLat),
+      p_to_lon: coord(body.toLon),
+      p_flight_number: flightNumberToStore || null,
+      p_flight_direction: flightDirection,
+    }));
+  }
 
   if (error) {
     // Validatie-excepties uit de RPC → 400; overige → 500 (geen interne details lekken).
@@ -286,7 +321,14 @@ export async function POST(request: Request) {
     });
   }
 
-  const row = Array.isArray(data) ? data[0] : data;
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { booking_ref?: string; booking_id?: string; price_euros?: number }
+    | null
+    | undefined;
+  // Bij de lock-RPC is de bindende prijs exact het snapshotbedrag uit de DB.
+  if (lockedQuoteId && typeof row?.price_euros === "number") {
+    priceEuros = row.price_euros;
+  }
   const bookingRef = row?.booking_ref as string | undefined;
   // Intern UUID: capability-sleutel voor de betaalstap. Alleen aan de
   // boekingseigenaar teruggegeven (in de response op zijn eigen boeking).

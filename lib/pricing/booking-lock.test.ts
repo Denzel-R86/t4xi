@@ -5,7 +5,6 @@ import {
   type BookingPriceRequest,
   type BookingPriceDeps,
 } from "@/lib/pricing/engine";
-import { consumePriceSnapshot } from "@/lib/pricing/snapshot-store";
 import { NO_AIRPORT, quoteFingerprint, type PricingQuoteResult } from "@/lib/pricing/service";
 import type { StoredSnapshot } from "@/lib/pricing/snapshot";
 
@@ -176,31 +175,7 @@ test("zonder quoteId geeft capaciteitsoverschrijding een nette fout", async () =
   assert.equal(out.kind === "error" && out.error, "capacity_exceeded");
 });
 
-// ── Idempotency: atomair consumeren, tweede submit verliest ──────────────────
-
-test("dubbele submit: consumePriceSnapshot geeft de rij één keer terug, daarna null", async () => {
-  const row = {
-    quote_id: QID, pricing_version: "2026.07.v1", pricing_source: "dynamic", currency: "EUR",
-    subtotal_cents: 3300, total_cents: 3300, route_snapshot: stored().routeSnapshot,
-    calculated_at: "2026-08-19T09:55:00.000Z", expires_at: "2026-08-19T10:10:00.000Z",
-  };
-  let deleted = false;
-  const node = {
-    delete: () => node,
-    select: () => node,
-    eq: () => node,
-    gt: () => node,
-    maybeSingle: async () => {
-      if (deleted) return { data: null, error: null };
-      deleted = true;
-      return { data: row, error: null };
-    },
-  };
-  const client = { from: () => node } as never;
-
-  const first = await consumePriceSnapshot(QID, NOW.toISOString(), { client });
-  const second = await consumePriceSnapshot(QID, NOW.toISOString(), { client });
-  assert.ok(first, "eerste consume moet de snapshot teruggeven");
-  assert.equal(first?.totalCents, 3300);
-  assert.equal(second, null, "tweede consume (dubbele submit) mag niets teruggeven");
-});
+// Idempotency + atomaire consumptie worden op DB-niveau afgedwongen door de RPC
+// create_booking_from_snapshot (FOR UPDATE-lock + consumed_at + unieke index op
+// bookings.quote_id) en apart bewezen met een integratietest tegen een Supabase-
+// branch (niet-productie) — zie het sessieverslag/migratie 20260807120000.

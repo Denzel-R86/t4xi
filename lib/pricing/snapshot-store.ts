@@ -199,31 +199,6 @@ export async function readPriceSnapshot(
   }
 }
 
-/**
- * ATOMAIR consumeren (single-use / idempotency-slot). Verwijdert de snapshot in één
- * DELETE … RETURNING, uitsluitend als hij nog niet verlopen is. De AANROEP DIE DE RIJ
- * VERWIJDERT krijgt hem terug; een gelijktijdige of tweede aanroep (dubbele submit)
- * krijgt `null` → er kan géén tweede boeking uit dezelfde bevestiging ontstaan. Geen
- * schema-wijziging: de 15-minuten-vervaltabel is per definitie eenmalig bruikbaar.
- */
-export async function consumePriceSnapshot(
-  quoteId: string,
-  nowIso: string,
-  deps: ReadSnapshotDeps = {}
-): Promise<StoredSnapshot | null> {
-  const client = deps.client ?? serviceRoleClient();
-  if (!client) return null;
-  try {
-    const { data, error } = await client
-      .from("price_snapshots")
-      .delete()
-      .eq("quote_id", quoteId)
-      .gt("expires_at", nowIso)
-      .select(SNAPSHOT_COLS)
-      .maybeSingle();
-    if (error || !data) return null;
-    return rowToStored(data as Record<string, unknown>);
-  } catch {
-    return null;
-  }
-}
+// Consumeren gebeurt niet meer app-zijdig via DELETE, maar transactioneel in de
+// RPC create_booking_from_snapshot (snapshot vergrendelen + markeren als gebruikt +
+// aan de boeking koppelen, in één transactie). Zie migratie 20260807120000.
