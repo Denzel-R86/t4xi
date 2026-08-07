@@ -148,16 +148,21 @@ begin
     raise exception 'CAPACITY_EXCEEDED';
   end if;
 
-  -- Bagage: de categorie → maximaal aantal stuks. 'overleg'/onbekend blijft
-  -- ongevalideerd (de klant bespreekt het). Een bekende count boven max_luggage
-  -- wordt geweigerd.
+  -- Bagage FAIL-CLOSED: alleen exact bekende bindende categorieën → stuks-count.
+  -- 'overleg' hoort NIET in de bindende RPC (de app-route stuurt die naar offerte
+  -- op aanvraag); komt hij hier toch, dan weigeren. Leeg/onbekend/willekeurig → ook
+  -- weigeren. Sentinel -1 = 'niet bindend toegestaan'. Zo kan clientinput de
+  -- controle niet met een alternatieve tekstwaarde omzeilen.
   v_luggage_count := case lower(coalesce(trim(p_luggage), ''))
     when 'handbagage'  then 0
     when '1-2-koffers' then 2
     when '3-koffers'   then 3
-    else null
+    else -1
   end;
-  if v_luggage_count is not null and v_max_lug is not null and v_luggage_count > v_max_lug then
+  if v_luggage_count < 0 then
+    raise exception 'INVALID_LUGGAGE';
+  end if;
+  if v_max_lug is not null and v_luggage_count > v_max_lug then
     raise exception 'CAPACITY_EXCEEDED';
   end if;
 

@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { resolveBookingPrice } from "@/lib/pricing/engine";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 import { quoteFingerprint, type AirportContext } from "@/lib/pricing/service";
+import { classifyLuggage } from "@/lib/pricing/luggage";
 import { readPriceSnapshot } from "@/lib/pricing/snapshot-store";
 import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
@@ -142,6 +143,15 @@ export async function POST(request: Request) {
   if (email === "" || !EMAIL_RE.test(email)) return bad("Geldig e-mailadres is verplicht.");
   if (phone.replace(/[^0-9+]/g, "").length < 8) return bad("Geldig telefoonnummer is verplicht.");
 
+  // Bagage fail-closed: alleen exact bekende categorieën. 'overleg' (onbekende
+  // bagage) mag geen bindende auto-boeking opleveren → handmatige beoordeling /
+  // offerte op aanvraag. Lege/onbekende/willekeurige tekst → harde validatiefout.
+  const luggageClass = classifyLuggage(luggage);
+  if (luggageClass.kind === "invalid") {
+    return bad("Kies een geldige bagage-optie.");
+  }
+  const luggageOnRequest = luggageClass.kind === "on_request";
+
   // Datum niet in het verleden (lokale dagvergelijking; RPC bewaakt dit ook).
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -191,13 +201,16 @@ export async function POST(request: Request) {
   let lockedQuoteId: string | null = null; // te consumeren snapshot (pad a)
   const currency: "EUR" = "EUR";
   const airport: AirportContext = outcome.airport;
-  if (outcome.kind === "priced") {
+  // 'overleg'-bagage → NOOIT bindend: forceer offerte op aanvraag (handmatige
+  // beoordeling), ongeacht een gelockte prijs. De snapshot wordt dan niet
+  // geconsumeerd en de RPC (die 'overleg' óók fail-closed weigert) wordt overgeslagen.
+  if (outcome.kind === "priced" && !luggageOnRequest) {
     priceEuros = outcome.priceEuros;
     returnApplied = outcome.returnApplied;
     lockedQuoteId = outcome.lockedQuoteId;
     quoteOnRequest = false;
   }
-  // outcome.kind === "on_request" → offerte op aanvraag (prijs null). Klant behouden.
+  // outcome.kind === "on_request" (of overleg) → offerte op aanvraag (prijs null).
 
   // 3b. Vluchtnummer — verplicht zodra één zijde een luchthaven is.
   //
@@ -276,6 +289,7 @@ export async function POST(request: Request) {
         QUOTE_MISMATCH: [409, "quote_mismatch", "De rit is gewijzigd ten opzichte van de getoonde prijs. Vernieuw de prijs."],
         QUOTE_INVALID_SOURCE: [422, "quote_invalid", "De prijsofferte is ongeldig. Vernieuw de prijs."],
         INVALID_VEHICLE_CLASS: [422, "invalid_vehicle_class", "De gekozen voertuigklasse is niet (meer) beschikbaar. Vernieuw de prijs."],
+        INVALID_LUGGAGE: [422, "invalid_luggage", "Kies een geldige bagage-optie."],
         CAPACITY_EXCEEDED: [422, "capacity_exceeded", "Te veel passagiers of bagage voor de gekozen voertuigklasse."],
         INVALID_PERSONS: [400, "invalid_persons", "Ongeldig aantal passagiers."],
         QUOTE_CONSUMED_NO_BOOKING: [409, "quote_conflict", "De prijsofferte wordt al verwerkt. Probeer het zo opnieuw."],

@@ -65,15 +65,20 @@ test("scenario 4: te veel bagage → CAPACITY_EXCEEDED (categorie → count)", (
   assert.match(sql, /v_luggage_count\s*>\s*v_max_lug\s+then\s+raise\s+exception\s+'CAPACITY_EXCEEDED'/i);
 });
 
+test("bagage FAIL-CLOSED: onbekend/overleg/leeg → INVALID_LUGGAGE (sentinel -1)", () => {
+  // Geen 'else null' (niet-blokkerend) meer; onbekend valt op sentinel -1.
+  assert.doesNotMatch(sql, /else\s+null\s*\n?\s*end;/i);
+  assert.match(sql, /else\s+-1\s*\n?\s*end;/i);
+  assert.match(sql, /v_luggage_count\s*<\s*0\s+then\s+raise\s+exception\s+'INVALID_LUGGAGE'/i);
+});
+
 test("negatieve/onverwachte passagiers → INVALID_PERSONS (bestaande bookingvalidatie)", () => {
   assert.match(sql, /v_persons\s*<\s*1\s+then\s+raise\s+exception\s+'INVALID_PERSONS'/i);
 });
 
-test("scenario 5: geldige capaciteit passeert (guards + onbekende bagage blokkeert niet)", () => {
-  // Onbekende/'overleg'-bagage → null → geen blokkade.
-  assert.match(sql, /else\s+null\s*\n?\s*end;/i);
-  // Bagage-check alleen bij een BEKENDE count binnen limiet → binnen limiet passeert.
-  assert.match(sql, /v_luggage_count\s+is\s+not\s+null\s+and\s+v_max_lug\s+is\s+not\s+null\s+and\s+v_luggage_count\s*>\s*v_max_lug/i);
+test("scenario 5: geldige capaciteit passeert (bindende categorie binnen limiet → boeking)", () => {
+  // Bagage-check weigert alleen bij een count BOVEN de limiet → binnen limiet passeert.
+  assert.match(sql, /if\s+v_max_lug\s+is\s+not\s+null\s+and\s+v_luggage_count\s*>\s*v_max_lug/i);
   // Na alle checks wordt de boeking daadwerkelijk aangemaakt.
   assert.match(sql, /from\s+public\.create_booking\(/i);
 });
