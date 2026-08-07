@@ -38,6 +38,46 @@ test("aangeroepen built-in functies zijn pg_catalog-gekwalificeerd (now/round + 
   assert.match(sql, /::pg_catalog\.numeric/, "verwacht ::pg_catalog.numeric");
 });
 
+// Capaciteits-/voertuigklasse-validatie in de RPC (bron-guard: bewaakt dat de
+// vereiste checks aanwezig en correct gestructureerd zijn; runtime-gedrag vergt een
+// non-prod DB — apart verificatiepunt).
+test("capaciteit: leest max_passengers én max_luggage uit vehicle_classes", () => {
+  assert.match(sql, /select\s+vc\.max_passengers,\s*vc\.max_luggage\s+into\s+v_max_pax,\s*v_max_lug/i);
+  assert.match(sql, /from\s+public\.vehicle_classes\s+vc/i);
+});
+
+test("voertuigklasse komt UITSLUITEND uit de snapshot en moet bestaan + actief zijn", () => {
+  // Klasse uit de (fingerprint-gevalideerde) snapshot, niet uit een param.
+  assert.match(sql, /vc\.code\s*=\s*\(v_snap\.route_snapshot->>'vehicleClass'\)\s+and\s+vc\.active/i);
+  // Onbekend/inactief → INVALID_VEHICLE_CLASS (scenario 1 en 2).
+  assert.match(sql, /if\s+not\s+found\s+then\s+raise\s+exception\s+'INVALID_VEHICLE_CLASS'/i);
+});
+
+test("scenario 3: te veel passagiers → CAPACITY_EXCEEDED", () => {
+  assert.match(sql, /v_persons\s*>\s*v_max_pax\s+then\s+raise\s+exception\s+'CAPACITY_EXCEEDED'/i);
+});
+
+test("scenario 4: te veel bagage → CAPACITY_EXCEEDED (categorie → count)", () => {
+  // Categorie-naar-count-mapping aanwezig voor de bekende categorieën.
+  assert.match(sql, /when\s+'handbagage'\s+then\s+0/i);
+  assert.match(sql, /when\s+'1-2-koffers'\s+then\s+2/i);
+  assert.match(sql, /when\s+'3-koffers'\s+then\s+3/i);
+  assert.match(sql, /v_luggage_count\s*>\s*v_max_lug\s+then\s+raise\s+exception\s+'CAPACITY_EXCEEDED'/i);
+});
+
+test("negatieve/onverwachte passagiers → INVALID_PERSONS (bestaande bookingvalidatie)", () => {
+  assert.match(sql, /v_persons\s*<\s*1\s+then\s+raise\s+exception\s+'INVALID_PERSONS'/i);
+});
+
+test("scenario 5: geldige capaciteit passeert (guards + onbekende bagage blokkeert niet)", () => {
+  // Onbekende/'overleg'-bagage → null → geen blokkade.
+  assert.match(sql, /else\s+null\s*\n?\s*end;/i);
+  // Bagage-check alleen bij een BEKENDE count binnen limiet → binnen limiet passeert.
+  assert.match(sql, /v_luggage_count\s+is\s+not\s+null\s+and\s+v_max_lug\s+is\s+not\s+null\s+and\s+v_luggage_count\s*>\s*v_max_lug/i);
+  // Na alle checks wordt de boeking daadwerkelijk aangemaakt.
+  assert.match(sql, /from\s+public\.create_booking\(/i);
+});
+
 test("execute is gelockt: revoke van public/anon/authenticated, grant alleen service_role", () => {
   assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.create_booking_from_snapshot[\s\S]*?from\s+public,\s*anon,\s*authenticated/i);
   assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.create_booking_from_snapshot[\s\S]*?to\s+service_role/i);

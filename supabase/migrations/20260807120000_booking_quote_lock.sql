@@ -76,11 +76,14 @@ security definer
 set search_path = ''
 as $function$
 declare
-  v_snap    public.price_snapshots%rowtype;
-  v_ref     text;
-  v_id      uuid;
-  v_price   numeric;
-  v_max_pax integer;
+  v_snap          public.price_snapshots%rowtype;
+  v_ref           text;
+  v_id            uuid;
+  v_price         numeric;
+  v_max_pax       integer;
+  v_max_lug       integer;
+  v_persons       integer;
+  v_luggage_count integer;
 begin
   -- (1) Snapshot SELECTEREN + VERGRENDELEN (serialiseert gelijktijdige submits).
   select * into v_snap from public.price_snapshots where quote_id = p_quote_id for update;
@@ -123,14 +126,38 @@ begin
     raise exception 'QUOTE_INVALID_SOURCE';
   end if;
 
-  -- Capaciteit server-side (vóór creatie). Onbekende klasse blokkeert niet — de
-  -- prijs is al gelockt; alleen een AANTOONBARE overschrijding wordt geweigerd.
-  select vc.max_passengers into v_max_pax
+  -- Capaciteit server-side (vóór creatie). De voertuigklasse komt UITSLUITEND uit de
+  -- gevalideerde snapshot (route_snapshot->>'vehicleClass') — nooit uit clientinput —
+  -- en MOET bestaan én actief zijn.
+  select vc.max_passengers, vc.max_luggage
+    into v_max_pax, v_max_lug
     from public.vehicle_classes vc
     where vc.code = (v_snap.route_snapshot->>'vehicleClass') and vc.active
     limit 1;
-  -- coalesce is een SQL-keyword-expressie (geen pg_catalog-functie) en onshadowbaar.
-  if v_max_pax is not null and coalesce(p_persons, 1) > v_max_pax then
+  if not found then
+    raise exception 'INVALID_VEHICLE_CLASS';
+  end if;
+
+  -- Passagiers: geldig geheel getal >= 1 (bestaande bookingvalidatie) én binnen de
+  -- klasse. coalesce is een SQL-keyword-expressie (geen pg_catalog-functie).
+  v_persons := coalesce(p_persons, 1);
+  if v_persons < 1 then
+    raise exception 'INVALID_PERSONS';
+  end if;
+  if v_max_pax is not null and v_persons > v_max_pax then
+    raise exception 'CAPACITY_EXCEEDED';
+  end if;
+
+  -- Bagage: de categorie → maximaal aantal stuks. 'overleg'/onbekend blijft
+  -- ongevalideerd (de klant bespreekt het). Een bekende count boven max_luggage
+  -- wordt geweigerd.
+  v_luggage_count := case lower(coalesce(trim(p_luggage), ''))
+    when 'handbagage'  then 0
+    when '1-2-koffers' then 2
+    when '3-koffers'   then 3
+    else null
+  end;
+  if v_luggage_count is not null and v_max_lug is not null and v_luggage_count > v_max_lug then
     raise exception 'CAPACITY_EXCEEDED';
   end if;
 

@@ -275,7 +275,9 @@ export async function POST(request: Request) {
         QUOTE_EXPIRED: [409, "quote_expired", "Uw prijs is verlopen. Vernieuw de prijs en accepteer die opnieuw."],
         QUOTE_MISMATCH: [409, "quote_mismatch", "De rit is gewijzigd ten opzichte van de getoonde prijs. Vernieuw de prijs."],
         QUOTE_INVALID_SOURCE: [422, "quote_invalid", "De prijsofferte is ongeldig. Vernieuw de prijs."],
-        CAPACITY_EXCEEDED: [422, "capacity_exceeded", "Te veel passagiers voor de gekozen voertuigklasse."],
+        INVALID_VEHICLE_CLASS: [422, "invalid_vehicle_class", "De gekozen voertuigklasse is niet (meer) beschikbaar. Vernieuw de prijs."],
+        CAPACITY_EXCEEDED: [422, "capacity_exceeded", "Te veel passagiers of bagage voor de gekozen voertuigklasse."],
+        INVALID_PERSONS: [400, "invalid_persons", "Ongeldig aantal passagiers."],
         QUOTE_CONSUMED_NO_BOOKING: [409, "quote_conflict", "De prijsofferte wordt al verwerkt. Probeer het zo opnieuw."],
       };
       for (const key of Object.keys(lockMap)) {
