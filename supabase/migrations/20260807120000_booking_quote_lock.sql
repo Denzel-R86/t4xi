@@ -84,9 +84,18 @@ begin
     raise exception 'QUOTE_NOT_FOUND';
   end if;
 
-  -- (5-idempotent) Al geconsumeerd → geef DEZELFDE boeking terug. Geen tweede
-  -- boeking, geen tweede betaling. Een gelijktijdige tweede submit belandt hier
-  -- zodra de eerste transactie de lock vrijgeeft.
+  -- (3) FINGERPRINT EERST — geldt voor ZOWEL een nieuwe boeking als een retry.
+  -- Zo kan het bezit van een (geconsumeerde) quoteId zonder de bijbehorende
+  -- ritgegevens NOOIT de gekoppelde boeking teruggeven: geen datalek van andermans
+  -- boeking-id/-referentie/-bedrag. Defense-in-depth naast de app-laag.
+  if (v_snap.route_snapshot->>'fingerprint') is distinct from p_expected_fingerprint then
+    raise exception 'QUOTE_MISMATCH';
+  end if;
+
+  -- (5-idempotent) Al geconsumeerd → geef DEZELFDE boeking terug (fingerprint is
+  -- hierboven al gevalideerd). Geen tweede boeking, geen tweede betaling. Een
+  -- gelijktijdige tweede submit belandt hier zodra de eerste transactie de lock
+  -- vrijgeeft. Vervaldatum is hier NIET relevant: de boeking bestaat al.
   if v_snap.consumed_at is not null then
     if v_snap.booking_id is null then
       raise exception 'QUOTE_CONSUMED_NO_BOOKING';
@@ -101,12 +110,9 @@ begin
     return;
   end if;
 
-  -- (2/3) Vervaldatum, fingerprint en prijsbron valideren.
+  -- (2) Nieuwe boeking: vervaldatum en prijsbron valideren.
   if v_snap.expires_at <= now() then
     raise exception 'QUOTE_EXPIRED';
-  end if;
-  if (v_snap.route_snapshot->>'fingerprint') is distinct from p_expected_fingerprint then
-    raise exception 'QUOTE_MISMATCH';
   end if;
   if v_snap.pricing_source not in
      ('fixed_route_prices','dynamic','manual','hotel_rate','airport_rate','contract_rate','promotion') then
@@ -149,11 +155,16 @@ begin
 end;
 $function$;
 
--- Alleen de server-side booking-route (service-role) mag dit aanroepen — niet anon.
+-- SECURITY DEFINER-verantwoording: de functie schrijft cross-table naar twee
+-- deny-by-default-RLS-tabellen (bookings + price_snapshots) en roept de bestaande
+-- SECURITY DEFINER create_booking() aan. DEFINER garandeert consistente,
+-- owner-niveau rechten ongeacht toekomstige grant-wijzigingen, net als create_booking.
+-- De WERKELIJKE toegangscontrole is de execute-lockdown hieronder: uitsluitend
+-- service_role (de server-side booking-route). Er is geen anon/authenticated-pad.
 revoke all on function public.create_booking_from_snapshot(
   uuid, text, text, text, text, date, time without time zone, text, integer, text,
   text, text, text, double precision, double precision, double precision, double precision, text, text
-) from public;
+) from public, anon, authenticated;
 grant execute on function public.create_booking_from_snapshot(
   uuid, text, text, text, text, date, time without time zone, text, integer, text,
   text, text, text, double precision, double precision, double precision, double precision, text, text
