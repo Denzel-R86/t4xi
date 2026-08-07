@@ -1,30 +1,3 @@
--- ─────────────────────────────────────────────────────────────────────────────
--- SECURITY-HOTFIX voor public.create_booking() — zelfstandig, los van
--- feature/distance-tariff-fallback. Primaire fix: EXECUTE-lockdown.
---
--- AANLEIDING (bewijs via rechten-/bronanalyse; GEEN misbruikboeking gemaakt):
---   create_booking is SECURITY DEFINER, heeft `p_price_euros numeric` als directe
---   parameter en INSERT die waarde ongevalideerd in bookings.price_euros. De functie
---   was uitvoerbaar door `anon` en `authenticated` → een directe PostgREST-aanroep
---   `POST /rest/v1/rpc/create_booking` als anon kon een ZELFGEKOZEN price_euros
---   indienen (DEFINER omzeilt RLS). Enige legitieme aanroep is server-side
---   service-role (app/api/bookings/route.ts). Daarom: execute intrekken van
---   anon/authenticated, alleen service_role behouden.
---
--- SEARCH_PATH — bewuste keuze voor een VASTE 'public' i.p.v. ''.
---   `SET search_path = ''` is hier NIET veilig toepasbaar: de BEFORE INSERT trigger
---   public.generate_booking_ref() heeft geen eigen search_path en verwijst
---   ongekwalificeerd naar sequence booking_ref_seq. Met een lege search_path erft
---   die trigger '' en faalt met "relation booking_ref_seq does not exist", waardoor
---   ELKE boeking breekt. Een VASTE, niet-muteerbare `search_path = public` is niet
---   kwetsbaar voor search_path-injectie (pg_catalog blijft impliciet eerst; user-
---   objecten resolven deterministisch naar public) en houdt de trigger werkend.
---   De functie-body is verbatim t.o.v. 20260720090000 — puur hardening van rechten.
---
---   Een echte lege search_path vereist eerst het harden van generate_booking_ref()
---   (eigen search_path of gekwalificeerde sequence) — aparte follow-up.
--- ─────────────────────────────────────────────────────────────────────────────
-
 create or replace function public.create_booking(
   p_ride_type text,
   p_from_address text,
@@ -48,7 +21,7 @@ create or replace function public.create_booking(
 returns table(booking_ref text, booking_id uuid)
 language plpgsql
 security definer
-set search_path to 'public'
+set search_path = ''
 as $function$
 declare
   v_ref       text;
@@ -77,7 +50,7 @@ begin
     raise exception 'Vluchtrichting zonder vluchtnummer';
   end if;
 
-  insert into bookings (
+  insert into public.bookings (
     ride_type, from_address, to_address, ride_date, ride_time,
     vehicle, persons, luggage, price_euros,
     customer_name, customer_phone, customer_email,
@@ -90,13 +63,12 @@ begin
     trim(p_customer_name), trim(p_customer_phone), lower(trim(p_customer_email)),
     p_from_lat, p_from_lon, p_to_lat, p_to_lon, v_flight, v_direction
   )
-  returning bookings.booking_ref, bookings.id into v_ref, v_id;
+  returning booking_ref, id into v_ref, v_id;
 
   return query select v_ref, v_id;
 end;
 $function$;
 
--- Execute-lockdown: uitsluitend de server-side service-role.
 revoke all on function public.create_booking(
   text, text, text, date, time without time zone, text, integer, text, numeric,
   text, text, text, double precision, double precision, double precision, double precision, text, text
@@ -105,9 +77,3 @@ grant execute on function public.create_booking(
   text, text, text, date, time without time zone, text, integer, text, numeric,
   text, text, text, double precision, double precision, double precision, double precision, text, text
 ) to service_role;
-
--- Verificatie ná toepassen (anon/authenticated/public = false, service_role = true):
---   select r.rolname, has_function_privilege(r.rolname, p.oid, 'EXECUTE')
---   from pg_proc p join pg_namespace n on n.oid=p.pronamespace
---        cross join (values ('anon'),('authenticated'),('service_role')) r(rolname)
---   where n.nspname='public' and p.proname='create_booking';
