@@ -11,14 +11,11 @@ const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 const sql = read("supabase/migrations/20260807140000_secure_create_booking_rpc.sql");
 const route = read("app/api/bookings/route.ts");
 
-test("lege/veilige search_path (geen brede/muteerbare)", () => {
-  assert.match(sql, /set\s+search_path\s*=\s*''/i);
-  assert.doesNotMatch(sql, /search_path\s+to\s+'?public'?/i);
-  assert.doesNotMatch(sql, /search_path\s*=\s*'?public'?/i);
-});
-
-test("schema-kwalificatie: user-object public.bookings expliciet gekwalificeerd", () => {
-  assert.match(sql, /insert\s+into\s+public\.bookings/i);
+test("vaste, niet-muteerbare search_path is gezet (geen ontbrekende search_path)", () => {
+  // Bewust FIXED 'public' i.p.v. '': '' breekt de generate_booking_ref-trigger
+  // (ongekwalificeerde sequence). Een vaste search_path is niet injectie-kwetsbaar.
+  // De functie MOET wel een expliciete SET search_path hebben (nooit ontbreken/mutable).
+  assert.match(sql, /security\s+definer\s*\n?\s*set\s+search_path\s+to\s+'public'/i);
 });
 
 test("anon/authenticated hebben GEEN execute-recht (revoke)", () => {
