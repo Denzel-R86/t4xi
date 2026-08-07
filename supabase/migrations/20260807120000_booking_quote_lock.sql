@@ -69,17 +69,21 @@ create or replace function public.create_booking_from_snapshot(
 returns table(booking_ref text, booking_id uuid, price_euros numeric, reused boolean)
 language plpgsql
 security definer
-set search_path to 'public'
+-- LEGE search_path (hardening): niets uit user-schema's wordt impliciet gevonden.
+-- pg_catalog blijft altijd impliciet eerst → built-in types/operatoren zijn
+-- onshadowbaar. ALLE user-objecten hieronder zijn daarom expliciet public.-
+-- gekwalificeerd, en aangeroepen built-in functies met pg_catalog.
+set search_path = ''
 as $function$
 declare
-  v_snap    price_snapshots%rowtype;
+  v_snap    public.price_snapshots%rowtype;
   v_ref     text;
   v_id      uuid;
   v_price   numeric;
   v_max_pax integer;
 begin
   -- (1) Snapshot SELECTEREN + VERGRENDELEN (serialiseert gelijktijdige submits).
-  select * into v_snap from price_snapshots where quote_id = p_quote_id for update;
+  select * into v_snap from public.price_snapshots where quote_id = p_quote_id for update;
   if not found then
     raise exception 'QUOTE_NOT_FOUND';
   end if;
@@ -102,7 +106,7 @@ begin
     end if;
     select b.booking_ref, b.id, b.price_euros
       into v_ref, v_id, v_price
-      from bookings b where b.id = v_snap.booking_id;
+      from public.bookings b where b.id = v_snap.booking_id;
     if not found then
       raise exception 'QUOTE_CONSUMED_NO_BOOKING';
     end if;
@@ -111,7 +115,7 @@ begin
   end if;
 
   -- (2) Nieuwe boeking: vervaldatum en prijsbron valideren.
-  if v_snap.expires_at <= now() then
+  if v_snap.expires_at <= pg_catalog.now() then
     raise exception 'QUOTE_EXPIRED';
   end if;
   if v_snap.pricing_source not in
@@ -122,15 +126,16 @@ begin
   -- Capaciteit server-side (vóór creatie). Onbekende klasse blokkeert niet — de
   -- prijs is al gelockt; alleen een AANTOONBARE overschrijding wordt geweigerd.
   select vc.max_passengers into v_max_pax
-    from vehicle_classes vc
+    from public.vehicle_classes vc
     where vc.code = (v_snap.route_snapshot->>'vehicleClass') and vc.active
     limit 1;
+  -- coalesce is een SQL-keyword-expressie (geen pg_catalog-functie) en onshadowbaar.
   if v_max_pax is not null and coalesce(p_persons, 1) > v_max_pax then
     raise exception 'CAPACITY_EXCEEDED';
   end if;
 
   -- (4) Bindende prijs = exact total_cents uit de snapshot (nooit clientinvoer).
-  v_price := round(v_snap.total_cents::numeric / 100.0, 2);
+  v_price := pg_catalog.round(v_snap.total_cents::pg_catalog.numeric / 100.0, 2);
 
   -- Boeking aanmaken via de bestaande RPC (zelfde transactie → geen duplicatie van
   -- validatie/insert). Faalt deze, dan draait ALLES terug: snapshot blijft ongebruikt.
@@ -144,11 +149,11 @@ begin
     ) cb;
 
   -- Koppel quote_id (unieke index = laatste verdediging tegen dubbele boeking).
-  update bookings set quote_id = p_quote_id where id = v_id;
+  update public.bookings set quote_id = p_quote_id where id = v_id;
 
   -- (5) Snapshot markeren als gebruikt + koppelen. NIET verwijderen (audit blijft).
-  update price_snapshots
-    set consumed_at = now(), booking_id = v_id
+  update public.price_snapshots
+    set consumed_at = pg_catalog.now(), booking_id = v_id
     where quote_id = p_quote_id;
 
   return query select v_ref, v_id, v_price, false;
