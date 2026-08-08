@@ -16,6 +16,7 @@ import {
 } from "@/components/horizon/patterns";
 import { loadRateCard, type CityRates } from "@/lib/pricing/rate-card";
 import { getTranslations } from "next-intl/server";
+import Image from "next/image";
 // Static import → Next genereert een blurDataURL bij build (geen dependency,
 // asset zelf ongewijzigd). Gebruikt als blur-placeholder in de EditorialFigure.
 import teslaFleet from "@/public/tesla_model_y_black.jpg";
@@ -102,12 +103,13 @@ export default async function HomePage() {
     <>
       <HorizonSpine />
 
-      {/* ═══ ARRIVAL — stilte, dan het statement; de handeling ligt op de lijn ═══ */}
-      <Viewport
-        meaning="arrival"
-        label={t("arrivalLabel")}
-        first
-        above={
+      {/* ═══ ARRIVAL — tekst en boeking links, de reisbeleving rechts ═══ */}
+      <section
+        data-viewport="arrival"
+        aria-label={t("arrivalLabel")}
+        className="grid min-h-[calc(100svh-68px)] md:grid-cols-[48%_52%]"
+      >
+        <div className="flex min-w-0 flex-col justify-center px-[5vw] pb-10 pt-20 md:py-14 md:pr-[4vw]">
           <NarrativePattern
             as="h1"
             kicker={t("arrivalKicker")}
@@ -115,21 +117,30 @@ export default async function HomePage() {
             echo={t("arrivalEcho")}
             note={t("arrivalNote")}
           />
-        }
-        onLine={
           <Reveal delay={2}>
-            <SentencePattern />
+            <div className="mt-9">
+              <SentencePattern />
+            </div>
           </Reveal>
-        }
-        below={
           <Reveal delay={3}>
-            <Stamp>
+            <Stamp className="mt-7 leading-relaxed">
               {t("arrivalStamp1")}<Dash />{t("arrivalStamp2")}<Dash />{t("arrivalStamp3")}<Dash />
               <b className="font-semibold text-ink">{t("arrivalStamp4")}</b>
             </Stamp>
           </Reveal>
-        }
-      />
+        </div>
+        <figure className="relative min-h-[42svh] overflow-hidden bg-ink md:min-h-full">
+          <Image
+            src={passagierRust}
+            alt={t("recogFiguurAlt")}
+            fill
+            priority
+            sizes="(min-width: 768px) 52vw, 100vw"
+            placeholder="blur"
+            className="object-cover object-[57%_center] saturate-[0.9] contrast-[0.96]"
+          />
+        </figure>
+      </section>
 
       <Breath />
 
@@ -145,15 +156,7 @@ export default async function HomePage() {
             note={t("recogNote")}
           />
         }
-        below={
-          <>
-            <VowsPattern vows={VOWS} />
-            <Reveal>
-              <EditorialFigure src={passagierRust} alt={t("recogFiguurAlt")} />
-              <Stamp className="mt-5">{t("recogFiguurCaption")}</Stamp>
-            </Reveal>
-          </>
-        }
+        below={<VowsPattern vows={VOWS} />}
       />
 
       <Breath />
@@ -223,10 +226,6 @@ export default async function HomePage() {
             <EditorialFigure
               src={teslaFleet}
               alt={t("figuurAlt")}
-              annotations={[
-                { text: t("annBagage"), side: "left", top: "16%" },
-                { text: t("annPassagiers"), side: "right", top: "38%" },
-              ]}
               specs={[
                 { k: t("specAandrijving"), v: "100% EV" },
                 { k: t("specBeschikbaar"), v: "24 / 7" },
