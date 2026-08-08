@@ -42,6 +42,7 @@ function availableFixed(price: number): AvailableQuote {
     isAirportTransfer: true,
     airport: { ...NO_AIRPORT, dropoffIsAirport: true, isAirportDropoff: true, isAirportTransfer: true },
     dataSource: "supabase",
+    fingerprint: "rotterdam|schiphol|executive-ev|enkel",
   };
 }
 
