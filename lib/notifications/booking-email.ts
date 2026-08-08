@@ -32,6 +32,7 @@ export { normalizeLocale };
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const DEFAULT_FROM = "T4XI <onboarding@resend.dev>";
 const DEFAULT_OPS = "booking@t4xi.nl";
+const MONOGRAM_URL = "https://t4xi.nl/t4xi-monogram-navy.png";
 
 const T4XI = {
   phoneDisplay: "+31 6 34 74 45 22",
@@ -75,6 +76,9 @@ const CUSTOMER_COPY = {
     labelDate: "Datum",
     labelTime: "Tijd",
     labelPrice: "Prijs",
+    labelPersons: "Passagiers",
+    labelLuggage: "Bagage",
+    labelFlight: "Vlucht",
     quoteOnRequest: "Offerte op aanvraag",
     returnSuffix: "retour",
     contactIntro: "Vragen of wijzigingen? Neem gerust contact op:",
@@ -95,6 +99,9 @@ const CUSTOMER_COPY = {
     labelDate: "Date",
     labelTime: "Time",
     labelPrice: "Price",
+    labelPersons: "Passengers",
+    labelLuggage: "Luggage",
+    labelFlight: "Flight",
     quoteOnRequest: "Quote on request",
     returnSuffix: "return",
     contactIntro: "Questions or changes? Feel free to get in touch:",
@@ -171,6 +178,8 @@ function formatPrice(data: BookingEmailData, intlLocale: string, quoteLabel: str
 const INK = "#1F2730";
 const ACCENT = "#28313B";
 const FOG = "#F5F3F1";
+const OVERLAY = "#EEEAE5";
+const STONE = "#999694";
 const MUTED = "#5F666D";
 
 function shell(opts: { title: string; inner: string; lang: string; tagline: string; preheader?: string }): string {
@@ -178,18 +187,57 @@ function shell(opts: { title: string; inner: string; lang: string; tagline: stri
   const preheaderHtml = preheader
     ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>`
     : "";
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>${escapeHtml(title)}</title>
+<style>
+  :root { color-scheme: light; supported-color-schemes: light; }
+  @media only screen and (max-width: 620px) {
+    .email-wrap { padding: 16px 10px !important; }
+    .email-header { padding: 25px 22px 22px !important; }
+    .email-logo { width: 54px !important; height: 53px !important; }
+    .email-content { padding: 30px 22px 28px !important; }
+    .email-heading { font-size: 25px !important; }
+    .email-route { font-size: 15px !important; }
+  }
+</style></head>
 <body style="margin:0;background:${FOG};font-family:Arial,Helvetica,sans-serif;color:${INK};">
   ${preheaderHtml}
-  <div style="max-width:560px;margin:0 auto;padding:24px;">
-    <div style="font-size:22px;font-weight:bold;letter-spacing:1px;color:${INK};padding:8px 0 16px;">T4XI</div>
-    <div style="background:#ffffff;border:1px solid rgba(31,39,48,0.10);border-radius:16px;padding:28px;">
-      ${inner}
-    </div>
-    <p style="color:${MUTED};font-size:12px;text-align:center;margin-top:20px;">
-      ${escapeHtml(tagline)} · ${T4XI.phoneDisplay} · ${escapeHtml(T4XI.email)}
-    </p>
-  </div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:${FOG};">
+    <tr><td class="email-wrap" align="center" style="padding:36px 16px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;">
+        <tr>
+          <td class="email-header" align="center" style="background:${FOG};border:1px solid #E6E2DC;border-bottom:0;border-radius:24px 24px 0 0;padding:30px 34px 27px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+              <tr>
+                <td align="center">
+                  <img class="email-logo" src="${MONOGRAM_URL}" width="64" height="63" alt="T4XI" style="display:block;width:64px;height:63px;border:0;outline:none;object-fit:contain;color:${INK};font-size:12px;font-weight:700;">
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:${FOG};border-left:1px solid #E6E2DC;border-right:1px solid #E6E2DC;padding:0 34px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
+              <td style="height:1px;background:#CBC8C4;font-size:0;line-height:0;">&nbsp;</td>
+              <td style="width:52px;height:2px;background:${INK};font-size:0;line-height:0;">&nbsp;</td>
+              <td style="height:1px;background:#CBC8C4;font-size:0;line-height:0;">&nbsp;</td>
+            </tr></table>
+          </td>
+        </tr>
+        <tr>
+          <td class="email-content" style="background:#ffffff;border:1px solid #E6E2DC;border-top:0;padding:42px 34px 38px;box-shadow:0 22px 60px rgba(31,39,48,0.08);">
+            ${inner}
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="background:${INK};border-radius:0 0 24px 24px;padding:25px 22px;color:#CBC8C4;font-size:11px;line-height:1.8;">
+            <span style="font-weight:700;letter-spacing:0.5px;color:${FOG};">${escapeHtml(tagline)}</span><br>
+            <span style="color:${STONE};">${T4XI.phoneDisplay} &nbsp;—&nbsp; ${escapeHtml(T4XI.email)}</span>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
 </body></html>`;
 }
 
@@ -207,21 +255,33 @@ function route(data: BookingEmailData): string {
 function customerHtml(data: BookingEmailData): string {
   const c = CUSTOMER_COPY[data.locale];
   const inner = `
-    <h1 style="font-size:20px;margin:0 0 8px;color:${INK};">${escapeHtml(c.heading)}</h1>
-    <p style="font-size:14px;color:${MUTED};margin:0 0 20px;line-height:1.5;">
+    <div style="font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:${STONE};margin:0 0 12px;">${escapeHtml(rideTypeLabel(data.rideType, data.locale))}</div>
+    <h1 class="email-heading" style="font-family:Arial,Helvetica,sans-serif;font-size:30px;line-height:1.12;letter-spacing:-0.7px;margin:0 0 14px;color:${INK};">${escapeHtml(c.heading)}</h1>
+    <p style="font-size:14px;color:${MUTED};margin:0 0 26px;line-height:1.65;">
       ${c.intro(escapeHtml(data.customerName), escapeHtml(data.bookingRef))}
     </p>
-    <table style="width:100%;border-collapse:collapse;border-top:1px solid rgba(31,39,48,0.10);">
+    <div style="background:${OVERLAY};border:1px solid #E2DDD5;border-radius:12px;padding:18px 20px;margin:0 0 22px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${MUTED};margin-bottom:8px;">${escapeHtml(c.labelRoute)}</div>
+      <div class="email-route" style="font-size:17px;font-weight:700;line-height:1.45;color:${INK};">${route(data)}</div>
+    </div>
+    <table role="presentation" style="width:100%;border-collapse:collapse;border-top:1px solid #E6E2DC;">
       ${detailRow(c.labelReference, escapeHtml(data.bookingRef))}
       ${detailRow(c.labelType, escapeHtml(rideTypeLabel(data.rideType, data.locale)))}
-      ${detailRow(c.labelRoute, route(data))}
       ${detailRow(c.labelDate, escapeHtml(formatDate(data.date, c.intlLocale)))}
       ${detailRow(c.labelTime, escapeHtml(data.time))}
-      ${detailRow(c.labelPrice, escapeHtml(formatPrice(data, c.intlLocale, c.quoteOnRequest, c.returnSuffix)))}
+      ${detailRow(c.labelPersons, String(data.persons))}
+      ${detailRow(c.labelLuggage, data.luggage ? escapeHtml(data.luggage) : "—")}
+      ${data.flightNumber ? detailRow(c.labelFlight, escapeHtml(data.flightNumber)) : ""}
     </table>
-    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(31,39,48,0.10);">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:${INK};border-radius:10px;margin-top:22px;">
+      <tr>
+        <td style="padding:16px 18px;color:#CBC8C4;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;">${escapeHtml(c.labelPrice)}</td>
+        <td align="right" style="padding:16px 18px;color:#ffffff;font-size:19px;font-weight:800;">${escapeHtml(formatPrice(data, c.intlLocale, c.quoteOnRequest, c.returnSuffix))}</td>
+      </tr>
+    </table>
+    <div style="margin-top:28px;padding-top:22px;border-top:1px solid #E6E2DC;">
       <p style="font-size:13px;color:${MUTED};margin:0 0 10px;">${escapeHtml(c.contactIntro)}</p>
-      <p style="margin:0;font-size:14px;">
+      <p style="margin:0;font-size:13px;line-height:1.8;">
         <a href="tel:${T4XI.phoneHref}" style="color:${ACCENT};text-decoration:none;font-weight:600;">${T4XI.phoneDisplay}</a> ·
         <a href="${T4XI.whatsapp}" style="color:${ACCENT};text-decoration:none;font-weight:600;">WhatsApp</a> ·
         <a href="mailto:${T4XI.email}" style="color:${ACCENT};text-decoration:none;font-weight:600;">${T4XI.email}</a>

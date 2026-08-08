@@ -13,3 +13,4 @@ next-env.d.ts
 data/pricing/too-cheap-routes.review.csv
 .vercel
 .env*
+tmp/
