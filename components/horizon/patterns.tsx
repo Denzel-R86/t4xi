@@ -302,7 +302,11 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     <span className="hz-focus relative inline-block align-baseline">
       <input
         className="hz-blank font-display font-medium"
-        style={{ width: `${Math.max(placeholder.length, value.length) + 1}ch` }}
+        style={{
+          width: value.length > 0
+            ? `${Math.max(4, value.length + 0.25)}ch`
+            : `${placeholder.length + 1}ch`,
+        }}
         value={value}
         onChange={(e) => {
           set(e.target.value);
