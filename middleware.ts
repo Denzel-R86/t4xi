@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
+import { createOpsSession, OPS_SESSION_COOKIE } from "@/lib/admin/session";
 
 /**
  * Twee taken, in vaste volgorde:
@@ -104,6 +105,15 @@ export async function middleware(request: NextRequest) {
     // Laat na succesvolle authenticatie de normale next-intl rewrite uitvoeren.
     // Zonder deze stap bereikt /dashboard/invoices de [locale]-route niet.
     const res = intlMiddleware(request);
+    const session = await createOpsSession();
+    if (!session) return notFound();
+    res.cookies.set(OPS_SESSION_COOKIE.name, session, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      path: "/",
+      maxAge: OPS_SESSION_COOKIE.maxAge,
+    });
     res.headers.set("x-robots-tag", "noindex, nofollow");
     res.headers.set("cache-control", "no-store");
     return res;
