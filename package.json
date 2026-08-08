@@ -18,7 +18,8 @@
     "test:payments": "tsx --test lib/payments/*.test.ts",
     "test:notifications": "tsx --test lib/notifications/*.test.ts",
     "test:invoices": "tsx --test lib/invoices/*.test.ts",
-    "test:admin": "tsx --test lib/admin/*.test.ts"
+    "test:admin": "tsx --test lib/admin/*.test.ts",
+    "preview:invoice-email": "tsx scripts/verify-invoice-email.ts"
   },
   "dependencies": {
     "@sanity/image-url": "^1.0.2",
