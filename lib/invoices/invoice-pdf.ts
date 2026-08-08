@@ -21,6 +21,8 @@ export type InvoiceData = {
   amountPaidCents: number;
   currency: string;
   paidAt: string;
+  /** Klantvriendelijke weergavenaam, bijvoorbeeld iDEAL of Creditcard. */
+  paymentMethod?: string;
 };
 
 export function invoiceAmounts(grossCents: number): { netCents: number; vatCents: number } {
@@ -35,7 +37,7 @@ function eur(cents: number): string {
 export function renderInvoicePdf(data: InvoiceData): Uint8Array {
   const { netCents, vatCents } = invoiceAmounts(data.amountPaidCents);
   const issued = data.invoiceIssuedAt.slice(0, 10);
-  const paid = data.paidAt.slice(0, 10);
+  const paymentMethod = data.paymentMethod?.trim() || "Online betaling";
   return createSinglePagePdf({
     title: `Factuur ${data.invoiceNumber}`,
     jpeg: {
@@ -64,12 +66,10 @@ export function renderInvoicePdf(data: InvoiceData): Uint8Array {
       { text: data.invoiceNumber, x: 172, y: 590, size: 10, bold: true },
       { text: "Factuurdatum", x: 48, y: 570, size: 9, color: "#5F666D" },
       { text: issued, x: 172, y: 570, size: 10 },
-      { text: "Betaaldatum", x: 48, y: 550, size: 9, color: "#5F666D" },
-      { text: paid, x: 172, y: 550, size: 10 },
-      { text: "Boekingsreferentie", x: 320, y: 590, size: 9, color: "#5F666D" },
-      { text: data.bookingRef, x: 430, y: 590, size: 8, bold: true },
-      { text: "Uitvoerend taxibedrijf", x: 320, y: 558, size: 9, color: "#5F666D" },
-      { text: data.executingCarrierName, x: 320, y: 538, size: 9, bold: true },
+      { text: "Betaald per", x: 48, y: 550, size: 9, color: "#5F666D" },
+      { text: paymentMethod, x: 172, y: 550, size: 10 },
+      { text: "Uitvoerend taxibedrijf", x: 320, y: 590, size: 9, color: "#5F666D" },
+      { text: data.executingCarrierName, x: 320, y: 570, size: 9, bold: true },
       { text: "OMSCHRIJVING", x: 62, y: 376, size: 9, bold: true, color: "#F5F3F1" },
       { text: "BEDRAG EXCL. BTW", x: 398, y: 376, size: 9, bold: true, color: "#F5F3F1" },
       { text: `Taxivervoer op ${data.rideDate} om ${data.rideTime}`, x: 62, y: 316, size: 10, bold: true },
