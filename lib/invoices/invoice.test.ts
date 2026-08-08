@@ -41,3 +41,14 @@ test("migratie vergrendelt factuurnummers, PII en RPC's voor browserrollen", () 
   assert.match(sql, /grant execute on function public\.claim_booking_invoice\(uuid, text\) to service_role/);
   assert.doesNotMatch(sql, /grant\s+(select|insert|update|delete|all).*to\s+(anon|authenticated)/i);
 });
+
+test("uitvoerende bedrijven krijgen een vaste ID en alleen actieve keuzes zijn geldig", () => {
+  const sql = readFileSync("supabase/migrations/20260808170000_executing_carriers.sql", "utf8");
+  assert.match(sql, /create table if not exists public\.executing_carriers/);
+  assert.match(sql, /id uuid primary key default gen_random_uuid\(\)/);
+  assert.match(sql, /executing_carrier_id uuid[\s\S]*references public\.executing_carriers\(id\)/);
+  assert.match(sql, /where c\.id = p_executing_carrier_id and c\.active = true/);
+  assert.match(sql, /executing_carrier_name = excluded\.executing_carrier_name/);
+  assert.match(sql, /revoke all on table public\.executing_carriers from public, anon, authenticated/);
+  assert.doesNotMatch(sql, /grant\s+(select|insert|update|delete|all).*to\s+(anon|authenticated)/i);
+});
