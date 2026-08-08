@@ -16,13 +16,21 @@ export async function GET(request: Request) {
   if (!(await isAuthorizedAdminRequest(request))) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const supabase = db();
   if (!supabase) return NextResponse.json({ error: "unavailable" }, { status: 503 });
-  const [{ data: bookings, error }, { data: details, error: detailError }] = await Promise.all([
+  const [
+    { data: bookings, error },
+    { data: details, error: detailError },
+    { data: carriers, error: carrierError },
+  ] = await Promise.all([
     supabase.from("bookings").select("id, booking_ref, customer_name, customer_email, from_address, to_address, ride_date, ride_time, price_euros, payment_status, paid_at").order("created_at", { ascending: false }).limit(100),
-    supabase.from("booking_invoice_details").select("booking_id, billing_name, billing_address, billing_postal_code, billing_city, billing_country, executing_carrier_name, invoice_number, invoice_email_sent_at"),
+    supabase.from("booking_invoice_details").select("booking_id, billing_name, billing_address, billing_postal_code, billing_city, billing_country, executing_carrier_id, executing_carrier_name, invoice_number, invoice_email_sent_at"),
+    supabase.from("executing_carriers").select("id, name, active, onboarding_completed_at").eq("active", true).order("name"),
   ]);
-  if (error || detailError) return NextResponse.json({ error: "query_failed" }, { status: 500 });
+  if (error || detailError || carrierError) return NextResponse.json({ error: "query_failed" }, { status: 500 });
   const byBooking = new Map((details ?? []).map((row) => [row.booking_id, row]));
-  return NextResponse.json({ bookings: (bookings ?? []).map((row) => ({ ...row, invoice: byBooking.get(row.id) ?? null })) });
+  return NextResponse.json({
+    bookings: (bookings ?? []).map((row) => ({ ...row, invoice: byBooking.get(row.id) ?? null })),
+    carriers: carriers ?? [],
+  });
 }
 
 export async function POST(request: Request) {
@@ -33,23 +41,28 @@ export async function POST(request: Request) {
   const values = {
     billingName: text("billingName"), billingAddress: text("billingAddress"),
     billingPostalCode: text("billingPostalCode"), billingCity: text("billingCity"),
-    billingCountry: text("billingCountry") || "Nederland", executingCarrierName: text("executingCarrierName"),
+    billingCountry: text("billingCountry") || "Nederland",
   };
-  if (!/^[0-9a-f-]{36}$/i.test(bookingId) || Object.values(values).some((value) => value.length < 2)) {
+  const carrierId = text("carrierId");
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuid.test(bookingId) || !uuid.test(carrierId) || Object.values(values).some((value) => value.length < 2)) {
     return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   }
   const supabase = db();
   if (!supabase) return NextResponse.json({ error: "unavailable" }, { status: 503 });
-  const { data, error } = await supabase.rpc("save_booking_invoice_details", {
+  const { data, error } = await supabase.rpc("save_booking_invoice_details_v2", {
     p_booking_id: bookingId,
     p_billing_name: values.billingName,
     p_billing_address: values.billingAddress,
     p_billing_postal_code: values.billingPostalCode,
     p_billing_city: values.billingCity,
     p_billing_country: values.billingCountry,
-    p_executing_carrier_name: values.executingCarrierName,
+    p_executing_carrier_id: carrierId,
   });
-  if (error || data !== "saved") return NextResponse.json({ error: data ?? "save_failed" }, { status: data === "invoice_locked" ? 409 : 500 });
+  if (error || data !== "saved") {
+    const status = data === "invoice_locked" ? 409 : data === "invalid_carrier" || data === "invalid_input" ? 400 : 500;
+    return NextResponse.json({ error: data ?? "save_failed" }, { status });
+  }
   const invoice = await trySendInvoice(supabase, { bookingId });
   return NextResponse.json({ ok: true, invoice });
 }
