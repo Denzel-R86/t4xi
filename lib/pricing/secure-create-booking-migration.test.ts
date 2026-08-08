@@ -3,13 +3,13 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
-// Bron-/rechten-guards voor de create_booking-security-hotfix (20260807140000) en de
-// forward-only correctie (20260807150000). Runtime-gedrag wordt bij toepassing op een
+// Bron-/rechten-guards voor de create_booking-security-hotfix (20260807220341) en de
+// forward-only correctie (20260808103643). Runtime-gedrag wordt bij toepassing op een
 // schone/non-prod DB geverifieerd; hier bewaken we de invarianten in de migratiebronnen.
 const MIG = "supabase/migrations";
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
-const hist = read(`${MIG}/20260807140000_secure_create_booking_rpc.sql`);
-const fix = read(`${MIG}/20260807150000_harden_search_path_booking_fns.sql`);
+const hist = read(`${MIG}/20260807220341_secure_create_booking_rpc.sql`);
+const fix = read(`${MIG}/20260808103643_harden_search_path_booking_fns.sql`);
 const route = read("app/api/bookings/route.ts");
 
 // ── Historische immutabiliteit: 140000 == wat op prod is toegepast ───────────
@@ -52,8 +52,8 @@ test("execute-lockdown blijft: revoke public/anon/authenticated, grant alleen se
 
 test("migraties draaien in correcte volgorde: correctie 150000 komt NA hotfix 140000", () => {
   const files = readdirSync(resolve(process.cwd(), MIG)).filter((f) => f.endsWith(".sql")).sort();
-  const iHist = files.indexOf("20260807140000_secure_create_booking_rpc.sql");
-  const iFix = files.indexOf("20260807150000_harden_search_path_booking_fns.sql");
+  const iHist = files.indexOf("20260807220341_secure_create_booking_rpc.sql");
+  const iFix = files.indexOf("20260808103643_harden_search_path_booking_fns.sql");
   assert.ok(iHist >= 0 && iFix >= 0, "beide migraties aanwezig");
   assert.ok(iFix > iHist, "correctie moet lexicografisch/temporeel na de hotfix komen");
 });
