@@ -101,7 +101,9 @@ export async function middleware(request: NextRequest) {
       safeEqual(decoded.slice(sep + 1), pass),
     ]);
     if (!okUser || !okPass) return challenge();
-    const res = NextResponse.next();
+    // Laat na succesvolle authenticatie de normale next-intl rewrite uitvoeren.
+    // Zonder deze stap bereikt /dashboard/invoices de [locale]-route niet.
+    const res = intlMiddleware(request);
     res.headers.set("x-robots-tag", "noindex, nofollow");
     res.headers.set("cache-control", "no-store");
     return res;
