@@ -7,7 +7,7 @@ import { resolve } from "node:path";
 // quote-lock-RPC (create_booking_from_snapshot). Voorkomt dat later opnieuw een
 // brede/muteerbare search_path of een te ruime grant wordt geïntroduceerd.
 const sql = readFileSync(
-  resolve(process.cwd(), "supabase/migrations/20260807120000_booking_quote_lock.sql"),
+  resolve(process.cwd(), "supabase/migrations/20260808110000_booking_quote_lock.sql"),
   "utf8"
 );
 
