@@ -36,17 +36,33 @@ test("NL en EN hebben hun eigen subject en heading", () => {
 test("officieel monogram staat zelfstandig en gebruikt een publieke HTTPS-asset", () => {
   const html = renderBookingEmails(base).customerHtml;
   assert.match(html, /src="https:\/\/t4xi\.nl\/t4xi-monogram-navy\.png"/);
-  assert.match(html, /width="64" height="63" alt="T4XI"/);
+  assert.match(html, /width="52" height="51" alt="T4XI"/);
   assert.doesNotMatch(html, />T4XI<\/td>/);
   assert.doesNotMatch(html, /Users\/|file:\/\//);
 });
 
-test("prijs wordt gelokaliseerd en retour wordt alleen toegepast indien aangegeven", () => {
+test("boekingsbevestiging gebruikt dezelfde premium designtaal als de factuurmail", () => {
+  const html = renderBookingEmails(base).customerHtml;
+  assert.match(html, /max-width:620px/);
+  assert.match(html, /font-family:Inter,-apple-system/);
+  assert.match(html, /font-family:Outfit,'Helvetica Neue'/);
+  assert.match(html, /border-radius:18px 18px 0 0/);
+  assert.match(html, /border-bottom:3px solid #28313B/);
+  assert.match(html, />\s*Boeking<br><span[^>]*>T4XI-TEST-1001<\/span>/);
+  assert.match(html, />Vertrek<\/div>[\s\S]*Utrecht Centraal/);
+  assert.match(html, />Bestemming<\/div>[\s\S]*Schiphol Airport/);
+  assert.match(html, />Boekingsbevestiging · bijgevoegd<\/div>/);
+  assert.match(html, />ARRIVE WITH CONFIDENCE\.<\/span>/);
+});
+
+test("prijs wordt gelokaliseerd en retour staat eenmaal als ritsoort, niet achter het bedrag", () => {
   const single = renderBookingEmails(base).customerHtml;
-  const returned = renderBookingEmails({ ...base, returnApplied: true }).customerHtml;
+  const returned = renderBookingEmails({ ...base, rideType: "retour", returnApplied: true }).customerHtml;
   assert.match(single, /\u20ac\s?89,50/);
   assert.doesNotMatch(single, /\(retour\)/);
-  assert.match(returned, /\u20ac\s?89,50 \(retour\)/);
+  assert.match(returned, /\u20ac\s?89,50/);
+  assert.doesNotMatch(returned, /\(retour\)/);
+  assert.equal(returned.match(/retour/gi)?.length, 1);
 });
 
 test("offerte op aanvraag wordt in de taal van de klant getoond", () => {
