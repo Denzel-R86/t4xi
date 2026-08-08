@@ -436,18 +436,21 @@ export function EditorialFigure({
   alt,
   annotations,
   specs,
+  aspect = "aspect-[16/9] md:aspect-[21/9]",
 }: {
   /** string = losse pad (geen blur); StaticImageData = static import (blur). */
   src: string | StaticImageData;
   alt: string;
   annotations?: { text: string; side: "left" | "right"; top: string }[];
   specs?: { k: string; v: string }[];
+  /** Tailwind aspect-ratio classes. Default past bij een full-width figuur. */
+  aspect?: string;
 }) {
   return (
     <figure>
-      <div className="hz-frame aspect-[16/9] md:aspect-[21/9]">
+      <div className={`hz-frame ${aspect}`}>
         <Image src={src} alt={alt} fill sizes="90vw" placeholder={typeof src === "object" ? "blur" : "empty"} className="object-cover saturate-[0.9] contrast-[0.96]" />
-        <span className="hz-frame-wash" aria-hidden="true" />
+        {annotations && annotations.length > 0 && <span className="hz-frame-wash" aria-hidden="true" />}
         {annotations?.map((a) => (
           <span
             key={a.text}

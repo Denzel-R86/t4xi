@@ -19,6 +19,9 @@ import { getTranslations } from "next-intl/server";
 // Static import → Next genereert een blurDataURL bij build (geen dependency,
 // asset zelf ongewijzigd). Gebruikt als blur-placeholder in de EditorialFigure.
 import teslaFleet from "@/public/tesla_model_y_black.jpg";
+import passagierRust from "@/public/t4xi-campagne-01-passagier-v2.png";
+import bagageOverdracht from "@/public/t4xi-campagne-02-bagageoverdracht-v4.png";
+import comfortAanBoord from "@/public/t4xi-campagne-03-comfort.png";
 
 /**
  * Homepage — eerste uitspraak in de Horizon Design Language (v1).
@@ -142,7 +145,15 @@ export default async function HomePage() {
             note={t("recogNote")}
           />
         }
-        below={<VowsPattern vows={VOWS} />}
+        below={
+          <>
+            <VowsPattern vows={VOWS} />
+            <Reveal>
+              <EditorialFigure src={passagierRust} alt={t("recogFiguurAlt")} />
+              <Stamp className="mt-5">{t("recogFiguurCaption")}</Stamp>
+            </Reveal>
+          </>
+        }
       />
 
       <Breath />
@@ -161,20 +172,34 @@ export default async function HomePage() {
           />
         }
         below={
-          <Reveal>
-            <LedgerPattern
-              entries={ledger}
-              closing={
-                <Stamp>
-                  <Link href="/tarieven" className="hz-guide-line text-ink no-underline">
-                    {t("ledgerAlle")}
-                  </Link>
-                  <Dash />
-                  {t("ledgerOnbekend")}
-                </Stamp>
-              }
-            />
-          </Reveal>
+          <>
+            <Reveal>
+              <LedgerPattern
+                entries={ledger}
+                closing={
+                  <Stamp>
+                    <Link href="/tarieven" className="hz-guide-line text-ink no-underline">
+                      {t("ledgerAlle")}
+                    </Link>
+                    <Dash />
+                    {t("ledgerOnbekend")}
+                  </Stamp>
+                }
+              />
+            </Reveal>
+            <Reveal delay={1}>
+              <div className="mt-14 grid gap-10 md:grid-cols-2">
+                <div>
+                  <EditorialFigure src={bagageOverdracht} alt={t("bagageFiguurAlt")} aspect="aspect-[4/3]" />
+                  <Stamp className="mt-5">{t("bagageFiguurCaption")}</Stamp>
+                </div>
+                <div>
+                  <EditorialFigure src={comfortAanBoord} alt={t("comfortFiguurAlt")} aspect="aspect-[4/3]" />
+                  <Stamp className="mt-5">{t("comfortFiguurCaption")}</Stamp>
+                </div>
+              </div>
+            </Reveal>
+          </>
         }
       />
 

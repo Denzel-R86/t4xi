@@ -9,7 +9,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "T4XI — Executive Mobility",
     short_name: "T4XI",
     description:
-      "Premium Nederlands taxiplatform. 100% elektrisch, vaste tarieven, professionele chauffeurs.",
+      "Premium Nederlands taxiplatform. Moderne, emissiebewuste vloot, vaste tarieven, professionele chauffeurs.",
     start_url: "/",
     display: "standalone",
     background_color: "#28313B",
