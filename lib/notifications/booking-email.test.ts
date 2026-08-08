@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { renderBookingEmails, type BookingEmailData } from "@/lib/notifications/booking-email";
+import { renderBookingEmails, sendBookingEmails, type BookingEmailData } from "@/lib/notifications/booking-email";
 
 const base: BookingEmailData = {
   bookingRef: "T4XI-TEST-1001",
@@ -98,4 +98,31 @@ test("dispatch-actie verschijnt uitsluitend bij een aankomende vlucht", () => {
   assert.match(arrival, /Controleer de aankomststatus/);
   assert.doesNotMatch(departure, /Actie dispatch/);
   assert.doesNotMatch(none, /Actie dispatch/);
+});
+
+test("klantdispatch bevat altijd een PDF-boekingsbevestiging en reply_to blijft snake_case", async () => {
+  const previousFetch = globalThis.fetch;
+  const previousKey = process.env.RESEND_API_KEY;
+  const requests: Array<{ headers: Headers; body: Record<string, unknown> }> = [];
+  process.env.RESEND_API_KEY = "re_test_only";
+  globalThis.fetch = async (_input, init) => {
+    requests.push({ headers: new Headers(init?.headers), body: JSON.parse(String(init?.body)) });
+    return new Response("{}", { status: 200 });
+  };
+  try {
+    assert.deepEqual(await sendBookingEmails(base), { sent: true });
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = previousKey;
+  }
+  assert.equal(requests.length, 2);
+  const customer = requests.find((request) => request.body.to === base.customerEmail);
+  assert.ok(customer);
+  assert.equal(customer.body.reply_to, "booking@t4xi.nl");
+  assert.ok(!("replyTo" in customer.body));
+  const attachments = customer.body.attachments as Array<{ filename: string; content: string }>;
+  assert.equal(attachments[0].filename, `boekingsbevestiging-${base.bookingRef}.pdf`);
+  assert.match(Buffer.from(attachments[0].content, "base64").toString("latin1"), /^%PDF-1\.4/);
+  assert.equal(requests.find((request) => request.body.to !== base.customerEmail)?.body.attachments, undefined);
+  assert.equal(customer.headers.get("Idempotency-Key"), `booking-customer/${base.bookingRef}`);
 });
