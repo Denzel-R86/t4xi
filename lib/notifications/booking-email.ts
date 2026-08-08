@@ -23,6 +23,7 @@
 
 import type { Locale } from "@/i18n/routing";
 import { normalizeLocale } from "@/lib/i18n/locale";
+import { renderBookingConfirmationPdf } from "@/lib/documents/booking-confirmation-pdf";
 
 // Behoudt het bestaande export-oppervlak: de booking-route importeert
 // `normalizeLocale` uit deze module. De implementatie staat sinds stap 7.2
@@ -367,15 +368,24 @@ async function sendOne(
   from: string,
   to: string,
   subject: string,
-  html: string
+  html: string,
+  options?: { attachment?: { filename: string; content: string }; idempotencyKey?: string }
 ): Promise<void> {
   const res = await fetch(RESEND_ENDPOINT, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      ...(options?.idempotencyKey ? { "Idempotency-Key": options.idempotencyKey } : {}),
     },
-    body: JSON.stringify({ from, to, subject, html, reply_to: DEFAULT_OPS }),
+    body: JSON.stringify({
+      from,
+      to,
+      subject,
+      html,
+      reply_to: DEFAULT_OPS,
+      ...(options?.attachment ? { attachments: [options.attachment] } : {}),
+    }),
     cache: "no-store",
   });
   if (!res.ok) {
@@ -399,9 +409,18 @@ export async function sendBookingEmails(data: BookingEmailData): Promise<SendRes
   const mail = renderBookingEmails(data);
 
   try {
+    const confirmationPdf = Buffer.from(renderBookingConfirmationPdf(data)).toString("base64");
     await Promise.all([
-      sendOne(apiKey, from, ops, mail.opsSubject, mail.opsHtml),
-      sendOne(apiKey, from, data.customerEmail, mail.customerSubject, mail.customerHtml),
+      sendOne(apiKey, from, ops, mail.opsSubject, mail.opsHtml, {
+        idempotencyKey: `booking-ops/${data.bookingRef}`,
+      }),
+      sendOne(apiKey, from, data.customerEmail, mail.customerSubject, mail.customerHtml, {
+        idempotencyKey: `booking-customer/${data.bookingRef}`,
+        attachment: {
+          filename: `boekingsbevestiging-${data.bookingRef}.pdf`,
+          content: confirmationPdf,
+        },
+      }),
     ]);
     return { sent: true };
   } catch (e) {

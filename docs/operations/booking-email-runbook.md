@@ -9,6 +9,8 @@ De boekingsmail is een server-only, best-effort notificatie via de Resend REST-A
 | `RESEND_API_KEY` | Voor verzending | Server-only API-key. Leeg: beide mails worden stil overgeslagen. Nooit loggen of committen. |
 | `RESEND_FROM` | Aanbevolen voor productie | Afzender, bijvoorbeeld `T4XI <boeking@t4xi.nl>`. Voor echte klantlevering moet het domein in Resend geverifieerd zijn. Zonder waarde wordt de Resend-sandboxafzender gebruikt. |
 | `OPS_EMAIL` | Nee | Interne ontvanger. Zonder waarde: `booking@t4xi.nl`. |
+| `OPS_DASHBOARD_USERNAME` | Optioneel | Aparte server-only gebruikersnaam voor `/dashboard/invoices`; anders wordt de bestaande Brain-inlog gebruikt. |
+| `OPS_DASHBOARD_PASSWORD` | Optioneel | Apart sterk server-only wachtwoord; anders wordt de bestaande Brain-inlog gebruikt. |
 
 ## Eenmalige productie-inrichting (handmatig)
 
@@ -29,3 +31,11 @@ De boekingsmail is een server-only, best-effort notificatie via de Resend REST-A
 - [ ] Controleer onderwerp, inhoud, links en afzender in het testpostvak; controleer ook de twee succesvolle afleveringen in Resend.
 - [ ] Maak daarna via de normale boekingsflow een testboeking en controleer dat een eventuele mailfout de boeking en HTTP-response niet verandert.
 - [ ] Controleer dat `bookings.email_sent` alleen `true` wordt wanneer beide mails succesvol zijn verzonden.
+
+## Factuurworkflow
+
+1. De klantmail bevat altijd een PDF-boekingsbevestiging; dit document is nadrukkelijk geen factuur.
+2. Open `/dashboard/invoices` en vul factuurnaam, volledig factuuradres en uitvoerend taxibedrijf in.
+3. Is de boeking al betaald, dan wordt de definitieve factuur direct uitgegeven en verzonden. Anders gebeurt dit best-effort na het succesvolle Stripe-event.
+4. Een uitgegeven factuur is in het scherm vergrendeld. Corrigeer deze nooit door het bestaande nummer te overschrijven; gebruik voor financiële correcties een afzonderlijke creditfactuurworkflow.
+5. Controleer in Resend dat de factuurmail één PDF-bijlage heeft en op Delivered staat.

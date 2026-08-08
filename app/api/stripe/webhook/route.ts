@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getStripeServer, isStripeConfigured } from "@/lib/payments/stripe";
 import { handleStripeEvent } from "@/lib/payments/webhook";
+import { trySendInvoice } from "@/lib/invoices/send-invoice";
 
 /**
  * POST /api/stripe/webhook  (stap 7.4)
@@ -76,6 +77,17 @@ export async function POST(request: Request) {
     // Alleen veilige, PII-vrije operationele info loggen.
     if (result.handled) {
       console.info(`[stripe-webhook] ${event.type} → ${result.outcome}`);
+      if (event.type === "payment_intent.succeeded" && ["paid", "already_paid"].includes(result.outcome)) {
+        const paymentIntentId = (event.data.object as { id?: unknown }).id;
+        if (typeof paymentIntentId === "string") {
+          try {
+            const invoice = await trySendInvoice(supabase, { paymentIntentId });
+            console.info(`[stripe-webhook] invoice → ${invoice.status}`);
+          } catch {
+            console.error("[stripe-webhook] invoice best-effort mislukt");
+          }
+        }
+      }
     }
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (e) {
