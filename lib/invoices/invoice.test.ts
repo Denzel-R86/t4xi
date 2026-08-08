@@ -10,6 +10,7 @@ const invoice: InvoiceData = {
   billingCity: "Amsterdam", billingCountry: "Nederland", executingCarrierName: "Taxi Partner BV",
   pickup: "Amsterdam Centraal", dropoff: "Schiphol Airport", rideDate: "2026-08-10",
   rideTime: "09:30", amountPaidCents: 10900, currency: "eur", paidAt: "2026-08-08T11:55:00Z",
+  paymentMethod: "iDEAL",
 };
 
 test("btw-inclusief bedrag wordt exact verdeeld in netto + 9% btw", () => {
@@ -25,9 +26,10 @@ test("factuur-PDF is geldig en bevat fiscale kerngegevens en uitvoerder", () => 
   const text = Buffer.from(pdf).toString("latin1");
   assert.match(text, /^%PDF-1\.4/);
   assert.match(text, /\/Subtype \/Image/);
-  for (const expected of ["F-2026-000001", "Noir Driving Services", "Sterduinstraat 25", "NL003472098B32", "Taxi Partner BV", "EUR 100.00", "EUR 9.00", "EUR 109.00"]) {
+  for (const expected of ["F-2026-000001", "Noir Driving Services", "Sterduinstraat 25", "NL003472098B32", "Taxi Partner BV", "iDEAL", "EUR 100.00", "EUR 9.00", "EUR 109.00"]) {
     assert.ok(text.includes(expected), expected);
   }
+  assert.doesNotMatch(text, /Boekingsreferentie|T4XI-2026-1001|Betaaldatum/);
   assert.match(text, /%%EOF\n$/);
 });
 

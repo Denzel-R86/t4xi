@@ -39,3 +39,10 @@ De boekingsmail is een server-only, best-effort notificatie via de Resend REST-A
 3. Is de boeking al betaald, dan wordt de definitieve factuur direct uitgegeven en verzonden. Anders gebeurt dit best-effort na het succesvolle Stripe-event.
 4. Een uitgegeven factuur is in het scherm vergrendeld. Corrigeer deze nooit door het bestaande nummer te overschrijven; gebruik voor financiële correcties een afzonderlijke creditfactuurworkflow.
 5. Controleer in Resend dat de factuurmail één PDF-bijlage heeft en op Delivered staat.
+
+### Factuurmail offline bekijken
+
+1. Voer `npm run preview:invoice-email` uit. Deze modus gebruikt voorbeeldgegevens en maakt geen netwerkverbinding.
+2. Open `tmp/invoice-email-previews/invoice-email-paid.html` in een browser.
+3. Open `tmp/invoice-email-previews/factuur-F-2026-000001.pdf` en controleer de bijlage.
+4. Controleer desgewenst `tmp/invoice-email-previews/invoice-email-paid.txt`; dit is de platte-tekstfallback die Resend naast de HTML ontvangt.
