@@ -280,6 +280,7 @@ export default async function HomePage() {
       <Viewport
         meaning="proof"
         label={t("proofLabel")}
+        compact
         above={
           <ProofPattern
             quote={t("proofQuote")}
@@ -307,6 +308,7 @@ export default async function HomePage() {
         meaning="invitation"
         label={t("invLabel")}
         id="boeken"
+        compact
         above={
           <NarrativePattern
             kicker={t("invKicker")}

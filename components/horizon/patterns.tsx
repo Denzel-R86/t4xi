@@ -111,6 +111,7 @@ export function Viewport({
   onLine,
   below,
   first = false,
+  compact = false,
 }: {
   meaning: Meaning;
   /** Toegankelijke naam van het beeldvlak (aria-label). */
@@ -122,20 +123,24 @@ export function Viewport({
   /** Eerste viewport van de pagina: compenseert de vaste header zodat de
    *  naad bij aankomst exact op de spine ligt. */
   first?: boolean;
+  /** Compacte afsluitende sectie zonder een geforceerde volledige schermhoogte. */
+  compact?: boolean;
 }) {
   return (
     <section
       id={id}
       data-viewport={meaning}
       aria-label={label}
-      className="relative grid min-h-[100svh] px-[5vw]"
+      className={`relative grid px-[5vw]${compact ? "" : " min-h-[100svh]"}`}
       style={{
-        gridTemplateRows: `minmax(calc(var(--hz-y) - ${first ? 68 : 0}px), auto) auto minmax(0, 1fr)`,
+        gridTemplateRows: compact
+          ? "auto auto auto"
+          : `minmax(calc(var(--hz-y) - ${first ? 68 : 0}px), auto) auto minmax(0, 1fr)`,
       }}
     >
-      <div className="flex flex-col justify-end pb-9 pt-24">{above}</div>
+      <div className={`flex flex-col justify-end pb-9 ${compact ? "pt-16 md:pt-20" : "pt-24"}`}>{above}</div>
       <div>{onLine}</div>
-      <div className="pb-16 pt-9">{below}</div>
+      <div className={`${compact ? "pb-12 md:pb-16" : "pb-16"} pt-9`}>{below}</div>
     </section>
   );
 }
