@@ -229,6 +229,8 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   const t = useTranslations("zin");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [fromResolved, setFromResolved] = useState("");
+  const [toResolved, setToResolved] = useState("");
   const [activeField, setActiveField] = useState<"from" | "to" | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
 
@@ -238,12 +240,18 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
 
   // Vrije tekst quoteert direct (bestaand gedrag), via de gedeelde quote-flow.
   const pickup = useMemo<AddressSuggestion | null>(
-    () => (from.trim().length >= 3 ? { id: "hero-from", label: from.trim(), source: "free" } : null),
-    [from]
+    () => {
+      const label = fromResolved || from.trim();
+      return label.length >= 3 ? { id: "hero-from", label, source: "free" } : null;
+    },
+    [from, fromResolved]
   );
   const dropoff = useMemo<AddressSuggestion | null>(
-    () => (to.trim().length >= 3 ? { id: "hero-to", label: to.trim(), source: "free" } : null),
-    [to]
+    () => {
+      const label = toResolved || to.trim();
+      return label.length >= 3 ? { id: "hero-to", label, source: "free" } : null;
+    },
+    [to, toResolved]
   );
   const quote = useRouteQuote(pickup, dropoff);
 
@@ -253,8 +261,14 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
       : confirmHref;
 
   function choose(s: AddressSuggestion) {
-    if (activeField === "from") setFrom(s.label);
-    else if (activeField === "to") setTo(s.label);
+    const shortLabel = s.label.split(",")[0]?.trim() || s.label;
+    if (activeField === "from") {
+      setFrom(shortLabel);
+      setFromResolved(s.label);
+    } else if (activeField === "to") {
+      setTo(shortLabel);
+      setToResolved(s.label);
+    }
     clear();
     setActiveIndex(-1);
     setActiveField(null);
@@ -281,6 +295,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     field: "from" | "to",
     value: string,
     set: (v: string) => void,
+    clearResolved: () => void,
     placeholder: string,
     label: string
   ) => (
@@ -291,6 +306,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         value={value}
         onChange={(e) => {
           set(e.target.value);
+          clearResolved();
           setActiveIndex(-1);
         }}
         onFocus={() => setActiveField(field)}
@@ -337,8 +353,8 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
       {/* Bewust een <div>, geen <p>: de invulvelden dragen een <ul>-listbox en
           een <ul> mag in HTML niet binnen een <p> (hydration-fout). */}
       <div className="font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink">
-        {t("voor")} {blank("from", from, setFrom, t("phVertrek"), t("ariaVertrek"))} {t("tussen")}{" "}
-        {blank("to", to, setTo, t("phBestemming"), t("ariaBestemming"))}.
+        {t("voor")} {blank("from", from, setFrom, () => setFromResolved(""), t("phVertrek"), t("ariaVertrek"))} {t("tussen")}{" "}
+        {blank("to", to, setTo, () => setToResolved(""), t("phBestemming"), t("ariaBestemming"))}.
       </div>
       <div
         className="mt-4 flex flex-wrap items-baseline gap-x-7 gap-y-3"
