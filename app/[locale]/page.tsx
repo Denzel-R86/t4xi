@@ -3,7 +3,6 @@ import { Reveal } from "@/components/horizon/motion";
 import {
   HorizonSpine,
   Viewport,
-  Breath,
   NarrativePattern,
   SentencePattern,
   LedgerPattern,
@@ -160,8 +159,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <Breath />
-
       {/* ═══ CERTAINTY — het grootboek van vaste prijzen ═══ */}
       <Viewport
         meaning="certainty"
@@ -241,8 +238,6 @@ export default async function HomePage() {
         }
       />
 
-      <Breath />
-
       {/* ═══ JOURNEY — de rit zelf: de vloot als technische tekening ═══ */}
       <Viewport
         meaning="journey"
@@ -276,8 +271,6 @@ export default async function HomePage() {
         }
       />
 
-      <Breath />
-
       {/* ═══ PROOF — uitsluitend wat aantoonbaar is ═══ */}
       {/*
         Klantcitaten en beoordelingscijfers zijn hier bewust verwijderd: er is geen
@@ -308,8 +301,6 @@ export default async function HomePage() {
           </Reveal>
         }
       />
-
-      <Breath />
 
       {/* ═══ INVITATION — de uitnodiging ═══ */}
       <Viewport
