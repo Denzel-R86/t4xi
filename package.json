@@ -17,7 +17,8 @@
     "test:rates": "tsx --test lib/pricing/*.test.ts",
     "test:payments": "tsx --test lib/payments/*.test.ts",
     "test:notifications": "tsx --test lib/notifications/*.test.ts",
-    "test:invoices": "tsx --test lib/invoices/*.test.ts"
+    "test:invoices": "tsx --test lib/invoices/*.test.ts",
+    "test:admin": "tsx --test lib/admin/*.test.ts"
   },
   "dependencies": {
     "@sanity/image-url": "^1.0.2",
