@@ -10,6 +10,12 @@ import type { Json, Tables, TablesInsert } from "@/lib/types/database";
 import { resolveLocationSlug } from "@/lib/pricing/location-aliases";
 import { getDrivingRoute, type DrivingRoute } from "@/lib/pricing/routing";
 import { priceFromDistance, DEFAULT_DISTANCE_TARIFF } from "@/lib/pricing/distance-tariff";
+import {
+  classifyDestination,
+  computeShadowDeadhead,
+  type DeadheadConfig,
+  type ShadowDeadheadResult,
+} from "@/lib/pricing/deadhead-shadow";
 
 /**
  * T4XI Pricing Service — v1 (App Router, server-side).
@@ -160,7 +166,10 @@ export type PricingQuoteResult =
       airport: AirportContext;
     };
 
-type LocationRow = Pick<Tables<"locations">, "id" | "slug" | "name" | "active" | "location_type">;
+type LocationRow = Pick<
+  Tables<"locations">,
+  "id" | "slug" | "name" | "active" | "location_type" | "city_id"
+>;
 type VehicleClassRow = Pick<
   Tables<"vehicle_classes">,
   "id" | "code" | "max_passengers" | "max_luggage" | "active"
@@ -227,11 +236,59 @@ export function quoteFingerprint(input: {
 export async function getPricingQuote(
   input: PricingQuoteInput
 ): Promise<PricingQuoteResult> {
-  const result = await resolveQuote(input);
+  const { result, shadow } = await resolveQuote(input);
   // Loggen mag de offerte nooit blokkeren of laten falen.
-  void logQuote(input, result).catch(() => {});
+  void logQuote(input, result, shadow).catch(() => {});
   return result;
 }
+
+/**
+ * Reden waarom de deadhead-shadowberekening voor deze offerte is overgeslagen —
+ * uitsluitend informatief voor de log; blokkeert de offerte nooit.
+ */
+type ShadowSkipReason = "missing_config" | "load_error" | "timeout";
+
+/**
+ * Bovengrens op de tijd die de shadow-berekening (config + high-demand-zones
+ * laden) aan de offerte mag toevoegen. SHADOW-ONLY: dit begrenst uitsluitend
+ * hoelang er op de config/zones gewacht wordt — geen onbeperkt wachten, ook
+ * niet bij een tragere of hangende dependency. Bij overschrijding wordt de
+ * berekening overgeslagen (reason "timeout"); de offerte gaat gewoon door.
+ */
+export const SHADOW_LOAD_TIMEOUT_MS = 400;
+
+class ShadowTimeoutError extends Error {}
+
+/** Race tegen een timeout — verwerpt met ShadowTimeoutError zonder de onderliggende promise af te breken. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new ShadowTimeoutError(`shadow load exceeded ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
+/**
+ * Wat er in `pricing_quote_logs.price_breakdown` terechtkomt. Bij een geslaagde
+ * berekening de volledige shadow-uitkomst; anders een expliciete skip-reden.
+ * `null` betekent: deze offerte ging niet via het afstand-tarief (bv. vaste
+ * route of "offerte op aanvraag") — dan is er niets om te loggen.
+ */
+export type ShadowLogEntry = ShadowDeadheadResult | { shadowSkipped: true; reason: ShadowSkipReason };
+
+/** Set van locatie-ids resp. stad-ids die als "high-demand" (nooit perifeer) gelden. */
+export type HighDemandZoneIds = {
+  locationIds: ReadonlySet<string>;
+  cityIds: ReadonlySet<string>;
+};
 
 /**
  * Injecteerbare afhankelijkheden van de kern-resolver. Default (productie) is de
@@ -252,22 +309,44 @@ export type ResolveQuoteDeps = {
     destination: string,
     departureAt?: string
   ) => Promise<DrivingRoute | null>;
+  /**
+   * SHADOW-ONLY (geen invloed op `price`). Levert de enige actieve
+   * deadhead-config, of `null` als die ontbreekt (of onverhoopt niet eenduidig
+   * is) — dan wordt de shadow-berekening overgeslagen, nooit de offerte.
+   * Optioneel: ontbreekt deze dep, dan wordt de shadow-berekening overgeslagen.
+   */
+  loadDeadheadConfig?: () => Promise<DeadheadConfig | null>;
+  /** SHADOW-ONLY. Geconfigureerde high-demand-bestemmingen (nooit "perifeer"). */
+  loadHighDemandZones?: () => Promise<HighDemandZoneIds>;
+  /**
+   * SHADOW-ONLY, best-effort side-channel: registreert de shadow-uitkomst van
+   * deze offerte voor de caller (resolveQuote → logQuote). Geen effect op
+   * `price` of op het geretourneerde PricingQuoteResult.
+   */
+  recordShadow?: (entry: ShadowLogEntry) => void;
 };
 
 async function resolveQuote(
   input: PricingQuoteInput
-): Promise<PricingQuoteResult> {
+): Promise<{ result: PricingQuoteResult; shadow: ShadowLogEntry | null }> {
   const supabase = createPricingReadClient();
-  if (!supabase) return unavailable("data_unavailable");
+  if (!supabase) return { result: unavailable("data_unavailable"), shadow: null };
 
+  let shadow: ShadowLogEntry | null = null;
   const deps: ResolveQuoteDeps = {
     findLocation: (raw) => findLocation(supabase, raw),
     findVehicleClass: (code) => findVehicleClass(supabase, code),
     findFixedRoute: (pickupId, dropoffId, vehicleClassId) =>
       findFixedRoute(supabase, pickupId, dropoffId, vehicleClassId),
     getRoute: getDrivingRoute,
+    loadDeadheadConfig: () => loadDeadheadConfig(supabase),
+    loadHighDemandZones: () => loadHighDemandZones(supabase),
+    recordShadow: (entry) => {
+      shadow = entry;
+    },
   };
-  return resolveQuoteWith(input, deps);
+  const result = await resolveQuoteWith(input, deps);
+  return { result, shadow };
 }
 
 /**
@@ -361,7 +440,7 @@ export async function resolveQuoteWith(
   //    opnieuw aanroepen. Dan valt de rit terug op "offerte op aanvraag".
   if (input.allowDistanceTariff !== false) {
     const byDistance = await tryDistanceTariff(
-      deps.getRoute,
+      deps,
       input,
       pickupRaw,
       dropoffRaw,
@@ -391,11 +470,7 @@ export async function resolveQuoteWith(
  * kortingsbeleid verzonnen.
  */
 async function tryDistanceTariff(
-  getRoute: (
-    origin: string,
-    destination: string,
-    departureAt?: string
-  ) => Promise<DrivingRoute | null>,
+  deps: ResolveQuoteDeps,
   input: PricingQuoteInput,
   pickupRaw: string,
   dropoffRaw: string,
@@ -405,7 +480,7 @@ async function tryDistanceTariff(
   vehicleClass: VehicleClassRow | null,
   airport: AirportContext
 ): Promise<PricingQuoteResult | null> {
-  const route = await getRoute(pickupRaw, dropoffRaw, input.departureAt);
+  const route = await deps.getRoute(pickupRaw, dropoffRaw, input.departureAt);
   if (!route) return null;
 
   // Enkel is al een heel bedrag (priceFromDistance rondt af); retour = 2× → ook heel.
@@ -413,6 +488,21 @@ async function tryDistanceTariff(
   const returnPrice = single * 2;
   const returnApplied = input.returnTrip === true;
   const price = returnApplied ? returnPrice : single;
+
+  // SHADOW-ONLY: raakt price/single/returnPrice hierboven op geen enkele manier
+  // aan. Best-effort, tijdsbegrensd (SHADOW_LOAD_TIMEOUT_MS) — een fout of
+  // trage/hangende dependency hier mag de offerte nooit laten falen of
+  // onbeperkt laten wachten.
+  if (deps.recordShadow) {
+    try {
+      await recordDeadheadShadow(deps, dropoff, route.distanceKm, route.durationMin);
+    } catch (e) {
+      deps.recordShadow({
+        shadowSkipped: true,
+        reason: e instanceof ShadowTimeoutError ? "timeout" : "load_error",
+      });
+    }
+  }
 
   return {
     available: true,
@@ -438,6 +528,42 @@ async function tryDistanceTariff(
   };
 }
 
+/**
+ * SHADOW-ONLY. Classificeert de bestemming en berekent de deadhead-shadow-
+ * uitkomst (of registreert een skip-reden bij ontbrekende config). Wordt door
+ * de caller (`tryDistanceTariff`) in een try/catch aangeroepen — een fout hier
+ * mag de offerte nooit laten falen. Geen enkel resultaat hiervan beïnvloedt
+ * `price`/`single`/`returnPrice`.
+ */
+async function recordDeadheadShadow(
+  deps: ResolveQuoteDeps,
+  dropoff: LocationRow | null,
+  distanceKm: number,
+  durationMin: number
+): Promise<void> {
+  if (!deps.loadDeadheadConfig || !deps.loadHighDemandZones || !deps.recordShadow) return;
+
+  // Parallel laden (geen serieel wachten), begrensd door SHADOW_LOAD_TIMEOUT_MS
+  // in totaal — niet per aanroep — zodat de bovengrens op de toegevoegde
+  // latency altijd hetzelfde is, ongeacht hoeveel afhankelijkheden er laden.
+  const [config, zones] = await withTimeout(
+    Promise.all([deps.loadDeadheadConfig(), deps.loadHighDemandZones()]),
+    SHADOW_LOAD_TIMEOUT_MS
+  );
+  if (!config) {
+    deps.recordShadow({ shadowSkipped: true, reason: "missing_config" });
+    return;
+  }
+
+  const classification = classifyDestination({
+    dropoff: dropoff ? { id: dropoff.id, city_id: dropoff.city_id } : null,
+    highDemandLocationIds: zones.locationIds,
+    highDemandCityIds: zones.cityIds,
+  });
+
+  deps.recordShadow(computeShadowDeadhead({ distanceKm, durationMin, classification, config }));
+}
+
 // ── Locatie-/klasse-resolutie ────────────────────────────────────────────────
 
 /** Zoekt één actieve locatie op exacte slug. */
@@ -447,7 +573,7 @@ async function locationBySlug(
 ): Promise<LocationRow | null> {
   const res = await supabase
     .from("locations")
-    .select("id, slug, name, active, location_type")
+    .select("id, slug, name, active, location_type, city_id")
     .eq("active", true)
     .eq("slug", slug)
     .limit(1)
@@ -489,7 +615,7 @@ async function findLocation(
   // 3. naam case-insensitive — alleen zinvol zonder alias
   const byName = await supabase
     .from("locations")
-    .select("id, slug, name, active, location_type")
+    .select("id, slug, name, active, location_type, city_id")
     .eq("active", true)
     .ilike("name", raw)
     .limit(1)
@@ -536,14 +662,58 @@ async function findFixedRoute(
   return res.data ?? null;
 }
 
+// ── Deadhead-shadow config (SHADOW-ONLY) ─────────────────────────────────────
+
+/**
+ * Enige actieve deadhead-config. `null` bij nul rijen — of, verdediging-in-
+ * diepte, bij onverhoopt meer dan één rij (mag niet gebeuren dankzij de
+ * database-side partial unique index, maar deze leescode gaat er niet blind
+ * van uit). Bij `null` slaat de caller de shadow-berekening over.
+ */
+export async function loadDeadheadConfig(supabase: PricingSupabaseClient): Promise<DeadheadConfig | null> {
+  const res = await supabase
+    .from("pricing_deadhead_config")
+    .select("min_distance_km, deadhead_factor, max_deadhead_km")
+    .eq("active", true)
+    .limit(2);
+  if (res.error) throw res.error;
+  const rows = res.data ?? [];
+  if (rows.length !== 1) return null;
+  const row = rows[0]!;
+  return {
+    minDistanceKm: row.min_distance_km,
+    deadheadFactor: row.deadhead_factor,
+    maxDeadheadKm: row.max_deadhead_km,
+  };
+}
+
+/** Geconfigureerde high-demand-bestemmingen (nooit "perifeer"), als id-sets. */
+export async function loadHighDemandZones(supabase: PricingSupabaseClient): Promise<HighDemandZoneIds> {
+  const res = await supabase.from("pricing_high_demand_zones").select("city_id, location_id").eq("active", true);
+  if (res.error) throw res.error;
+  const cityIds = new Set<string>();
+  const locationIds = new Set<string>();
+  for (const row of res.data ?? []) {
+    if (row.city_id) cityIds.add(row.city_id);
+    if (row.location_id) locationIds.add(row.location_id);
+  }
+  return { cityIds, locationIds };
+}
+
 // ── Regel-gebaseerde fallback (INTERN — v1 niet klantzichtbaar) ──────────────
 
 // ── Analytics-/auditlog ──────────────────────────────────────────────────────
 
-/** Schrijft de offerte weg naar pricing_quote_logs (service_role). Nooit blokkerend. */
+/**
+ * Schrijft de offerte weg naar pricing_quote_logs (service_role). Nooit
+ * blokkerend. `shadow` is SHADOW-ONLY observatiedata (deadhead-model,
+ * `null` als deze offerte niet via het afstand-tarief liep) en komt
+ * uitsluitend in `price_breakdown` terecht — beïnvloedt niets anders.
+ */
 async function logQuote(
   input: PricingQuoteInput,
-  result: PricingQuoteResult
+  result: PricingQuoteResult,
+  shadow: ShadowLogEntry | null = null
 ): Promise<void> {
   const logger = createPricingLogClient();
   if (!logger) return; // geen service-role key → stil overslaan
@@ -557,11 +727,20 @@ async function logQuote(
     is_return: input.returnTrip === true,
     quoted_price: result.available ? result.price : null,
     currency: "EUR",
-    price_source: result.available ? "fixed_route_prices" : null,
+    // BUGFIX: was hardcoded op "fixed_route_prices" ongeacht de echte bron,
+    // waardoor distance_tariff-offertes verkeerd gelabeld werden. Nodig zodat
+    // de shadow-logregels hieronder correct aan hun bron zijn toe te schrijven.
+    price_source: result.available ? result.source : null,
+    // NB: data_source blijft "supabase"/null — de DB-CHECK op deze kolom staat
+    // uitsluitend ('supabase','fallback') toe, geen 'routing'. Dat is een
+    // apart, hier niet meegenomen mankement (buiten scope van dit plan); een
+    // wijziging naar result.dataSource zou elke distance_tariff-insert laten
+    // falen op de CHECK-constraint, incl. de nieuwe shadow-logregel hieronder.
     data_source: result.available ? "supabase" : null,
     distance_km: result.available ? result.distanceKm : null,
     estimated_duration_min: result.available ? result.estimatedDurationMin : null,
     error_code: result.available ? null : result.reason,
+    price_breakdown: shadow ? (shadow as unknown as Json) : null,
     request_payload: {
       pickup: input.pickup,
       dropoff: input.dropoff,
