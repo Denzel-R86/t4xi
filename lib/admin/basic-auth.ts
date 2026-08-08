@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
+import { hasValidOpsSession } from "@/lib/admin/session";
 
 export async function isAuthorizedAdminRequest(request: Request): Promise<boolean> {
+  if (await hasValidOpsSession(request)) return true;
   const expectedUser = process.env.OPS_DASHBOARD_USERNAME || process.env.BRAIN_DASHBOARD_USERNAME;
   const expectedPass = process.env.OPS_DASHBOARD_PASSWORD || process.env.BRAIN_DASHBOARD_PASSWORD;
   if (!expectedUser || !expectedPass) return false;
