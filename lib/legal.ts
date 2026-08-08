@@ -17,6 +17,8 @@ export const BEDRIJF = {
   kvk: "80673813",
   /** Aangeleverd door de eigenaar, 21 juli 2026. Formaat NL + 9 cijfers + B + 2. */
   btw: "NL003472098B32" as string | null,
+  straat: "Sterduinstraat 25",
+  postcode: "1361 BP",
   vestigingsplaats: "Almere",
   land: "Nederland",
   telefoon: "+31 6 34 74 45 22",
