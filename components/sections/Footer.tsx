@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import Icon from "@/components/ui/Icon";
-import Wordmark from "@/components/ui/Wordmark";
+import Monogram from "@/components/ui/Monogram";
 import { BEDRIJF } from "@/lib/legal";
 import { useTranslations } from "next-intl";
 
@@ -20,8 +20,8 @@ export default function Footer() {
       <div className="mx-auto max-w-site px-6 pb-10 pt-16">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            <Wordmark className="h-[26px] w-auto" title="T4XI" />
-            <p className="mt-2.5 text-sm tracking-[0.02em] text-stone-subtle">{t("tagline")}</p>
+            <Monogram className="h-10 w-auto" title="T4XI" />
+            <p className="mt-4 text-sm tracking-[0.02em] text-stone-subtle">{t("tagline")}</p>
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-stone-subtle">
               {t("omschrijving")}
             </p>

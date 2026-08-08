@@ -3,7 +3,7 @@
 import { Link, usePathname } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import Icon from "@/components/ui/Icon";
-import Wordmark from "@/components/ui/Wordmark";
+import Monogram from "@/components/ui/Monogram";
 import LanguageSwitcher from "@/components/shared/LanguageSwitcher";
 import { useTranslations } from "next-intl";
 
@@ -44,10 +44,12 @@ export default function Header() {
       <div className="mx-auto flex h-16 max-w-site items-center gap-4 px-4 md:px-6 lg:h-[68px]">
         <Link
           href="/"
-          className="flex items-center text-ink"
+          className="group flex items-center text-ink"
           aria-label={t("naarHome")}
         >
-          <Wordmark className="h-[22px] w-auto" title="" />
+          <span className="inline-block transition-transform duration-300 ease-out group-hover:-rotate-3 group-hover:scale-110 group-focus-visible:-rotate-3 group-focus-visible:scale-110">
+            <Monogram className="h-10 w-auto lg:h-11" title="" />
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex lg:pl-6" aria-label={t("hoofdnav")}>
