@@ -21,7 +21,8 @@ const intlMiddleware = createIntlMiddleware(routing);
  *
  * Beleid:
  *   /dashboard/brain  → HTTP Basic Auth, credentials uitsluitend server-side.
- *   /dashboard        → 404. Demo-UI met voorbeelddata, geen functie in productie.
+ *   /dashboard/invoices → publiek login-scherm; data uitsluitend met HttpOnly-sessie.
+ *   overige /dashboard → 404. Demo-UI met voorbeelddata, geen functie in productie.
  *   /klant            → 404. Klantportaal met schijn-login, geen echte auth.
  *
  * 404 in plaats van 401/403 voor de gesloten routes: een 403 bevestigt dat de route
@@ -85,23 +86,12 @@ export async function middleware(request: NextRequest) {
   // Alles buiten de beschermde paden: alleen i18n-routing.
   if (!isProtected) return intlMiddleware(request);
 
-  // ── /dashboard/invoices — afzonderlijke operations-auth ─────────────────
+  // ── /dashboard/invoices — loginformulier + server-side sessie ───────────
+  // De pagina zelf bevat geen gegevens. Alle operations-API's controleren de
+  // ondertekende HttpOnly-sessie. Hierdoor kan de gebruiker betrouwbaar
+  // uitloggen; browsers kunnen HTTP Basic Auth namelijk zelf blijven cachen.
   if (pathname === "/dashboard/invoices" || pathname.startsWith("/dashboard/invoices/")) {
-    const user = process.env.OPS_DASHBOARD_USERNAME || process.env.BRAIN_DASHBOARD_USERNAME;
-    const pass = process.env.OPS_DASHBOARD_PASSWORD || process.env.BRAIN_DASHBOARD_PASSWORD;
-    if (!user || !pass) return notFound();
-    const header = request.headers.get("authorization");
-    if (!header?.startsWith("Basic ")) return challenge();
-    let decoded = "";
-    try { decoded = atob(header.slice(6)); } catch { return challenge(); }
-    const sep = decoded.indexOf(":");
-    if (sep < 0) return challenge();
-    const [okUser, okPass] = await Promise.all([
-      safeEqual(decoded.slice(0, sep), user),
-      safeEqual(decoded.slice(sep + 1), pass),
-    ]);
-    if (!okUser || !okPass) return challenge();
-    const res = NextResponse.next();
+    const res = intlMiddleware(request);
     res.headers.set("x-robots-tag", "noindex, nofollow");
     res.headers.set("cache-control", "no-store");
     return res;
