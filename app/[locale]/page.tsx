@@ -8,7 +8,6 @@ import {
   SentencePattern,
   LedgerPattern,
   EditorialFigure,
-  VowsPattern,
   ProofPattern,
   Stamp,
   Dash,
@@ -142,22 +141,24 @@ export default async function HomePage() {
         </figure>
       </section>
 
-      <Breath />
-
-      {/* ═══ RECOGNITION — de beleving, als beloftes in volle regels ═══ */}
-      <Viewport
-        meaning="recognition"
-        label={t("recogLabel")}
-        above={
-          <NarrativePattern
-            kicker={t("recogKicker")}
-            voice={t("recogVoice")}
-            echo={t("recogEcho")}
-            note={t("recogNote")}
-          />
-        }
-        below={<VowsPattern vows={VOWS} />}
-      />
+      {/* ═══ RECOGNITION — vier ruime, redactionele voordelen ═══ */}
+      <section aria-label={t("recogLabel")} className="bg-ink px-[5vw] py-16 text-white md:py-24">
+        <div className="grid gap-x-10 gap-y-12 md:grid-cols-2 xl:grid-cols-4">
+          {VOWS.map((vow, index) => (
+            <Reveal key={vow.title} delay={(Math.min(index, 3) as 0 | 1 | 2 | 3) || 0}>
+              <article className="border-t border-white/25 pt-6">
+                <span className="text-[11px] font-medium tracking-[0.16em] text-white/50">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <h2 className="mt-10 font-display text-[clamp(24px,2.4vw,34px)] font-bold leading-[1.08] tracking-[-0.02em]">
+                  {vow.title}
+                </h2>
+                <p className="mt-5 max-w-sm text-[14px] leading-7 text-white/65">{vow.text}</p>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </section>
 
       <Breath />
 
@@ -191,15 +192,49 @@ export default async function HomePage() {
               />
             </Reveal>
             <Reveal delay={1}>
-              <div className="mt-14 grid gap-10 md:grid-cols-2">
-                <div>
-                  <EditorialFigure src={bagageOverdracht} alt={t("bagageFiguurAlt")} aspect="aspect-[4/3]" />
-                  <Stamp className="mt-5">{t("bagageFiguurCaption")}</Stamp>
-                </div>
-                <div>
-                  <EditorialFigure src={comfortAanBoord} alt={t("comfortFiguurAlt")} aspect="aspect-[4/3]" />
-                  <Stamp className="mt-5">{t("comfortFiguurCaption")}</Stamp>
-                </div>
+              <div className="mt-20 grid gap-5 md:grid-cols-[1.12fr_0.88fr]">
+                <figure className="overflow-hidden bg-ink text-white">
+                  <div className="relative aspect-[4/3]">
+                    <Image
+                      src={bagageOverdracht}
+                      alt={t("bagageFiguurAlt")}
+                      fill
+                      sizes="(min-width: 768px) 50vw, 90vw"
+                      placeholder="blur"
+                      className="object-cover saturate-[0.9] contrast-[0.96]"
+                    />
+                  </div>
+                  <figcaption className="px-7 py-8 md:px-9 md:py-10">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/50">
+                      {t("bagageFiguurKicker")}
+                    </p>
+                    <h3 className="mt-5 font-display text-[clamp(24px,2.8vw,38px)] font-bold leading-[1.08] tracking-[-0.02em]">
+                      {t("bagageFiguurCaption")}
+                    </h3>
+                    <p className="mt-5 max-w-lg text-[14px] leading-7 text-white/65">{t("bagageFiguurTekst")}</p>
+                  </figcaption>
+                </figure>
+                <figure className="overflow-hidden bg-ink text-white">
+                  <div className="relative aspect-[4/3]">
+                    <Image
+                      src={comfortAanBoord}
+                      alt={t("comfortFiguurAlt")}
+                      fill
+                      sizes="(min-width: 768px) 40vw, 90vw"
+                      placeholder="blur"
+                      className="object-cover saturate-[0.9] contrast-[0.96]"
+                    />
+                  </div>
+                  <figcaption className="px-7 py-8 md:px-9 md:py-10">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/50">
+                      {t("comfortFiguurKicker")}
+                    </p>
+                    <h3 className="mt-5 font-display text-[clamp(24px,2.8vw,38px)] font-bold leading-[1.08] tracking-[-0.02em]">
+                      {t("comfortFiguurTitel")}
+                    </h3>
+                    <p className="mt-5 max-w-lg text-[14px] leading-7 text-white/65">{t("comfortFiguurCaption")}</p>
+                  </figcaption>
+                </figure>
               </div>
             </Reveal>
           </>
