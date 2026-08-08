@@ -85,6 +85,28 @@ export async function middleware(request: NextRequest) {
   // Alles buiten de beschermde paden: alleen i18n-routing.
   if (!isProtected) return intlMiddleware(request);
 
+  // ── /dashboard/invoices — afzonderlijke operations-auth ─────────────────
+  if (pathname === "/dashboard/invoices" || pathname.startsWith("/dashboard/invoices/")) {
+    const user = process.env.OPS_DASHBOARD_USERNAME || process.env.BRAIN_DASHBOARD_USERNAME;
+    const pass = process.env.OPS_DASHBOARD_PASSWORD || process.env.BRAIN_DASHBOARD_PASSWORD;
+    if (!user || !pass) return notFound();
+    const header = request.headers.get("authorization");
+    if (!header?.startsWith("Basic ")) return challenge();
+    let decoded = "";
+    try { decoded = atob(header.slice(6)); } catch { return challenge(); }
+    const sep = decoded.indexOf(":");
+    if (sep < 0) return challenge();
+    const [okUser, okPass] = await Promise.all([
+      safeEqual(decoded.slice(0, sep), user),
+      safeEqual(decoded.slice(sep + 1), pass),
+    ]);
+    if (!okUser || !okPass) return challenge();
+    const res = NextResponse.next();
+    res.headers.set("x-robots-tag", "noindex, nofollow");
+    res.headers.set("cache-control", "no-store");
+    return res;
+  }
+
   // ── /dashboard/brain — Basic Auth ────────────────────────────────────────
   if (pathname === "/dashboard/brain" || pathname.startsWith("/dashboard/brain/")) {
     const user = process.env.BRAIN_DASHBOARD_USERNAME;
