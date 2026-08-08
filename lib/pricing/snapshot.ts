@@ -5,7 +5,7 @@
 // Contract: docs/architecture/price-snapshot-contract.md.
 // ─────────────────────────────────────────────────────────────────────────────
 import { eurosToCents } from "@/lib/payments/create-intent";
-import type { PricingQuoteResult } from "@/lib/pricing/service";
+import type { AirportContext, PricingQuoteResult } from "@/lib/pricing/service";
 
 /** Centrale prijsversie. Inert in 7.6.3 (opgeslagen, geen branch-logica). */
 export const PRICING_VERSION = "2026.07.v1";
@@ -23,6 +23,22 @@ export type PricingSource =
   | "contract_rate"
   | "promotion";
 
+/** Exact het database-CHECK-domein — bron van waarheid voor geldige pricingSources. */
+const PRICING_SOURCES: readonly PricingSource[] = [
+  "fixed_route_prices",
+  "dynamic",
+  "manual",
+  "hotel_rate",
+  "airport_rate",
+  "contract_rate",
+  "promotion",
+];
+
+/** True als `value` een toegestane pricingSource is (het opgeslagen domein). */
+export function isPricingSource(value: string): value is PricingSource {
+  return (PRICING_SOURCES as readonly string[]).includes(value);
+}
+
 export type PriceSnapshotAdjustment = {
   code: string;
   label: string;
@@ -38,12 +54,23 @@ export type RouteSnapshot = {
   vehicleClass: string;
   distanceKm: number | null;
   estimatedDurationMin: number | null;
-  source: "fixed_route_prices";
+  source: "fixed_route_prices" | "dynamic";
   sourceLabel: string | null;
   /** valid_from van de tariefregel — nog niet uit de quote beschikbaar in 7.6.3C. */
   validFrom: string | null;
   returnApplied: boolean;
   vatRate: number;
+  /**
+   * Manipulatie-bestendige vingerafdruk van de prijsbepalende invoer (zie
+   * quoteFingerprint in service.ts). Bij het bevestigen van de boeking opnieuw
+   * berekend en vergeleken; mismatch → boeking geweigerd.
+   */
+  fingerprint: string;
+  /**
+   * Luchthavencontext op offertemoment. Meegenomen zodat de booking de
+   * vluchtnummer-plicht kan afdwingen ZONDER de prijs opnieuw te berekenen.
+   */
+  airport: AirportContext;
 };
 
 export type PriceSnapshot = {
@@ -67,15 +94,20 @@ type AvailableQuote = Extract<PricingQuoteResult, { available: true }>;
  * een onbekende bron — er wordt NOOIT een vrije/dynamische string doorgegeven die
  * buiten het database-contract valt. Vandaag is er precies één bron.
  *
- * Mapping (PR 7.6.3C):
+ * Mapping:
  *   quote.source "fixed_route_prices"  →  pricingSource "fixed_route_prices"
- * Toekomstige bronnen (dynamic/manual/hotel_rate/airport_rate/contract_rate/
- * promotion) worden hier toegevoegd zodra ze bestaan.
+ *   quote.source "distance_tariff"     →  pricingSource "dynamic"
+ * Een berekende afstandsprijs is per definitie een dynamische bron; "dynamic"
+ * zit al in het database-CHECK-contract, dus dit vereist geen migratie.
+ * Overige bronnen (manual/hotel_rate/airport_rate/contract_rate/promotion)
+ * worden hier toegevoegd zodra ze bestaan.
  */
 export function mapPricingSource(source: string): PricingSource | null {
   switch (source) {
     case "fixed_route_prices":
       return "fixed_route_prices";
+    case "distance_tariff":
+      return "dynamic";
     default:
       return null;
   }
@@ -117,16 +149,61 @@ export function buildPriceSnapshot(
       vehicleClass: quote.vehicleClass,
       distanceKm: quote.distanceKm,
       estimatedDurationMin: quote.estimatedDurationMin,
-      source: "fixed_route_prices",
+      source: pricingSource === "fixed_route_prices" ? "fixed_route_prices" : "dynamic",
       sourceLabel: quote.route.label,
       validFrom: null,
       returnApplied: quote.returnApplied,
       vatRate: quote.vatRate,
+      fingerprint: quote.fingerprint,
+      airport: quote.airport,
     },
     calculatedAt,
     expiresAt,
     createdAt: calculatedAt,
   };
+}
+
+/**
+ * Vorm van een UITGELEZEN snapshot (uit price_snapshots). Zoals PriceSnapshot maar
+ * `pricingSource` is nog de ruwe DB-string en adjustments zijn hier niet nodig voor
+ * de prijs-lock (total_cents is bindend).
+ */
+export type StoredSnapshot = {
+  quoteId: string;
+  pricingVersion: string;
+  pricingSource: string;
+  currency: string;
+  subtotalCents: number;
+  totalCents: number;
+  routeSnapshot: RouteSnapshot;
+  calculatedAt: string;
+  expiresAt: string;
+};
+
+export type SnapshotUsability =
+  | { ok: true }
+  | { ok: false; reason: "expired" | "invalid_source" | "fingerprint_mismatch" };
+
+/**
+ * Pure controle of een uitgelezen snapshot bruikbaar is om een boeking te binden:
+ * niet verlopen, geldige prijsbron, en de vingerafdruk komt overeen met de actuele
+ * aanvraag. Geeft een specifieke reden bij afkeuring. `not_found`/`already_used`
+ * horen bij de IO-laag (read/consume), niet hier.
+ */
+export function checkSnapshotUsable(
+  s: StoredSnapshot,
+  opts: { now: Date; expectedFingerprint: string }
+): SnapshotUsability {
+  if (!(new Date(s.expiresAt).getTime() > opts.now.getTime())) {
+    return { ok: false, reason: "expired" };
+  }
+  if (!isPricingSource(s.pricingSource)) {
+    return { ok: false, reason: "invalid_source" };
+  }
+  if (s.routeSnapshot?.fingerprint !== opts.expectedFingerprint) {
+    return { ok: false, reason: "fingerprint_mismatch" };
+  }
+  return { ok: true };
 }
 
 export type SnapshotValidation = { ok: true } | { ok: false; error: string };
@@ -140,7 +217,10 @@ export function validateSnapshot(s: PriceSnapshot): SnapshotValidation {
   if (s.currency !== "EUR") return { ok: false, error: "currency must be EUR" };
   if (!isIntGte0(s.subtotalCents)) return { ok: false, error: "subtotalCents must be a non-negative integer" };
   if (!isIntGte0(s.totalCents)) return { ok: false, error: "totalCents must be a non-negative integer" };
-  if (mapPricingSource(s.pricingSource) === null) return { ok: false, error: `invalid pricingSource: ${s.pricingSource}` };
+  // Valideer tegen het OPGESLAGEN domein (pricingSource is hier al gemapt).
+  // NIET via mapPricingSource: dat verwacht een quote-bron, niet de pricingSource,
+  // en zou 'dynamic'/'manual'/… onterecht afkeuren.
+  if (!isPricingSource(s.pricingSource)) return { ok: false, error: `invalid pricingSource: ${s.pricingSource}` };
 
   for (const a of s.adjustments) {
     if (!Number.isInteger(a.amountCents)) {

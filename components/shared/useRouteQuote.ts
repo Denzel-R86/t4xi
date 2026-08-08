@@ -29,16 +29,27 @@ export type Quote =
       distanceKm: number;
       /** Backend-bevestigde geschatte reistijd (min) — 0 als onbekend. */
       estimatedDurationMin: number;
+      /**
+       * Quote-lock identifier van de opgeslagen prijs-snapshot. Wordt bij het
+       * bevestigen meegestuurd zodat de boeking exact dit gelockte bedrag gebruikt.
+       * `null` als de opslag niet is bevestigd (dan valt de boeking terug op vaste
+       * route / offerte-op-aanvraag).
+       */
+      quoteId: string | null;
     };
 
 export function useRouteQuote(
   pickup: AddressSuggestion | null,
   dropoff: AddressSuggestion | null,
-  opts?: { returnTrip?: boolean; passengers?: number }
+  opts?: { returnTrip?: boolean; passengers?: number; date?: string; time?: string }
 ): Quote {
   const [quote, setQuote] = useState<Quote>({ status: "idle" });
   const returnTrip = opts?.returnTrip ?? false;
   const passengers = opts?.passengers ?? 1;
+  // Optioneel gepland vertrek — de server rekent date+time om naar een UTC-instant
+  // voor traffic-aware routing. Leeg laten waar er geen datum/tijd is (homepagehero).
+  const date = opts?.date ?? "";
+  const time = opts?.time ?? "";
 
   useEffect(() => {
     if (!pickup || !dropoff) {
@@ -57,6 +68,7 @@ export function useRouteQuote(
             dropoff: dropoff.label,
             returnTrip,
             passengers,
+            ...(date && time ? { date, time } : {}),
           }),
           signal: controller.signal,
         });
@@ -69,6 +81,7 @@ export function useRouteQuote(
             returnApplied: Boolean(data.returnApplied),
             distanceKm: Number(data.distanceKm) || 0,
             estimatedDurationMin: Number(data.estimatedDurationMin) || 0,
+            quoteId: typeof data.quoteId === "string" ? data.quoteId : null,
             airport: {
               isTransfer: Boolean(data.isAirportTransfer),
               direction: data.flightDirection ?? null,
@@ -93,7 +106,7 @@ export function useRouteQuote(
       clearTimeout(timer);
       controller.abort();
     };
-  }, [pickup, dropoff, returnTrip, passengers]);
+  }, [pickup, dropoff, returnTrip, passengers, date, time]);
 
   return quote;
 }

@@ -7,6 +7,7 @@ import {
   type UnavailableReason,
 } from "@/lib/pricing/service";
 import type { PriceSnapshot } from "@/lib/pricing/snapshot";
+import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 
 /**
  * POST /api/pricing/quote
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
   }
 
   // 2. Input valideren (type-veilig)
-  const { pickup, dropoff, vehicleClass, returnTrip, passengers, luggage } = body;
+  const { pickup, dropoff, vehicleClass, returnTrip, passengers, luggage, date, time } = body;
 
   if (typeof pickup !== "string" || pickup.trim() === "") {
     return badRequest("Veld 'pickup' is verplicht en moet een niet-lege string zijn.");
@@ -90,6 +91,14 @@ export async function POST(request: Request) {
     return badRequest("'luggage' moet een geheel getal van 0 of hoger zijn.");
   }
 
+  // Optioneel gepland vertrek: date ("YYYY-MM-DD") + time ("HH:MM") als Amsterdamse
+  // wandkloktijd → UTC ISO. Ongeldig/afwezig → geen departureAt (routing gebruikt
+  // dan de noodwaarde). We valideren niet hard: dit is een verrijking, geen vereiste.
+  const departureAt =
+    typeof date === "string" && typeof time === "string"
+      ? amsterdamDepartureIso(date, time) ?? undefined
+      : undefined;
+
   const input: PricingQuoteInput = {
     pickup: pickup.trim(),
     dropoff: dropoff.trim(),
@@ -97,6 +106,7 @@ export async function POST(request: Request) {
     ...(returnTrip !== undefined ? { returnTrip } : {}),
     ...(passengers !== undefined ? { passengers } : {}),
     ...(luggage !== undefined ? { luggage } : {}),
+    ...(departureAt !== undefined ? { departureAt } : {}),
   };
 
   // 3. Offerte ophalen via de centrale prijsfunctie (quote = pass-through om

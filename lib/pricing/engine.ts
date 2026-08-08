@@ -6,10 +6,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import {
   getPricingQuote,
+  quoteFingerprint,
+  type AirportContext,
   type PricingQuoteInput,
   type PricingQuoteResult,
 } from "@/lib/pricing/service";
-import { buildPriceSnapshot, uuidv7, type PriceSnapshot } from "@/lib/pricing/snapshot";
+import {
+  buildPriceSnapshot,
+  checkSnapshotUsable,
+  uuidv7,
+  type PriceSnapshot,
+  type StoredSnapshot,
+} from "@/lib/pricing/snapshot";
 
 /**
  * DE centrale, server-side entrypoint voor een klantprijs (Sprint 7.6 — PR 7.6.2).
@@ -86,4 +94,140 @@ export async function calculateBookingPrice(
       })
     : null;
   return { quote, contractVersion: "legacy-passthrough", snapshot };
+}
+
+// ── Booking-prijs met quote-lock (PR 12 — dynamische prijs-lock) ─────────────
+
+/** Wat de booking-route nodig heeft om de bindende prijs te bepalen. */
+export type BookingPriceRequest = {
+  pickup: string;
+  dropoff: string;
+  vehicleClass?: string;
+  returnTrip: boolean;
+  passengers: number;
+  departureAt?: string;
+  /** Quote-lock id uit de getoonde prijs; leeg/afwezig → geen lock. */
+  quoteId?: string | null;
+};
+
+export type BookingPriceDeps = {
+  now: Date;
+  /** Leest de opgeslagen snapshot (niet-destructief). */
+  readSnapshot: (quoteId: string) => Promise<StoredSnapshot | null>;
+  /**
+   * Berekent een quote ZONDER routing (allowDistanceTariff:false) voor het
+   * no-quoteId-pad. Injecteerbaar voor tests; default = calculateBookingPrice.
+   */
+  computeQuote?: (input: BookingPriceInput) => Promise<PricingQuoteResult>;
+};
+
+/**
+ * Uitkomst van de bindende prijsbepaling. `priced` bevat het te boeken bedrag;
+ * `on_request` = offerte op aanvraag (geen bindende prijs); `error` = harde,
+ * klantzichtbare validatiefout (verlopen/mismatch/ongeldig/onbekend).
+ */
+export type BookingPriceOutcome =
+  | {
+      kind: "priced";
+      priceEuros: number;
+      currency: "EUR";
+      returnApplied: boolean;
+      airport: AirportContext;
+      pricingSource: string;
+      /** Te consumeren na alle overige validatie (idempotency); null = geen lock. */
+      lockedQuoteId: string | null;
+    }
+  | { kind: "on_request"; airport: AirportContext }
+  | { kind: "error"; status: number; error: string; message: string };
+
+/**
+ * Bepaalt de bindende boekingsprijs. Twee paden:
+ *
+ *  a) quoteId aanwezig → QUOTE-LOCK: lees de server-side snapshot, valideer
+ *     (bestaat / niet verlopen / geldige bron / vingerafdruk matcht de aanvraag) en
+ *     gebruik exact `totalCents`. GEEN routing/herberekening. De prijs, prijsbron,
+ *     btw/breakdown en luchthavencontext komen uit de GEVALIDEERDE snapshot — nooit
+ *     uit clientvelden. Consumeren gebeurt later (idempotency), de caller krijgt de
+ *     `lockedQuoteId`.
+ *  b) geen quoteId → uitsluitend een DETERMINISTISCHE vaste route (routing UIT) of
+ *     offerte op aanvraag. Zo ontstaat er nooit een bindende dynamische prijs zonder
+ *     door de klant geaccepteerde snapshot en wordt Google niet (opnieuw) gebeld.
+ */
+export async function resolveBookingPrice(
+  req: BookingPriceRequest,
+  deps: BookingPriceDeps
+): Promise<BookingPriceOutcome> {
+  const quoteId = (req.quoteId ?? "").trim();
+
+  if (quoteId) {
+    const stored = await deps.readSnapshot(quoteId);
+    if (!stored) {
+      return {
+        kind: "error",
+        status: 409,
+        error: "quote_not_found",
+        message: "Uw prijsofferte is niet (meer) gevonden. Vernieuw de prijs en probeer opnieuw.",
+      };
+    }
+    const usable = checkSnapshotUsable(stored, {
+      now: deps.now,
+      expectedFingerprint: quoteFingerprint({
+        pickup: req.pickup,
+        dropoff: req.dropoff,
+        vehicleClass: req.vehicleClass,
+        returnTrip: req.returnTrip,
+      }),
+    });
+    if (!usable.ok) {
+      const map: Record<typeof usable.reason, [number, string, string]> = {
+        expired: [409, "quote_expired", "Uw prijs is verlopen. Vernieuw de prijs en accepteer die opnieuw."],
+        fingerprint_mismatch: [409, "quote_mismatch", "De rit is gewijzigd ten opzichte van de getoonde prijs. Vernieuw de prijs."],
+        invalid_source: [422, "quote_invalid", "De prijsofferte is ongeldig. Vernieuw de prijs."],
+      };
+      const [status, error, message] = map[usable.reason];
+      return { kind: "error", status, error, message };
+    }
+    return {
+      kind: "priced",
+      priceEuros: stored.totalCents / 100,
+      currency: "EUR",
+      returnApplied: stored.routeSnapshot.returnApplied,
+      airport: stored.routeSnapshot.airport,
+      pricingSource: stored.pricingSource,
+      lockedQuoteId: quoteId,
+    };
+  }
+
+  // Geen quoteId → routing UIT: alleen vaste route of offerte-op-aanvraag.
+  const compute = deps.computeQuote ?? ((input) => calculateBookingPrice(input).then((r) => r.quote));
+  const quote = await compute({
+    pickup: req.pickup,
+    dropoff: req.dropoff,
+    ...(req.vehicleClass !== undefined ? { vehicleClass: req.vehicleClass } : {}),
+    returnTrip: req.returnTrip,
+    passengers: req.passengers,
+    ...(req.departureAt !== undefined ? { departureAt: req.departureAt } : {}),
+    allowDistanceTariff: false,
+  });
+
+  if (quote.available) {
+    return {
+      kind: "priced",
+      priceEuros: quote.price,
+      currency: quote.currency,
+      returnApplied: quote.returnApplied,
+      airport: quote.airport,
+      pricingSource: quote.source,
+      lockedQuoteId: null,
+    };
+  }
+  if (quote.reason === "capacity_exceeded") {
+    return {
+      kind: "error",
+      status: 422,
+      error: "capacity_exceeded",
+      message: "Te veel passagiers of bagage voor deze voertuigklasse.",
+    };
+  }
+  return { kind: "on_request", airport: quote.airport };
 }

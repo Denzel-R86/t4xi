@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { calculateBookingPrice } from "@/lib/pricing/engine";
+import { resolveBookingPrice } from "@/lib/pricing/engine";
+import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
+import { quoteFingerprint, type AirportContext } from "@/lib/pricing/service";
+import { classifyLuggage } from "@/lib/pricing/luggage";
+import { readPriceSnapshot } from "@/lib/pricing/snapshot-store";
 import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
 import { buildRegistration, registerFlightMonitoring } from "@/lib/flight-monitoring/service";
@@ -139,6 +143,15 @@ export async function POST(request: Request) {
   if (email === "" || !EMAIL_RE.test(email)) return bad("Geldig e-mailadres is verplicht.");
   if (phone.replace(/[^0-9+]/g, "").length < 8) return bad("Geldig telefoonnummer is verplicht.");
 
+  // Bagage fail-closed: alleen exact bekende categorieën. 'overleg' (onbekende
+  // bagage) mag geen bindende auto-boeking opleveren → handmatige beoordeling /
+  // offerte op aanvraag. Lege/onbekende/willekeurige tekst → harde validatiefout.
+  const luggageClass = classifyLuggage(luggage);
+  if (luggageClass.kind === "invalid") {
+    return bad("Kies een geldige bagage-optie.");
+  }
+  const luggageOnRequest = luggageClass.kind === "on_request";
+
   // Datum niet in het verleden (lokale dagvergelijking; RPC bewaakt dit ook).
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -158,31 +171,46 @@ export async function POST(request: Request) {
   const coord = (v: unknown): number | null =>
     typeof v === "number" && Number.isFinite(v) ? v : null;
 
-  // 3. Autoritatieve prijs ophalen via de centrale prijsfunctie (retour = ride_type
-  //    'retour'). calculateBookingPrice is een pass-through om getPricingQuote: zelfde
-  //    server-side bron (fixed_route_prices), zelfde bedrag. De client stuurt nooit een prijs.
+  // 3. Bindende prijs bepalen via de quote-lock-resolver (retour = ride_type
+  //    'retour'). De client stuurt NOOIT een prijs. resolveBookingPrice:
+  //      a) quoteId aanwezig → gebruikt exact het gelockte snapshotbedrag (geen
+  //         Google, geen herberekening; prijs/bron/btw/luchthaven uit de snapshot);
+  //      b) geen quoteId → alleen een deterministische vaste route of offerte-op-
+  //         aanvraag (routing UIT, dus nooit een bindende dynamische prijs zonder
+  //         geaccepteerde snapshot).
   const returnTrip = rideType === "retour";
-  const quote = (await calculateBookingPrice({ pickup, dropoff, returnTrip, passengers: persons })).quote;
+  const now = new Date();
+  const outcome = await resolveBookingPrice(
+    {
+      pickup,
+      dropoff,
+      returnTrip,
+      passengers: persons,
+      departureAt: amsterdamDepartureIso(date, time) ?? undefined,
+      quoteId: str(body.quoteId) || null,
+    },
+    { now, readSnapshot: readPriceSnapshot }
+  );
+  if (outcome.kind === "error") {
+    return json(outcome.status, { ok: false, error: outcome.error, message: outcome.message });
+  }
 
   let priceEuros: number | null = null;
   let quoteOnRequest = true;
-  let currency: "EUR" = "EUR";
   let returnApplied = false;
-
-  if (quote.available) {
-    priceEuros = quote.price;
-    currency = quote.currency;
-    returnApplied = quote.returnApplied;
+  let lockedQuoteId: string | null = null; // te consumeren snapshot (pad a)
+  const currency: "EUR" = "EUR";
+  const airport: AirportContext = outcome.airport;
+  // 'overleg'-bagage → NOOIT bindend: forceer offerte op aanvraag (handmatige
+  // beoordeling), ongeacht een gelockte prijs. De snapshot wordt dan niet
+  // geconsumeerd en de RPC (die 'overleg' óók fail-closed weigert) wordt overgeslagen.
+  if (outcome.kind === "priced" && !luggageOnRequest) {
+    priceEuros = outcome.priceEuros;
+    returnApplied = outcome.returnApplied;
+    lockedQuoteId = outcome.lockedQuoteId;
     quoteOnRequest = false;
-  } else if (quote.reason === "capacity_exceeded") {
-    return json(422, {
-      ok: false,
-      error: "capacity_exceeded",
-      message: "Te veel passagiers of bagage voor deze voertuigklasse.",
-    });
   }
-  // unknown_location / route_not_fixed / data_unavailable → lead vastleggen als
-  // "Offerte op aanvraag" (prijs null). We verliezen de klant niet.
+  // outcome.kind === "on_request" (of overleg) → offerte op aanvraag (prijs null).
 
   // 3b. Vluchtnummer — verplicht zodra één zijde een luchthaven is.
   //
@@ -197,7 +225,7 @@ export async function POST(request: Request) {
   //
   // De richting wordt server-side afgeleid en nooit door de klant gekozen:
   // luchthaven als vertrek → arrival, luchthaven als bestemming → departure.
-  const airport = quote.airport;
+  // `airport` is hierboven gezet: uit de snapshot (quote-lock) of uit de service.
   if (airport.isAirportTransfer && flightNumber === "") {
     return bad(
       airport.isAirportPickup
@@ -213,7 +241,7 @@ export async function POST(request: Request) {
   const flightDirection = airport.isAirportTransfer ? airport.flightDirection : null;
   const flightNumberToStore = airport.isAirportTransfer ? flightNumber : "";
 
-  // 4. Schrijven via service-role RPC
+  // 4. Wegschrijven via de service-role client. Twee paden:
   const supabase = serviceRoleClient();
   if (!supabase) {
     return json(503, {
@@ -223,26 +251,81 @@ export async function POST(request: Request) {
     });
   }
 
-  const { data, error } = await supabase.rpc("create_booking", {
-    p_ride_type: rideType,
-    p_from_address: pickup,
-    p_to_address: dropoff,
-    p_ride_date: date,
-    p_ride_time: time,
-    p_vehicle: vehicle || null,
-    p_persons: persons,
-    p_luggage: luggage || null,
-    p_price_euros: priceEuros,
-    p_customer_name: name,
-    p_customer_phone: phone,
-    p_customer_email: email,
-    p_from_lat: coord(body.fromLat),
-    p_from_lon: coord(body.fromLon),
-    p_to_lat: coord(body.toLat),
-    p_to_lon: coord(body.toLon),
-    p_flight_number: flightNumberToStore || null,
-    p_flight_direction: flightDirection,
-  });
+  let data: unknown;
+  let error: { message: string } | null;
+
+  if (lockedQuoteId) {
+    // a) QUOTE-LOCK → TRANSACTIONEEL + IDEMPOTENT: de RPC vergrendelt de snapshot,
+    //    valideert (bestaan/vervaldatum/ongebruikt/fingerprint/bron/capaciteit),
+    //    maakt de boeking met exact total_cents, markeert de snapshot als gebruikt
+    //    en koppelt hem. Retry met dezelfde quoteId → DEZELFDE boeking (geen tweede
+    //    boeking, geen tweede betaling, geen tweede Google-call).
+    ({ data, error } = await supabase.rpc("create_booking_from_snapshot", {
+      p_quote_id: lockedQuoteId,
+      p_expected_fingerprint: quoteFingerprint({ pickup, dropoff, returnTrip }),
+      p_ride_type: rideType,
+      p_from_address: pickup,
+      p_to_address: dropoff,
+      p_ride_date: date,
+      p_ride_time: time,
+      p_vehicle: vehicle || null,
+      p_persons: persons,
+      p_luggage: luggage || null,
+      p_customer_name: name,
+      p_customer_phone: phone,
+      p_customer_email: email,
+      p_from_lat: coord(body.fromLat),
+      p_from_lon: coord(body.fromLon),
+      p_to_lat: coord(body.toLat),
+      p_to_lon: coord(body.toLon),
+      p_flight_number: flightNumberToStore || null,
+      p_flight_direction: flightDirection,
+    }));
+    if (error) {
+      // Herkenbare quote-lock-fouten → duidelijke, klantvriendelijke validatiefout.
+      const lockMap: Record<string, [number, string, string]> = {
+        QUOTE_NOT_FOUND: [409, "quote_not_found", "Uw prijsofferte is niet (meer) gevonden. Vernieuw de prijs en probeer opnieuw."],
+        QUOTE_EXPIRED: [409, "quote_expired", "Uw prijs is verlopen. Vernieuw de prijs en accepteer die opnieuw."],
+        QUOTE_MISMATCH: [409, "quote_mismatch", "De rit is gewijzigd ten opzichte van de getoonde prijs. Vernieuw de prijs."],
+        QUOTE_INVALID_SOURCE: [422, "quote_invalid", "De prijsofferte is ongeldig. Vernieuw de prijs."],
+        INVALID_VEHICLE_CLASS: [422, "invalid_vehicle_class", "De gekozen voertuigklasse is niet (meer) beschikbaar. Vernieuw de prijs."],
+        INVALID_LUGGAGE: [422, "invalid_luggage", "Kies een geldige bagage-optie."],
+        CAPACITY_EXCEEDED: [422, "capacity_exceeded", "Te veel passagiers of bagage voor de gekozen voertuigklasse."],
+        INVALID_PERSONS: [400, "invalid_persons", "Ongeldig aantal passagiers."],
+        QUOTE_CONSUMED_NO_BOOKING: [409, "quote_conflict", "De prijsofferte wordt al verwerkt. Probeer het zo opnieuw."],
+      };
+      for (const key of Object.keys(lockMap)) {
+        if (error.message.includes(key)) {
+          const [code, err, msg] = lockMap[key];
+          return json(code, { ok: false, error: err, message: msg });
+        }
+      }
+      // Anders: val door naar de generieke create_booking-foutafhandeling hieronder.
+    }
+  } else {
+    // b) Geen lock → deterministische vaste route of offerte-op-aanvraag (prijs uit
+    //    resolveBookingPrice, routing stond uit). Geen snapshot om te koppelen.
+    ({ data, error } = await supabase.rpc("create_booking", {
+      p_ride_type: rideType,
+      p_from_address: pickup,
+      p_to_address: dropoff,
+      p_ride_date: date,
+      p_ride_time: time,
+      p_vehicle: vehicle || null,
+      p_persons: persons,
+      p_luggage: luggage || null,
+      p_price_euros: priceEuros,
+      p_customer_name: name,
+      p_customer_phone: phone,
+      p_customer_email: email,
+      p_from_lat: coord(body.fromLat),
+      p_from_lon: coord(body.fromLon),
+      p_to_lat: coord(body.toLat),
+      p_to_lon: coord(body.toLon),
+      p_flight_number: flightNumberToStore || null,
+      p_flight_direction: flightDirection,
+    }));
+  }
 
   if (error) {
     // Validatie-excepties uit de RPC → 400; overige → 500 (geen interne details lekken).
@@ -254,7 +337,14 @@ export async function POST(request: Request) {
     });
   }
 
-  const row = Array.isArray(data) ? data[0] : data;
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { booking_ref?: string; booking_id?: string; price_euros?: number }
+    | null
+    | undefined;
+  // Bij de lock-RPC is de bindende prijs exact het snapshotbedrag uit de DB.
+  if (lockedQuoteId && typeof row?.price_euros === "number") {
+    priceEuros = row.price_euros;
+  }
   const bookingRef = row?.booking_ref as string | undefined;
   // Intern UUID: capability-sleutel voor de betaalstap. Alleen aan de
   // boekingseigenaar teruggegeven (in de response op zijn eigen boeking).
