@@ -189,14 +189,14 @@ export default async function HomePage() {
               />
             </Reveal>
             <Reveal delay={1}>
-              <div className="mt-20 grid gap-5 md:grid-cols-[1.12fr_0.88fr]">
+              <div className="mt-20 grid gap-5 md:grid-cols-2">
                 <figure className="overflow-hidden bg-ink text-white">
                   <div className="relative aspect-[4/3]">
                     <Image
                       src={bagageOverdracht}
                       alt={t("bagageFiguurAlt")}
                       fill
-                      sizes="(min-width: 768px) 50vw, 90vw"
+                      sizes="(min-width: 768px) 45vw, 90vw"
                       placeholder="blur"
                       className="object-cover saturate-[0.9] contrast-[0.96]"
                     />
@@ -217,7 +217,7 @@ export default async function HomePage() {
                       src={comfortAanBoord}
                       alt={t("comfortFiguurAlt")}
                       fill
-                      sizes="(min-width: 768px) 40vw, 90vw"
+                      sizes="(min-width: 768px) 45vw, 90vw"
                       placeholder="blur"
                       className="object-cover saturate-[0.9] contrast-[0.96]"
                     />
