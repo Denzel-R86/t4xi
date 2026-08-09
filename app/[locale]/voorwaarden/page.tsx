@@ -111,7 +111,7 @@ function VoorwaardenNL() {
         tot een hogere prijs — dat risico ligt bij ons.
       </p>
       <p className={P}>
-        Er wordt geen taxameter gebruikt en wij hanteren geen surge pricing. Voor ritten
+        Er wordt geen taxameter gebruikt en wij hanteren geen dynamische prijsverhogingen. Voor ritten
         die aanvangen tussen 23:00 en 06:00 geldt een nachttarief van 15%, dat vooraf in de
         getoonde prijs is verwerkt.
       </p>
@@ -183,7 +183,7 @@ function VoorwaardenNL() {
       </p>
       <p className={P}>
         Een rit is bedoeld voor maximaal 4 passagiers exclusief chauffeur. Adviesbagage: 2
-        grote koffers plus 2 handbagage bij 4 passagiers, of 3 grote koffers bij maximaal 3
+        grote koffers plus 2 stuks handbagage bij 4 passagiers, of 3 grote koffers bij maximaal 3
         passagiers. Heeft u meer bagage, geef dat dan bij de boeking aan, zodat wij een
         passend voertuig kunnen inplannen.
       </p>
