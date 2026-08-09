@@ -1,4 +1,5 @@
 import { Link } from "@/i18n/navigation";
+import CmsLivePreview from "@/components/cms/CmsLivePreview";
 import { Reveal } from "@/components/horizon/motion";
 import {
   HorizonSpine,
@@ -12,8 +13,13 @@ import {
   type LedgerEntry,
 } from "@/components/horizon/patterns";
 import { loadRateCard, type CityRates } from "@/lib/pricing/rate-card";
+import { cleanCmsOptionalText, safeCmsInternalHref } from "@/lib/cms/safe-content";
+import { loadCmsFleetPage } from "@/sanity/lib/content";
+import { urlForImage } from "@/sanity/lib/image";
+import type { CmsImage } from "@/sanity/types";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import Image, { type StaticImageData } from "next/image";
+import { stegaClean } from "next-sanity";
 // Statische imports laten Next tijdens de build blur-placeholders genereren;
 // de bronbestanden zelf blijven ongewijzigd.
 import teslaFleet from "@/public/tesla_model_y_black.jpg";
@@ -91,6 +97,8 @@ function FleetPlate({
   interiorAlt,
   exteriorLabel,
   interiorLabel,
+  attributes,
+  interiorDisclosure,
   reverse = false,
   interiorPosition = "object-center",
 }: {
@@ -98,12 +106,14 @@ function FleetPlate({
   name: string;
   type: string;
   description: string;
-  exterior: StaticImageData;
+  exterior: StaticImageData | CmsImage;
   exteriorAlt: string;
-  interior: StaticImageData;
+  interior: StaticImageData | CmsImage;
   interiorAlt: string;
   exteriorLabel: string;
   interiorLabel: string;
+  attributes?: string[];
+  interiorDisclosure?: string;
   reverse?: boolean;
   interiorPosition?: string;
 }) {
@@ -121,6 +131,19 @@ function FleetPlate({
             {name}
           </h3>
           <p className="mt-3 max-w-xl text-sm leading-7 text-secondary">{description}</p>
+          {attributes && attributes.length > 0 && (
+            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+              {attributes.map((attribute) => (
+                <li
+                  key={stegaClean(attribute)}
+                  className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.14em] text-secondary"
+                >
+                  <span aria-hidden="true" className="h-1 w-1 rounded-full bg-stone" />
+                  {attribute}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-secondary md:pb-1 md:text-right">
           {type}
@@ -133,13 +156,13 @@ function FleetPlate({
             reverse ? "lg:order-2" : ""
           }`}
         >
-          <Image
-            src={exterior}
+          <FleetImage
+            source={exterior}
             alt={exteriorAlt}
-            fill
             sizes="(min-width: 1024px) 62vw, 90vw"
-            placeholder="blur"
             className="object-cover object-center saturate-[0.88] contrast-[0.98]"
+            width={1800}
+            height={1050}
           />
           <figcaption className={labelClass}>{exteriorLabel}</figcaption>
         </figure>
@@ -149,28 +172,86 @@ function FleetPlate({
             reverse ? "lg:order-1" : ""
           }`}
         >
-          <Image
-            src={interior}
+          <FleetImage
+            source={interior}
             alt={interiorAlt}
-            fill
             sizes="(min-width: 1024px) 28vw, 90vw"
-            placeholder="blur"
             className={`object-cover saturate-[0.88] contrast-[0.98] ${interiorPosition}`}
+            width={1050}
+            height={1050}
           />
           <figcaption className={labelClass}>{interiorLabel}</figcaption>
+          {interiorDisclosure && (
+            <p className="absolute inset-x-4 bottom-4 z-10 bg-ink/80 px-3 py-2 text-[10px] leading-4 text-white/80 backdrop-blur-sm md:inset-x-5 md:bottom-5">
+              {interiorDisclosure}
+            </p>
+          )}
         </figure>
       </div>
     </article>
   );
 }
 
+function isCmsImage(source: StaticImageData | CmsImage): source is CmsImage {
+  return "asset" in source;
+}
 
+function FleetImage({
+  source,
+  alt,
+  sizes,
+  className,
+  width,
+  height,
+}: {
+  source: StaticImageData | CmsImage;
+  alt: string;
+  sizes: string;
+  className: string;
+  width: number;
+  height: number;
+}) {
+  if (!isCmsImage(source)) {
+    return (
+      <Image
+        src={source}
+        alt={alt}
+        fill
+        sizes={sizes}
+        placeholder="blur"
+        className={className}
+      />
+    );
+  }
+
+  const src = urlForImage(source)
+    .width(width)
+    .height(height)
+    .fit("crop")
+    .auto("format")
+    .quality(88)
+    .url();
+  const blurDataURL = source.asset.metadata?.lqip || undefined;
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes={sizes}
+      placeholder={blurDataURL ? "blur" : "empty"}
+      blurDataURL={blurDataURL}
+      className={className}
+    />
+  );
+}
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage({ params }: { params: { locale: string } }) {
   setRequestLocale(params.locale);
   const t = await getTranslations({ locale: params.locale, namespace: "home" });
+  const cmsFleet = await loadCmsFleetPage(params.locale);
   const VOWS = [
     { title: t("vow1Titel"), text: t("vow1Tekst") },
     { title: t("vow2Titel"), text: t("vow2Tekst") },
@@ -337,47 +418,89 @@ export default async function HomePage({ params }: { params: { locale: string } 
         id="vloot"
         above={
           <NarrativePattern
-            kicker={t("journeyKicker")}
-            voice={t("journeyVoice")}
-            echo={t("journeyEcho")}
-            note={t("journeyNote")}
+            kicker={cmsFleet?.intro.eyebrow ?? t("journeyKicker")}
+            voice={cmsFleet?.intro.headline ?? t("journeyVoice")}
+            echo={cmsFleet?.intro.headlineConclusion ?? t("journeyEcho")}
+            note={cmsFleet?.intro.introduction ?? t("journeyNote")}
           />
         }
         below={
           <Reveal>
-            <FleetPlate
-              index="01 / 02"
-              name="Tesla Model Y"
-              type={t("fleetTeslaType")}
-              description={t("fleetTeslaDescription")}
-              exterior={teslaFleet}
-              exteriorAlt={t("fleetTeslaExteriorAlt")}
-              interior={teslaInterior}
-              interiorAlt={t("fleetTeslaInteriorAlt")}
-              exteriorLabel={t("fleetExteriorLabel")}
-              interiorLabel={t("fleetInteriorLabel")}
-              interiorPosition="object-[52%_58%]"
-            />
+            {cmsFleet ? (
+              cmsFleet.vehicles.map((vehicle, vehicleIndex) => {
+                const isMoodImage = stegaClean(vehicle.interiorImageType) === "mood";
+                return (
+                  <FleetPlate
+                    key={vehicle._key}
+                    index={`${String(vehicleIndex + 1).padStart(2, "0")} / ${String(cmsFleet.vehicles.length).padStart(2, "0")}`}
+                    name={vehicle.modelName}
+                    type={vehicle.powertrain}
+                    description={vehicle.description}
+                    attributes={vehicle.attributes}
+                    exterior={vehicle.exteriorImage}
+                    exteriorAlt={vehicle.exteriorImage.alt}
+                    interior={vehicle.interiorImage}
+                    interiorAlt={vehicle.interiorImage.alt}
+                    exteriorLabel={t("fleetExteriorLabel")}
+                    interiorLabel={isMoodImage ? t("fleetInteriorMoodLabel") : t("fleetInteriorLabel")}
+                    interiorDisclosure={
+                      isMoodImage ? vehicle.moodImageDisclosure || undefined : undefined
+                    }
+                    reverse={vehicleIndex % 2 === 1}
+                  />
+                );
+              })
+            ) : (
+              <>
+                <FleetPlate
+                  index="01 / 02"
+                  name="Tesla Model Y"
+                  type={t("fleetTeslaType")}
+                  description={t("fleetTeslaDescription")}
+                  exterior={teslaFleet}
+                  exteriorAlt={t("fleetTeslaExteriorAlt")}
+                  interior={teslaInterior}
+                  interiorAlt={t("fleetTeslaInteriorAlt")}
+                  exteriorLabel={t("fleetExteriorLabel")}
+                  interiorLabel={t("fleetInteriorLabel")}
+                  interiorPosition="object-[52%_58%]"
+                />
 
-            <FleetPlate
-              index="02 / 02"
-              name="Lynk & Co 01"
-              type={t("fleetLynkType")}
-              description={t("fleetLynkDescription")}
-              exterior={lynkFleet}
-              exteriorAlt={t("fleetLynkExteriorAlt")}
-              interior={comfortAanBoord}
-              interiorAlt={t("fleetLynkInteriorAlt")}
-              exteriorLabel={t("fleetExteriorLabel")}
-              interiorLabel={t("fleetInteriorMoodLabel")}
-              interiorPosition="object-[66%_center]"
-              reverse
-            />
+                <FleetPlate
+                  index="02 / 02"
+                  name="Lynk & Co 01"
+                  type={t("fleetLynkType")}
+                  description={t("fleetLynkDescription")}
+                  exterior={lynkFleet}
+                  exteriorAlt={t("fleetLynkExteriorAlt")}
+                  interior={comfortAanBoord}
+                  interiorAlt={t("fleetLynkInteriorAlt")}
+                  exteriorLabel={t("fleetExteriorLabel")}
+                  interiorLabel={t("fleetInteriorMoodLabel")}
+                  interiorDisclosure={t("fleetLynkInteriorDisclosure")}
+                  interiorPosition="object-[66%_center]"
+                  reverse
+                />
+              </>
+            )}
 
-            <Stamp className="mt-6 leading-relaxed">
-              {t("fleetAvailabilityNote")}<Dash />
-              <b className="font-semibold text-ink">{t("fleetServiceStandard")}</b>
-            </Stamp>
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-5">
+              <Stamp className="leading-relaxed">
+                {cmsFleet?.availabilityNote ?? t("fleetAvailabilityNote")}<Dash />
+                <b className="font-semibold text-ink">
+                  {cmsFleet?.servicePromise ?? t("fleetServiceStandard")}
+                </b>
+              </Stamp>
+              {cmsFleet && (
+                <Link
+                  href={safeCmsInternalHref(cmsFleet.action.href)}
+                  aria-label={cleanCmsOptionalText(cmsFleet.action.accessibleLabel)}
+                  className="hz-guide-line text-[11px] font-medium uppercase tracking-[0.14em] text-ink no-underline"
+                >
+                  {cmsFleet.action.label}
+                </Link>
+              )}
+            </div>
           </Reveal>
         }
       />
@@ -461,6 +584,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
           </Reveal>
         }
       />
+      <CmsLivePreview />
     </>
   );
 }

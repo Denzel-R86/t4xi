@@ -30,9 +30,10 @@ test("CSP behoudt de bestaande bronnen en beperkt Supabase tot de geconfigureerd
   assert.match(cfg, /connect-src[^\n]*https:\/\/places\.googleapis\.com/);
 });
 
-test("CSP sluit plugins, base-tag-, formulier- en framing-injecties expliciet af", () => {
+test("CSP sluit plugins, base-tag- en formulierinjecties af en beperkt framing tot same-origin", () => {
   assert.match(cfg, /object-src 'none'/);
   assert.match(cfg, /base-uri 'self'/);
   assert.match(cfg, /form-action 'self'/);
-  assert.match(cfg, /frame-ancestors 'none'/);
+  assert.match(cfg, /frame-ancestors 'self'/);
+  assert.doesNotMatch(cfg, /frame-ancestors https:/);
 });

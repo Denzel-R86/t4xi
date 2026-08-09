@@ -1,4 +1,4 @@
-# T4XI.nl — Next.js (Fase 2)
+# T4XI.nl — Next.js
 
 Migratie van de statische site (v14) naar Next.js 14 App Router + Supabase,
 met het T4XI design system v2 (officieel Stone-schema).
@@ -20,6 +20,8 @@ npm run dev                  # http://localhost:3000
   - Google Places API (New) als fallback via `/api/places` — key blijft server-side
 - **Security headers** in `next.config.mjs` conform CLAUDE.md (CSP, HSTS, X-Frame-Options)
 - **Supabase client** (`lib/supabase.ts`) voor project `t4xi-address-system`
+- **Sanity CMS** voor de gelokaliseerde dienstenpagina en vloot, met ingebedde
+  Studio op `/studio`, conceptweergave en een volledige codefallback
 - Pagina's: home, diensten, tarieven, over-ons, boeken
 
 ## Build & deploy
@@ -51,6 +53,8 @@ rollback-procedure (`supabase/rollback_20260705_addresses_rls.sql`).
 | NEXT_PUBLIC_SUPABASE_URL | Supabase dashboard → Settings → API | client (publiek) |
 | NEXT_PUBLIC_SUPABASE_ANON_KEY | idem | client (publiek, RLS is leidend) |
 | GOOGLE_PLACES_API_KEY | Google Cloud Console | ALLEEN server — nooit NEXT_PUBLIC |
+| NEXT_PUBLIC_SANITY_PROJECT_ID | Sanity projectinstellingen | client (publiek) |
+| SANITY_API_READ_TOKEN | Sanity Viewer-token | ALLEEN server — nooit NEXT_PUBLIC |
 
 ### Vóór productie (owner)
 
@@ -63,11 +67,16 @@ rollback-procedure (`supabase/rollback_20260705_addresses_rls.sql`).
 
 1. Prijsberekening in `/boeken`: PDOK lookup → afstand → tarief (Ride/Business/Vaste Klant)
 2. Boeking opslaan via bestaande `create_booking` RPC
-3. Fase 3: Sanity CMS voor tarieven/content (next-sanity staat hiervoor al klaar)
+3. Volgende CMS-fase: overige redactionele pagina's na evaluatie van diensten en vloot
+
+## CMS
+
+De CMS-architectuur, veilige eerste import, redactionele workflow en productie-
+activering staan in [`docs/sanity-cms.md`](docs/sanity-cms.md).
 
 ## Audit 2026-07-05
 
 Zie het eindrapport in de chat. Kernpunten:
 - `supabase/migrations/20260705_fix_addresses_rls.sql` — kritieke RLS-fix, NOG NIET toegepast
 - Telefoonnummer 0634 74 45 22 is ingevuld (Header, Footer, error.tsx, JSON-LD)
-- next-sanity bewust behouden voor Fase 3 (nog ongebruikt)
+- next-sanity voedt diensten en vloot; tarieven en boekingen blijven buiten het CMS

@@ -251,6 +251,7 @@
     "fleetLynkDescription": "A spacious SUV with a panoramic roof and a comfortably finished interior.",
     "fleetLynkExteriorAlt": "Black Lynk & Co 01 exterior, photographed from the front three-quarter angle",
     "fleetLynkInteriorAlt": "Mood image of rear-seat comfort with armrest and charging facility",
+    "fleetLynkInteriorDisclosure": "Representative mood image; the exact trim may differ.",
     "fleetAvailabilityNote": "The assigned model depends on planning and availability",
     "fleetServiceStandard": "the same considered T4XI service on every ride",
     "proofLabel": "Proof — our promise",
@@ -708,7 +709,7 @@
     "f4": "24/7 priority support",
     "f5": "Volume discount",
     "f6": "Unlimited rides",
-    "vertrouwen": "More than 40 companies rely on T4XI for their daily mobility needs.",
+    "vertrouwen": "One point of contact, clear journey agreements and straightforward monthly invoicing.",
     "aanvragen": "Request a business account"
   },
   "faq": {

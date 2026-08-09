@@ -35,9 +35,16 @@ export function localeMetadata(opts: {
   path: string;
   title: string;
   description: string;
+  image?: { url: string; width?: number; height?: number; alt?: string };
 }): Metadata {
   const { locale, path, title, description } = opts;
   const url = localeUrl(locale, path);
+  const image = opts.image ?? {
+    url: OPEN_GRAPH_IMAGE_URL,
+    width: 1200,
+    height: 630,
+    alt: "T4XI — Executive Mobility",
+  };
   return {
     metadataBase: new URL(SITE_URL),
     title,
@@ -58,13 +65,13 @@ export function localeMetadata(opts: {
       alternateLocale: locale === "nl" ? "en_US" : "nl_NL",
       type: "website",
       siteName: "T4XI",
-      images: [{ url: OPEN_GRAPH_IMAGE_URL, width: 1200, height: 630, alt: "T4XI — Executive Mobility" }],
+      images: [image],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [TWITTER_IMAGE_URL],
+      images: [opts.image?.url ?? TWITTER_IMAGE_URL],
     },
   };
 }

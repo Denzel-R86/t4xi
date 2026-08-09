@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "dev:staging": "tsx scripts/dev-staging.ts",
+    "studio": "sanity dev",
+    "typegen": "sanity schema extract --path=sanity/generated/schema.json --enforce-required-fields && sanity typegen generate",
+    "cms:seed": "sanity exec scripts/seed-sanity-content.ts --with-user-token",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -19,9 +22,11 @@
     "test:notifications": "tsx --test lib/notifications/*.test.ts",
     "test:invoices": "tsx --test lib/invoices/*.test.ts",
     "test:admin": "tsx --test lib/admin/*.test.ts",
+    "test:cms": "tsx --test lib/cms/*.test.ts",
     "preview:invoice-email": "tsx scripts/verify-invoice-email.ts"
   },
   "dependencies": {
+    "@sanity/icons": "3.8.0",
     "@sanity/image-url": "^1.0.2",
     "@stripe/react-stripe-js": "^6.8.0",
     "@stripe/stripe-js": "^9.12.0",
@@ -32,7 +37,9 @@
     "next-sanity": "^9.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "stripe": "^22.3.2"
+    "sanity": "3.99.0",
+    "stripe": "^22.3.2",
+    "styled-components": "6.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

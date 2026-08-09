@@ -144,7 +144,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Alles behalve API-routes, Next-internals en statische bestanden (met punt).
-  // De beschermde paden vallen hier vanzelf onder; de functie splitst zelf.
-  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
+  // Alles behalve API-routes, de eigen Sanity Studio, Next-internals en statische
+  // bestanden (met punt). /studio beheert zijn eigen interne router en mag nooit
+  // door de locale-middleware worden herschreven.
+  matcher: ["/((?!api|studio(?:/|$)|_next|_vercel|.*\\..*).*)"],
 };
