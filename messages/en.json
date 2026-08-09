@@ -50,7 +50,8 @@
     "juridisch": "Legal",
     "privacy": "Privacy statement",
     "voorwaarden": "Terms of transport",
-    "email": "Email T4XI"
+    "email": "Email T4XI",
+    "instagram": "T4XI on Instagram"
   },
   "sticky": {
     "label": "Quick actions",
@@ -114,6 +115,9 @@
     "verzenden": "Confirm booking",
     "bezig": "Sending…",
     "ofBel": "Or call",
+    "ofWhatsapp": "Or send a WhatsApp to",
+    "whatsappBericht": "Hello T4XI, I would like to book a ride.",
+    "whatsappAria": "Send T4XI a WhatsApp at +31 6 34 74 45 22 (opens in a new tab)",
     "valAdres": "Please enter a pick-up address and destination.",
     "valVluchtAankomst": "Please enter your arrival flight number — we use it to track your flight and adjust the pick-up time.",
     "valVluchtVertrek": "Please enter your departure flight number so we can plan the ride around it.",

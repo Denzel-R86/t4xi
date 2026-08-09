@@ -50,7 +50,8 @@
     "juridisch": "Juridisch",
     "privacy": "Privacyverklaring",
     "voorwaarden": "Algemene voorwaarden",
-    "email": "E-mail T4XI"
+    "email": "E-mail T4XI",
+    "instagram": "T4XI op Instagram"
   },
   "sticky": {
     "label": "Snelle acties",
@@ -114,6 +115,9 @@
     "verzenden": "Boeking bevestigen",
     "bezig": "Bezig met verzenden…",
     "ofBel": "Of bel",
+    "ofWhatsapp": "Of stuur een WhatsApp naar",
+    "whatsappBericht": "Hallo T4XI, ik wil graag een rit boeken.",
+    "whatsappAria": "Stuur T4XI een WhatsApp op +31 6 34 74 45 22 (opent in een nieuw tabblad)",
     "valAdres": "Vul een ophaaladres en bestemming in.",
     "valVluchtAankomst": "Vul uw aankomende vluchtnummer in — daarmee volgen wij uw vlucht en passen wij het ophaalmoment aan.",
     "valVluchtVertrek": "Vul uw vertrekkende vluchtnummer in, zodat wij de rit daarop kunnen plannen.",

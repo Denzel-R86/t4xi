@@ -9,6 +9,7 @@ export default function Footer() {
   const tn = useTranslations("nav");
   const socials = [
     { href: "https://wa.me/31634744522", label: tn("whatsapp"), icon: "whatsapp", external: true },
+    { href: "https://www.instagram.com/t4xi.nl/", label: t("instagram"), icon: "instagram", external: true },
     { href: "tel:+31634744522", label: tn("bel"), icon: "phone" },
     { href: "mailto:booking@t4xi.nl", label: t("email"), icon: "mail" },
   ];
@@ -31,7 +32,7 @@ export default function Footer() {
                   key={s.label}
                   href={s.href}
                   aria-label={s.label}
-                  {...(s.external ? { target: "_blank", rel: "noopener" } : {})}
+                  {...(s.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-stone-subtle transition-colors hover:border-white/25 hover:text-white"
                 >
                   <Icon name={s.icon} size={18} />

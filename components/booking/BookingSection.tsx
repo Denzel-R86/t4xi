@@ -232,6 +232,7 @@ export default function BookingSection({
           ? t("opAanvraag")
           : "—";
   const priceBig = quote.status === "ready" || quote.status === "idle" || quote.status === "error";
+  const bookingWhatsappHref = `https://wa.me/31634744522?text=${encodeURIComponent(t("whatsappBericht"))}`;
 
   return (
     <div className="relative overflow-hidden rounded-[28px] border border-line bg-card p-6 shadow-hero-card md:p-7">
@@ -533,8 +534,15 @@ export default function BookingSection({
           {loading ? t("bezig") : t("verzenden")}
         </button>
         <p className="mt-3 text-center text-[13px] text-secondary">
-          {t("ofBel")}{" "}
-          <a href="tel:+31634744522" className="text-accent hover:underline">
+          {t("ofWhatsapp")}{" "}
+          <a
+            href={bookingWhatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t("whatsappAria")}
+            className="inline-flex min-h-[44px] items-center gap-1.5 font-medium text-[#0b6b3a] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0b6b3a]"
+          >
+            <Icon name="whatsapp" size={15} />
             +31 6 34 74 45 22
           </a>
         </p>
