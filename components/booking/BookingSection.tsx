@@ -20,12 +20,6 @@ const TABS: { key: BookableRideType; labelKey: "tabEnkel" | "tabRetour" }[] = [
   { key: "retour", labelKey: "tabRetour" },
 ];
 
-const VEHICLES = [
-  "Lynk & Co 01 — Amsterdam",
-  "Tesla Model Y — Amsterdam",
-  "Tesla Model Y — Rotterdam",
-];
-
 const LUGGAGE = [
   { value: "handbagage", labelKey: "bagageHand" },
   { value: "1-2-koffers", labelKey: "bagage12" },
@@ -39,8 +33,8 @@ const labelCls = "mb-1.5 block text-xs font-bold text-secondary";
 
 /**
  * Volledig boekingsformulier uit het v14-bronbestand (#boeken):
- * rit-type tabs, adressen met PDOK-autocomplete, datum/tijd/voertuig/
- * passagiers/bagage, adresdetectie-pillen, live richtprijs en contactvelden.
+ * rit-type tabs, adressen met PDOK-autocomplete, datum/tijd/passagiers/
+ * bagage, adresdetectie-pillen, live richtprijs en contactvelden.
  */
 export default function BookingSection({
   initialPickup,
@@ -79,7 +73,6 @@ export default function BookingSection({
     initialPersons && initialPersons >= 1 ? Math.min(4, Math.floor(initialPersons)) : 1
   );
   const [luggage, setLuggage] = useState("handbagage");
-  const [vehicle, setVehicle] = useState(VEHICLES[0]);
   // Datum/tijd zijn controlled zodat de live richtprijs ze traffic-aware meestuurt
   // (de submit blijft ze óók via FormData lezen — de name-attributen blijven staan).
   const [date, setDate] = useState(initialDate ?? "");
@@ -112,7 +105,6 @@ export default function BookingSection({
     time,
     returnDate,
     returnTime,
-    vehicle,
     luggage,
     flightNumber,
     returnFlightNumber,
@@ -156,7 +148,6 @@ export default function BookingSection({
       time: String(form.get("tijd") ?? ""),
       returnDate: tab === "retour" ? returnDate : "",
       returnTime: tab === "retour" ? returnTime : "",
-      vehicle,
       persons,
       luggage,
       flightNumber: needsFlight ? flightNumber.trim() : "",
@@ -372,19 +363,6 @@ export default function BookingSection({
             </>
           )}
           <div>
-            <label htmlFor="f-vehicle" className={labelCls}>{t("voertuig")}</label>
-            <select
-              id="f-vehicle"
-              value={vehicle}
-              onChange={(e) => setVehicle(e.target.value)}
-              className={inputCls}
-            >
-              {VEHICLES.map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-          </div>
-          <div>
             <label htmlFor="f-persons" className={labelCls}>{t("passagiers")}</label>
             <input
               id="f-persons"
@@ -396,7 +374,7 @@ export default function BookingSection({
               className={inputCls}
             />
           </div>
-          <div className="sm:col-span-2">
+          <div>
             <label htmlFor="f-luggage" className={labelCls}>{t("bagage")}</label>
             <select
               id="f-luggage"

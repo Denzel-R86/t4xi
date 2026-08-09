@@ -78,3 +78,16 @@ test("booking: retourgegevens lopen van formulier tot database en notificatie", 
   }
   assert.match(migrationSource, /bookings_return_after_departure/);
 });
+
+test("booking: voertuigkeuze is verborgen en de server dwingt een neutrale standaard af", () => {
+  assert.doesNotMatch(formSource, /id=["']f-vehicle["']/);
+  assert.doesNotMatch(formSource, /Lynk & Co 01|Tesla Model Y/);
+  assert.doesNotMatch(formSource, /setVehicle/);
+  assert.doesNotMatch(formSource, /\bvehicle\s*,/);
+
+  assert.match(bookingSource, /const DEFAULT_BOOKING_VEHICLE = ["']Premium voertuig["']/);
+  assert.match(bookingSource, /const vehicle = DEFAULT_BOOKING_VEHICLE/);
+  assert.doesNotMatch(bookingSource, /const vehicle = str\(body\.vehicle\)/);
+  assert.equal(bookingSource.match(/p_vehicle: vehicle \|\| null/g)?.length, 2);
+  assert.match(bookingSource, /sendBookingEmails\(\{[\s\S]*?vehicle: vehicle \|\| null/);
+});

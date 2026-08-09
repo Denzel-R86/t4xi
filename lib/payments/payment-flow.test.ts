@@ -180,7 +180,6 @@ test("15b · BookingSection reset een geslaagde boeking zodra prijsbepalende rit
     "time",
     "returnDate",
     "returnTime",
-    "vehicle",
     "luggage",
     "flightNumber",
     "returnFlightNumber",

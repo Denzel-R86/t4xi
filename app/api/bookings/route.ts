@@ -36,6 +36,11 @@ export const dynamic = "force-dynamic";
 
 const MAX_PERSONS = 8;
 const QUOTE_ON_REQUEST = "Offerte op aanvraag";
+/**
+ * Tijdelijke neutrale planningwaarde. De klant kiest geen merk of model en ook
+ * oude/aangepaste clients kunnen geen specifieke voertuigbelofte afdwingen.
+ */
+const DEFAULT_BOOKING_VEHICLE = "Premium voertuig";
 
 // ── Anti-spam/misbruik (Stap 9f) ─────────────────────────────────────────────
 const RATE_MAX = 5; // pogingen
@@ -134,7 +139,7 @@ export async function POST(request: Request) {
   const name = str(body.customerName);
   const phone = str(body.customerPhone);
   const email = str(body.customerEmail).toLowerCase();
-  const vehicle = str(body.vehicle);
+  const vehicle = DEFAULT_BOOKING_VEHICLE;
   const luggage = str(body.luggage);
   const rideType = str(body.rideType) || "direct";
   // Vluchtnummer: normaliseren naar hoofdletters zonder scheidingstekens, zodat
@@ -320,9 +325,9 @@ export async function POST(request: Request) {
         QUOTE_EXPIRED: [409, "quote_expired", "Uw prijs is verlopen. Vernieuw de prijs en accepteer die opnieuw."],
         QUOTE_MISMATCH: [409, "quote_mismatch", "De rit is gewijzigd ten opzichte van de getoonde prijs. Vernieuw de prijs."],
         QUOTE_INVALID_SOURCE: [422, "quote_invalid", "De prijsofferte is ongeldig. Vernieuw de prijs."],
-        INVALID_VEHICLE_CLASS: [422, "invalid_vehicle_class", "De gekozen voertuigklasse is niet (meer) beschikbaar. Vernieuw de prijs."],
+        INVALID_VEHICLE_CLASS: [422, "invalid_vehicle_class", "De voertuigklasse voor deze rit is niet (meer) beschikbaar. Vernieuw de prijs."],
         INVALID_LUGGAGE: [422, "invalid_luggage", "Kies een geldige bagage-optie."],
-        CAPACITY_EXCEEDED: [422, "capacity_exceeded", "Te veel passagiers of bagage voor de gekozen voertuigklasse."],
+        CAPACITY_EXCEEDED: [422, "capacity_exceeded", "Het aantal passagiers of de bagage past niet binnen de beschikbare voertuigcapaciteit."],
         INVALID_PERSONS: [400, "invalid_persons", "Ongeldig aantal passagiers."],
         QUOTE_CONSUMED_NO_BOOKING: [409, "quote_conflict", "De prijsofferte wordt al verwerkt. Probeer het zo opnieuw."],
       };
