@@ -30,9 +30,10 @@ const MAX_BODY_BYTES = 2048;
 const RATE_MAX = 10;
 const RATE_WINDOW_MS = 10 * 60_000;
 const isDev = process.env.NODE_ENV !== "production";
+const NO_STORE_HEADERS = { "Cache-Control": "private, no-store, max-age=0" };
 
 function json(status: number, payload: Record<string, unknown>) {
-  return NextResponse.json(payload, { status });
+  return NextResponse.json(payload, { status, headers: NO_STORE_HEADERS });
 }
 
 /** Service-role client — uitsluitend server-side; key nooit naar de client. */
@@ -63,7 +64,10 @@ export async function POST(request: Request) {
     console.warn(`[payments] rate-limit overschreden ip=${ip}`);
     return NextResponse.json(
       { error: "rate_limited", message: "Te veel betaalpogingen. Probeer het over een paar minuten opnieuw." },
-      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+      {
+        status: 429,
+        headers: { ...NO_STORE_HEADERS, "Retry-After": String(rl.retryAfterSec) },
+      }
     );
   }
 

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/seo-locale";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -10,6 +11,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/", "/dashboard", "/dashboard/brain", "/klant"],
     },
-    sitemap: "https://t4xi.nl/sitemap.xml",
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

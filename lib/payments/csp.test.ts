@@ -22,8 +22,17 @@ test("CSP frame-src staat de Payment Element + 3DS iframes toe", () => {
   assert.match(cfg, /frame-src[^\n]*https:\/\/hooks\.stripe\.com/);
 });
 
-test("CSP behoudt de bestaande bronnen (supabase/pdok/places)", () => {
-  assert.match(cfg, /connect-src[^\n]*https:\/\/\*\.supabase\.co/);
+test("CSP behoudt de bestaande bronnen en beperkt Supabase tot de geconfigureerde origin", () => {
+  assert.match(cfg, /new URL\(configuredSupabaseUrl\)/);
+  assert.match(cfg, /supabaseConnectOrigin/);
+  assert.doesNotMatch(cfg, /https:\/\/\*\.supabase\.co/);
   assert.match(cfg, /connect-src[^\n]*https:\/\/api\.pdok\.nl/);
   assert.match(cfg, /connect-src[^\n]*https:\/\/places\.googleapis\.com/);
+});
+
+test("CSP sluit plugins, base-tag-, formulier- en framing-injecties expliciet af", () => {
+  assert.match(cfg, /object-src 'none'/);
+  assert.match(cfg, /base-uri 'self'/);
+  assert.match(cfg, /form-action 'self'/);
+  assert.match(cfg, /frame-ancestors 'none'/);
 });

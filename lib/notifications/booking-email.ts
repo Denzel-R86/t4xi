@@ -33,7 +33,7 @@ export { normalizeLocale };
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const DEFAULT_FROM = "T4XI <onboarding@resend.dev>";
 const DEFAULT_OPS = "booking@t4xi.nl";
-const MONOGRAM_URL = "https://t4xi.nl/t4xi-monogram-navy.png";
+const MONOGRAM_URL = "https://www.t4xi.nl/t4xi-monogram-navy.png";
 
 const T4XI = {
   phoneDisplay: "+31 6 34 74 45 22",
@@ -81,6 +81,9 @@ const CUSTOMER_COPY = {
     labelDropoff: "Bestemming",
     labelDate: "Datum",
     labelTime: "Tijd",
+    labelReturnDate: "Retourdatum",
+    labelReturnTime: "Retourtijd",
+    labelReturnFlight: "Retourvlucht",
     labelPrice: "Prijs",
     labelPersons: "Passagiers",
     labelLuggage: "Bagage",
@@ -110,6 +113,9 @@ const CUSTOMER_COPY = {
     labelDropoff: "Destination",
     labelDate: "Date",
     labelTime: "Time",
+    labelReturnDate: "Return date",
+    labelReturnTime: "Return time",
+    labelReturnFlight: "Return flight",
     labelPrice: "Price",
     labelPersons: "Passengers",
     labelLuggage: "Luggage",
@@ -129,6 +135,10 @@ export type BookingEmailData = {
   dropoff: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:MM
+  /** Verplicht bij rideType=retour; nullable voor bestaande/enkele boekingen. */
+  returnDate?: string | null;
+  returnTime?: string | null;
+  returnFlightNumber?: string | null;
   vehicle: string | null;
   persons: number;
   luggage: string | null;
@@ -286,10 +296,21 @@ function customerHtml(data: BookingEmailData): string {
   detailItems.push(
     [c.labelDate, escapeHtml(formatDate(data.date, c.intlLocale))],
     [c.labelTime, escapeHtml(data.time)],
+  );
+  if (data.returnDate && data.returnTime) {
+    detailItems.push(
+      [c.labelReturnDate, escapeHtml(formatDate(data.returnDate, c.intlLocale))],
+      [c.labelReturnTime, escapeHtml(data.returnTime)],
+    );
+  }
+  detailItems.push(
     [c.labelPersons, String(data.persons)],
     [c.labelLuggage, data.luggage ? escapeHtml(data.luggage) : "—"],
   );
   if (data.flightNumber) detailItems.push([c.labelFlight, escapeHtml(data.flightNumber)]);
+  if (data.returnFlightNumber) {
+    detailItems.push([c.labelReturnFlight, escapeHtml(data.returnFlightNumber)]);
+  }
   const detailsHtml = detailItems
     .map(([label, value], index) => detailRow(label, value, index === detailItems.length - 1))
     .join("");
@@ -382,6 +403,11 @@ function opsHtml(data: BookingEmailData): string {
       ${detailRow("Route", route(data))}
       ${detailRow("Datum", escapeHtml(nlDate))}
       ${detailRow("Tijd", escapeHtml(data.time))}
+      ${
+        data.returnDate && data.returnTime
+          ? detailRow("Retour", `${escapeHtml(formatDate(data.returnDate, "nl-NL"))} om ${escapeHtml(data.returnTime)}`)
+          : ""
+      }
       ${detailRow("Prijs", escapeHtml(nlPrice))}
       ${detailRow("Taal klantmail", data.locale === "en" ? "Engels" : "Nederlands")}
       ${detailRow("Offerte op aanvraag", data.quoteOnRequest ? "Ja" : "Nee")}
@@ -401,6 +427,7 @@ function opsHtml(data: BookingEmailData): string {
             )
           : ""
       }
+      ${data.returnFlightNumber ? detailRow("Retourvlucht", `<b>${escapeHtml(data.returnFlightNumber)}</b>`) : ""}
       ${
         // Operationele instructie, uitsluitend bij een ophaling. Er staat bewust GEEN
         // live vluchtstatus in: er is nog geen koppeling met een vluchtdata-API, dus

@@ -2,7 +2,7 @@ import { pageMetadata, localeUrl } from "@/lib/seo-locale";
 import { Link } from "@/i18n/navigation";
 import "@/components/horizon/horizon.css";
 import { loadRateCard, type CityRates, type RateEntry } from "@/lib/pricing/rate-card";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import RouteFinder from "@/components/tarieven/RouteFinder";
 import FairFarePromise from "@/components/tarieven/FairFarePromise";
 import Icon from "@/components/ui/Icon";
@@ -35,7 +35,8 @@ const WHY_FEATURES = ["eig1", "eig2", "eig3", "eig4", "eig5", "eig6"] as const;
 const FAQ_ITEMS = ["1", "2", "3"] as const;
 
 export default async function TarievenPage({ params }: { params: { locale: string } }) {
-  const t = await getTranslations("routezoeker");
+  setRequestLocale(params.locale);
+  const t = await getTranslations({ locale: params.locale, namespace: "routezoeker" });
   const cities = await loadRateCard();
 
   const schipholLinks = STEDEN.map((stad) => {
@@ -57,7 +58,7 @@ export default async function TarievenPage({ params }: { params: { locale: strin
     "@context": "https://schema.org",
     "@type": "Service",
     serviceType: t("serviceType"),
-    provider: { "@type": "Organization", name: "T4XI", url: "https://t4xi.nl" },
+    provider: { "@type": "Organization", name: "T4XI", url: "https://www.t4xi.nl" },
     areaServed: STEDEN.map((s) => ({ "@type": "City", name: s.naam })),
     url: canonical,
   };

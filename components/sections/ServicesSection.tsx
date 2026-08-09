@@ -1,5 +1,6 @@
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 const DIENSTEN = [
@@ -47,13 +48,13 @@ export default function ServicesSection({ id = "diensten" }: { id?: string }) {
                     </li>
                   ))}
                 </ul>
-                <a
+                <Link
                   href={d.href}
                   className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium uppercase tracking-wider text-accent transition-all hover:gap-2.5"
                 >
                   {t(`d${d.n}Cta`)}
                   <Icon name="arrow-right" size={14} />
-                </a>
+                </Link>
               </article>
             </ScrollReveal>
           ))}

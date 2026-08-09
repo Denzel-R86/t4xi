@@ -6,12 +6,14 @@ import WhySection from "@/components/sections/WhySection";
 import ReviewsSection from "@/components/sections/ReviewsSection";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { useTranslations } from "next-intl";
+import { setRequestLocale } from "next-intl/server";
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
   return pageMetadata(params.locale, "/over-ons", "overOnsTitle", "overOnsDesc");
 }
 
-export default function OverOnsPage() {
+export default function OverOnsPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   const t = useTranslations("overOns");
   return (
     <>

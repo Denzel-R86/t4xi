@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { NL_ONLY_ROUTE_PATHS, routing } from "@/i18n/routing";
 import { localeUrl } from "@/lib/seo-locale";
 
 /**
@@ -29,15 +30,6 @@ const TRANSLATABLE = [
   "/voorwaarden",
 ] as const;
 
-/** Nederlandstalig-only — geen alternates (nog geen echte EN-versie). */
-const NL_ONLY = [
-  "/taxi-almere-schiphol",
-  "/taxi-amsterdam-schiphol",
-  "/taxi-rotterdam-schiphol",
-  "/taxi-den-haag-schiphol",
-  "/taxi-utrecht-schiphol",
-] as const;
-
 function priorityFor(path: string): number {
   if (path === "") return 1;
   if (path === "/boeken") return 0.9;
@@ -45,25 +37,23 @@ function priorityFor(path: string): number {
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
-  const translatable = TRANSLATABLE.map<MetadataRoute.Sitemap[number]>((path) => ({
-    url: localeUrl("nl", path),
-    lastModified: now,
-    changeFrequency: path === "" ? "weekly" : "monthly",
-    priority: priorityFor(path),
-    alternates: {
-      languages: {
-        "nl-NL": localeUrl("nl", path),
-        en: localeUrl("en", path),
-        "x-default": localeUrl("nl", path),
+  const translatable = TRANSLATABLE.flatMap<MetadataRoute.Sitemap[number]>((path) =>
+    routing.locales.map((locale) => ({
+      url: localeUrl(locale, path),
+      changeFrequency: path === "" ? "weekly" : "monthly",
+      priority: priorityFor(path),
+      alternates: {
+        languages: {
+          "nl-NL": localeUrl("nl", path),
+          en: localeUrl("en", path),
+          "x-default": localeUrl("nl", path),
+        },
       },
-    },
-  }));
+    })),
+  );
 
-  const nlOnly = NL_ONLY.map<MetadataRoute.Sitemap[number]>((path) => ({
+  const nlOnly = NL_ONLY_ROUTE_PATHS.map<MetadataRoute.Sitemap[number]>((path) => ({
     url: localeUrl("nl", path),
-    lastModified: now,
     changeFrequency: "monthly",
     priority: 0.7,
   }));

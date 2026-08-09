@@ -33,9 +33,22 @@ test("buildBookingHref codeert en laat standaardwaarden weg", () => {
 });
 
 test("buildBookingHref voegt retour en passagiers toe wanneer relevant", () => {
-  const href = buildBookingHref({ pickup: "A", dropoff: "B", returnTrip: true, passengers: 3 });
+  const href = buildBookingHref({
+    pickup: "A",
+    dropoff: "B",
+    returnTrip: true,
+    passengers: 3,
+    date: "2026-09-18",
+    time: "09:30",
+    returnDate: "2026-09-20",
+    returnTime: "18:45",
+  });
   assert.ok(href.includes("retour=1"));
   assert.ok(href.includes("persons=3"));
+  assert.ok(href.includes("date=2026-09-18"));
+  assert.ok(href.includes("time=09%3A30"));
+  assert.ok(href.includes("returnDate=2026-09-20"));
+  assert.ok(href.includes("returnTime=18%3A45"));
 });
 
 test("buildBookingHref laat persons weg bij 1 passagier", () => {

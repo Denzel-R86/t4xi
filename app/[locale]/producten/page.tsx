@@ -1,5 +1,5 @@
 import { pageMetadata } from "@/lib/seo-locale";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { MembershipForm, StrippenkaartForm, HotelForm } from "@/components/producten/ProductForms";
@@ -67,8 +67,9 @@ function Perks({ perks, icons }: { perks: string[]; icons: string[] }) {
   );
 }
 
-export default async function ProductenPage() {
-  const t = await getTranslations("producten");
+export default async function ProductenPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
+  const t = await getTranslations({ locale: params.locale, namespace: "producten" });
   const heroStats = t.raw("heroStats") as string[];
   const mTiers = t.raw("mTiers") as Tier[];
   const mPerks = t.raw("mPerks") as string[];

@@ -39,8 +39,8 @@ function tzOffsetMs(instant: Date): number {
 /**
  * Zet `date` ("YYYY-MM-DD") + `time` ("HH:MM") als Amsterdamse wandkloktijd om naar
  * een UTC ISO-8601-instant. Retourneert `null` bij een ongeldig formaat of een
- * onbestaande datum/tijd. Rondom de DST-overgang (het uur dat verspringt) kan het
- * resultaat één uur afwijken — acceptabel voor een verkeersinschatting.
+ * onbestaande datum/tijd. Ook een niet-bestaande lokale tijd tijdens de overgang
+ * naar zomertijd (bijvoorbeeld 02:30 op de spring-forward-dag) wordt geweigerd.
  */
 export function amsterdamDepartureIso(date: string, time: string): string | null {
   const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec((date ?? "").trim());
@@ -56,9 +56,49 @@ export function amsterdamDepartureIso(date: string, time: string): string | null
     return null;
   }
 
-  // Neem de wandkloktijd eerst als UTC, corrigeer dan met de tz-offset op dat moment.
+  // Date.UTC rolt ongeldige kalenderdatums stil door (31 februari → maart).
+  // Vergelijk de componenten daarom expliciet voordat er een tijdzonecorrectie
+  // plaatsvindt.
+  const calendarProbe = new Date(Date.UTC(year, month - 1, day));
+  if (
+    calendarProbe.getUTCFullYear() !== year ||
+    calendarProbe.getUTCMonth() !== month - 1 ||
+    calendarProbe.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  // Neem de wandkloktijd eerst als UTC en corrigeer iteratief met de lokale offset.
+  // Rond een DST-wissel kan de offset op de eerste gok afwijken van de offset op
+  // het uiteindelijke instant.
   const guessUtc = Date.UTC(year, month - 1, day, hour, minute);
-  const result = new Date(guessUtc - tzOffsetMs(new Date(guessUtc)));
+  let candidateMs = guessUtc - tzOffsetMs(new Date(guessUtc));
+  candidateMs = guessUtc - tzOffsetMs(new Date(candidateMs));
+  const result = new Date(candidateMs);
   if (Number.isNaN(result.getTime())) return null;
+
+  // Fail closed als de gekozen Amsterdamse wandkloktijd niet bestaat. Bij de
+  // najaarswissel bestaan sommige tijden tweemaal; één van beide instants is dan
+  // geldig en levert exact dezelfde lokale componenten op.
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(result);
+  const local = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  if (
+    local("year") !== year ||
+    local("month") !== month ||
+    local("day") !== day ||
+    local("hour") !== hour ||
+    local("minute") !== minute
+  ) {
+    return null;
+  }
   return result.toISOString();
 }

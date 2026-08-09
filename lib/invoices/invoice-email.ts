@@ -1,6 +1,6 @@
 import type { InvoiceData } from "@/lib/invoices/invoice-pdf";
 
-export const INVOICE_MONOGRAM_URL = "https://t4xi.nl/t4xi-monogram-navy.png";
+export const INVOICE_MONOGRAM_URL = "https://www.t4xi.nl/t4xi-monogram-navy.png";
 
 const INK = "#1F2730";
 const ACCENT = "#28313B";

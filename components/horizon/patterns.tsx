@@ -414,7 +414,15 @@ export type LedgerEntry = {
 /** Het grootboek. GEEN tabel: geen kolomkoppen, geen raster, geen knopkolom.
  *  Elke regel is een frase met een feit, gescheiden door hairlines; hover
  *  onthult de handeling (Guide). */
-export function LedgerPattern({ entries, closing }: { entries: LedgerEntry[]; closing?: ReactNode }) {
+export function LedgerPattern({
+  entries,
+  closing,
+  actionLabel,
+}: {
+  entries: LedgerEntry[];
+  closing?: ReactNode;
+  actionLabel: string;
+}) {
   return (
     <div>
       <ul className="list-none">
@@ -427,7 +435,7 @@ export function LedgerPattern({ entries, closing }: { entries: LedgerEntry[]; cl
               {e.detail && <span className="text-sm text-secondary">{e.detail}</span>}
               <span className="ml-auto flex items-baseline gap-3">
                 <span className="hz-arrow text-[11px] font-medium uppercase tracking-[0.14em] text-secondary">
-                  Boek deze rit →
+                  {actionLabel} →
                 </span>
                 <span className="font-display text-[clamp(19px,2.3vw,26px)] font-bold text-ink [font-variant-numeric:tabular-nums]">
                   {typeof e.fact === "number" ? <>€&nbsp;{e.fact}</> : e.fact}

@@ -13,7 +13,7 @@ import {
   type LedgerEntry,
 } from "@/components/horizon/patterns";
 import { loadRateCard, type CityRates } from "@/lib/pricing/rate-card";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import Image from "next/image";
 // Static import → Next genereert een blurDataURL bij build (geen dependency,
 // asset zelf ongewijzigd). Gebruikt als blur-placeholder in de EditorialFigure.
@@ -68,7 +68,7 @@ function buildLedger(cities: CityRates[], naar: string, vast: string): LedgerEnt
         detail: `${route.distanceKm} km`,
         fact: route.single,
         factNote: vast,
-        href: "/boeken",
+        href: `/boeken?pickup=${encodeURIComponent(route.from)}&dropoff=${encodeURIComponent(route.to)}`,
       },
     ];
   });
@@ -78,8 +78,9 @@ function buildLedger(cities: CityRates[], naar: string, vast: string): LedgerEnt
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const t = await getTranslations("home");
+export default async function HomePage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
+  const t = await getTranslations({ locale: params.locale, namespace: "home" });
   const VOWS = [
     { title: t("vow1Titel"), text: t("vow1Tekst") },
     { title: t("vow2Titel"), text: t("vow2Tekst") },
@@ -177,6 +178,7 @@ export default async function HomePage() {
             <Reveal>
               <LedgerPattern
                 entries={ledger}
+                actionLabel={t("ledgerBook")}
                 closing={
                   <Stamp>
                     <Link href="/tarieven" className="hz-guide-line text-ink no-underline">

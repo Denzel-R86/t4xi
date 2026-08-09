@@ -18,7 +18,15 @@ import type { RateEntry } from "@/lib/pricing/rate-card";
  * Prijzen komen uit `loadRateCard()`. Levert die niets, dan tonen we géén bedrag —
  * liever een eerlijke verwijzing dan een verkeerd getal.
  */
-export default function RateTable({ stad, rates }: { stad: Stad; rates: RateEntry[] }) {
+export default function RateTable({
+  stad,
+  rates,
+  bookingHref,
+}: {
+  stad: Stad;
+  rates: RateEntry[];
+  bookingHref: string;
+}) {
   const heeftTarieven = rates.length > 0;
 
   return (
@@ -63,7 +71,7 @@ export default function RateTable({ stad, rates }: { stad: Stad; rates: RateEntr
       )}
 
       <Link
-        href="/boeken"
+        href={bookingHref}
         className="mt-5 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-md bg-accent px-6 font-display text-base font-medium text-white shadow-cta transition-colors hover:bg-accent-hover"
       >
         <Icon name="calendar-check" size={18} />

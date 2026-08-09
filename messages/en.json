@@ -63,12 +63,17 @@
     "tabRetour": "Return",
     "tabLuchthaven": "Airport",
     "tabDagtocht": "Day trip",
+    "ritType": "Choose your ride",
+    "airportHint": "Airport service is activated automatically when your route includes an airport.",
+    "dayTripLink": "For a day trip, explore our curated itineraries.",
     "van": "From",
     "naar": "To",
     "vertrekadresPh": "Pick-up address",
     "bestemmingPh": "Destination",
     "datum": "Date",
     "tijd": "Time",
+    "retourDatum": "Return date",
+    "retourTijd": "Return pick-up time",
     "voertuig": "Vehicle",
     "passagiers": "Passengers",
     "bagage": "Luggage",
@@ -78,6 +83,7 @@
     "bagageOverleg": "More or oversized luggage — please contact us first",
     "vluchtAankomend": "Arrival flight number",
     "vluchtVertrekkend": "Departure flight number",
+    "retourVlucht": "Return flight number",
     "verplicht": "— required",
     "vluchtHelpAankomst": "We track your flight and adjust the pick-up time if your flight is delayed.",
     "vluchtHelpVertrek": "We use your flight number to plan the ride around your departure time.",
@@ -111,6 +117,9 @@
     "valAdres": "Please enter a pick-up address and destination.",
     "valVluchtAankomst": "Please enter your arrival flight number — we use it to track your flight and adjust the pick-up time.",
     "valVluchtVertrek": "Please enter your departure flight number so we can plan the ride around it.",
+    "valRetourMoment": "Please enter the date and pick-up time for your return ride.",
+    "valVluchtRetourAankomst": "Please enter the arrival flight number for your return ride so we can track the landing.",
+    "valVluchtRetourVertrek": "Please enter the departure flight number for your return ride so we can plan it carefully.",
     "succesRef": "Booking received — reference",
     "succesOpAanvraag": "This route is quoted on request. We will confirm the fare and time via WhatsApp or email.",
     "succesBevestiging": "We will confirm your ride via WhatsApp or email.",
@@ -211,6 +220,7 @@
     "certNote": "One-way; return ×1.8 · night rate (23:00–06:00) +15%. Fair to you and to the driver — without platform commissions.",
     "ledgerNaar": "to",
     "ledgerVast": "fixed",
+    "ledgerBook": "Book this ride",
     "ledgerAlle": "All fixed fares and routes",
     "ledgerOnbekend": "route not listed? Quote on request",
     "bagageFiguurAlt": "Driver helping load and unload luggage next to the vehicle",
@@ -286,7 +296,7 @@
     "anderePlatforms": "Other platforms",
     "chauffeur": "Driver",
     "platformAfdracht": "Platform fees",
-    "t4xiKosten": "T4XI (operating costs)",
+    "t4xiKosten": "T4XI commission",
     "citaat": "“We build T4XI around the ride experience: an immaculate car, clear communication, fixed fares and a driver who drives with care. Fair to the customer and fair to the driver.”",
     "watBetekent": "What this means for you",
     "punt1": "Transparent fixed fare — no surge pricing",
@@ -296,6 +306,25 @@
     "cta": "Book fair transport"
   },
   "producten": {
+    "teaser": {
+      "kicker": "Beyond individual rides",
+      "kop1": "Mobility that",
+      "kop2": "moves with you",
+      "intro": "From regular Schiphol transfers to business travel and events: choose a product with clear arrangements and predictable costs.",
+      "p1Naam": "Airport Membership",
+      "p1Desc": "Four or eight regular Schiphol rides per month, with priority and clear arrangements.",
+      "p1Van": "From €279 per month",
+      "p2Naam": "Business ride pass",
+      "p2Desc": "Shared ride credits for your team, with one clear monthly invoice.",
+      "p2Van": "From €499 for 10 rides",
+      "p3Naam": "Hotel contract",
+      "p3Desc": "A polished transfer partner for your hotel and your guests.",
+      "p3Van": "Tailored quote",
+      "p4Naam": "Event Shuttles",
+      "p4Desc": "Coordinated transport for weddings, conferences and corporate events.",
+      "p4Van": "From €299 per day",
+      "alle": "Explore all mobility products"
+    },
     "heroKicker": "More than a ride",
     "heroKop1": "Fixed mobility,",
     "heroKop2": "predictable costs",
@@ -303,7 +332,7 @@
     "ctaZakelijk": "Business",
     "heroStats": [
       "Membership from",
-      "Ride pass, 10 rides",
+      "Ride pass, 20 rides",
       "Available",
       "Services"
     ],
@@ -448,8 +477,8 @@
         "price": "On request — ride package"
       },
       {
-        "name": "Congress & conference",
-        "desc": "Collect speakers and international guests from Schiphol and bring them to the venue. A name sign on arrival and we track the flight status.",
+        "name": "Conferences & congresses",
+        "desc": "We collect speakers and international guests from Schiphol and take them to the venue, with a name sign on arrival and active flight monitoring.",
         "details": [
           "Flight monitoring included",
           "Name-sign pick-up at Schiphol",
@@ -501,13 +530,13 @@
       "pakketOpts": [
         "Frequent — €279/month (4 rides)",
         "Business — €549/month (8 rides)",
-        "Executive — custom"
+        "First Class — custom"
       ],
       "mailSubject": "Airport Membership request"
     },
     "formZakelijk": {
       "title": "Request a ride pass",
-      "intro": "Business, including an invoice in your name and VAT number.",
+      "intro": "For businesses, with an invoice in your company name and your VAT number included.",
       "cta": "Request a quote",
       "contact": "Contact person",
       "contactPl": "Name",
@@ -560,7 +589,14 @@
       "vraagPl": "E.g. we're looking for a dedicated driver for our guests' Schiphol transfers, 10–15 rides per week...",
       "mailSubject": "Hotel partnership request"
     },
-    "sendNote": "This opens your email app with the details you entered, ready to send. We handle every request personally.",
+    "honeypot": "Website (do not fill in)",
+    "sending": "Sending your request securely…",
+    "sendSuccess": "Your request has been received. We will contact you personally within 24 hours.",
+    "sendError": "We could not send your request. Please try again or",
+    "emailFallback": "send your request by email",
+    "privacyNote": "By submitting, you confirm that you have read our",
+    "privacyLink": "privacy statement",
+    "sendNote": "Your request is sent directly and securely to T4XI. We handle it personally.",
     "orWhatsapp": "Or send us a WhatsApp directly"
   },
   "boekenPagina": {
@@ -747,24 +783,24 @@
     "heroKop1": "Drive more.",
     "heroKop2pre": "Earn",
     "heroKop2em": "fairly.",
-    "heroIntro": "At other taxi platforms, up to 35% of every ride disappears to the platform. At T4XI the money goes straight to you. Choose your package, sign up and drive within 5 working days.",
+    "heroIntro": "T4XI offers transparent plans: 5–20% commission per ride and, depending on the plan, a fixed monthly fee. Choose what suits you, sign up and start driving within 5 working days.",
     "ctaPakketten": "View packages",
     "ctaBereken": "Calculate your earnings",
     "heroStats": [
-      "To the driver",
+      "Ride commission",
       "Days onboarding",
       "Support",
       "Entry possible"
     ],
     "compareLabel": "Driver earnings comparison",
-    "compareAnder": "Other platforms — a €79 ride",
+    "compareAnder": "Other platforms — a {price} ride",
     "compareChauffeur": "Driver",
     "comparePlatform": "Platform",
-    "compareAnderSub": "35% disappears to a foreign platform",
-    "compareT4xi": "T4XI Pro — the same €79 ride",
-    "compareMeer": "€18.17 more per ride",
-    "compareMeerNa": " — at 75 rides/month = +€1,363",
-    "compareBadge": "+€1,363",
+    "compareAnderSub": "Example based on a 65% driver share",
+    "compareT4xi": "T4XI Pro — the same {price} ride, before the monthly fee",
+    "compareMeer": "{amount} more per ride before the monthly fee",
+    "compareMeerNa": " — at {rides} rides per month, after the {fee} monthly fee",
+    "compareBadge": "+€1,264",
     "compareBadgeNa": "extra per month with T4XI Pro",
     "hoeEyebrow": "This is how simple it is",
     "hoeKop1": "From sign-up",
@@ -802,10 +838,10 @@
       "5% commission · multiple cars"
     ],
     "earns": [
-      "€4,661/month",
-      "€5,134/month",
-      "€5,424/month",
-      "€16,726/month"
+      "€4,740/month",
+      "€5,115/month",
+      "€5,252/month",
+      "€16,587/month"
     ],
     "fleetEarn": "225 rides",
     "fleetFeatures": [
@@ -921,10 +957,10 @@
       ],
       [
         "Earnings at 75 rides (€79)",
-        "€4,661",
-        "€5,134",
-        "€5,424",
-        "€5,576"
+        "€4,740",
+        "€5,115",
+        "€5,252",
+        "€5,330"
       ]
     ],
     "tableCta": "Sign up as a driver now",
@@ -946,8 +982,8 @@
         "text": "Max. 4 years old, clean and inspected. Your own car or a lease."
       },
       {
-        "title": "Taxi licence (TCA)",
-        "text": "Required for public taxi transport. We support you with the application."
+        "title": "Taxi operator licence",
+        "text": "Required for taxi operators in the Netherlands and issued through Kiwa Register."
       },
       {
         "title": "Chamber of Commerce registration",
@@ -972,19 +1008,19 @@
     "earnBlokLabel": "At 75 rides × €79",
     "earnRows": [
       {
-        "val": "€4,661",
+        "val": "€4,740",
         "label": "Starter"
       },
       {
-        "val": "€5,134",
+        "val": "€5,115",
         "label": "Pro ✓ recommended"
       },
       {
-        "val": "€5,424",
+        "val": "€5,252",
         "label": "Elite"
       },
       {
-        "val": "€5,576",
+        "val": "€5,330",
         "label": "Fleet"
       }
     ],
@@ -995,7 +1031,7 @@
       "Gross revenue",
       "Net earnings",
       "At other platforms (65%)",
-      "Extra per month"
+      "Difference per month"
     ],
     "calcFoot": "Net earnings = revenue − commission − monthly fee. Comparison based on a 65% driver share at the large platforms.",
     "pakLabels": [
@@ -1014,7 +1050,7 @@
     "fVerg": "Licence type",
     "fVergOpts": [
       "Select...",
-      "Taxi licence (TCA)",
+      "Taxi operator licence (Kiwa Register)",
       "Driver card + own vehicle",
       "Own taxi business / fleet",
       "Not yet — I need help"
@@ -1047,7 +1083,14 @@
     "fSubmit": "Submit application",
     "fBel": "Or call directly:",
     "mailSubject": "Driver partner application",
-    "sendNote": "This opens your email app with the details you entered, ready to send. We'll then get in touch personally.",
+    "honeypot": "Website (do not fill in)",
+    "sending": "Sending your application securely…",
+    "sendSuccess": "Your application has been received. We will contact you personally within 24 hours.",
+    "sendError": "We could not send your application. Please try again or",
+    "emailFallback": "send your application by email",
+    "privacyNote": "By submitting, you confirm that you have read our",
+    "privacyLink": "privacy statement",
+    "sendNote": "Your application is sent directly and securely to T4XI. We review it personally.",
     "orWhatsapp": "Or send us a WhatsApp directly"
   },
   "seo": {
@@ -1060,7 +1103,7 @@
     "dagtochtenTitle": "Day trips",
     "dagtochtenDesc": "Sightseeing day trips from Amsterdam, Almere and Rotterdam to Belgium, the Netherlands, Germany and Luxembourg. Door to door, a fixed all-in price.",
     "partnerTitle": "Become a partner",
-    "partnerDesc": "Become a driver partner of T4XI. 90%+ of every ride to you, onboarding in 5 days, weekly payouts. Choose your package from €0/month.",
+    "partnerDesc": "Become a T4XI driver partner. Choose a transparent plan with 5–20% ride commission, onboarding within 5 working days and weekly payouts. Start from €0 per month.",
     "productenTitle": "Mobility products",
     "productenDesc": "Airport memberships, business ride passes, hotel contracts and event shuttles. Fixed mobility with predictable costs.",
     "contactTitle": "Contact",

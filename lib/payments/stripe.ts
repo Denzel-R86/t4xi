@@ -51,7 +51,7 @@ export function getStripeServer(): Stripe {
   const client = new Stripe(key, {
     apiVersion: API_VERSION,
     typescript: true,
-    appInfo: { name: "T4XI", url: "https://t4xi.nl" },
+    appInfo: { name: "T4XI", url: "https://www.t4xi.nl" },
   });
   globalForStripe.__t4xiStripe = client;
   return client;

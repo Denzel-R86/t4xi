@@ -81,7 +81,7 @@ const cases: Array<{ filename: string; data: BookingEmailData }> = [
   },
 ];
 
-const productionMonogramUrl = "https://t4xi.nl/t4xi-monogram-navy.png";
+const productionMonogramUrl = "https://www.t4xi.nl/t4xi-monogram-navy.png";
 const localMonogramUrl = "../../public/t4xi-monogram-navy.png";
 
 function parseSendAddress(argv: string[]): string | null {

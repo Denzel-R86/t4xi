@@ -29,7 +29,9 @@ export const BEDRIJF = {
 /** Verwerkers die persoonsgegevens ontvangen. Voedt de privacyverklaring. */
 export const VERWERKERS = [
   { naam: "Supabase", doel: "opslag van boekingen en offerteaanvragen", regio: "EU (eu-west-1, Ierland)" },
-  { naam: "Resend", doel: "verzending van bevestigingsmails", regio: "EU/VS" },
+  { naam: "Resend", doel: "verzending van bevestigingsmails en doorsturen van aanvragen", regio: "EU/VS" },
+  { naam: "Stripe", doel: "afhandeling van online betalingen en fraudepreventie", regio: "EU/VS" },
+  { naam: "WhatsApp (Meta)", doel: "klantcontact wanneer u zelf voor WhatsApp kiest", regio: "EU/VS" },
   { naam: "PDOK Locatieserver", doel: "adresaanvulling tijdens het invullen", regio: "Nederland" },
   { naam: "Google Places API", doel: "adresaanvulling als terugvaloptie", regio: "EU/VS" },
   { naam: "Vercel", doel: "hosting en levering van de website", regio: "EU/VS" },
@@ -44,7 +46,8 @@ export const GEGEVENS = [
   "datum en tijd van de rit",
   "aantal passagiers en bagage",
   "vluchtnummer bij luchthavenritten",
-  "eventuele opmerkingen die u zelf invult",
+  "gegevens die u invult in een membership-, zakelijke, hotel- of partneraanvraag",
+  "betalingsstatus, bedrag en technische Stripe-referenties (geen volledige kaartgegevens)",
 ] as const;
 
 /**
@@ -80,6 +83,11 @@ export const BEWAARTERMIJNEN = [
     reden: "opvolging van de aanvraag; bevat geen contactgegevens",
   },
   {
+    gegevens: "Membership-, zakelijke, hotel- en partneraanvragen",
+    termijn: "12 maanden na de laatste inhoudelijke reactie",
+    reden: "opvolging van de aanvraag en aantoonbare gemaakte afspraken",
+  },
+  {
     gegevens: "Klachten en klantenservice",
     termijn: "1 jaar na afhandeling",
     reden: "bewijsvoering en eventuele vervolgvragen",
@@ -87,7 +95,7 @@ export const BEWAARTERMIJNEN = [
 ] as const;
 
 /** Laatste inhoudelijke wijziging van de juridische teksten. */
-export const LAATST_BIJGEWERKT = "21 juli 2026";
+export const LAATST_BIJGEWERKT = "9 augustus 2026";
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * ENGELSE LAAG (stap 6)
@@ -102,11 +110,13 @@ export const LAATST_BIJGEWERKT = "21 juli 2026";
 import type { Locale } from "@/i18n/routing";
 
 /** Engelse notatie van de laatste wijzigingsdatum. */
-export const LAATST_BIJGEWERKT_EN = "21 July 2026";
+export const LAATST_BIJGEWERKT_EN = "9 August 2026";
 
 const VERWERKERS_EN = [
   { naam: "Supabase", doel: "storage of bookings and quote requests", regio: "EU (eu-west-1, Ireland)" },
-  { naam: "Resend", doel: "sending confirmation emails", regio: "EU/US" },
+  { naam: "Resend", doel: "sending confirmation emails and forwarding requests", regio: "EU/US" },
+  { naam: "Stripe", doel: "processing online payments and fraud prevention", regio: "EU/US" },
+  { naam: "WhatsApp (Meta)", doel: "customer contact when you choose to use WhatsApp", regio: "EU/US" },
   { naam: "PDOK Location Server", doel: "address autocompletion while you type", regio: "Netherlands" },
   { naam: "Google Places API", doel: "address autocompletion as a fallback", regio: "EU/US" },
   { naam: "Vercel", doel: "hosting and delivery of the website", regio: "EU/US" },
@@ -120,7 +130,8 @@ const GEGEVENS_EN = [
   "date and time of the ride",
   "number of passengers and luggage",
   "flight number for airport rides",
-  "any comments you enter yourself",
+  "details you enter in a membership, business, hotel or partner request",
+  "payment status, amount and technical Stripe references (not full card details)",
 ] as const;
 
 const BEWAARTERMIJNEN_EN = [
@@ -143,6 +154,11 @@ const BEWAARTERMIJNEN_EN = [
     gegevens: "Quote requests without a booking",
     termijn: "3 months",
     reden: "follow-up of the request; contains no contact details",
+  },
+  {
+    gegevens: "Membership, business, hotel and partner requests",
+    termijn: "12 months after the last substantive response",
+    reden: "following up the request and documenting agreed arrangements",
   },
   {
     gegevens: "Complaints and customer service",

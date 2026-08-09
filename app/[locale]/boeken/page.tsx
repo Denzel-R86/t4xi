@@ -1,6 +1,7 @@
 import { pageMetadata } from "@/lib/seo-locale";
 import BookingSection from "@/components/booking/BookingSection";
 import { useTranslations } from "next-intl";
+import { setRequestLocale } from "next-intl/server";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
@@ -17,16 +18,19 @@ const FEATURES = [
 ] as const;
 
 /**
- * Deep-linking: /boeken?pickup=…&dropoff=… vult beide adresvelden vooraf in,
+ * Deep-linking: /boeken?pickup=…&dropoff=… vult de bekende ritgegevens vooraf in,
  * rekent direct de vaste prijs en toont waar nodig het vluchtnummerveld.
  * Homepage-hero, tarievenpagina, SEO-pagina's en advertenties gebruiken zo
  * exact dezelfde boekingsflow. `van`/`naar` blijven als aliassen werken.
  */
 export default function BoekenPage({
+  params,
   searchParams,
 }: {
+  params: { locale: string };
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
+  setRequestLocale(params.locale);
   const first = (v: string | string[] | undefined): string | undefined =>
     (Array.isArray(v) ? v[0] : v)?.trim() || undefined;
   const initialPickup = first(searchParams?.pickup) ?? first(searchParams?.van);
@@ -34,6 +38,14 @@ export default function BoekenPage({
   const initialReturn = first(searchParams?.retour) === "1";
   const personsRaw = first(searchParams?.persons);
   const initialPersons = personsRaw && /^\d+$/.test(personsRaw) ? Number(personsRaw) : undefined;
+  const dateRaw = first(searchParams?.date);
+  const timeRaw = first(searchParams?.time);
+  const returnDateRaw = first(searchParams?.returnDate);
+  const returnTimeRaw = first(searchParams?.returnTime);
+  const initialDate = dateRaw && /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : undefined;
+  const initialTime = timeRaw && /^([01]\d|2[0-3]):[0-5]\d$/.test(timeRaw) ? timeRaw : undefined;
+  const initialReturnDate = returnDateRaw && /^\d{4}-\d{2}-\d{2}$/.test(returnDateRaw) ? returnDateRaw : undefined;
+  const initialReturnTime = returnTimeRaw && /^([01]\d|2[0-3]):[0-5]\d$/.test(returnTimeRaw) ? returnTimeRaw : undefined;
   const t = useTranslations("boekenPagina");
   return (
     <section className="mx-auto grid max-w-site items-start gap-12 px-6 py-16 md:py-24 lg:grid-cols-2">
@@ -65,6 +77,10 @@ export default function BoekenPage({
           initialDropoff={initialDropoff}
           initialReturn={initialReturn}
           initialPersons={initialPersons}
+          initialDate={initialDate}
+          initialTime={initialTime}
+          initialReturnDate={initialReturnDate}
+          initialReturnTime={initialReturnTime}
         />
       </ScrollReveal>
     </section>

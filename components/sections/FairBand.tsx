@@ -51,17 +51,17 @@ export default function FairBand() {
             </div>
             <div className="rounded-card border border-[rgba(31,39,48,0.12)] bg-white p-5 shadow-card">
               <p className="mb-3.5 flex items-center gap-2 font-bold text-ink">
-                <Icon name="check" size={17} className="text-accent" /> T4XI.nl
+                <Icon name="check" size={17} className="text-accent" /> T4XI Starter
               </p>
               <div className="h-12 overflow-hidden rounded-full border border-line bg-fog">
                 <div className="flex h-full w-full">
-                  <span className="flex w-[90%] items-center justify-center bg-accent text-[13px] font-extrabold text-white">90%+</span>
-                  <span className="flex w-[10%] min-w-16 items-center justify-center bg-stone-subtle text-[13px] font-extrabold text-ink">≤10%</span>
+                  <span className="flex w-[80%] items-center justify-center bg-accent text-[13px] font-extrabold text-white">80%</span>
+                  <span className="flex w-[20%] min-w-16 items-center justify-center bg-stone-subtle text-[13px] font-extrabold text-ink">20%</span>
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-3 text-xs text-secondary">
-                <span><span aria-hidden="true" className="mr-1.5 inline-block h-[9px] w-[9px] rounded-full bg-stone-subtle" />{t("chauffeur")}</span>
-                <span><span aria-hidden="true" className="mr-1.5 inline-block h-[9px] w-[9px] rounded-full bg-accent" />{t("t4xiKosten")}</span>
+                <span><span aria-hidden="true" className="mr-1.5 inline-block h-[9px] w-[9px] rounded-full bg-accent" />{t("chauffeur")}</span>
+                <span><span aria-hidden="true" className="mr-1.5 inline-block h-[9px] w-[9px] rounded-full bg-stone-subtle" />{t("t4xiKosten")}</span>
               </div>
             </div>
           </div>

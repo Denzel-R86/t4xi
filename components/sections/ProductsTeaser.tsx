@@ -12,14 +12,14 @@ const PRODUCTS = [
 
 /** Mobiliteitsproducten-teaser uit het v14-bronbestand. */
 export default function ProductsTeaser() {
-  const t = useTranslations("producten");
+  const t = useTranslations("producten.teaser");
   return (
     <section className="border-t border-line bg-card/60 py-16 md:py-24" aria-labelledby="products-title">
       <div className="mx-auto max-w-site px-6">
         <ScrollReveal>
           <p className="flex items-center gap-2.5 text-eyebrow font-medium uppercase text-accent">
             <span aria-hidden="true" className="h-px w-4 bg-accent" />
-            Meer dan losse ritten
+            {t("kicker")}
           </p>
           <h2 id="products-title" className="mt-4 font-display text-display-lg font-bold text-ink">
             {t("kop1")}

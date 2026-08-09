@@ -1,5 +1,9 @@
+import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { notFoundMetadata } from "@/lib/seo-locale";
+
+export const metadata: Metadata = notFoundMetadata();
 
 export default function NotFound() {
   const t = useTranslations("nietGevonden");

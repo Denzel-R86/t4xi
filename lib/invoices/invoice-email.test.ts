@@ -30,7 +30,7 @@ test("factuurmail heeft premium T4XI-opmaak en fiscale herkenningspunten", () =>
   const mail = renderInvoiceEmail(invoice);
   assert.equal(mail.subject, "Uw betaalde factuur van T4XI — F-2026-000001");
   assert.match(mail.html, />Bedankt voor uw rit\.</);
-  assert.match(mail.html, /src="https:\/\/t4xi\.nl\/t4xi-monogram-navy\.png"/);
+  assert.match(mail.html, /src="https:\/\/www\.t4xi\.nl\/t4xi-monogram-navy\.png"/);
   assert.match(mail.html, /Totaal betaald/);
   assert.match(mail.html, /Voldaan via/);
   assert.match(mail.html, /€\s?109,00/);

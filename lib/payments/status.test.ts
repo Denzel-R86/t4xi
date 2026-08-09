@@ -19,8 +19,8 @@ test("1 · ongeldige of ontbrekende bookingId → null (route → 400)", () => {
 
 test("2 · onbekende booking → generieke 404 zonder data-lek", () => {
   assert.match(statusRouteSrc, /if \(!row\)/);
-  assert.match(statusRouteSrc, /status: 404/);
-  assert.match(statusRouteSrc, /\{ error: "not_found" \}/);
+  assert.match(statusRouteSrc, /json\(404, \{ error: "not_found" \}\)/);
+  assert.match(statusRouteSrc, /Cache-Control": "private, no-store, max-age=0"/);
 });
 
 // ── 3/4. pending & paid shaping ────────────────────────────────────────────────

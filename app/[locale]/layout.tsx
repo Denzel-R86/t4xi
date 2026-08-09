@@ -5,7 +5,7 @@ import { Outfit, Inter, Playfair_Display } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import { localeMetadata } from "@/lib/seo-locale";
+import { localeMetadata, SITE_URL } from "@/lib/seo-locale";
 import "../globals.css";
 
 /*
@@ -57,12 +57,11 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   });
   return {
     ...base,
-    metadataBase: new URL("https://t4xi.nl"),
+    metadataBase: new URL(SITE_URL),
     title: {
       default: t("homeTitle"),
       template: "%s — T4XI",
     },
-    robots: { index: true, follow: true },
   };
 }
 
@@ -71,7 +70,7 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "TaxiService",
   name: "T4XI",
-  url: "https://t4xi.nl",
+  url: SITE_URL,
   slogan: "Arrive with confidence.",
   // Alleen steden waar daadwerkelijk actieve vaste routes voor bestaan.
   // Rotterdam, Den Haag en Utrecht draaien sinds juli 2026 en ontbraken hier.

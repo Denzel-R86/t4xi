@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import Icon from "@/components/ui/Icon";
@@ -156,13 +156,44 @@ export default function RoutesExplorer() {
 
 export function RouteModal({ route, onClose }: { route: Route; onClose: () => void }) {
   const t = useTranslations("routes");
+  const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !panelRef.current) return;
+      const focusable = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute("hidden"));
+      if (focusable.length === 0) {
+        e.preventDefault();
+        panelRef.current.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      previouslyFocused?.focus();
     };
   }, [onClose]);
 
@@ -171,11 +202,16 @@ export function RouteModal({ route, onClose }: { route: Route; onClose: () => vo
       className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/70 p-5 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label={`${t("details")} — ${route.name}`}
+      aria-labelledby={titleId}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-card border border-line bg-card p-7 shadow-hero-card">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-card border border-line bg-card p-7 shadow-hero-card outline-none"
+      >
         <button
+          ref={closeRef}
           type="button"
           onClick={onClose}
           aria-label={t("sluiten")}
@@ -191,7 +227,7 @@ export function RouteModal({ route, onClose }: { route: Route; onClose: () => vo
         <p className="mb-2 text-[11px] uppercase tracking-[3px] text-accent">
           {route.flag} {route.countryName}
         </p>
-        <h3 className="font-playfair text-2xl text-ink">{route.name}</h3>
+        <h3 id={titleId} className="font-playfair text-2xl text-ink">{route.name}</h3>
         <p className="mt-2 inline-block rounded-full border border-line bg-fog px-3 py-1 text-xs text-secondary">
           {route.duration.replace(/ (rijden|drive)$/, "")} · {route.km}
         </p>

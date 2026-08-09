@@ -25,11 +25,36 @@ export const dynamic = "force-dynamic";
 
 type RequestBody = Record<string, unknown>;
 
+const PRIVATE_NO_STORE = "private, no-store, max-age=0";
+
+/**
+ * Quotes kunnen routegegevens en een eenmalige quote-lock bevatten. `force-dynamic`
+ * voorkomt Next-caching, maar zet geen expliciet browser- of proxybeleid.
+ */
+function json(status: number, payload: Record<string, unknown>) {
+  return NextResponse.json(payload, {
+    status,
+    headers: { "Cache-Control": PRIVATE_NO_STORE },
+  });
+}
+
 /** 400 — malformed/onvolledige request (geen offertepoging). */
 function badRequest(message: string) {
-  return NextResponse.json(
-    { available: false, error: "invalid_input", message },
-    { status: 400 }
+  return json(400, { available: false, error: "invalid_input", message });
+}
+
+/** `Date.UTC` normaliseert 31 februari stil naar maart; dit voorkomt die rollover. */
+function isExistingCalendarDate(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
   );
 }
 
@@ -91,13 +116,24 @@ export async function POST(request: Request) {
     return badRequest("'luggage' moet een geheel getal van 0 of hoger zijn.");
   }
 
-  // Optioneel gepland vertrek: date ("YYYY-MM-DD") + time ("HH:MM") als Amsterdamse
-  // wandkloktijd → UTC ISO. Ongeldig/afwezig → geen departureAt (routing gebruikt
-  // dan de noodwaarde). We valideren niet hard: dit is een verrijking, geen vereiste.
-  const departureAt =
-    typeof date === "string" && typeof time === "string"
-      ? amsterdamDepartureIso(date, time) ?? undefined
-      : undefined;
+  // Volledig afwezig is toegestaan. Zodra één deel wordt meegestuurd, moeten datum
+  // én tijd geldig zijn; een clientfout mag niet stil op een andere verkeersinschatting
+  // terugvallen dan de klant heeft aangevraagd.
+  let departureAt: string | undefined;
+  if (date !== undefined || time !== undefined) {
+    if (typeof date !== "string" || typeof time !== "string") {
+      return badRequest("'date' en 'time' moeten samen als strings worden meegestuurd.");
+    }
+    const normalizedDate = date.trim();
+    const normalizedTime = time.trim();
+    if (!isExistingCalendarDate(normalizedDate)) {
+      return badRequest("'date' moet een bestaande datum in formaat YYYY-MM-DD zijn.");
+    }
+    departureAt = amsterdamDepartureIso(normalizedDate, normalizedTime) ?? undefined;
+    if (!departureAt) {
+      return badRequest("'time' moet een geldige tijd in formaat HH:MM zijn.");
+    }
+  }
 
   const input: PricingQuoteInput = {
     pickup: pickup.trim(),
@@ -120,10 +156,7 @@ export async function POST(request: Request) {
     snapshot = computed.snapshot;
   } catch {
     // Onverwachte serverfout — geen prijs lekken, geen fallback tonen.
-    return NextResponse.json(
-      { available: false, message: "Offerte op aanvraag" },
-      { status: 500 }
-    );
+    return json(500, { available: false, message: "Offerte op aanvraag" });
   }
 
   // 4. Resultaat → HTTP
@@ -136,8 +169,7 @@ export async function POST(request: Request) {
       const stored = await persistPriceSnapshot(snapshot);
       if (stored) quoteId = snapshot.quoteId;
     }
-    return NextResponse.json(
-      {
+    return json(200, {
         available: true,
         price: result.price,
         currency: result.currency,
@@ -159,9 +191,7 @@ export async function POST(request: Request) {
         flightDirection: result.airport.flightDirection,
         // ADDITIEF (7.6.3C): quote-lock identifier; alleen aanwezig bij bevestigde opslag.
         ...(quoteId ? { quoteId } : {}),
-      },
-      { status: 200 }
-    );
+      });
   }
 
   // Niet beschikbaar → publiek contract: geen interne `reason` naar buiten.
@@ -170,8 +200,7 @@ export async function POST(request: Request) {
   // krijgt "offerte op aanvraag", maar blijft een luchthavenrit: het formulier moet
   // het vluchtnummerveld tonen, anders kan de aankomst niet gevolgd worden en is de
   // belofte over wachttijd niet waar te maken.
-  return NextResponse.json(
-    {
+  return json(statusForReason(result.reason), {
       available: false,
       message: result.message,
       isAirportTransfer: result.airport.isAirportTransfer,
@@ -180,7 +209,5 @@ export async function POST(request: Request) {
       isAirportPickup: result.airport.isAirportPickup,
       isAirportDropoff: result.airport.isAirportDropoff,
       flightDirection: result.airport.flightDirection,
-    },
-    { status: statusForReason(result.reason) }
-  );
+    });
 }

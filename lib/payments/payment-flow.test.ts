@@ -168,9 +168,25 @@ test("17 · uitsluitend Stripe PaymentElement; geen eigen kaartveld-afhandeling"
 // ── 15b. gewijzigde ritdata kan geen stale betaalstatus hergebruiken ───────────
 
 test("15b · BookingSection reset een geslaagde boeking zodra prijsbepalende ritdata wijzigt", () => {
-  // Effect dat succes → idle zet bij wijziging van pickup/dropoff/tab/persons.
+  // Effect dat succes → idle zet bij elke wijziging die de rit/prijs bepaalt.
   assert.match(bookingSrc, /setSubmit\(\(s\) => \(s\.status === "success" \? \{ status: "idle" \}/);
-  assert.match(bookingSrc, /\}, \[pickup\?\.label, dropoff\?\.label, tab, persons\]\)/);
+  const effectDependencies = bookingSrc.match(/\}, \[([\s\S]*?)\]\);/)?.[1] ?? "";
+  for (const dependency of [
+    "pickup?.label",
+    "dropoff?.label",
+    "tab",
+    "persons",
+    "date",
+    "time",
+    "returnDate",
+    "returnTime",
+    "vehicle",
+    "luggage",
+    "flightNumber",
+    "returnFlightNumber",
+  ]) {
+    assert.match(effectDependencies, new RegExp(`\\b${dependency.replace(/[?.]/g, "\\$&")}\\b`));
+  }
 });
 
 // ── 16b. success-copy is compatibel met "betaling nog openstaand" ──────────────

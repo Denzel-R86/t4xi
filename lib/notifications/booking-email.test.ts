@@ -35,7 +35,7 @@ test("NL en EN hebben hun eigen subject en heading", () => {
 
 test("officieel monogram staat zelfstandig en gebruikt een publieke HTTPS-asset", () => {
   const html = renderBookingEmails(base).customerHtml;
-  assert.match(html, /src="https:\/\/t4xi\.nl\/t4xi-monogram-navy\.png"/);
+  assert.match(html, /src="https:\/\/www\.t4xi\.nl\/t4xi-monogram-navy\.png"/);
   assert.match(html, /width="52" height="51" alt="T4XI"/);
   assert.doesNotMatch(html, />T4XI<\/td>/);
   assert.doesNotMatch(html, /Users\/|file:\/\//);
@@ -84,6 +84,22 @@ test("klantmail bevat essentiële gegevens, maar niet het voorlopig voertuig", (
   assert.match(en, />Luggage<\/td>/);
   assert.doesNotMatch(en, />Vehicle<\/td>/);
   assert.doesNotMatch(en, />Flight<\/td>/);
+});
+
+test("retourmoment en retourvlucht staan in klant- en operationsmail", () => {
+  const rendered = renderBookingEmails({
+    ...base,
+    rideType: "retour",
+    returnApplied: true,
+    returnDate: "2026-09-20",
+    returnTime: "18:45",
+    returnFlightNumber: "KL1235",
+  });
+  assert.match(rendered.customerHtml, />Retourdatum<\/td>[\s\S]*20 september 2026/);
+  assert.match(rendered.customerHtml, />Retourtijd<\/td>[\s\S]*18:45/);
+  assert.match(rendered.customerHtml, />Retourvlucht<\/td>[\s\S]*KL1235/);
+  assert.match(rendered.opsHtml, />Retour<\/td>[\s\S]*20 september 2026 om 18:45/);
+  assert.match(rendered.opsHtml, />Retourvlucht<\/td>[\s\S]*KL1235/);
 });
 
 test("klantinvoer wordt in klant- en ops-HTML ge-escaped", () => {

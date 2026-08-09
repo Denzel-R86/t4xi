@@ -17,6 +17,14 @@ export const dynamic = "force-dynamic";
 // Ruime limiet: de client pollt elke ~2,5s gedurende maximaal ~60s.
 const RATE_MAX = 60;
 const RATE_WINDOW_MS = 60_000;
+const NO_STORE_HEADERS = { "Cache-Control": "private, no-store, max-age=0" };
+
+function json(status: number, payload: Record<string, unknown>, extra?: Record<string, string>) {
+  return NextResponse.json(payload, {
+    status,
+    headers: { ...NO_STORE_HEADERS, ...extra },
+  });
+}
 
 function serviceRoleClient(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -29,20 +37,17 @@ export async function GET(request: Request) {
   const ip = clientIp(request);
   const rl = rateLimit(`payment-status:${ip}`, RATE_MAX, RATE_WINDOW_MS);
   if (rl.limited) {
-    return NextResponse.json(
-      { error: "rate_limited" },
-      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
-    );
+    return json(429, { error: "rate_limited" }, { "Retry-After": String(rl.retryAfterSec) });
   }
 
   const bookingId = parseBookingIdParam(new URL(request.url).searchParams.get("bookingId"));
   if (!bookingId) {
-    return NextResponse.json({ error: "invalid_input" }, { status: 400 });
+    return json(400, { error: "invalid_input" });
   }
 
   const supabase = serviceRoleClient();
   if (!supabase) {
-    return NextResponse.json({ error: "unavailable" }, { status: 503 });
+    return json(503, { error: "unavailable" });
   }
 
   const { data: row, error } = await supabase
@@ -53,12 +58,12 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error(`[payment-status] lookup faalde: ${error.message}`);
-    return NextResponse.json({ error: "server_error" }, { status: 500 });
+    return json(500, { error: "server_error" });
   }
   if (!row) {
     // Onbekend/verkeerd UUID → generieke 404, geen data-lek.
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
+    return json(404, { error: "not_found" });
   }
 
-  return NextResponse.json(shapeStatusResponse(row as BookingStatusRow), { status: 200 });
+  return json(200, shapeStatusResponse(row as BookingStatusRow));
 }

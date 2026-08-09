@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import schipholAvond from "@/public/schiphol-avond.jpg";
@@ -8,7 +8,13 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import FaqList from "@/components/sections/FaqList";
 import RateTable from "@/components/seo/RateTable";
 import { STEDEN } from "@/lib/seo-steden";
-import { localeUrl } from "@/lib/seo-locale";
+import {
+  localeUrl,
+  notFoundMetadata,
+  OPEN_GRAPH_IMAGE_URL,
+  SITE_URL,
+  TWITTER_IMAGE_URL,
+} from "@/lib/seo-locale";
 import { loadRateCard } from "@/lib/pricing/rate-card";
 
 /**
@@ -31,9 +37,13 @@ export const dynamic = "force-dynamic";
 // bij build-tijd ingebakken — precies de veroudering die we hier oplossen.
 // Onbekende slugs worden hieronder afgevangen met notFound().
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+export function generateMetadata({
+  params,
+}: {
+  params: { locale: string; slug: string };
+}): Metadata {
   const stad = STEDEN.find((s) => s.slug === params.slug);
-  if (!stad) return {};
+  if (!stad) return notFoundMetadata();
 
   // Geen bedrag in de title: twee van de vijf steden hebben geen stadsbrede prijs,
   // en een titel die veroudert is precies het probleem dat we hier oplossen.
@@ -43,7 +53,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   // Open Graph en Twitter EXPLICIET per pagina. Zonder deze blokken erven de
   // landingspagina's de og:title/og:url/og:description van de root-layout (de
   // homepage), waardoor een gedeelde stad-URL als de homepage previewt. og:image
-  // en twitter:image blijven uit de bestandsconventie (app/opengraph-image.png).
+  // en twitter:image krijgen expliciete absolute www-URL's.
   //
   // Bewust NIET via localeMetadata(): die helper voegt hreflang-alternates toe,
   // terwijl deze pagina's Nederlandstalig-only zijn en zonder `languages`
@@ -52,9 +62,10 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   const url = localeUrl("nl", `/${stad.slug}`);
 
   return {
+    metadataBase: new URL(SITE_URL),
     title,
     description,
-    alternates: { canonical: `/${stad.slug}` },
+    alternates: { canonical: url },
     openGraph: {
       title,
       description,
@@ -62,11 +73,13 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       type: "website",
       siteName: "T4XI",
       locale: "nl_NL",
+      images: [{ url: OPEN_GRAPH_IMAGE_URL, width: 1200, height: 630, alt: "T4XI — Executive Mobility" }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [TWITTER_IMAGE_URL],
     },
   };
 }
@@ -78,9 +91,18 @@ const USPS = [
   { icon: "clock", title: "24/7 beschikbaar", text: "Vroege vluchten, late aankomsten en last-minute ritten. Wij rijden dag en nacht." },
 ];
 
-export default async function SeoLandingPage({ params }: { params: { slug: string } }) {
+export default async function SeoLandingPage({
+  params,
+}: {
+  params: { locale: string; slug: string };
+}) {
   const stad = STEDEN.find((s) => s.slug === params.slug);
   if (!stad) notFound();
+  if (params.locale !== "nl") permanentRedirect(`/${stad.slug}`);
+
+  const bookingHref = `/boeken?pickup=${encodeURIComponent(stad.naam)}&dropoff=${encodeURIComponent(
+    "Schiphol Airport",
+  )}`;
 
   // Live tarieven voor deze stad. Levert de engine niets, dan tonen we geen enkel
   // bedrag — liever geen prijs dan een verkeerde.
@@ -135,7 +157,7 @@ export default async function SeoLandingPage({ params }: { params: { slug: strin
             </ul>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/boeken"
+                href={bookingHref}
                 className="inline-flex min-h-[52px] items-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-colors hover:bg-accent-hover"
               >
                 <Icon name="calendar-check" size={18} />
@@ -154,7 +176,7 @@ export default async function SeoLandingPage({ params }: { params: { slug: strin
             </p>
           </div>
 
-          <RateTable stad={stad} rates={schipholRates} />
+          <RateTable stad={stad} rates={schipholRates} bookingHref={bookingHref} />
         </div>
       </section>
 
@@ -277,7 +299,7 @@ export default async function SeoLandingPage({ params }: { params: { slug: strin
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
-              href="/boeken"
+              href={bookingHref}
               className="inline-flex min-h-[52px] items-center gap-2 rounded-md bg-fog px-8 font-display text-base font-medium text-ink transition-transform hover:-translate-y-0.5"
             >
               <Icon name="calendar-check" size={18} />

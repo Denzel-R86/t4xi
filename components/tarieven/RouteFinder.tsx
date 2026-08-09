@@ -101,7 +101,7 @@ export default function RouteFinder() {
 
   // Live, autoritatieve richtprijs + luchthavencontext — exact dezelfde keten als
   // de homepagehero en /boeken. Het resultaat wordt pas getóónd na "Bereken".
-  const quote = useRouteQuote(pickup, dropoff, { returnTrip, passengers });
+  const quote = useRouteQuote(pickup, dropoff, { returnTrip, passengers, date, time });
   const airport = quote.airport;
   const needsFlight = Boolean(airport?.isTransfer);
   const isArrival = airport?.direction === "arrival";
@@ -402,7 +402,16 @@ export default function RouteFinder() {
             stopsCount={resolvedStops.length}
             needsFlight={needsFlight}
             isArrival={isArrival}
-            bookingHref={buildBookingHref({ pickup: pickup!.label, dropoff: dropoff!.label, returnTrip, passengers })}
+            bookingHref={buildBookingHref({
+              pickup: pickup!.label,
+              dropoff: dropoff!.label,
+              returnTrip,
+              passengers,
+              date: date || undefined,
+              time: time || undefined,
+              returnDate: returnDate || undefined,
+              returnTime: returnTime || undefined,
+            })}
             schipholRoute={schipholRoute}
             onBook={() => track("boeking_geklikt", { airport: needsFlight, stops: resolvedStops.length })}
           />

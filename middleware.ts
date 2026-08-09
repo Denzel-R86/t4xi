@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
-import { routing } from "@/i18n/routing";
+import { isNlOnlyRoutePath, routing } from "@/i18n/routing";
 
 /**
  * Twee taken, in vaste volgorde:
@@ -78,6 +78,14 @@ export async function middleware(request: NextRequest) {
   // auth-logica laten glippen.
   const rawPathname = request.nextUrl.pathname;
   const pathname = rawPathname.replace(/^\/(nl|en)(?=\/|$)/, "") || "/";
+
+  // Deze landingspagina's bestaan inhoudelijk alleen in het Nederlands. Een
+  // /en-URL wordt daarom permanent naar de echte NL-pagina geconsolideerd.
+  if (rawPathname.startsWith("/en/") && isNlOnlyRoutePath(pathname)) {
+    const destination = request.nextUrl.clone();
+    destination.pathname = pathname;
+    return NextResponse.redirect(destination, 308);
+  }
 
   const isProtected =
     pathname === "/dashboard" || pathname.startsWith("/dashboard/") ||

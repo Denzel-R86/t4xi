@@ -16,6 +16,26 @@ export const routing = defineRouting({
   defaultLocale: "nl",
   localePrefix: "as-needed",
   localeDetection: false,
+  // De taal staat volledig in de URL (/en of de Nederlandse standaardroute).
+  // Een NEXT_LOCALE-cookie voegt daarom geen gedrag toe, maar fragmenteert wel
+  // publieke caches en plaatst onnodig browserstate.
+  localeCookie: false,
+  // Metadata en sitemap beheren hreflang bewust per paginatype. Zo worden
+  // Nederlandstalige routepagina's niet automatisch als Engels geadverteerd.
+  alternateLinks: false,
 });
+
+export const NL_ONLY_ROUTE_PATHS = [
+  "/taxi-almere-schiphol",
+  "/taxi-amsterdam-schiphol",
+  "/taxi-rotterdam-schiphol",
+  "/taxi-den-haag-schiphol",
+  "/taxi-utrecht-schiphol",
+] as const;
+
+export function isNlOnlyRoutePath(pathname: string): boolean {
+  const normalized = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
+  return (NL_ONLY_ROUTE_PATHS as readonly string[]).includes(normalized);
+}
 
 export type Locale = (typeof routing.locales)[number];

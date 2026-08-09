@@ -1,4 +1,4 @@
-import { getLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { pageMetadata } from "@/lib/seo-locale";
 import { BEDRIJF, getLaatstBijgewerkt } from "@/lib/legal";
@@ -68,14 +68,15 @@ const P = "mt-3 text-secondary";
 const EN_DISCLAIMER =
   "This English version is provided for convenience. In the event of any inconsistency, the Dutch version shall prevail.";
 
-export default async function VoorwaardenPage() {
-  const locale = await getLocale();
+export default function VoorwaardenPage({ params }: { params: { locale: string } }) {
+  const locale = params.locale;
+  setRequestLocale(locale);
   return locale === "en" ? <VoorwaardenEN /> : <VoorwaardenNL />;
 }
 
 function VoorwaardenNL() {
   return (
-    <main className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
+    <article className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
       <p className="text-eyebrow font-medium uppercase text-accent">Juridisch</p>
       <h1 className="mt-4 font-display text-display-lg font-bold text-ink">
         Algemene voorwaarden
@@ -280,8 +281,10 @@ function VoorwaardenNL() {
 
       <h2 className={H2}>8 · Betaling</h2>
       <p className={P}>
-        Betaling vindt plaats zoals bij de bevestiging met u afgesproken. Via deze website
-        worden geen betaalgegevens verzameld of opgeslagen.
+        Betaling vindt plaats zoals bij de bevestiging met u afgesproken. Bij online betaling
+        voert u uw betaalgegevens rechtstreeks in het beveiligde betaalveld van Stripe in.
+        T4XI bewaart geen volledige kaartgegevens, maar wel het bedrag, de betaalstatus en de
+        technische betaalreferentie die bij uw boeking horen.
       </p>
 
       <h2 className={H2}>9 · Aansprakelijkheid</h2>
@@ -362,13 +365,13 @@ function VoorwaardenNL() {
         </Link>
         .
       </p>
-    </main>
+    </article>
   );
 }
 
 function VoorwaardenEN() {
   return (
-    <main className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
+    <article className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
       <p className="text-eyebrow font-medium uppercase text-accent">Legal</p>
       <h1 className="mt-4 font-display text-display-lg font-bold text-ink">
         Terms and conditions
@@ -573,8 +576,10 @@ function VoorwaardenEN() {
 
       <h2 className={H2}>8 · Payment</h2>
       <p className={P}>
-        Payment takes place as agreed with you at confirmation. No payment details are
-        collected or stored through this website.
+        Payment takes place as agreed with you at confirmation. For online payment, you enter
+        your payment details directly in Stripe&apos;s secure payment field. T4XI does not store
+        full card details, but does retain the amount, payment status and technical payment
+        reference associated with your booking.
       </p>
 
       <h2 className={H2}>9 · Liability</h2>
@@ -651,6 +656,6 @@ function VoorwaardenEN() {
         </Link>
         .
       </p>
-    </main>
+    </article>
   );
 }

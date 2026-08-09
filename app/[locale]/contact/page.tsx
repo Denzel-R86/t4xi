@@ -3,12 +3,14 @@ import ContactSection from "@/components/sections/ContactSection";
 import FaqList from "@/components/sections/FaqList";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { useTranslations } from "next-intl";
+import { setRequestLocale } from "next-intl/server";
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
   return pageMetadata(params.locale, "/contact", "contactTitle", "contactDesc");
 }
 
-export default function ContactPage() {
+export default function ContactPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   const t = useTranslations("contact");
   return (
     <>

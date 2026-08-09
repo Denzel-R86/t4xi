@@ -1,5 +1,5 @@
 import { pageMetadata } from "@/lib/seo-locale";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import Image from "next/image";
 import renders from "@/public/renders.jpg";
 import Icon from "@/components/ui/Icon";
@@ -11,7 +11,12 @@ export function generateMetadata({ params }: { params: { locale: string } }) {
 }
 
 /** Vaste, taalneutrale structuur (icons, cijfers, booleans). Tekst komt uit i18n. */
-const HERO_STAT_NUMS = ["90%+", "5", "24/7", "€0"];
+const HERO_STAT_NUMS = ["5–20%", "5", "24/7", "€0"];
+const EXAMPLE_FARE = 79;
+const EXAMPLE_RIDES = 75;
+const OTHER_PLATFORM_SHARE = 0.65;
+const PRO_COMMISSION = 0.12;
+const PRO_MONTHLY_FEE = 99;
 const STAP_META = [
   { nr: "01", icon: "file-invoice" },
   { nr: "02", icon: "shield-check" },
@@ -52,8 +57,22 @@ async function SectionHead({
   );
 }
 
-export default async function PartnerPage() {
-  const t = await getTranslations("partner");
+export default async function PartnerPage({ params }: { params: { locale: string } }) {
+  const locale = params.locale;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "partner" });
+  const money = (value: number, digits = 2) =>
+    new Intl.NumberFormat(locale === "nl" ? "nl-NL" : "en-GB", {
+      style: "currency",
+      currency: "EUR",
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }).format(value);
+  const otherDriverPerRide = EXAMPLE_FARE * OTHER_PLATFORM_SHARE;
+  const otherPlatformPerRide = EXAMPLE_FARE - otherDriverPerRide;
+  const proDriverPerRideBeforeFee = EXAMPLE_FARE * (1 - PRO_COMMISSION);
+  const proMonthlyAdvantage =
+    (proDriverPerRideBeforeFee - otherDriverPerRide) * EXAMPLE_RIDES - PRO_MONTHLY_FEE;
   const heroStats = t.raw("heroStats") as string[];
   const stappen = t.raw("stappen") as StapCopy[];
   const commissies = t.raw("commissies") as string[];
@@ -122,31 +141,34 @@ export default async function PartnerPage() {
             <div className="mt-4 rounded-card border border-line bg-white/85 p-5 shadow-card" aria-label={t("compareLabel")}>
               <p className="flex items-center gap-2 text-sm font-bold text-ink">
                 <Icon name="x" size={15} className="text-red-500" />
-                {t("compareAnder")}
+                {t("compareAnder", { price: money(EXAMPLE_FARE, 0) })}
               </p>
               <div className="mt-2 h-9 overflow-hidden rounded-full border border-line bg-fog">
                 <div className="flex h-full w-full text-[11px] font-bold">
-                  <span className="flex w-[65%] items-center justify-center bg-stone-subtle text-ink">{t("compareChauffeur")} €51,35</span>
-                  <span className="flex w-[35%] items-center justify-center bg-red-400/70 text-white">{t("comparePlatform")} €27,65</span>
+                  <span className="flex w-[65%] items-center justify-center bg-stone-subtle text-ink">{t("compareChauffeur")} {money(otherDriverPerRide)}</span>
+                  <span className="flex w-[35%] items-center justify-center bg-red-400/70 text-white">{t("comparePlatform")} {money(otherPlatformPerRide)}</span>
                 </div>
               </div>
               <p className="mt-1.5 text-xs text-secondary">{t("compareAnderSub")}</p>
 
               <p className="mt-4 flex items-center gap-2 text-sm font-bold text-ink">
                 <Icon name="check" size={15} className="text-accent" />
-                {t("compareT4xi")}
+                {t("compareT4xi", { price: money(EXAMPLE_FARE, 0) })}
               </p>
               <div className="mt-2 h-9 overflow-hidden rounded-full border border-line bg-fog">
                 <div className="flex h-full w-full text-[11px] font-bold">
-                  <span className="flex w-[88%] items-center justify-center bg-accent text-white">{t("compareChauffeur")} €69,52</span>
-                  <span className="flex w-[12%] items-center justify-center bg-stone-subtle text-ink">€9,48</span>
+                  <span className="flex w-[88%] items-center justify-center bg-accent text-white">{t("compareChauffeur")} {money(proDriverPerRideBeforeFee)}</span>
+                  <span className="flex w-[12%] items-center justify-center bg-stone-subtle text-ink">{money(EXAMPLE_FARE * PRO_COMMISSION)}</span>
                 </div>
               </div>
               <p className="mt-1.5 text-xs text-secondary">
-                <strong className="text-ink">{t("compareMeer")}</strong>{t("compareMeerNa")}
+                <strong className="text-ink">
+                  {t("compareMeer", { amount: money(proDriverPerRideBeforeFee - otherDriverPerRide) })}
+                </strong>
+                {t("compareMeerNa", { rides: EXAMPLE_RIDES, fee: money(PRO_MONTHLY_FEE, 0) })}
               </p>
               <p className="mt-4 rounded-xl border border-line bg-fog px-4 py-3 text-center">
-                <span className="font-display text-[26px] font-bold text-accent">{t("compareBadge")}</span>
+                <span className="font-display text-[26px] font-bold text-accent">+{money(proMonthlyAdvantage, 0)}</span>
                 <span className="ml-2 text-[13px] text-secondary">{t("compareBadgeNa")}</span>
               </p>
             </div>

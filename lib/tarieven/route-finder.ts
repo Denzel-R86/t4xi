@@ -65,12 +65,20 @@ export function buildBookingHref(trip: {
   dropoff: string;
   returnTrip?: boolean;
   passengers?: number;
+  date?: string;
+  time?: string;
+  returnDate?: string;
+  returnTime?: string;
 }): string {
   const q = new URLSearchParams();
   q.set("pickup", trip.pickup);
   q.set("dropoff", trip.dropoff);
   if (trip.returnTrip) q.set("retour", "1");
   if (trip.passengers && trip.passengers > 1) q.set("persons", String(trip.passengers));
+  if (trip.date) q.set("date", trip.date);
+  if (trip.time) q.set("time", trip.time);
+  if (trip.returnTrip && trip.returnDate) q.set("returnDate", trip.returnDate);
+  if (trip.returnTrip && trip.returnTime) q.set("returnTime", trip.returnTime);
   return `/boeken?${q.toString()}`;
 }
 

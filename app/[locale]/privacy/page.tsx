@@ -1,4 +1,4 @@
-import { getLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { pageMetadata } from "@/lib/seo-locale";
 import {
@@ -42,8 +42,9 @@ const P = "mt-3 text-secondary";
 const EN_DISCLAIMER =
   "This English version is provided for convenience. In the event of any inconsistency, the Dutch version shall prevail.";
 
-export default async function PrivacyPage() {
-  const locale = await getLocale();
+export default function PrivacyPage({ params }: { params: { locale: string } }) {
+  const locale = params.locale;
+  setRequestLocale(locale);
   return locale === "en" ? <PrivacyEN /> : <PrivacyNL />;
 }
 
@@ -53,7 +54,7 @@ function PrivacyNL() {
   const bewaartermijnen = getBewaartermijnen("nl");
 
   return (
-    <main className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
+    <article className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
       <p className="text-eyebrow font-medium uppercase text-accent">Juridisch</p>
       <h1 className="mt-4 font-display text-display-lg font-bold text-ink">Privacyverklaring</h1>
       <p className="mt-4 text-secondary">
@@ -93,8 +94,10 @@ function PrivacyNL() {
       </ul>
       <p className={P}>
         Daarnaast leggen wij prijsaanvragen vast — de opgegeven herkomst, bestemming en de
-        berekende prijs — om onze tarieven te kunnen controleren. Wij vragen geen
-        betaalgegevens via deze website en slaan die dus ook niet op.
+        berekende prijs — om onze tarieven te kunnen controleren. Online betalingen worden
+        in een beveiligd Stripe-betaalveld verwerkt. T4XI ontvangt of bewaart geen volledige
+        kaartgegevens; wij bewaren wel het bedrag, de betaalstatus en technische
+        betaalreferenties die nodig zijn voor bevestiging, terugbetaling en administratie.
       </p>
 
       <h2 className={H2}>Waarvoor wij ze gebruiken</h2>
@@ -108,11 +111,17 @@ function PrivacyNL() {
         De grondslag is de uitvoering van de overeenkomst met u. Wij gebruiken uw gegevens
         niet voor advertenties en verkopen ze niet aan derden.
       </p>
+      <p className={P}>
+        Gegevens uit een membership-, zakelijke, hotel- of partneraanvraag gebruiken wij
+        uitsluitend om die aanvraag te beoordelen, contact op te nemen en afspraken vast te
+        leggen. Betalingsgegevens gebruiken wij om de betaling uit te voeren, fraude te
+        voorkomen en onze financiële administratie te voeren.
+      </p>
 
       <h2 className={H2}>Met wie wij ze delen</h2>
       <p className={P}>
-        Wij schakelen dienstverleners in die namens ons gegevens verwerken. Zij mogen die
-        uitsluitend gebruiken voor het doel waarvoor wij ze inschakelen:
+        Wij gebruiken de volgende dienstverleners en ontvangers. Afhankelijk van de dienst
+        handelen zij als verwerker namens ons of als zelfstandig verwerkingsverantwoordelijke:
       </p>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full border-collapse text-sm">
@@ -183,10 +192,11 @@ function PrivacyNL() {
 
       <h2 className={H2}>Cookies</h2>
       <p className={P}>
-        Deze website plaatst geen tracking- of advertentiecookies en gebruikt geen
-        analysesoftware die u over websites heen volgt. Er is daarom geen cookiebanner.
-        Gaan wij dat in de toekomst wel doen, dan vragen wij daar vooraf uw toestemming
-        voor.
+        Deze website plaatst zelf geen tracking- of advertentiecookies en gebruikt geen
+        analysesoftware die u over websites heen volgt. Voor de betaalstap kan Stripe strikt
+        noodzakelijke beveiligings- en fraudepreventietechnieken gebruiken. Gaan wij later
+        niet-noodzakelijke analyse- of marketingcookies gebruiken, dan vragen wij vooraf uw
+        toestemming.
       </p>
 
       <h2 className={H2}>Uw rechten</h2>
@@ -215,7 +225,7 @@ function PrivacyNL() {
         </Link>
         .
       </p>
-    </main>
+    </article>
   );
 }
 
@@ -225,7 +235,7 @@ function PrivacyEN() {
   const bewaartermijnen = getBewaartermijnen("en");
 
   return (
-    <main className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
+    <article className="mx-auto max-w-[720px] px-6 py-16 md:py-24">
       <p className="text-eyebrow font-medium uppercase text-accent">Legal</p>
       <h1 className="mt-4 font-display text-display-lg font-bold text-ink">Privacy statement</h1>
       <p className="mt-4 rounded-lg border border-line bg-fog px-4 py-3 text-sm text-secondary">
@@ -268,8 +278,10 @@ function PrivacyEN() {
       </ul>
       <p className={P}>
         In addition, we record price requests — the origin and destination you enter and the
-        calculated price — so that we can verify our rates. We do not request payment details
-        through this website and therefore do not store them.
+        calculated price — so that we can verify our rates. Online payments are processed in
+        a secure Stripe payment field. T4XI does not receive or store full card details; we do
+        store the amount, payment status and technical payment references needed for
+        confirmation, refunds and accounting.
       </p>
 
       <h2 className={H2}>What we use it for</h2>
@@ -283,11 +295,16 @@ function PrivacyEN() {
         The legal basis is the performance of the agreement with you. We do not use your data
         for advertising and do not sell it to third parties.
       </p>
+      <p className={P}>
+        We use details from membership, business, hotel or partner requests only to assess
+        the request, contact you and document agreed arrangements. We use payment data to
+        process the payment, prevent fraud and maintain our financial records.
+      </p>
 
       <h2 className={H2}>Who we share it with</h2>
       <p className={P}>
-        We engage service providers that process data on our behalf. They may use it only for
-        the purpose for which we engage them:
+        We use the following service providers and recipients. Depending on the service,
+        they act either as a processor on our behalf or as an independent controller:
       </p>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full border-collapse text-sm">
@@ -358,9 +375,10 @@ function PrivacyEN() {
 
       <h2 className={H2}>Cookies</h2>
       <p className={P}>
-        This website places no tracking or advertising cookies and uses no analytics software
-        that follows you across websites. There is therefore no cookie banner. Should we do so
-        in the future, we will ask for your consent in advance.
+        This website itself places no tracking or advertising cookies and uses no analytics
+        software that follows you across websites. During payment, Stripe may use strictly
+        necessary security and fraud-prevention technologies. If we later use non-essential
+        analytics or marketing cookies, we will ask for your consent in advance.
       </p>
 
       <h2 className={H2}>Your rights</h2>
@@ -389,6 +407,6 @@ function PrivacyEN() {
         </Link>
         .
       </p>
-    </main>
+    </article>
   );
 }

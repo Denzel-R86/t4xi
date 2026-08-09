@@ -1,5 +1,5 @@
 import { pageMetadata } from "@/lib/seo-locale";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import Icon from "@/components/ui/Icon";
@@ -12,9 +12,10 @@ export function generateMetadata({ params }: { params: { locale: string } }) {
   return pageMetadata(params.locale, "/dagtochten", "dagtochtenTitle", "dagtochtenDesc");
 }
 
-export default async function DagtochtenPage() {
-  const locale = (await getLocale()) as Locale;
-  const t = await getTranslations("dagtochten");
+export default async function DagtochtenPage({ params }: { params: { locale: string } }) {
+  const locale = params.locale as Locale;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "dagtochten" });
   const FEATURED = getFeatured(locale);
   const COUNTRIES = getCountries(locale);
 

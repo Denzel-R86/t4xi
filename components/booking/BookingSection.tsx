@@ -9,14 +9,15 @@ import PaymentStep from "@/components/booking/PaymentStep";
 import FlightCard from "@/components/booking/FlightCard";
 import Icon from "@/components/ui/Icon";
 import { inferAddressMeta, type RitType } from "@/lib/booking-meta";
+import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
 
-const TABS: { key: RitType; labelKey: "tabEnkel" | "tabRetour" | "tabLuchthaven" | "tabDagtocht" }[] = [
+type BookableRideType = Extract<RitType, "enkel" | "retour">;
+
+const TABS: { key: BookableRideType; labelKey: "tabEnkel" | "tabRetour" }[] = [
   { key: "enkel", labelKey: "tabEnkel" },
   { key: "retour", labelKey: "tabRetour" },
-  { key: "luchthaven", labelKey: "tabLuchthaven" },
-  { key: "dagtocht", labelKey: "tabDagtocht" },
 ];
 
 const VEHICLES = [
@@ -46,6 +47,10 @@ export default function BookingSection({
   initialDropoff,
   initialReturn,
   initialPersons,
+  initialDate,
+  initialTime,
+  initialReturnDate,
+  initialReturnTime,
 }: {
   /** Deep-link (?pickup=…): veld vooraf gevuld, prijs rekent direct. */
   initialPickup?: string;
@@ -55,10 +60,15 @@ export default function BookingSection({
   initialReturn?: boolean;
   /** Deep-link (?persons=…): aantal passagiers vooraf ingevuld (1–4). */
   initialPersons?: number;
+  /** Deep-link vanuit de tariefzoeker; uitsluitend gevalideerde ISO-velden. */
+  initialDate?: string;
+  initialTime?: string;
+  initialReturnDate?: string;
+  initialReturnTime?: string;
 } = {}) {
   const t = useTranslations("booking");
   const locale = useLocale();
-  const [tab, setTab] = useState<RitType>(initialReturn ? "retour" : "enkel");
+  const [tab, setTab] = useState<BookableRideType>(initialReturn ? "retour" : "enkel");
   const [pickup, setPickup] = useState<AddressSuggestion | null>(
     initialPickup ? { id: "deeplink", label: initialPickup, source: "free" } : null
   );
@@ -72,8 +82,12 @@ export default function BookingSection({
   const [vehicle, setVehicle] = useState(VEHICLES[0]);
   // Datum/tijd zijn controlled zodat de live richtprijs ze traffic-aware meestuurt
   // (de submit blijft ze óók via FormData lezen — de name-attributen blijven staan).
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("08:00");
+  const [date, setDate] = useState(initialDate ?? "");
+  const [time, setTime] = useState(initialTime ?? "08:00");
+  const [returnDate, setReturnDate] = useState(initialReturnDate ?? "");
+  const [returnTime, setReturnTime] = useState(initialReturnTime ?? "18:00");
+  const [flightNumber, setFlightNumber] = useState("");
+  const [returnFlightNumber, setReturnFlightNumber] = useState("");
 
   type SubmitState =
     | { status: "idle" | "loading" }
@@ -82,17 +96,27 @@ export default function BookingSection({
   const [submit, setSubmit] = useState<SubmitState>({ status: "idle" });
   const loading = submit.status === "loading";
 
-  // Anti-stale betaling: zodra prijsbepalende ritdata wijzigt ná een geslaagde
+  // Anti-stale betaling: zodra rit- of contactbepalende data wijzigt ná een geslaagde
   // boeking, is de aangemaakte boeking (bookingRef) én de betaalstap verouderd.
   // We resetten dan naar "idle" zodat de klant opnieuw boekt en een verse
   // PaymentIntent op de nieuwe gegevens ontstaat — nooit stilzwijgend het oude
   // bedrag/bookingRef hergebruiken.
   useEffect(() => {
     setSubmit((s) => (s.status === "success" ? { status: "idle" } : s));
-    // Alleen de velden die de serverprijs bepalen (create-intent herberekent
-    // op pickup/dropoff/returnTrip/passengers).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickup?.label, dropoff?.label, tab, persons]);
+  }, [
+    pickup?.label,
+    dropoff?.label,
+    tab,
+    persons,
+    date,
+    time,
+    returnDate,
+    returnTime,
+    vehicle,
+    luggage,
+    flightNumber,
+    returnFlightNumber,
+  ]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -108,6 +132,17 @@ export default function BookingSection({
       });
       return;
     }
+    if (tab === "retour" && (!returnDate || !returnTime)) {
+      setSubmit({ status: "error", message: t("valRetourMoment") });
+      return;
+    }
+    if (tab === "retour" && needsFlight && returnFlightNumber.trim() === "") {
+      setSubmit({
+        status: "error",
+        message: isArrival ? t("valVluchtRetourVertrek") : t("valVluchtRetourAankomst"),
+      });
+      return;
+    }
 
     const form = new FormData(e.currentTarget);
     const payload = {
@@ -119,10 +154,13 @@ export default function BookingSection({
       quoteId: quote.status === "ready" ? quote.quoteId : null,
       date: String(form.get("datum") ?? ""),
       time: String(form.get("tijd") ?? ""),
+      returnDate: tab === "retour" ? returnDate : "",
+      returnTime: tab === "retour" ? returnTime : "",
       vehicle,
       persons,
       luggage,
       flightNumber: needsFlight ? flightNumber.trim() : "",
+      returnFlightNumber: tab === "retour" && needsFlight ? returnFlightNumber.trim() : "",
       customerName: String(form.get("naam") ?? ""),
       customerPhone: String(form.get("telefoon") ?? ""),
       customerEmail: String(form.get("email") ?? ""),
@@ -177,8 +215,6 @@ export default function BookingSection({
     date,
     time,
   });
-  const [flightNumber, setFlightNumber] = useState("");
-
   // Het vluchtnummerveld verschijnt zodra de engine zegt dat één zijde een
   // luchthaven is — ook bij "offerte op aanvraag". Ritten vanaf Schiphol hebben nog
   // geen vaste route, maar de aankomst moet wél gevolgd kunnen worden.
@@ -251,25 +287,35 @@ export default function BookingSection({
         </div>
       )}
 
-      {/* Rit-type tabs */}
-      <div className="mb-5 flex flex-wrap gap-2" role="tablist">
-        {TABS.map((x) => (
-          <button
-            key={x.key}
-            type="button"
-            role="tab"
-            aria-selected={tab === x.key}
-            onClick={() => setTab(x.key)}
-            className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-              tab === x.key
-                ? "border-accent bg-accent text-white"
-                : "border-line bg-[#F4F1EB] text-[#4E565E] hover:text-ink"
-            }`}
-          >
-            {t(x.labelKey)}
-          </button>
-        ))}
-      </div>
+      {/* Ritsoort: luchthaven is geen los type maar wordt uit de adressen herkend.
+          Dagtochten hebben een eigen aanvraagflow en horen niet in een transferformulier. */}
+      <fieldset className="mb-5">
+        <legend className="sr-only">{t("ritType")}</legend>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("ritType")}>
+          {TABS.map((x) => (
+            <button
+              key={x.key}
+              type="button"
+              role="radio"
+              aria-checked={tab === x.key}
+              onClick={() => setTab(x.key)}
+              className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                tab === x.key
+                  ? "border-accent bg-accent text-white"
+                  : "border-line bg-[#F4F1EB] text-[#4E565E] hover:text-ink"
+              }`}
+            >
+              {t(x.labelKey)}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2.5 text-xs leading-relaxed text-secondary">
+          {t("airportHint")} {" "}
+          <Link href="/dagtochten#aanvragen" className="font-medium text-accent underline underline-offset-2">
+            {t("dayTripLink")}
+          </Link>
+        </p>
+      </fieldset>
 
       <form onSubmit={handleSubmit}>
         {/* Honeypot — verborgen voor mensen, zichtbaar voor bots. Blijft leeg bij
@@ -296,8 +342,35 @@ export default function BookingSection({
           </div>
           <div>
             <label htmlFor="f-time" className={labelCls}>{t("tijd")}</label>
-            <input id="f-time" name="tijd" type="time" className={inputCls} value={time} onChange={(e) => setTime(e.target.value)} />
+            <input id="f-time" name="tijd" type="time" required className={inputCls} value={time} onChange={(e) => setTime(e.target.value)} />
           </div>
+          {tab === "retour" && (
+            <>
+              <div>
+                <label htmlFor="f-return-date" className={labelCls}>{t("retourDatum")}</label>
+                <input
+                  id="f-return-date"
+                  type="date"
+                  required
+                  className={inputCls}
+                  value={returnDate}
+                  min={date || undefined}
+                  onChange={(e) => setReturnDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="f-return-time" className={labelCls}>{t("retourTijd")}</label>
+                <input
+                  id="f-return-time"
+                  type="time"
+                  required
+                  className={inputCls}
+                  value={returnTime}
+                  onChange={(e) => setReturnTime(e.target.value)}
+                />
+              </div>
+            </>
+          )}
           <div>
             <label htmlFor="f-vehicle" className={labelCls}>{t("voertuig")}</label>
             <select
@@ -370,6 +443,27 @@ export default function BookingSection({
                   een vluchtnummer is ingevoerd. Read-only; wijzigt de boeking niet. */}
               <FlightCard flightNumber={flightNumber} />
 
+              {tab === "retour" && (
+                <div className="mt-4 border-t border-line pt-4">
+                  <label htmlFor="f-return-flight" className={labelCls}>
+                    {t("retourVlucht")} — {isArrival ? t("vluchtVertrekkend") : t("vluchtAankomend")} {" "}
+                    <span className="text-accent">{t("verplicht")}</span>
+                  </label>
+                  <input
+                    id="f-return-flight"
+                    value={returnFlightNumber}
+                    onChange={(e) => setReturnFlightNumber(e.target.value.toUpperCase())}
+                    placeholder="KL1234"
+                    autoComplete="off"
+                    spellCheck={false}
+                    maxLength={8}
+                    required
+                    className={inputCls}
+                  />
+                  <FlightCard flightNumber={returnFlightNumber} />
+                </div>
+              )}
+
               {/*
                 Airport Arrival Service — uitsluitend bij een OPHALING. De klant ziet
                 wat inbegrepen is, niet waaruit de kosten bestaan: geen parkeerbedrag
@@ -441,12 +535,12 @@ export default function BookingSection({
             <input id="f-name" name="naam" placeholder={t("naamPh")} autoComplete="name" required className={inputCls} />
           </div>
           <div>
-            <label htmlFor="f-phone" className={labelCls}>{t("telefoon")}</label>
-            <input id="f-phone" name="telefoon" type="tel" placeholder="+31 6 ..." autoComplete="tel" className={inputCls} />
+            <label htmlFor="f-phone" className={labelCls}>{t("telefoon")} <span aria-hidden="true" className="text-accent">*</span></label>
+            <input id="f-phone" name="telefoon" type="tel" placeholder="+31 6 ..." autoComplete="tel" required className={inputCls} />
           </div>
           <div className="sm:col-span-2">
-            <label htmlFor="f-email" className={labelCls}>{t("email")}</label>
-            <input id="f-email" name="email" type="email" placeholder={t("emailPh")} autoComplete="email" className={inputCls} />
+            <label htmlFor="f-email" className={labelCls}>{t("email")} <span aria-hidden="true" className="text-accent">*</span></label>
+            <input id="f-email" name="email" type="email" placeholder={t("emailPh")} autoComplete="email" required className={inputCls} />
           </div>
         </div>
 

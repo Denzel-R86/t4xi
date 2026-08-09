@@ -9,8 +9,8 @@ import { routing, type Locale } from "@/i18n/routing";
 /**
  * NL/EN-taalwisselaar (stap 3). Blijft op dezelfde inhoudelijke pagina en
  * neemt ALLE queryparameters mee: /boeken?pickup=…&dropoff=… wordt
- * /en/boeken?pickup=…&dropoff=… en terug. next-intl onthoudt de keuze in een
- * cookie, maar een expliciet bezochte URL wint altijd (localeDetection uit).
+ * /en/boeken?pickup=…&dropoff=… en terug. De URL is de enige taalbron; er is
+ * bewust geen localecookie en geen automatische browsertaaldetectie.
  */
 type Props = {
   className?: string;

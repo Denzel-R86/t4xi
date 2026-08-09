@@ -43,15 +43,17 @@ const RATE_WINDOW_MS = 10 * 60_000; // per 10 minuten
 const MAX_BODY_BYTES = 4096; // ruime bovengrens voor een boeking-JSON
 /** Verborgen veld dat bots invullen; echte formulieren sturen het niet mee. */
 const HONEYPOT_FIELD = "website";
+const NO_STORE_HEADERS = { "Cache-Control": "private, no-store, max-age=0" };
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const BOOKABLE_RIDE_TYPES = new Set(["direct", "enkel", "retour"]);
 
 type Body = Record<string, unknown>;
 
 function json(status: number, payload: Record<string, unknown>) {
-  return NextResponse.json(payload, { status });
+  return NextResponse.json(payload, { status, headers: NO_STORE_HEADERS });
 }
 function bad(message: string) {
   return json(400, { ok: false, error: "invalid_input", message });
@@ -90,7 +92,10 @@ export async function POST(request: Request) {
         error: "rate_limited",
         message: "Te veel boekingspogingen. Probeer het over een paar minuten opnieuw, of bel ons.",
       },
-      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+      {
+        status: 429,
+        headers: { ...NO_STORE_HEADERS, "Retry-After": String(rl.retryAfterSec) },
+      }
     );
   }
 
@@ -124,6 +129,8 @@ export async function POST(request: Request) {
   const dropoff = str(body.dropoff);
   const date = str(body.date);
   const time = str(body.time);
+  const returnDate = str(body.returnDate);
+  const returnTime = str(body.returnTime);
   const name = str(body.customerName);
   const phone = str(body.customerPhone);
   const email = str(body.customerEmail).toLowerCase();
@@ -134,11 +141,15 @@ export async function POST(request: Request) {
   // "kl 1234" en "KL-1234" dezelfde waarde opleveren. De RPC normaliseert nog een
   // keer — de database is de laatste verdedigingslinie, niet de eerste.
   const flightNumber = str(body.flightNumber).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const returnFlightNumber = str(body.returnFlightNumber).toUpperCase().replace(/[^A-Z0-9]/g, "");
 
   if (pickup.length < 3) return bad("Ophaaladres is verplicht (min. 3 tekens).");
   if (dropoff.length < 3) return bad("Bestemming is verplicht (min. 3 tekens).");
   if (!DATE_RE.test(date)) return bad("Datum is verplicht (YYYY-MM-DD).");
   if (!TIME_RE.test(time)) return bad("Tijd is verplicht (HH:MM).");
+  const departureAt = amsterdamDepartureIso(date, time);
+  if (!departureAt) return bad("Datum of tijd bestaat niet.");
+  if (!BOOKABLE_RIDE_TYPES.has(rideType)) return bad("Kies een geldige ritsoort.");
   if (name.length < 2) return bad("Naam is verplicht.");
   if (email === "" || !EMAIL_RE.test(email)) return bad("Geldig e-mailadres is verplicht.");
   if (phone.replace(/[^0-9+]/g, "").length < 8) return bad("Geldig telefoonnummer is verplicht.");
@@ -152,12 +163,22 @@ export async function POST(request: Request) {
   }
   const luggageOnRequest = luggageClass.kind === "on_request";
 
-  // Datum niet in het verleden (lokale dagvergelijking; RPC bewaakt dit ook).
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const rideDate = new Date(`${date}T00:00:00`);
-  if (Number.isNaN(rideDate.getTime())) return bad("Ongeldige datum.");
-  if (rideDate < today) return bad("Datum ligt in het verleden.");
+  // Volledig lokaal vertrekmoment valideren, niet alleen de kalenderdag. Zo kan
+  // een rit voor eerder vandaag evenmin als toekomstige boeking worden opgeslagen.
+  if (Date.parse(departureAt) <= Date.now()) return bad("Vertrekmoment ligt in het verleden.");
+
+  const returnTrip = rideType === "retour";
+  if (returnTrip) {
+    if (!DATE_RE.test(returnDate)) return bad("Retourdatum is verplicht (YYYY-MM-DD).");
+    if (!TIME_RE.test(returnTime)) return bad("Retourtijd is verplicht (HH:MM).");
+    const outwardAt = departureAt;
+    const returnAt = amsterdamDepartureIso(returnDate, returnTime);
+    if (!outwardAt || !returnAt || Date.parse(returnAt) <= Date.parse(outwardAt)) {
+      return bad("Het retourmoment moet na het vertrek van de heenrit liggen.");
+    }
+  } else if (returnDate || returnTime || returnFlightNumber) {
+    return bad("Retourgegevens zijn alleen toegestaan bij een retourrit.");
+  }
 
   let persons = 1;
   if (body.persons !== undefined) {
@@ -178,7 +199,6 @@ export async function POST(request: Request) {
   //      b) geen quoteId → alleen een deterministische vaste route of offerte-op-
   //         aanvraag (routing UIT, dus nooit een bindende dynamische prijs zonder
   //         geaccepteerde snapshot).
-  const returnTrip = rideType === "retour";
   const now = new Date();
   const outcome = await resolveBookingPrice(
     {
@@ -186,7 +206,7 @@ export async function POST(request: Request) {
       dropoff,
       returnTrip,
       passengers: persons,
-      departureAt: amsterdamDepartureIso(date, time) ?? undefined,
+      departureAt,
       quoteId: str(body.quoteId) || null,
     },
     { now, readSnapshot: readPriceSnapshot }
@@ -236,10 +256,22 @@ export async function POST(request: Request) {
   if (flightNumber !== "" && !/^[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?$/.test(flightNumber)) {
     return bad("Vluchtnummer lijkt niet te kloppen. Bijvoorbeeld: KL1234.");
   }
+  if (returnFlightNumber !== "" && !/^[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?$/.test(returnFlightNumber)) {
+    return bad("Retourvluchtnummer lijkt niet te kloppen. Bijvoorbeeld: KL1234.");
+  }
+  if (returnTrip && airport.isAirportTransfer && returnFlightNumber === "") {
+    return bad(
+      airport.isAirportPickup
+        ? "Vul het vertrekkende vluchtnummer van uw retourrit in."
+        : "Vul het aankomende vluchtnummer van uw retourrit in."
+    );
+  }
   // Een vluchtnummer zonder luchthaven aan een van beide zijden slaat nergens op;
   // we slaan het dan niet op in plaats van het stilzwijgend te bewaren.
   const flightDirection = airport.isAirportTransfer ? airport.flightDirection : null;
   const flightNumberToStore = airport.isAirportTransfer ? flightNumber : "";
+  const returnFlightNumberToStore =
+    returnTrip && airport.isAirportTransfer ? returnFlightNumber : "";
 
   // 4. Wegschrijven via de service-role client. Twee paden:
   const supabase = serviceRoleClient();
@@ -357,6 +389,32 @@ export async function POST(request: Request) {
     });
   }
 
+  // Een retour is één betaalde boeking met twee operationele momenten. De
+  // gestructureerde velden worden direct na de (eventueel transactionele)
+  // creatie opgeslagen. Tijdens een gefaseerde deploy zonder de nieuwe kolommen
+  // blijft een JSON-notitie als compatibele fallback bewaard.
+  if (returnTrip && bookingId) {
+    const returnDetails = {
+      return_date: returnDate,
+      return_time: returnTime,
+      return_flight_number: returnFlightNumberToStore || null,
+    };
+    const { error: returnUpdateError } = await supabase
+      .from("bookings")
+      .update(returnDetails)
+      .eq("id", bookingId);
+    if (returnUpdateError) {
+      console.error("[bookings] retourvelden-update faalde:", returnUpdateError.message);
+      const { error: fallbackError } = await supabase
+        .from("bookings")
+        .update({ notes: JSON.stringify({ type: "return_schedule", ...returnDetails }) })
+        .eq("id", bookingId);
+      if (fallbackError) {
+        console.error("[bookings] retourfallback-update faalde:", fallbackError.message);
+      }
+    }
+  }
+
   // 5. Notificaties (best-effort): mag de boeking nooit breken of de response
   //    veranderen. email_sent wordt alleen true als BEIDE mails slagen.
   try {
@@ -367,6 +425,9 @@ export async function POST(request: Request) {
       dropoff,
       date,
       time,
+      returnDate: returnTrip ? returnDate : null,
+      returnTime: returnTrip ? returnTime : null,
+      returnFlightNumber: returnFlightNumberToStore || null,
       vehicle: vehicle || null,
       persons,
       luggage: luggage || null,

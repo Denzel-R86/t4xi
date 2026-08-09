@@ -38,6 +38,83 @@ const PDOK_FIELDS = "id,weergavenaam,postcode,type";
 
 type PdokDoc = { id: string; weergavenaam: string; postcode?: string; type?: string };
 
+const PUBLIC_TRANSIT_TERMS = new Set([
+  "station",
+  "stations",
+  "centraal",
+  "central",
+  "cs",
+  "treinstation",
+  "metro",
+  "halte",
+  "terminal",
+  "airport",
+  "luchthaven",
+]);
+
+function normalizeForRanking(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("nl-NL")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/** Herkent OV-intentie op woorden, niet op plaatsnamen: werkt dus voor iedere stad. */
+export function isPublicTransitQuery(query: string): boolean {
+  return normalizeForRanking(query)
+    .split(" ")
+    .some((token) => PUBLIC_TRANSIT_TERMS.has(token));
+}
+
+/**
+ * Exacte en volledige matches gaan vóór gedeeltelijke adresmatches. Een OV-boost
+ * geldt alleen wanneer zowel query als suggestie een generieke OV-term bevatten.
+ */
+export function rankAddressSuggestions(
+  query: string,
+  suggestions: AddressSuggestion[]
+): AddressSuggestion[] {
+  const normalizedQuery = normalizeForRanking(query);
+  const queryTokens = normalizedQuery.split(" ").filter(Boolean);
+  const transitQuery = isPublicTransitQuery(query);
+  const seen = new Set<string>();
+
+  return suggestions
+    .map((suggestion, index) => {
+      const label = normalizeForRanking(suggestion.label);
+      const labelTokens = new Set(label.split(" ").filter(Boolean));
+      const matchedTokens = queryTokens.filter((token) => labelTokens.has(token)).length;
+      let score = matchedTokens * 100;
+      if (queryTokens.length > 0 && matchedTokens === queryTokens.length) score += 1_000;
+      if (label === normalizedQuery) score += 10_000;
+      else if (label.startsWith(`${normalizedQuery} `)) score += 5_000;
+      if (transitQuery && Array.from(labelTokens).some((token) => PUBLIC_TRANSIT_TERMS.has(token))) {
+        score += 500;
+      }
+      return { suggestion, label, score, index };
+    })
+    .filter((item) => {
+      if (seen.has(item.label)) return false;
+      seen.add(item.label);
+      return true;
+    })
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map(({ suggestion }) => suggestion);
+}
+
+async function googleSuggestions(query: string, signal: AbortSignal): Promise<AddressSuggestion[]> {
+  try {
+    const response = await fetch(`/api/places?q=${encodeURIComponent(query)}`, { signal });
+    if (!response.ok) return [];
+    const data: unknown = await response.json();
+    return Array.isArray(data) ? (data as AddressSuggestion[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 /** Label mét postcode: "Straat 10A, Amsterdam" + 1082PP → "Straat 10A, 1082PP Amsterdam". */
 function pdokLabel(d: PdokDoc): string {
   if (d.type === "adres" && d.postcode && !d.weergavenaam.includes(d.postcode)) {
@@ -65,28 +142,33 @@ export function useAddressSuggestions(query: string, enabled = true) {
 
     setStatus("loading");
     try {
+      // Bij OV-intentie halen we de POI-bron parallel op. PDOK is sterk in adressen,
+      // maar levert stationsnamen niet consequent; alleen als PDOK leeg is wachten
+      // zou een exacte match als "Amsterdam Centraal" daardoor onzichtbaar maken.
+      const googlePromise = isPublicTransitQuery(q)
+        ? googleSuggestions(q, controller.signal)
+        : null;
+
       // 1. PDOK primair (adres + wijk + buurt + woonplaats), incl. postcodeveld
       const pdokUrl = `${PDOK_FREE}?q=${encodeURIComponent(q)}&fq=${encodeURIComponent(PDOK_TYPES)}&rows=6&fl=${encodeURIComponent(PDOK_FIELDS)}`;
       const res = await fetch(pdokUrl, { signal: controller.signal });
+      let pdokSuggestions: AddressSuggestion[] = [];
       if (res.ok) {
         const data = await res.json();
         const docs: PdokDoc[] = data?.response?.docs ?? [];
-        if (docs.length > 0) {
-          setSuggestions(docs.map((d) => ({ id: d.id, label: pdokLabel(d), source: "pdok" as const })));
+        pdokSuggestions = docs.map((d) => ({ id: d.id, label: pdokLabel(d), source: "pdok" as const }));
+        if (pdokSuggestions.length > 0 && !googlePromise) {
+          setSuggestions(rankAddressSuggestions(q, pdokSuggestions));
           setStatus("idle");
           return;
         }
       }
-      // 2. Google-fallback (POI's, hotels)
-      const gRes = await fetch(`/api/places?q=${encodeURIComponent(q)}`, { signal: controller.signal });
-      if (gRes.ok) {
-        const gData: AddressSuggestion[] = await gRes.json();
-        setSuggestions(gData);
-        setStatus(gData.length > 0 ? "idle" : "empty");
-      } else {
-        setSuggestions([]);
-        setStatus("empty");
-      }
+      // 2. Google-fallback voor lege PDOK-resultaten; bij OV-intentie samenvoegen
+      // en generiek op exacte/tokendekking rangschikken.
+      const google = await (googlePromise ?? googleSuggestions(q, controller.signal));
+      const ranked = rankAddressSuggestions(q, [...pdokSuggestions, ...google]).slice(0, 6);
+      setSuggestions(ranked);
+      setStatus(ranked.length > 0 ? "idle" : "empty");
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
         setSuggestions([]);
@@ -244,17 +326,19 @@ export default function AddressAutocomplete({
           className="absolute z-20 mt-2 w-full overflow-hidden rounded-field border border-line bg-card shadow-card"
         >
           {suggestions.map((s, i) => (
-            <li key={s.id} id={`${listId}-option-${i}`} role="option" aria-selected={i === activeIndex}>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => choose(s)}
-                className={`block w-full px-4 py-3 text-left text-sm transition-colors ${
-                  i === activeIndex ? "bg-accent text-white" : "text-ink hover:bg-fog"
-                }`}
-              >
-                {s.label}
-              </button>
+            <li
+              key={s.id}
+              id={`${listId}-option-${i}`}
+              role="option"
+              aria-selected={i === activeIndex}
+              onMouseDown={(e) => e.preventDefault()}
+              onMouseEnter={() => setActiveIndex(i)}
+              onClick={() => choose(s)}
+              className={`cursor-pointer px-4 py-3 text-left text-sm transition-colors ${
+                i === activeIndex ? "bg-accent text-white" : "text-ink hover:bg-fog"
+              }`}
+            >
+              {s.label}
             </li>
           ))}
         </ul>

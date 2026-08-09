@@ -63,12 +63,17 @@
     "tabRetour": "Retour",
     "tabLuchthaven": "Luchthaven",
     "tabDagtocht": "Dagtocht",
+    "ritType": "Kies uw rit",
+    "airportHint": "Luchthavenservice wordt automatisch geactiveerd zodra uw route een luchthaven bevat.",
+    "dayTripLink": "Voor een dagtocht bekijkt u onze arrangementen.",
     "van": "Van",
     "naar": "Naar",
     "vertrekadresPh": "Vertrekadres",
     "bestemmingPh": "Bestemming",
     "datum": "Datum",
     "tijd": "Tijd",
+    "retourDatum": "Datum terugrit",
+    "retourTijd": "Ophaaltijd terugrit",
     "voertuig": "Voertuig",
     "passagiers": "Passagiers",
     "bagage": "Bagage",
@@ -78,6 +83,7 @@
     "bagageOverleg": "Meer bagage / grotere koffers — eerst afstemmen",
     "vluchtAankomend": "Aankomend vluchtnummer",
     "vluchtVertrekkend": "Vertrekkend vluchtnummer",
+    "retourVlucht": "Vluchtnummer terugrit",
     "verplicht": "— verplicht",
     "vluchtHelpAankomst": "Wij volgen uw vluchtstatus en passen het ophaalmoment aan wanneer uw vlucht vertraagd is.",
     "vluchtHelpVertrek": "Wij gebruiken uw vluchtnummer om de rit op uw vertrektijd te plannen.",
@@ -111,6 +117,9 @@
     "valAdres": "Vul een ophaaladres en bestemming in.",
     "valVluchtAankomst": "Vul uw aankomende vluchtnummer in — daarmee volgen wij uw vlucht en passen wij het ophaalmoment aan.",
     "valVluchtVertrek": "Vul uw vertrekkende vluchtnummer in, zodat wij de rit daarop kunnen plannen.",
+    "valRetourMoment": "Vul de datum en ophaaltijd van uw terugrit in.",
+    "valVluchtRetourAankomst": "Vul het aankomende vluchtnummer voor uw terugrit in, zodat wij de landing kunnen volgen.",
+    "valVluchtRetourVertrek": "Vul het vertrekkende vluchtnummer voor uw terugrit in, zodat wij de rit zorgvuldig kunnen plannen.",
     "succesRef": "Boeking ontvangen — referentie",
     "succesOpAanvraag": "Deze route krijgt een offerte op aanvraag. Wij bevestigen prijs en tijd via WhatsApp of e-mail.",
     "succesBevestiging": "Wij bevestigen uw rit via WhatsApp of e-mail.",
@@ -211,6 +220,7 @@
     "certNote": "Enkele rit; retour ×1,8 · nachttarief (23:00–06:00) +15%. Eerlijk voor u én voor de chauffeur — zonder platformcommissies.",
     "ledgerNaar": "naar",
     "ledgerVast": "vast",
+    "ledgerBook": "Boek deze rit",
     "ledgerAlle": "Alle vaste tarieven en routes",
     "ledgerOnbekend": "onbekende route? Offerte op aanvraag",
     "bagageFiguurAlt": "Chauffeur helpt bij het in- en uitladen van bagage naast het voertuig",
@@ -286,7 +296,7 @@
     "anderePlatforms": "Andere platforms",
     "chauffeur": "Chauffeur",
     "platformAfdracht": "Platform afdracht",
-    "t4xiKosten": "T4XI (operationele kosten)",
+    "t4xiKosten": "T4XI-commissie",
     "citaat": "“Wij bouwen T4XI rond de ritervaring: een nette auto, duidelijke communicatie, vaste prijzen en een chauffeur die met aandacht rijdt. Eerlijk voor de klant én eerlijk voor de chauffeur.”",
     "watBetekent": "Wat dit betekent voor jou",
     "punt1": "Transparante vaste prijs — geen surge pricing",
@@ -296,20 +306,39 @@
     "cta": "Boek eerlijk vervoer"
   },
   "producten": {
+    "teaser": {
+      "kicker": "Meer dan losse ritten",
+      "kop1": "Mobiliteit die",
+      "kop2": "met u meebeweegt",
+      "intro": "Van vaste Schipholritten tot zakelijk vervoer en events: kies een product met heldere afspraken en voorspelbare kosten.",
+      "p1Naam": "Airport Membership",
+      "p1Desc": "Vier of acht vaste Schipholritten per maand, met prioriteit en heldere afspraken.",
+      "p1Van": "Vanaf €279 per maand",
+      "p2Naam": "Zakelijke rittenkaart",
+      "p2Desc": "Gedeelde ritcredits voor uw team, met één overzichtelijke maandfactuur.",
+      "p2Van": "Vanaf €499 voor 10 ritten",
+      "p3Naam": "Hotelcontract",
+      "p3Desc": "Een representatieve transferpartner voor uw hotel en uw gasten.",
+      "p3Van": "Offerte op maat",
+      "p4Naam": "Event Shuttles",
+      "p4Desc": "Gecoördineerd vervoer voor bruiloften, congressen en zakelijke events.",
+      "p4Van": "Vanaf €299 per dag",
+      "alle": "Bekijk alle mobiliteitsproducten"
+    },
     "heroKicker": "Meer dan een rit",
     "heroKop1": "Vaste mobiliteit,",
     "heroKop2": "voorspelbare kosten",
-    "heroIntro": "T4XI maakt regelmatig luchthaven- en zakelijk vervoer voorspelbaar. U boekt sneller, betaalt een vaste prijs en krijgt duidelijke afspraken over chauffeur, voertuig, passagiers en bagage.",
+    "heroIntro": "T4XI maakt terugkerend luchthaven- en zakelijk vervoer voorspelbaar. U boekt sneller, betaalt een vaste prijs en krijgt duidelijke afspraken over chauffeur, voertuig, passagiers en bagage.",
     "ctaZakelijk": "Zakelijk",
     "heroStats": [
       "Membership vanaf",
-      "Strippenkaart 10 ritten",
+      "Rittenkaart 20 ritten",
       "Beschikbaar",
       "Diensten"
     ],
     "mKop1": "Nooit meer",
     "mKop2": "nadenken over Schiphol",
-    "mIntro": "Vlieg je regelmatig? Met een T4XI Airport Membership staat er altijd een auto voor je klaar — voor een vast maandbedrag. Geen last-minute boeken, geen prijsstijging bij grote files, geen gedoe.",
+    "mIntro": "Vliegt u regelmatig? Met een T4XI Airport Membership staat er voor een vast maandbedrag een auto voor u klaar. Geen lastminuteboeking, geen prijsstijging door druk verkeer en geen gedoe.",
     "mTiers": [
       {
         "name": "Frequent",
@@ -333,7 +362,7 @@
     "mPerks": [
       "Vaste maandprijs — ook bij vertraging, files of vroeg vertrek",
       "Vluchttijden worden automatisch gemonitord",
-      "Ophaal bij jouw adres — geen looproute",
+      "Ophalen bij uw adres — geen looproute",
       "Ongebruikte ritten rollen 1 maand door",
       "Altijd opzegbaar — geen jaarcontract"
     ],
@@ -397,7 +426,7 @@
     ],
     "zIdeaal": "Ideaal voor",
     "zTags": [
-      "Consultancy bureaus",
+      "Consultancybureaus",
       "Advocatenkantoren",
       "Internationale bedrijven",
       "Recruiters",
@@ -448,11 +477,11 @@
         "price": "Op aanvraag — ritpakket"
       },
       {
-        "name": "Congres & Conference",
-        "desc": "Sprekers en internationale gasten ophalen van Schiphol en brengen naar de locatie. Naambordje bij aankomst en wij volgen de vluchtstatus.",
+        "name": "Congres & conferentie",
+        "desc": "Wij halen sprekers en internationale gasten op van Schiphol en brengen hen naar de locatie. Met naambordje bij aankomst en actieve vluchtmonitoring.",
         "details": [
           "Vluchtmonitoring inbegrepen",
-          "Naambordje ophaal op Schiphol",
+          "Ophalen met naambordje op Schiphol",
           "Engelstalige service beschikbaar"
         ],
         "price": "Per rit of dagpakket"
@@ -480,7 +509,7 @@
     ],
     "formMembership": {
       "title": "Membership aanvragen",
-      "intro": "Kies je pakket en wij nemen binnen 24 uur contact op.",
+      "intro": "Kies uw pakket en wij nemen binnen 24 uur contact met u op.",
       "cta": "Membership aanvragen",
       "note": "Geen jaarcontract. Altijd opzegbaar.",
       "naam": "Naam",
@@ -501,13 +530,13 @@
       "pakketOpts": [
         "Frequent — €279/maand (4 ritten)",
         "Business — €549/maand (8 ritten)",
-        "Executive — maatwerk"
+        "First Class — maatwerk"
       ],
       "mailSubject": "Aanvraag Airport Membership"
     },
     "formZakelijk": {
-      "title": "Strippenkaart aanvragen",
-      "intro": "Zakelijk, inclusief factuur op naam en BTW-nummer.",
+      "title": "Zakelijke rittenkaart aanvragen",
+      "intro": "Voor bedrijven, met een factuur op naam en vermelding van uw btw-nummer.",
       "cta": "Offerte aanvragen",
       "contact": "Contactpersoon",
       "contactPl": "Naam",
@@ -534,7 +563,7 @@
       ],
       "route": "Gebruikelijk traject",
       "routePl": "Bijv. Amsterdam/Almere → Schiphol",
-      "mailSubject": "Offerteaanvraag zakelijke strippenkaart"
+      "mailSubject": "Offerteaanvraag zakelijke rittenkaart"
     },
     "formHotel": {
       "title": "Partnerschap bespreken",
@@ -542,8 +571,8 @@
       "cta": "Kennismaking inplannen",
       "naam": "Naam",
       "naamPl": "Uw naam",
-      "hotel": "Hotel naam",
-      "hotelPl": "Hotel naam",
+      "hotel": "Hotelnaam",
+      "hotelPl": "Hotelnaam",
       "email": "E-mail",
       "emailPl": "info@uwhotel.nl",
       "tel": "Telefoon",
@@ -557,10 +586,17 @@
       "loc": "Locatie hotel",
       "locPl": "Stad en adres",
       "vraag": "Hoe kunnen wij helpen?",
-      "vraagPl": "Bijv: wij zoeken een vaste chauffeur voor Schipholtransfers van onze gasten, 10–15 ritten per week...",
+      "vraagPl": "Bijvoorbeeld: wij zoeken een vaste chauffeur voor 10–15 Schipholtransfers per week voor onze gasten.",
       "mailSubject": "Aanvraag hotelpartnerschap"
     },
-    "sendNote": "Dit opent je e-mailprogramma met de ingevulde gegevens, klaar om te versturen. Wij verwerken je aanvraag persoonlijk.",
+    "honeypot": "Website (niet invullen)",
+    "sending": "Aanvraag veilig verzenden…",
+    "sendSuccess": "Uw aanvraag is ontvangen. Wij nemen binnen 24 uur persoonlijk contact met u op.",
+    "sendError": "Verzenden is niet gelukt. Probeer het opnieuw of",
+    "emailFallback": "stuur uw aanvraag per e-mail",
+    "privacyNote": "Door te verzenden bevestigt u dat u onze",
+    "privacyLink": "privacyverklaring",
+    "sendNote": "Uw aanvraag wordt rechtstreeks en veilig naar T4XI verzonden. Wij verwerken deze persoonlijk.",
     "orWhatsapp": "Of stuur ons direct een WhatsApp"
   },
   "boekenPagina": {
@@ -747,24 +783,24 @@
     "heroKop1": "Rij meer.",
     "heroKop2pre": "Verdien",
     "heroKop2em": "eerlijk.",
-    "heroIntro": "Bij andere taxiplatforms verdwijnt tot 35% van elke rit naar het platform. Bij T4XI rijdt het geld direct naar jou. Kies je pakket, meld je aan, en rij al binnen 5 werkdagen.",
+    "heroIntro": "T4XI werkt met transparante pakketten: 5–20% ritcommissie en, afhankelijk van het pakket, een vast maandbedrag. Kies wat bij je past, meld je aan en rij al binnen 5 werkdagen.",
     "ctaPakketten": "Bekijk pakketten",
-    "ctaBereken": "Bereken je verdienst",
+    "ctaBereken": "Bereken je verdiensten",
     "heroStats": [
-      "Naar chauffeur",
+      "Ritcommissie",
       "Dagen onboarding",
       "Support",
       "Instap mogelijk"
     ],
-    "compareLabel": "Vergelijking verdienst chauffeur",
-    "compareAnder": "Andere platforms — rit van €79",
+    "compareLabel": "Vergelijking van chauffeursverdiensten",
+    "compareAnder": "Andere platforms — rit van {price}",
     "compareChauffeur": "Chauffeur",
     "comparePlatform": "Platform",
-    "compareAnderSub": "35% verdwijnt naar een buitenlands platform",
-    "compareT4xi": "T4XI Pro — zelfde rit van €79",
-    "compareMeer": "€18,17 meer per rit",
-    "compareMeerNa": " — bij 75 ritten/maand = +€1.363",
-    "compareBadge": "+€1.363",
+    "compareAnderSub": "Rekenvoorbeeld met 65% chauffeursaandeel",
+    "compareT4xi": "T4XI Pro — dezelfde rit van {price}, vóór maandbedrag",
+    "compareMeer": "{amount} meer per rit vóór maandbedrag",
+    "compareMeerNa": " — bij {rides} ritten per maand, na {fee} maandbedrag",
+    "compareBadge": "+€1.264",
     "compareBadgeNa": "extra per maand met T4XI Pro",
     "hoeEyebrow": "Zo simpel werkt het",
     "hoeKop1": "Van aanmelding",
@@ -802,10 +838,10 @@
       "5% commissie · meerdere auto's"
     ],
     "earns": [
-      "€4.661/maand",
-      "€5.134/maand",
-      "€5.424/maand",
-      "€16.726/maand"
+      "€4.740/maand",
+      "€5.115/maand",
+      "€5.252/maand",
+      "€16.587/maand"
     ],
     "fleetEarn": "225 ritten",
     "fleetFeatures": [
@@ -826,7 +862,7 @@
       "Zakelijke klanten",
       "Fleet dashboard"
     ],
-    "calcEyebrow": "Bereken jouw verdienst",
+    "calcEyebrow": "Bereken jouw verdiensten",
     "calcKop1": "Hoeveel kun jij",
     "calcKop2": "verdienen?",
     "ctEyebrow": "Chauffeurstool",
@@ -920,11 +956,11 @@
         "✓"
       ],
       [
-        "Verdienst bij 75 ritten (€79)",
-        "€4.661",
-        "€5.134",
-        "€5.424",
-        "€5.576"
+        "Verdiensten bij 75 ritten (€79)",
+        "€4.740",
+        "€5.115",
+        "€5.252",
+        "€5.330"
       ]
     ],
     "tableCta": "Nu aanmelden als chauffeur",
@@ -946,8 +982,8 @@
         "text": "Max. 4 jaar oud, schoon en gekeurd. Eigen auto of lease."
       },
       {
-        "title": "Taxivergunning (TCA)",
-        "text": "Verplicht voor openbaar taxivervoer. Wij ondersteunen bij aanvraag."
+        "title": "Vergunning voor taxivervoer",
+        "text": "Verplicht voor taxiondernemers in Nederland; aan te vragen via Kiwa Register."
       },
       {
         "title": "KVK-inschrijving",
@@ -972,19 +1008,19 @@
     "earnBlokLabel": "Bij 75 ritten × €79",
     "earnRows": [
       {
-        "val": "€4.661",
+        "val": "€4.740",
         "label": "Starter"
       },
       {
-        "val": "€5.134",
+        "val": "€5.115",
         "label": "Pro ✓ aanbevolen"
       },
       {
-        "val": "€5.424",
+        "val": "€5.252",
         "label": "Elite"
       },
       {
-        "val": "€5.576",
+        "val": "€5.330",
         "label": "Fleet"
       }
     ],
@@ -993,11 +1029,11 @@
     "calcLabelPakket": "Jouw pakket",
     "calcRes": [
       "Bruto omzet",
-      "Netto verdienst",
+      "Nettoverdiensten",
       "Bij Andere platforms (65%)",
-      "Extra per maand"
+      "Verschil per maand"
     ],
-    "calcFoot": "Netto verdienst = omzet − commissie − maandbedrag. Vergelijking op basis van 65% chauffeursaandeel bij grote platforms.",
+    "calcFoot": "Nettoverdiensten = omzet − ritcommissie − maandbedrag. De vergelijking gebruikt als rekenvoorbeeld een chauffeursaandeel van 65% bij andere platforms.",
     "pakLabels": [
       "Starter — €0 + 20%",
       "Pro — €99 + 12%",
@@ -1014,7 +1050,7 @@
     "fVerg": "Type vergunning",
     "fVergOpts": [
       "Selecteer...",
-      "Taxivergunning (TCA)",
+      "Vergunning voor taxivervoer (Kiwa Register)",
       "Chauffeurskaart + eigen voertuig",
       "Eigen taxibedrijf / vloot",
       "Nog niet — heb hulp nodig"
@@ -1047,7 +1083,14 @@
     "fSubmit": "Aanmelding versturen",
     "fBel": "Of bel direct:",
     "mailSubject": "Aanmelding chauffeurspartner",
-    "sendNote": "Dit opent je e-mailprogramma met de ingevulde gegevens, klaar om te versturen. Wij nemen daarna persoonlijk contact op.",
+    "honeypot": "Website (niet invullen)",
+    "sending": "Aanmelding veilig verzenden…",
+    "sendSuccess": "Je aanmelding is ontvangen. Wij nemen binnen 24 uur persoonlijk contact met je op.",
+    "sendError": "Verzenden is niet gelukt. Probeer het opnieuw of",
+    "emailFallback": "stuur je aanmelding per e-mail",
+    "privacyNote": "Door te verzenden bevestigt u dat u onze",
+    "privacyLink": "privacyverklaring",
+    "sendNote": "Je aanmelding wordt rechtstreeks en veilig naar T4XI verzonden. Wij behandelen deze persoonlijk.",
     "orWhatsapp": "Of stuur ons direct een WhatsApp"
   },
   "seo": {
@@ -1060,9 +1103,9 @@
     "dagtochtenTitle": "Dagtochten",
     "dagtochtenDesc": "Toeristische dagtochten vanuit Amsterdam, Almere en Rotterdam naar België, Nederland, Duitsland en Luxemburg. Deur-tot-deur, vaste all-in prijs.",
     "partnerTitle": "Partner worden",
-    "partnerDesc": "Word chauffeurspartner van T4XI. 90%+ van elke rit naar jou, onboarding in 5 dagen, wekelijkse uitbetaling. Kies je pakket vanaf €0/maand.",
+    "partnerDesc": "Word chauffeurspartner van T4XI. Kies een transparant pakket met 5–20% ritcommissie, onboarding in 5 werkdagen en wekelijkse uitbetaling. Instappen kan vanaf €0 per maand.",
     "productenTitle": "Mobiliteitsproducten",
-    "productenDesc": "Airport Memberships, zakelijke strippenkaarten, hotelcontracten en event shuttles. Vaste mobiliteit met voorspelbare kosten.",
+    "productenDesc": "Airport Memberships, zakelijke rittenkaarten, hotelcontracten en event shuttles. Vaste mobiliteit met voorspelbare kosten.",
     "contactTitle": "Contact",
     "contactDesc": "Neem contact op met T4XI: bel, mail of WhatsApp. Dag en nacht bereikbaar voor vragen en boekingen.",
     "overOnsTitle": "Over ons",
