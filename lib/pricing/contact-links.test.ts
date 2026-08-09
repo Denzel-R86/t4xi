@@ -6,7 +6,6 @@ const bookingSource = readFileSync("components/booking/BookingSection.tsx", "utf
 const footerSource = readFileSync("components/sections/Footer.tsx", "utf8");
 const iconSource = readFileSync("components/ui/Icon.tsx", "utf8");
 const layoutSource = readFileSync("app/[locale]/layout.tsx", "utf8");
-const homeSource = readFileSync("app/[locale]/page.tsx", "utf8");
 const nl = JSON.parse(readFileSync("messages/nl.json", "utf8"));
 const en = JSON.parse(readFileSync("messages/en.json", "utf8"));
 
@@ -41,12 +40,9 @@ test("contact: de boekingsfallback opent WhatsApp met gelokaliseerde tekst", () 
 test("contact: het volledige werkgebied staat consequent in beide talen", () => {
   assert.equal(nl.footer.steden, "Amsterdam · Rotterdam · Almere · Den Haag");
   assert.equal(en.footer.steden, "Amsterdam · Rotterdam · Almere · The Hague");
-  assert.equal(nl.home.specRegiosWaarde, "Amsterdam · Rotterdam · Almere · Den Haag");
-  assert.equal(en.home.specRegiosWaarde, "Amsterdam · Rotterdam · Almere · The Hague");
-  assert.match(homeSource, /t\("specRegiosWaarde"\)/);
-  assert.doesNotMatch(homeSource, /AMS · RTM/);
 
   for (const city of ["Amsterdam", "Rotterdam", "Almere", "Den Haag"]) {
+    assert.match(layoutSource, new RegExp(`"${city}"`));
     assert.match(nl.footer.omschrijving, new RegExp(city));
     assert.match(nl.faq.a2, new RegExp(city));
     assert.match(nl.seo.contactDesc, new RegExp(city));

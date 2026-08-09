@@ -6,7 +6,6 @@ import {
   NarrativePattern,
   SentencePattern,
   LedgerPattern,
-  EditorialFigure,
   ProofPattern,
   Stamp,
   Dash,
@@ -14,10 +13,12 @@ import {
 } from "@/components/horizon/patterns";
 import { loadRateCard, type CityRates } from "@/lib/pricing/rate-card";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import Image from "next/image";
-// Static import → Next genereert een blurDataURL bij build (geen dependency,
-// asset zelf ongewijzigd). Gebruikt als blur-placeholder in de EditorialFigure.
+import Image, { type StaticImageData } from "next/image";
+// Statische imports laten Next tijdens de build blur-placeholders genereren;
+// de bronbestanden zelf blijven ongewijzigd.
 import teslaFleet from "@/public/tesla_model_y_black.jpg";
+import teslaInterior from "@/public/tesla-interieur.jpg";
+import lynkFleet from "@/public/lynk_co_black.jpg";
 import passagierRust from "@/public/t4xi-campagne-01-passagier-v2.png";
 import bagageOverdracht from "@/public/t4xi-campagne-02-bagageoverdracht-v4.png";
 import comfortAanBoord from "@/public/t4xi-campagne-03-comfort.png";
@@ -72,6 +73,95 @@ function buildLedger(cities: CityRates[], naar: string, vast: string): LedgerEnt
       },
     ];
   });
+}
+
+/**
+ * Eén voertuig als redactionele plaat: exterieur en interieur krijgen dezelfde
+ * visuele status. De tweede plaat spiegelt op desktop, terwijl mobiel een
+ * logische volgorde behoudt: model, exterieur, interieur.
+ */
+function FleetPlate({
+  index,
+  name,
+  type,
+  description,
+  exterior,
+  exteriorAlt,
+  interior,
+  interiorAlt,
+  exteriorLabel,
+  interiorLabel,
+  reverse = false,
+  interiorPosition = "object-center",
+}: {
+  index: string;
+  name: string;
+  type: string;
+  description: string;
+  exterior: StaticImageData;
+  exteriorAlt: string;
+  interior: StaticImageData;
+  interiorAlt: string;
+  exteriorLabel: string;
+  interiorLabel: string;
+  reverse?: boolean;
+  interiorPosition?: string;
+}) {
+  const labelClass =
+    "absolute left-4 top-4 z-10 bg-ink/85 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-white backdrop-blur-sm md:left-5 md:top-5";
+
+  return (
+    <article className="border-t border-ink/30 py-9 last:border-b md:py-12">
+      <header className="mb-7 grid gap-4 md:grid-cols-[64px_minmax(0,1fr)_auto] md:items-end">
+        <span className="text-[12px] font-medium tracking-[0.16em] text-stone [font-variant-numeric:tabular-nums]">
+          {index}
+        </span>
+        <div>
+          <h3 className="font-display text-[clamp(28px,3.8vw,48px)] font-bold leading-none tracking-[-0.025em] text-ink">
+            {name}
+          </h3>
+          <p className="mt-3 max-w-xl text-sm leading-7 text-secondary">{description}</p>
+        </div>
+        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-secondary md:pb-1 md:text-right">
+          {type}
+        </p>
+      </header>
+
+      <div className="grid gap-px bg-ink/20 lg:grid-cols-12">
+        <figure
+          className={`relative aspect-[2/1] overflow-hidden bg-ink lg:col-span-8 lg:min-h-[430px] lg:aspect-auto ${
+            reverse ? "lg:order-2" : ""
+          }`}
+        >
+          <Image
+            src={exterior}
+            alt={exteriorAlt}
+            fill
+            sizes="(min-width: 1024px) 62vw, 90vw"
+            placeholder="blur"
+            className="object-cover object-center saturate-[0.88] contrast-[0.98]"
+          />
+          <figcaption className={labelClass}>{exteriorLabel}</figcaption>
+        </figure>
+
+        <figure
+          className={`relative aspect-[4/3] overflow-hidden bg-ink lg:col-span-4 lg:min-h-[430px] lg:aspect-auto ${
+            reverse ? "lg:order-1" : ""
+          }`}
+        >
+          <Image
+            src={interior}
+            alt={interiorAlt}
+            fill
+            sizes="(min-width: 1024px) 28vw, 90vw"
+            placeholder="blur"
+            className={`object-cover saturate-[0.88] contrast-[0.98] ${interiorPosition}`}
+          />
+          <figcaption className={labelClass}>{interiorLabel}</figcaption>
+        </figure>
+      </div>
+    </article>
+  );
 }
 
 
@@ -255,19 +345,38 @@ export default async function HomePage({ params }: { params: { locale: string } 
         }
         below={
           <Reveal>
-            <EditorialFigure
-              src={teslaFleet}
-              alt={t("figuurAlt")}
-              specs={[
-                { k: t("specAandrijving"), v: "100% EV" },
-                { k: t("specBeschikbaar"), v: "24 / 7" },
-                { k: t("specChauffeurs"), v: t("specChauffeursWaarde") },
-                { k: t("specRegios"), v: t("specRegiosWaarde") },
-              ]}
+            <FleetPlate
+              index="01 / 02"
+              name="Tesla Model Y"
+              type={t("fleetTeslaType")}
+              description={t("fleetTeslaDescription")}
+              exterior={teslaFleet}
+              exteriorAlt={t("fleetTeslaExteriorAlt")}
+              interior={teslaInterior}
+              interiorAlt={t("fleetTeslaInteriorAlt")}
+              exteriorLabel={t("fleetExteriorLabel")}
+              interiorLabel={t("fleetInteriorLabel")}
+              interiorPosition="object-[52%_58%]"
             />
-            <Stamp className="mt-5">
-              {t("ookActief")}<Dash />
-              <b className="font-semibold text-ink">Lynk &amp; Co 01</b> · {t("lynkDetails")}
+
+            <FleetPlate
+              index="02 / 02"
+              name="Lynk & Co 01"
+              type={t("fleetLynkType")}
+              description={t("fleetLynkDescription")}
+              exterior={lynkFleet}
+              exteriorAlt={t("fleetLynkExteriorAlt")}
+              interior={comfortAanBoord}
+              interiorAlt={t("fleetLynkInteriorAlt")}
+              exteriorLabel={t("fleetExteriorLabel")}
+              interiorLabel={t("fleetInteriorMoodLabel")}
+              interiorPosition="object-[66%_center]"
+              reverse
+            />
+
+            <Stamp className="mt-6 leading-relaxed">
+              {t("fleetAvailabilityNote")}<Dash />
+              <b className="font-semibold text-ink">{t("fleetServiceStandard")}</b>
             </Stamp>
           </Reveal>
         }
