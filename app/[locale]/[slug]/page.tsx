@@ -85,9 +85,9 @@ export function generateMetadata({
 }
 
 const USPS = [
-  { icon: "lock", title: "Vaste prijs", text: "Vooraf bekend en inclusief btw. Geen taxameter, geen surge pricing — ook niet bij file of 's nachts." },
+  { icon: "lock", title: "Vaste prijs", text: "Vooraf bekend en inclusief btw. Geen taxameter of onverwachte prijsstijgingen bij druk verkeer." },
   { icon: "plane", title: "Wij volgen uw vlucht", text: "Geef uw vluchtnummer op; wij passen het ophaalmoment aan bij vertraging. Na de landing is 60 minuten wachttijd inbegrepen." },
-  { icon: "leaf", title: "Volledig elektrisch", text: "Tesla Model Y — geen uitstoot, ruime bagageruimte, premium interieur." },
+  { icon: "leaf", title: "Volledig elektrisch", text: "De Tesla Model Y is stil, ruim en volledig elektrisch." },
   { icon: "clock", title: "24/7 beschikbaar", text: "Vroege vluchten, late aankomsten en last-minute ritten. Wij rijden dag en nacht." },
 ];
 
@@ -144,7 +144,7 @@ export default async function SeoLandingPage({
             <p className="mt-6 max-w-[480px] text-secondary">{stad.intro}</p>
             <ul className="mt-7 flex flex-col gap-2.5">
               {[
-                "Ophaal bij uw voordeur",
+                "Ophalen bij uw voordeur",
                 "Wij volgen uw vluchtstatus bij vertraging",
                 "Tesla Model Y — volledig elektrisch",
                 "Maximaal 4 passagiers excl. chauffeur · bagage vooraf afgestemd",
@@ -205,35 +205,31 @@ export default async function SeoLandingPage({
                 Waarom T4XI voor {stad.naam} → Schiphol
               </p>
               <h2 className="mt-4 font-display text-display-lg font-bold text-ink">
-                De slimste keuze
+                Comfortabel naar Schiphol
                 <br />
                 <span className="italic text-stone">voor uw Schiphol-transfer</span>
               </h2>
               <p className="mt-5 text-secondary">
-                Een Schiphol-transfer vanuit {stad.naam} vraagt om een betrouwbare
-                partner. T4XI is gespecialiseerd in vaste-prijs transferritten —
-                geen taxameter die oploopt, geen onduidelijkheid over de
-                eindprijs en geen stress als het verkeer tegenzit.
+                Voor een rit vanuit {stad.naam} naar Schiphol wilt u vooraf weten
+                waar u aan toe bent. Daarom bevestigen we een vaste prijs en maken
+                we duidelijke afspraken over de ophaaltijd en uw bagage.
               </p>
               <p className="mt-4 text-secondary">
-                Onze chauffeurs kennen de route vanuit {stad.naam} naar Schiphol
-                op hun duimpje. Ze weten wanneer ze moeten vertrekken om op tijd
-                te zijn, welke route het beste werkt op welk moment van de dag,
-                en hoe ze discreet en professioneel met zakelijke reizigers
-                omgaan.
+                Onze chauffeurs rijden regelmatig tussen {stad.naam} en Schiphol.
+                We plannen voldoende reistijd in en kiezen op de dag zelf de route
+                die het beste past bij de verkeerssituatie.
               </p>
               <p className="mt-4 text-secondary">
-                Geef bij de boeking je vluchtnummer op. Wij monitoren de
-                vertrektijden en staan voor de deur op het moment dat jij moet
-                vertrekken — niet eerder, niet later.
+                Geef bij uw boeking het vluchtnummer op. We volgen de vluchtstatus
+                en stemmen het ophaalmoment daarop af als uw vlucht vertraagd is.
               </p>
 
               <h3 className="mt-10 font-display text-xl font-bold text-ink">
                 Vertrekpunten in en om {stad.naam}
               </h3>
               <p className="mt-3 text-secondary">
-                T4XI haalt je op bij jouw voordeur, ongeacht het exacte adres.
-                Wij rijden vanuit alle wijken en omliggende plaatsen:
+                T4XI haalt u op bij uw voordeur. We rijden vanuit de wijken en
+                omliggende plaatsen waarvoor op deze pagina een route staat:
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {stad.vertrekpunten.map((v) => (
@@ -243,13 +239,13 @@ export default async function SeoLandingPage({
                 ))}
               </div>
               <p className="mt-4 text-[13px] text-secondary">
-                Staat jouw plaatsnaam er niet bij? Bel of WhatsApp ons — wij
-                rijden ook vanuit omliggende gemeenten voor een offerte op maat.
+                Staat uw plaatsnaam er niet bij? Bel of WhatsApp ons. We kijken
+                graag of we de rit kunnen uitvoeren en maken een offerte op maat.
               </p>
               <p className="mt-6 text-secondary">
-                Benieuwd naar het exacte bedrag voor jouw rit?{" "}
+                Benieuwd naar het exacte bedrag voor uw rit?{" "}
                 <Link href="/tarieven" className="font-medium text-ink underline underline-offset-4 hover:opacity-80">
-                  Bereken uw vaste taxitarief
+                  Bereken uw vaste ritprijs
                 </Link>{" "}
                 — kies uw ophaaladres, eventuele tussenstops en bestemming en zie
                 direct de vaste prijs.

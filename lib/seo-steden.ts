@@ -60,9 +60,9 @@ const PRIJS_FAQ = {
   a:
     "U ziet de vaste prijs voordat u boekt: vul uw ophaaladres en bestemming in en de " +
     "prijs verschijnt direct, inclusief btw. Die prijs staat vast bij bevestiging — files, " +
-    "omrijden of wachttijd veranderen er niets aan. Geen taxameter en geen surge pricing, " +
-    "ook niet in de spits. Voor ritten tussen 23:00 en 06:00 geldt een nachttarief van " +
-    "+15%, dat vooraf in uw prijs is verwerkt.",
+    "omrijden of wachttijd veranderen daar niets aan. We gebruiken geen taxameter of " +
+    "dynamische prijsverhogingen. Voor ritten tussen 23.00 en 06.00 uur geldt een " +
+    "nachttarief van 15%; dit is vooraf in uw prijs verwerkt.",
 };
 
 export const STEDEN: Stad[] = [
@@ -73,7 +73,7 @@ export const STEDEN: Stad[] = [
     intro:
       "Almere is de grootste stad van Flevoland en ligt via de A6 en A9 op ongeveer drie " +
       "kwartier van Schiphol. T4XI rijdt er 24/7 met een vaste prijs per stadsdeel — u weet " +
-      "vooraf precies wat de rit kost, zonder taxameter en zonder surge pricing.",
+      "vooraf precies wat de rit kost, zonder taxameter of onverwachte prijsstijgingen.",
     vertrekpunten: [
       "Almere Stad Centrum", "Almere Haven", "Almere Buiten", "Almere Poort",
       "Almere Muziekwijk", "Almere Hout", "Almere Oostvaarders",
@@ -83,23 +83,23 @@ export const STEDEN: Stad[] = [
       {
         q: "Hoe laat vertrekt T4XI vanuit Almere naar Schiphol?",
         a:
-          "T4XI rijdt 24 uur per dag. Of uw vlucht nu om 05:00 of om 23:00 vertrekt — wij " +
-          "zijn er. Boek bij voorkeur minimaal twee uur van tevoren, zodat wij de rit goed " +
-          "kunnen inplannen.",
+          "T4XI rijdt 24 uur per dag. Of uw vlucht nu om 05.00 of om 23.00 uur vertrekt, " +
+          "we rijden dag en nacht. Boek bij voorkeur minimaal twee uur van tevoren, zodat " +
+          "we de rit goed kunnen inplannen.",
       },
       VLUCHT_FAQ,
       {
         q: "Welk voertuig rijdt vanuit Almere?",
         a:
           "Vanuit Almere rijden wij met een Tesla Model Y — volledig elektrisch, ruim en " +
-          "comfortabel voor maximaal 4 passagiers exclusief chauffeur. Adviesbagage: 2 grote " +
-          "koffers plus 2 handbagage bij 4 passagiers, of 3 grote koffers bij maximaal 3 " +
+          "comfortabel voor maximaal 4 passagiers, exclusief de chauffeur. Bagageadvies: 2 grote " +
+          "koffers plus 2 stuks handbagage bij 4 passagiers, of 3 grote koffers bij maximaal 3 " +
           "passagiers. Uw chauffeur beschikt over een geldige Nederlandse taxichauffeurskaart.",
       },
     ],
     metaDescription:
       "Taxi van Almere naar Schiphol met een vaste prijs vooraf per stadsdeel. T4XI rijdt " +
-      "24/7 met een volledig elektrische Tesla Model Y. Geen taxameter, geen surge pricing.",
+      "24/7 met een volledig elektrische Tesla Model Y. Geen taxameter of onverwachte prijsstijgingen.",
   },
   {
     slug: "taxi-amsterdam-schiphol",
@@ -134,8 +134,8 @@ export const STEDEN: Stad[] = [
         q: "Welke voertuigen rijden vanuit Amsterdam?",
         a:
           "In Amsterdam rijden wij met een Tesla Model Y (volledig elektrisch) en een Lynk & " +
-          "Co 01 (plug-in hybride). Beide bieden plaats aan maximaal 4 passagiers exclusief " +
-          "chauffeur, en de prijs is voor beide gelijk.",
+          "Co 01 (plug-inhybride). Beide bieden plaats aan maximaal 4 passagiers, exclusief " +
+          "de chauffeur. De prijs is voor beide voertuigen gelijk.",
       },
     ],
     metaDescription:
