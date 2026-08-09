@@ -262,7 +262,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
                 { k: t("specAandrijving"), v: "100% EV" },
                 { k: t("specBeschikbaar"), v: "24 / 7" },
                 { k: t("specChauffeurs"), v: t("specChauffeursWaarde") },
-                { k: t("specRegios"), v: "AMS · RTM" },
+                { k: t("specRegios"), v: t("specRegiosWaarde") },
               ]}
             />
             <Stamp className="mt-5">

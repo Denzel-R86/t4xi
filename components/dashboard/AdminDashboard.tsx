@@ -283,7 +283,7 @@ export default function AdminDashboard() {
               <div className="grid gap-3.5 sm:grid-cols-2">
                 <div><label className={labelCls}>Meta title (index)</label><input defaultValue="T4XI — Premium taxi & elektrische mobiliteit" className={inputCls} /></div>
                 <div><label className={labelCls}>Google Analytics ID</label><input placeholder="G-XXXXXXXXXX" className={inputCls} /></div>
-                <div className="sm:col-span-2"><label className={labelCls}>Meta description</label><textarea defaultValue="T4XI biedt premium taxivervoer in Amsterdam en Rotterdam." className={`${inputCls} min-h-20 resize-y py-2.5`} /></div>
+                <div className="sm:col-span-2"><label className={labelCls}>Meta description</label><textarea defaultValue="T4XI biedt premium taxivervoer in Amsterdam, Rotterdam, Almere en Den Haag." className={`${inputCls} min-h-20 resize-y py-2.5`} /></div>
               </div>
               <SaveButton />
             </div>

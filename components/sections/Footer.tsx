@@ -78,9 +78,9 @@ export default function Footer() {
           <div>
             <p className="text-eyebrow font-medium uppercase text-stone">{t("contactKop")}</p>
             <ul className="mt-4 space-y-2.5 text-sm text-stone-subtle">
-              <li className="flex items-center gap-2">
-                <Icon name="map-pin" size={15} className="shrink-0 text-stone" />
-                {t("steden")}
+              <li className="flex items-start gap-2 leading-relaxed">
+                <Icon name="map-pin" size={15} className="mt-0.5 shrink-0 text-stone" />
+                <span>{t("steden")}</span>
               </li>
               <li>
                 <a href="tel:+31634744522" className="flex items-center gap-2 hover:text-white">
