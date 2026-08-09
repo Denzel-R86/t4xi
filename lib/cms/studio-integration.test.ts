@@ -3,28 +3,29 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const nextConfig = readFileSync("next.config.mjs", "utf8");
-const middleware = readFileSync("middleware.ts", "utf8");
+const proxy = readFileSync("proxy.ts", "utf8");
 const studioPage = readFileSync("app/studio/[[...tool]]/page.tsx", "utf8");
-const studioClient = readFileSync("app/studio/[[...tool]]/StudioClient.tsx", "utf8");
 const studioLayout = readFileSync("app/studio/layout.tsx", "utf8");
+const sanityConfig = readFileSync("sanity.config.ts", "utf8");
 const envExample = readFileSync(".env.example", "utf8");
 const robots = readFileSync("app/robots.ts", "utf8");
 
-test("Studio gebruikt de officiële Next 14 catch-all integratie", () => {
-  assert.match(studioPage, /StudioClient/);
+test("Studio gebruikt de officiële Next 16 catch-all integratie", () => {
+  assert.match(studioPage, /import \{ NextStudio \} from "next-sanity\/studio"/);
   assert.match(studioPage, /dynamic = "force-static"/);
-  assert.match(studioPage, /export const metadata/);
-  assert.match(studioPage, /export const viewport/);
-  assert.match(studioClient, /^"use client";/);
-  assert.match(studioClient, /next-sanity\/studio\/client-component/);
-  assert.match(studioClient, /<NextStudio config=\{config\}/);
+  assert.match(
+    studioPage,
+    /export \{ metadata, viewport \} from "next-sanity\/studio"/,
+  );
+  assert.match(studioPage, /<NextStudio config=\{config\}/);
+  assert.match(sanityConfig, /^"use client";/);
   assert.match(studioLayout, /<html lang="nl">/);
   assert.match(studioLayout, /<body style=\{\{ margin: 0 \}\}>/);
 });
 
-test("locale-middleware sluit /studio en alle Studio-subroutes exact uit", () => {
-  assert.match(middleware, /studio\(\?:\/\|\$\)/);
-  assert.doesNotMatch(middleware, /\(\?!api\|studio\|/);
+test("locale-proxy sluit /studio en alle Studio-subroutes exact uit", () => {
+  assert.match(proxy, /studio\(\?:\/\|\$\)/);
+  assert.doesNotMatch(proxy, /\(\?!api\|studio\|/);
 });
 
 test("Presentation kan uitsluitend same-origin framen", () => {
@@ -42,6 +43,8 @@ test("CSP staat alleen de vaste T4XI Sanity API-, CDN- en WebSocket-origins toe"
   assert.doesNotMatch(nextConfig, /https:\/\/\*\.api\.sanity\.io/);
   assert.doesNotMatch(nextConfig, /https:\/\/\*\.apicdn\.sanity\.io/);
   assert.doesNotMatch(nextConfig, /wss:\/\/\*\.api\.sanity\.io/);
+  assert.match(nextConfig, /const sanityCoreOrigin = "https:\/\/core\.sanity-cdn\.com"/);
+  assert.match(nextConfig, /https:\/\/js\.stripe\.com \$\{sanityCoreOrigin\}/);
   assert.match(nextConfig, /worker-src 'self' blob:/);
 });
 
@@ -57,6 +60,9 @@ test("het preview-token blijft server-only in het voorbeeldbestand", () => {
 });
 
 test("de beheeromgeving is noindex en uitgesloten voor crawlers", () => {
-  assert.match(studioPage, /robots: "noindex"/);
+  assert.match(
+    studioPage,
+    /export \{ metadata, viewport \} from "next-sanity\/studio"/,
+  );
   assert.match(robots, /"\/studio"/);
 });

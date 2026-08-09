@@ -57,8 +57,9 @@ import { BEDRIJF, getLaatstBijgewerkt } from "@/lib/legal";
  * bij in plaats van dat er een gebruikelijk klinkende bepaling wordt verzonnen.
  */
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMetadata(params.locale, "/voorwaarden", "voorwaardenTitle", "voorwaardenDesc");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  return pageMetadata(locale, "/voorwaarden", "voorwaardenTitle", "voorwaardenDesc");
 }
 
 const H2 = "mt-10 font-display text-xl font-bold text-ink";
@@ -68,8 +69,8 @@ const P = "mt-3 text-secondary";
 const EN_DISCLAIMER =
   "This English version is provided for convenience. In the event of any inconsistency, the Dutch version shall prevail.";
 
-export default function VoorwaardenPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale;
+export default async function VoorwaardenPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   setRequestLocale(locale);
   return locale === "en" ? <VoorwaardenEN /> : <VoorwaardenNL />;
 }

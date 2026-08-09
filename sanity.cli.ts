@@ -6,4 +6,12 @@ export default defineCliConfig({
     projectId,
     dataset,
   },
+  typegen: {
+    enabled: true,
+    path: "./sanity/**/*.{ts,tsx,js,jsx}",
+    schema: "./sanity/generated/schema.json",
+    generates: "./sanity/generated/types.ts",
+    overloadClientMethods: true,
+    formatGeneratedCode: true,
+  },
 });

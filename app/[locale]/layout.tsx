@@ -46,8 +46,9 @@ const playfair = Playfair_Display({
  * de homepage-titel/omschrijving komen uit de centrale helper en de
  * `seo`-namespace, per taal (stap 5).
  */
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
-  const locale = hasLocale(routing.locales, params.locale) ? params.locale : routing.defaultLocale;
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale: localeParam } = await params;
+  const locale = hasLocale(routing.locales, localeParam) ? localeParam : routing.defaultLocale;
   const t = await getTranslations({ locale, namespace: "seo" });
   const base = localeMetadata({
     locale,
@@ -99,8 +100,8 @@ export function generateStaticParams() {
 export default async function RootLayout({
   children,
   params,
-}: Readonly<{ children: React.ReactNode; params: { locale: string } }>) {
-  const { locale } = params;
+}: Readonly<{ children: React.ReactNode; params: Promise<{ locale: string }> }>) {
+  const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   // Maakt statische rendering per locale mogelijk (next-intl).
   setRequestLocale(locale);

@@ -60,8 +60,9 @@ function respond(result: FlightLookupResult) {
 
 export async function GET(
   request: Request,
-  { params }: { params: { flightNumber: string } }
+  { params }: { params: Promise<{ flightNumber: string }> }
 ) {
+  const { flightNumber } = await params;
   const ip = clientIp(request);
   const rl = rateLimit(`flights:${ip}`, RATE_MAX, RATE_WINDOW_MS);
   if (rl.limited) {
@@ -93,6 +94,6 @@ export async function GET(
     options.direction = directionParam;
   }
 
-  const result = await getFlightStatus(params.flightNumber, options);
+  const result = await getFlightStatus(flightNumber, options);
   return respond(result);
 }

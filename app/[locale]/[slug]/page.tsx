@@ -37,12 +37,13 @@ export const dynamic = "force-dynamic";
 // bij build-tijd ingebakken — precies de veroudering die we hier oplossen.
 // Onbekende slugs worden hieronder afgevangen met notFound().
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
-  params: { locale: string; slug: string };
-}): Metadata {
-  const stad = STEDEN.find((s) => s.slug === params.slug);
+  params: Promise<{ locale: string; slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const stad = STEDEN.find((s) => s.slug === slug);
   if (!stad) return notFoundMetadata();
 
   // Geen bedrag in de title: twee van de vijf steden hebben geen stadsbrede prijs,
@@ -94,11 +95,12 @@ const USPS = [
 export default async function SeoLandingPage({
   params,
 }: {
-  params: { locale: string; slug: string };
+  params: Promise<{ locale: string; slug: string }>;
 }) {
-  const stad = STEDEN.find((s) => s.slug === params.slug);
+  const { locale, slug } = await params;
+  const stad = STEDEN.find((s) => s.slug === slug);
   if (!stad) notFound();
-  if (params.locale !== "nl") permanentRedirect(`/${stad.slug}`);
+  if (locale !== "nl") permanentRedirect(`/${stad.slug}`);
 
   const bookingHref = `/boeken?pickup=${encodeURIComponent(stad.naam)}&dropoff=${encodeURIComponent(
     "Schiphol Airport",

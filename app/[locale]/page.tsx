@@ -248,10 +248,11 @@ function FleetImage({
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage({ params }: { params: { locale: string } }) {
-  setRequestLocale(params.locale);
-  const t = await getTranslations({ locale: params.locale, namespace: "home" });
-  const cmsFleet = await loadCmsFleetPage(params.locale);
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "home" });
+  const cmsFleet = await loadCmsFleetPage(locale);
   const VOWS = [
     { title: t("vow1Titel"), text: t("vow1Tekst") },
     { title: t("vow2Titel"), text: t("vow2Tekst") },

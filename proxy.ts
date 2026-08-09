@@ -72,7 +72,7 @@ function challenge(): NextResponse {
   });
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Locale-prefix strippen VÓÓR de beveiligingschecks: /en/dashboard moet
   // exact even dicht zitten als /dashboard. Nooit een localepad langs de
   // auth-logica laten glippen.

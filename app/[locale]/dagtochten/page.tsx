@@ -8,12 +8,14 @@ import RoutesExplorer, { FeaturedDetailsButton } from "@/components/dagtochten/R
 import { getCountries, getFeatured, type Locale } from "@/lib/dagtochten";
 import { BEDRIJF } from "@/lib/legal";
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMetadata(params.locale, "/dagtochten", "dagtochtenTitle", "dagtochtenDesc");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  return pageMetadata(locale, "/dagtochten", "dagtochtenTitle", "dagtochtenDesc");
 }
 
-export default async function DagtochtenPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale as Locale;
+export default async function DagtochtenPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  const locale = localeParam as Locale;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "dagtochten" });
   const FEATURED = getFeatured(locale);

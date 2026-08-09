@@ -21,8 +21,9 @@ import { STEDEN } from "@/lib/seo-steden";
  */
 export const dynamic = "force-dynamic";
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMetadata(params.locale, "/tarieven", "tarievenTitle", "tarievenDesc");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  return pageMetadata(locale, "/tarieven", "tarievenTitle", "tarievenDesc");
 }
 
 /** Laagste enkele-reisprijs naar Schiphol + bijbehorende afstand, of null. */
@@ -34,9 +35,10 @@ function cheapestToSchiphol(city: CityRates | undefined): RateEntry | null {
 const WHY_FEATURES = ["eig1", "eig2", "eig3", "eig4", "eig5", "eig6"] as const;
 const FAQ_ITEMS = ["1", "2", "3"] as const;
 
-export default async function TarievenPage({ params }: { params: { locale: string } }) {
-  setRequestLocale(params.locale);
-  const t = await getTranslations({ locale: params.locale, namespace: "routezoeker" });
+export default async function TarievenPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "routezoeker" });
   const cities = await loadRateCard();
 
   const schipholLinks = STEDEN.map((stad) => {
@@ -45,12 +47,12 @@ export default async function TarievenPage({ params }: { params: { locale: strin
     return { slug: stad.slug, naam: stad.naam, vanaf: cheapest?.single ?? null, km: cheapest?.distanceKm ?? null };
   });
 
-  const canonical = localeUrl(params.locale === "en" ? "en" : "nl", "/tarieven");
+  const canonical = localeUrl(locale === "en" ? "en" : "nl", "/tarieven");
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: localeUrl(params.locale === "en" ? "en" : "nl", "/") },
+      { "@type": "ListItem", position: 1, name: "Home", item: localeUrl(locale === "en" ? "en" : "nl", "/") },
       { "@type": "ListItem", position: 2, name: t("breadcrumb"), item: canonical },
     ],
   };

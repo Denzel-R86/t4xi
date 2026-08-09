@@ -68,7 +68,7 @@ export default function Footer() {
               <li><Link href="/diensten" className="text-stone-subtle hover:text-white">{t("bedrijven")}</Link></li>
               <li><Link href="/partner" className="text-stone-subtle hover:text-white">{t("partnerWorden")}</Link></li>
               {/* "Mijn account" verwijderd: /klant is afgesloten tot er echte
-                  authenticatie is (Sprint 11, Fase 0 — zie middleware.ts). */}
+                  authenticatie is (Sprint 11, Fase 0 — zie proxy.ts). */}
               <li><Link href="/tarieven" className="text-stone-subtle hover:text-white">{t("tarieven")}</Link></li>
               <li><Link href="/over-ons" className="text-stone-subtle hover:text-white">{t("overOns")}</Link></li>
               <li><Link href="/boeken" className="text-stone-subtle hover:text-white">{t("boeken")}</Link></li>

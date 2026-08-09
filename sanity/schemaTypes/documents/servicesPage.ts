@@ -1,4 +1,4 @@
-import { CaseIcon } from "@sanity/icons";
+import { CaseIcon } from "@sanity/icons/Case";
 import { defineArrayMember, defineField, defineType } from "sanity";
 import { languageTitle } from "../constants";
 import { localizedLanguageField } from "../shared/localizedLanguageField";

@@ -16,6 +16,9 @@ const sanityApiOrigin = `https://${sanityProjectId}.api.sanity.io`;
 const sanityApiCdnOrigin = `https://${sanityProjectId}.apicdn.sanity.io`;
 const sanityWebSocketOrigin = `wss://${sanityProjectId}.api.sanity.io`;
 const sanityImageSource = `https://cdn.sanity.io/images/${sanityProjectId}/${sanityDataset}/`;
+// De officiële NextStudio-bridge wordt als ES-module vanaf deze vaste Sanity-
+// origin geladen. Zonder deze exacte bron blokkeert de CSP de beheeromgeving.
+const sanityCoreOrigin = "https://core.sanity-cdn.com";
 
 // Sta alleen het daadwerkelijk geconfigureerde Supabase-project toe. Een wildcard
 // zou iedere *.supabase.co-origin toegang geven vanuit de browsercontext.
@@ -46,9 +49,6 @@ const nextConfig = {
       },
     ],
   },
-  // Activeert instrumentation.ts (boot-tijd environment-guard). In Next 14.2 nog
-  // achter een experimental-flag; vanaf Next 15 standaard.
-  experimental: { instrumentationHook: true },
   // Security headers conform T4XI CLAUDE.md security-eisen
   async headers() {
     return [
@@ -71,7 +71,7 @@ const nextConfig = {
               "form-action 'self'",
               "frame-ancestors 'self'",
               // Stripe.js (Payment Element) wordt geladen van js.stripe.com.
-              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.stripe.com`,
+              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.stripe.com ${sanityCoreOrigin}`,
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self'",
               `img-src 'self' data: blob: ${sanityImageSource}`,

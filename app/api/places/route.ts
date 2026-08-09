@@ -34,7 +34,6 @@ function isRateLimited(ip: string): boolean {
 }
 
 function sanitizeQuery(raw: string): string | null {
-  // eslint-disable-next-line no-control-regex
   const cleaned = raw.replace(/[\u0000-\u001f\u007f]/g, "").trim();
   if (cleaned.length < 3 || cleaned.length > MAX_QUERY_LENGTH) return null;
   return cleaned;

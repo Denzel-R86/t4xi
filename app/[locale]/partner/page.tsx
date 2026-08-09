@@ -6,8 +6,9 @@ import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { EarningsCalculator, PartnerSignupForm } from "@/components/partner/PartnerInteractive";
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMetadata(params.locale, "/partner", "partnerTitle", "partnerDesc");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  return pageMetadata(locale, "/partner", "partnerTitle", "partnerDesc");
 }
 
 /** Vaste, taalneutrale structuur (icons, cijfers, booleans). Tekst komt uit i18n. */
@@ -57,8 +58,8 @@ async function SectionHead({
   );
 }
 
-export default async function PartnerPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale;
+export default async function PartnerPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "partner" });
   const money = (value: number, digits = 2) =>

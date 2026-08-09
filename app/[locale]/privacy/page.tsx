@@ -31,8 +31,9 @@ import {
  * zonder die toetsing.
  */
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMetadata(params.locale, "/privacy", "privacyTitle", "privacyDesc");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  return pageMetadata(locale, "/privacy", "privacyTitle", "privacyDesc");
 }
 
 const H2 = "mt-10 font-display text-xl font-bold text-ink";
@@ -42,8 +43,8 @@ const P = "mt-3 text-secondary";
 const EN_DISCLAIMER =
   "This English version is provided for convenience. In the event of any inconsistency, the Dutch version shall prevail.";
 
-export default function PrivacyPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale;
+export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   setRequestLocale(locale);
   return locale === "en" ? <PrivacyEN /> : <PrivacyNL />;
 }

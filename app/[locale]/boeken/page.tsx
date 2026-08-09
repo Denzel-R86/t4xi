@@ -1,12 +1,12 @@
 import { pageMetadata } from "@/lib/seo-locale";
 import BookingSection from "@/components/booking/BookingSection";
-import { useTranslations } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMetadata(params.locale, "/boeken", "boekenTitle", "boekenDesc");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  return pageMetadata(locale, "/boeken", "boekenTitle", "boekenDesc");
 }
 
 const FEATURES = [
@@ -23,30 +23,32 @@ const FEATURES = [
  * Homepage-hero, tarievenpagina, SEO-pagina's en advertenties gebruiken zo
  * exact dezelfde boekingsflow. `van`/`naar` blijven als aliassen werken.
  */
-export default function BoekenPage({
+export default async function BoekenPage({
   params,
   searchParams,
 }: {
-  params: { locale: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  params: Promise<{ locale: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  setRequestLocale(params.locale);
+  const { locale } = await params;
+  const query = await searchParams;
+  setRequestLocale(locale);
   const first = (v: string | string[] | undefined): string | undefined =>
     (Array.isArray(v) ? v[0] : v)?.trim() || undefined;
-  const initialPickup = first(searchParams?.pickup) ?? first(searchParams?.van);
-  const initialDropoff = first(searchParams?.dropoff) ?? first(searchParams?.naar);
-  const initialReturn = first(searchParams?.retour) === "1";
-  const personsRaw = first(searchParams?.persons);
+  const initialPickup = first(query?.pickup) ?? first(query?.van);
+  const initialDropoff = first(query?.dropoff) ?? first(query?.naar);
+  const initialReturn = first(query?.retour) === "1";
+  const personsRaw = first(query?.persons);
   const initialPersons = personsRaw && /^\d+$/.test(personsRaw) ? Number(personsRaw) : undefined;
-  const dateRaw = first(searchParams?.date);
-  const timeRaw = first(searchParams?.time);
-  const returnDateRaw = first(searchParams?.returnDate);
-  const returnTimeRaw = first(searchParams?.returnTime);
+  const dateRaw = first(query?.date);
+  const timeRaw = first(query?.time);
+  const returnDateRaw = first(query?.returnDate);
+  const returnTimeRaw = first(query?.returnTime);
   const initialDate = dateRaw && /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : undefined;
   const initialTime = timeRaw && /^([01]\d|2[0-3]):[0-5]\d$/.test(timeRaw) ? timeRaw : undefined;
   const initialReturnDate = returnDateRaw && /^\d{4}-\d{2}-\d{2}$/.test(returnDateRaw) ? returnDateRaw : undefined;
   const initialReturnTime = returnTimeRaw && /^([01]\d|2[0-3]):[0-5]\d$/.test(returnTimeRaw) ? returnTimeRaw : undefined;
-  const t = useTranslations("boekenPagina");
+  const t = await getTranslations({ locale, namespace: "boekenPagina" });
   return (
     <section className="mx-auto grid max-w-site items-start gap-12 px-6 py-16 md:py-24 lg:grid-cols-2">
       <div>

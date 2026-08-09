@@ -1,4 +1,5 @@
-import { CaseIcon, TransferIcon } from "@sanity/icons";
+import { CaseIcon } from "@sanity/icons/Case";
+import { TransferIcon } from "@sanity/icons/Transfer";
 import type { ComponentType } from "react";
 import type {
   StructureBuilder,

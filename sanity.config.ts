@@ -1,3 +1,5 @@
+"use client";
+
 import { defineConfig, type Template } from "sanity";
 import { presentationTool } from "sanity/presentation";
 import { structureTool } from "sanity/structure";

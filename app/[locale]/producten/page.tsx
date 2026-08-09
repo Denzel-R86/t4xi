@@ -4,8 +4,9 @@ import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { MembershipForm, StrippenkaartForm, HotelForm } from "@/components/producten/ProductForms";
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMetadata(params.locale, "/producten", "productenTitle", "productenDesc");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  return pageMetadata(locale, "/producten", "productenTitle", "productenDesc");
 }
 
 /** Taalneutrale cijfers/iconen; alle tekst komt uit i18n. */
@@ -67,9 +68,10 @@ function Perks({ perks, icons }: { perks: string[]; icons: string[] }) {
   );
 }
 
-export default async function ProductenPage({ params }: { params: { locale: string } }) {
-  setRequestLocale(params.locale);
-  const t = await getTranslations({ locale: params.locale, namespace: "producten" });
+export default async function ProductenPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "producten" });
   const heroStats = t.raw("heroStats") as string[];
   const mTiers = t.raw("mTiers") as Tier[];
   const mPerks = t.raw("mPerks") as string[];

@@ -132,7 +132,7 @@ function pdokLabel(d: PdokDoc): string {
 export function useAddressSuggestions(query: string, enabled = true) {
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "empty">("idle");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const abortRef = useRef<AbortController | null>(null);
 
   const search = useCallback(async (q: string) => {

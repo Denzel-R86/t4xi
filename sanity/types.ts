@@ -1,10 +1,10 @@
 import type {
-  FLEET_PAGE_QUERYResult,
-  SERVICES_PAGE_QUERYResult,
+  FLEET_PAGE_QUERY_RESULT,
+  SERVICES_PAGE_QUERY_RESULT,
 } from "@/sanity/generated/types";
 
-type GeneratedServicesPage = NonNullable<SERVICES_PAGE_QUERYResult>;
-type GeneratedFleetPage = NonNullable<FLEET_PAGE_QUERYResult>;
+type GeneratedServicesPage = NonNullable<SERVICES_PAGE_QUERY_RESULT>;
+type GeneratedFleetPage = NonNullable<FLEET_PAGE_QUERY_RESULT>;
 type GeneratedFleetVehicle = GeneratedFleetPage["vehicles"][number];
 type GeneratedImage = GeneratedFleetVehicle["exteriorImage"];
 type GeneratedImageAsset = NonNullable<GeneratedImage["asset"]>;

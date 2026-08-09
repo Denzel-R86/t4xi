@@ -5,16 +5,17 @@ import FairBand from "@/components/sections/FairBand";
 import WhySection from "@/components/sections/WhySection";
 import ReviewsSection from "@/components/sections/ReviewsSection";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { useTranslations } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMetadata(params.locale, "/over-ons", "overOnsTitle", "overOnsDesc");
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  return pageMetadata(locale, "/over-ons", "overOnsTitle", "overOnsDesc");
 }
 
-export default function OverOnsPage({ params }: { params: { locale: string } }) {
-  setRequestLocale(params.locale);
-  const t = useTranslations("overOns");
+export default async function OverOnsPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "overOns" });
   return (
     <>
       <section className="mx-auto max-w-site px-6 pb-4 pt-16 md:pt-24">

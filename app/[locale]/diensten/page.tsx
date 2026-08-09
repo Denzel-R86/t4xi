@@ -10,14 +10,15 @@ import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 
-export async function generateMetadata({ params }: { params: { locale: string } }) {
-  const content = await loadCmsServicesPage(params.locale, { stega: false });
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  const content = await loadCmsServicesPage(localeParam, { stega: false });
   if (!content) {
-    return pageMetadata(params.locale, "/diensten", "dienstenTitle", "dienstenDesc");
+    return pageMetadata(localeParam, "/diensten", "dienstenTitle", "dienstenDesc");
   }
 
-  const locale = hasLocale(routing.locales, params.locale)
-    ? params.locale
+  const locale = hasLocale(routing.locales, localeParam)
+    ? localeParam
     : routing.defaultLocale;
   const shareImage = content.seo.shareImage;
   const image = shareImage?.asset?.url
@@ -43,9 +44,10 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   });
 }
 
-export default async function DienstenPage({ params }: { params: { locale: string } }) {
-  setRequestLocale(params.locale);
-  const cmsContent = await loadCmsServicesPage(params.locale);
+export default async function DienstenPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const cmsContent = await loadCmsServicesPage(locale);
   return (
     <>
       <ServicesSection content={cmsContent} />

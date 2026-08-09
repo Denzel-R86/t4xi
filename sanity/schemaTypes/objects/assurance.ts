@@ -1,4 +1,4 @@
-import { CheckmarkCircleIcon } from "@sanity/icons";
+import { CheckmarkCircleIcon } from "@sanity/icons/CheckmarkCircle";
 import { defineField, defineType } from "sanity";
 
 export const assuranceType = defineType({

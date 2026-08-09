@@ -45,13 +45,14 @@ function collectFieldObjects(form: HTMLFormElement): { label: string; value: str
 
 function composeMailto(form: HTMLFormElement, subject: string): void {
   const body = collectFields(form).join("\r\n");
-  window.location.href = `mailto:${BEDRIJF.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.assign(`mailto:${BEDRIJF.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
 }
 
 /** WhatsApp-route, óók gevuld met de ingevoerde gegevens (met plain-link fallback). */
 function composeWhatsApp(form: HTMLFormElement, subject: string): void {
   const text = [subject, ...collectFields(form)].join("\n");
-  window.location.href = `${WHATSAPP}?text=${encodeURIComponent(text)}`;
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- External WhatsApp URL.
+  window.location.assign(`${WHATSAPP}?text=${encodeURIComponent(text)}`);
 }
 
 function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {

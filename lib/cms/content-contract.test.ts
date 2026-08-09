@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import {
   cleanCmsOptionalText,
   isSafeCmsInternalHref,
@@ -11,6 +11,7 @@ const queries = readFileSync("sanity/queries/content.ts", "utf8");
 const contentLoader = readFileSync("sanity/lib/content.ts", "utf8");
 const liveConfig = readFileSync("sanity/lib/live.ts", "utf8");
 const clientConfig = readFileSync("sanity/lib/client.ts", "utf8");
+const cliConfig = readFileSync("sanity.cli.ts", "utf8");
 const draftRoute = readFileSync("app/api/draft-mode/enable/route.ts", "utf8");
 const seed = readFileSync("scripts/seed-sanity-content.ts", "utf8");
 const editorialImageSchema = readFileSync(
@@ -59,8 +60,10 @@ test("een trage of onbereikbare CMS-call valt snel en zonder retries terug", () 
 });
 
 test("preview-token blijft uitsluitend server-side", () => {
+  assert.match(liveConfig, /from "next-sanity\/live"/);
   assert.match(liveConfig, /serverToken: readToken/);
   assert.match(liveConfig, /browserToken: false/);
+  assert.match(liveConfig, /strict: false/);
   assert.doesNotMatch(liveConfig, /NEXT_PUBLIC_SANITY_API_READ_TOKEN/);
   assert.match(draftRoute, /SANITY_API_READ_TOKEN/);
   assert.match(draftRoute, /status: 503/);
@@ -86,8 +89,8 @@ test("een optionele SEO-deelafbeelding maakt niet ieder beeld verplicht", () => 
 });
 
 test("applicatietypen zijn afgeleid van de gegenereerde TypeGen-queryresultaten", () => {
-  assert.match(applicationTypes, /FLEET_PAGE_QUERYResult/);
-  assert.match(applicationTypes, /SERVICES_PAGE_QUERYResult/);
+  assert.match(applicationTypes, /FLEET_PAGE_QUERY_RESULT/);
+  assert.match(applicationTypes, /SERVICES_PAGE_QUERY_RESULT/);
   assert.doesNotMatch(applicationTypes, /interface Cms/);
 });
 
@@ -107,10 +110,15 @@ test("CMS-links en attribuuttekst worden centraal opgeschoond", () => {
 test("TypeGen gebruikt hetzelfde gegenereerde schema als de repository", () => {
   assert.equal(
     packageJson.scripts.typegen,
-    "sanity schema extract --path=sanity/generated/schema.json --enforce-required-fields && sanity typegen generate",
+    "sanity schema extract --path=sanity/generated/schema.json --enforce-required-fields --force && sanity typegen generate",
   );
+  assert.match(cliConfig, /typegen: \{/);
+  assert.match(cliConfig, /path: "\.\/sanity\/\*\*\/\*\.\{ts,tsx,js,jsx\}"/);
+  assert.match(cliConfig, /schema: "\.\/sanity\/generated\/schema\.json"/);
+  assert.match(cliConfig, /generates: "\.\/sanity\/generated\/types\.ts"/);
+  assert.equal(existsSync("sanity-typegen.json"), false);
   assert.equal(
     packageJson.scripts["cms:seed"],
-    "sanity exec scripts/seed-sanity-content.ts --with-user-token",
+    "sanity exec scripts/seed-sanity-content.ts --with-user-token --",
   );
 });

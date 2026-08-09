@@ -1,4 +1,4 @@
-import { TransferIcon } from "@sanity/icons";
+import { TransferIcon } from "@sanity/icons/Transfer";
 import { defineArrayMember, defineField, defineType } from "sanity";
 
 export const vehicleType = defineType({
