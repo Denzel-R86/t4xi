@@ -246,7 +246,7 @@ export async function getPricingQuote(
  * Reden waarom de deadhead-shadowberekening voor deze offerte is overgeslagen —
  * uitsluitend informatief voor de log; blokkeert de offerte nooit.
  */
-type ShadowSkipReason = "missing_config" | "load_error" | "timeout";
+type ShadowSkipReason = "missing_config" | "load_error" | "timeout" | "no_service_role_client";
 
 /**
  * Bovengrens op de tijd die de shadow-berekening (config + high-demand-zones
@@ -258,6 +258,15 @@ type ShadowSkipReason = "missing_config" | "load_error" | "timeout";
 export const SHADOW_LOAD_TIMEOUT_MS = 400;
 
 class ShadowTimeoutError extends Error {}
+
+/**
+ * `pricing_deadhead_config`/`pricing_high_demand_zones` zijn RLS-only zonder
+ * publieke policy — de anon-key read-client ziet daar altijd 0 rijen. Deze
+ * fout markeert specifiek "geen service-role-client beschikbaar" (ontbrekende
+ * SUPABASE_SERVICE_ROLE_KEY), los van een echte queryfout of timeout, zodat de
+ * skip-reden in de log diagnosticeerbaar blijft.
+ */
+export class NoServiceRoleClientError extends Error {}
 
 /** Race tegen een timeout — verwerpt met ShadowTimeoutError zonder de onderliggende promise af te breken. */
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -332,6 +341,14 @@ async function resolveQuote(
   const supabase = createPricingReadClient();
   if (!supabase) return { result: unavailable("data_unavailable"), shadow: null };
 
+  // SHADOW-ONLY: pricing_deadhead_config/pricing_high_demand_zones zijn
+  // RLS-only zonder publieke policy — de anon-key `supabase` hierboven ziet
+  // daar altijd 0 rijen. Uitsluitend voor deze twee tabellen de service-role
+  // client (dezelfde als voor pricing_quote_logs-writes); de publieke
+  // referentietabellen (locations/vehicle_classes/fixed_route_prices) blijven
+  // op de anon-key read-client — geen ongemerkt bredere verhoogde toegang.
+  const shadowConfigClient = createPricingLogClient();
+
   let shadow: ShadowLogEntry | null = null;
   const deps: ResolveQuoteDeps = {
     findLocation: (raw) => findLocation(supabase, raw),
@@ -339,8 +356,14 @@ async function resolveQuote(
     findFixedRoute: (pickupId, dropoffId, vehicleClassId) =>
       findFixedRoute(supabase, pickupId, dropoffId, vehicleClassId),
     getRoute: getDrivingRoute,
-    loadDeadheadConfig: () => loadDeadheadConfig(supabase),
-    loadHighDemandZones: () => loadHighDemandZones(supabase),
+    loadDeadheadConfig: () =>
+      shadowConfigClient
+        ? loadDeadheadConfig(shadowConfigClient)
+        : Promise.reject(new NoServiceRoleClientError()),
+    loadHighDemandZones: () =>
+      shadowConfigClient
+        ? loadHighDemandZones(shadowConfigClient)
+        : Promise.reject(new NoServiceRoleClientError()),
     recordShadow: (entry) => {
       shadow = entry;
     },
@@ -499,7 +522,12 @@ async function tryDistanceTariff(
     } catch (e) {
       deps.recordShadow({
         shadowSkipped: true,
-        reason: e instanceof ShadowTimeoutError ? "timeout" : "load_error",
+        reason:
+          e instanceof ShadowTimeoutError
+            ? "timeout"
+            : e instanceof NoServiceRoleClientError
+              ? "no_service_role_client"
+              : "load_error",
       });
     }
   }
