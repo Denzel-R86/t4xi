@@ -17,6 +17,7 @@ const loc = (slug: string, airport = false) => ({
   name: slug,
   active: true,
   location_type: airport ? "airport" : "district",
+  city_id: null,
 });
 
 const vclass = {

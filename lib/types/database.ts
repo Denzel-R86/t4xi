@@ -594,6 +594,78 @@ export type Database = {
           },
         ]
       }
+      pricing_deadhead_config: {
+        Row: {
+          active: boolean
+          created_at: string
+          deadhead_factor: number
+          id: string
+          max_deadhead_km: number
+          min_distance_km: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          deadhead_factor?: number
+          id?: string
+          max_deadhead_km?: number
+          min_distance_km?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          deadhead_factor?: number
+          id?: string
+          max_deadhead_km?: number
+          min_distance_km?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pricing_high_demand_zones: {
+        Row: {
+          active: boolean
+          city_id: string | null
+          created_at: string
+          id: string
+          label: string
+          location_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          label: string
+          location_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          location_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_high_demand_zones_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_high_demand_zones_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_quote_logs: {
         Row: {
           created_at: string

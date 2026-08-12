@@ -33,24 +33,38 @@ export const DEFAULT_DISTANCE_TARIFF: DistanceTariff = {
 };
 
 /**
- * Bindende ENKELE-rit prijs voor een afstand (km) + rijtijd (min), in HELE euro's.
+ * Ruwe (niet-afgeronde, geen minimum afgedwongen) lineaire tariefuitkomst voor een
+ * afstand (km) + rijtijd (min). Niet-eindige/negatieve invoer telt als 0, zodat een
+ * kapotte routing-schatting nooit tot een negatief of NaN-bedrag leidt.
  *
- * Volgorde (afgesproken): (1) lineair tarief berekenen, (2) minimumprijs afdwingen
- * op het ruwe bedrag, (3) pas dán normaal afronden naar de dichtstbijzijnde hele
- * euro. Zo is de klantprijs altijd een rond bedrag (€32,86 → €33, €73,44 → €73) en
- * kan het gelockte snapshot-totaal er exact mee overeenkomen.
- *
- * Niet-eindige/negatieve invoer telt als 0, zodat een kapotte routing-schatting
- * nooit tot een negatieve of NaN-prijs leidt — in het ergste geval de minimumprijs.
+ * Puur rekenwerk — gedeeld tussen `priceFromDistance` (bindende klantprijs) en de
+ * deadhead-shadowmodule (`lib/pricing/deadhead-shadow.ts`), die dezelfde formule
+ * hergebruikt op een aangepaste (effectieve) afstand zonder dit bestand te wijzigen.
  */
-export function priceFromDistance(
+export function computeRawTariff(
   distanceKm: number,
   durationMin: number,
   tariff: DistanceTariff = DEFAULT_DISTANCE_TARIFF
 ): number {
   const km = Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : 0;
   const min = Number.isFinite(durationMin) && durationMin > 0 ? durationMin : 0;
-  const raw = tariff.baseFare + km * tariff.perKm + min * tariff.perMinute;
+  return tariff.baseFare + km * tariff.perKm + min * tariff.perMinute;
+}
+
+/**
+ * Bindende ENKELE-rit prijs voor een afstand (km) + rijtijd (min), in HELE euro's.
+ *
+ * Volgorde (afgesproken): (1) lineair tarief berekenen, (2) minimumprijs afdwingen
+ * op het ruwe bedrag, (3) pas dán normaal afronden naar de dichtstbijzijnde hele
+ * euro. Zo is de klantprijs altijd een rond bedrag (€32,86 → €33, €73,44 → €73) en
+ * kan het gelockte snapshot-totaal er exact mee overeenkomen.
+ */
+export function priceFromDistance(
+  distanceKm: number,
+  durationMin: number,
+  tariff: DistanceTariff = DEFAULT_DISTANCE_TARIFF
+): number {
+  const raw = computeRawTariff(distanceKm, durationMin, tariff);
   // Minimum op het ruwe bedrag, dan afronden naar hele euro's.
   return Math.round(Math.max(tariff.minimumFare, raw));
 }
