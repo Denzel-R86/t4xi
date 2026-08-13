@@ -1,7 +1,8 @@
-// Prijsinvariant-tests voor het deadhead-shadowmodel (SHADOW-ONLY). Bewijst dat
-// het wiren van de shadow-berekening in tryDistanceTariff/logQuote de bindende
-// klantprijs (`resolveQuoteWith(...).price`) NOOIT aanraakt — voor elke
-// classificatie (vaste route, unknown, high_demand, peripheral-qualifies).
+// Prijsgedrag-tests voor het geactiveerde deadhead-model. Bewijst dat de
+// klantprijs UITSLUITEND verandert wanneer classification==="peripheral" +
+// eligibleForActivation===true + een geldige shadowPrice — en in elk ander
+// geval (vaste route, unknown/analysis-only, high_demand, ontbrekende config,
+// queryfout, timeout) exact de basisprijs blijft (fail-closed).
 //
 // Alle km/min/prijs-fixtures zijn VAST — geen enkele test hangt af van live
 // verkeersduur. De "onopgeloste lange routes"-fixtures zijn op 2026-08-09
@@ -138,18 +139,22 @@ for (const route of UNKNOWN_LONG_ROUTES) {
       assert.equal(res.price, route.price);
       assert.equal(res.source, "distance_tariff");
     }
-    // De kandidaat-berekening draait (analysisOnly), maar raakt price niet aan.
+    // De kandidaat-berekening draait (analysisOnly), maar raakt price niet aan:
+    // candidateShadowPrice wordt NOOIT toegepast, ongeacht de hoogte ervan.
     const computed = assertComputed(shadow);
     assert.equal(computed.classification, "unknown");
     assert.equal(computed.analysisOnly, true);
     assert.equal(computed.qualifies, false);
     assert.equal(computed.eligibleForActivation, false);
+    assert.equal(computed.applied, false);
+    assert.equal(computed.basePrice, route.price);
+    assert.equal(computed.finalPrice, route.price);
   });
 }
 
 // ── Groep 3: synthetische fixtures — peripheral (qualifies) en high_demand ───
 
-test("prijsinvariant — bekende perifere bestemming >80km (qualifies=true) verandert price niet", async () => {
+test("ACTIVATIE — bekende perifere bestemming >80km (qualifies=true): shadowPrice wordt de echte prijs", async () => {
   let shadow: ShadowLogEntry | null = null;
   const dropoff = { id: "roermond-id", slug: "roermond", name: "Roermond", active: true, location_type: "city" as const, city_id: "roermond-city-id" };
   const res = await resolveQuoteWith(
@@ -164,17 +169,61 @@ test("prijsinvariant — bekende perifere bestemming >80km (qualifies=true) vera
   );
   assert.equal(res.available, true);
   if (res.available) {
-    // 10.75 + 90*0.65 + 70*1.10 = 146.25 → €146 — ONGEWIJZIGD ondanks qualifies=true.
-    assert.equal(res.price, 146);
+    // 10.75 + 90*0.65 + 70*1.10 = 146.25 → basisprijs €146 (ongebruikt als eindprijs).
+    // deadheadKm = min(90*0.6,80) = 54; effectiveKm = 144;
+    // raw = 10.75 + 144*0.65 + 70*1.10 = 181.35 → shadowPrice €181 = de ECHTE prijs.
+    assert.equal(res.price, 181);
+    assert.equal(res.singlePrice, 181);
     assert.equal(res.source, "distance_tariff");
   }
   const computed = assertComputed(shadow);
   assert.equal(computed.classification, "peripheral");
   assert.equal(computed.qualifies, true);
   assert.equal(computed.eligibleForActivation, true);
-  // De shadow-prijs wijkt bewust af van de live prijs — dat bewijst juist dat
-  // hij er los van staat, niet dat hij hem beïnvloedt.
+  assert.equal(computed.applied, true);
   assert.equal(computed.shadowPrice, 181);
+  assert.equal(computed.basePrice, 146);
+  assert.equal(computed.finalPrice, 181);
+  assert.equal(computed.deltaFromLive, 35);
+});
+
+// RETOURSEMANTIEK (expliciet vastgelegd, audit 2026-08-12):
+// De deadhead-aanpassing wordt ÉÉNMAAL berekend, in de enkele-reisprijs
+// (single). Er is geen apart retour-pad: het bestaande, ongewijzigde
+// retourbeleid verdubbelt simpelweg de VOLLEDIGE enkele-reisprijs
+// (returnPrice = single * 2, exact zoals vóór deadhead-activering al het
+// geval was voor de basisprijs). Omdat `single` nu de deadhead-aangepaste
+// prijs kan zijn, wordt de deadheadcomponent daardoor MEE verdubbeld voor het
+// retourproduct — dat is een rekenkundig gevolg van het bestaande "2× enkele
+// prijs"-beleid, geen bug en geen losse toeslag: er vindt precies ÉÉN
+// classificatie en ÉÉN computeShadowDeadhead-aanroep plaats per offerte,
+// ongeacht returnTrip. Dit gedrag is bewust ongewijzigd gelaten (zelfde
+// aanname als de bestaande "Retour = 2× de enkele rit"-commentaar in
+// tryDistanceTariff) en niet stilzwijgend "gecorrigeerd" naar een aparte
+// retour-deadheadregel — dat zou een nieuwe, hier niet aangevraagde
+// commerciële beslissing zijn.
+test("ACTIVATIE + retour: deadhead loopt éénmaal door de enkele-reisprijs; bestaand 2×-beleid verdubbelt ook die component; geen tweede classificatie/berekening", async () => {
+  let classifyCount = 0;
+  const dropoff = { id: "roermond-id", slug: "roermond", name: "Roermond", active: true, location_type: "city" as const, city_id: "roermond-city-id" };
+  const res = await resolveQuoteWith(
+    input({ returnTrip: true }),
+    makeDeps({
+      findLocation: async (raw) => (raw === "dropoff" ? dropoff : null),
+      getRoute: async () => ({ distanceKm: 90, durationMin: 70 }),
+      loadDeadheadConfig: async () => {
+        classifyCount += 1; // proxy: precies één keer geladen/berekend per offerte
+        return CONFIG;
+      },
+    })
+  );
+  assert.equal(res.available, true);
+  if (res.available) {
+    assert.equal(res.singlePrice, 181); // de éénmalig geactiveerde enkele prijs (zie test hierboven)
+    assert.equal(res.returnPrice, 362); // = 2 × 181 (bestaand beleid) — deadheadcomponent wordt dus MEE verdubbeld
+    assert.equal(res.returnApplied, true);
+    assert.equal(res.price, 362);
+  }
+  assert.equal(classifyCount, 1, "classificatie/deadhead-berekening mag maar éénmaal draaien, niet apart voor de retourleg");
 });
 
 test("prijsinvariant — bekende high-demand-bestemming >80km levert geen kandidaat en verandert price niet", async () => {
@@ -202,6 +251,9 @@ test("prijsinvariant — bekende high-demand-bestemming >80km levert geen kandid
   assert.equal(computed.qualifies, false);
   assert.equal(computed.analysisOnly, false);
   assert.equal(computed.candidateShadowPrice, null);
+  assert.equal(computed.applied, false);
+  assert.equal(computed.basePrice, 218);
+  assert.equal(computed.finalPrice, 218);
 });
 
 // ── Ontbrekende config: shadow overgeslagen, price ongewijzigd ───────────────
@@ -220,7 +272,7 @@ test("ontbrekende deadhead-config → shadow overgeslagen (gelogd), price ongewi
   );
   assert.equal(res.available, true);
   if (res.available) assert.equal(res.price, 158);
-  assert.deepEqual(shadow, { shadowSkipped: true, reason: "missing_config" });
+  assert.deepEqual(shadow, { shadowSkipped: true, reason: "missing_config", basePrice: 158, finalPrice: 158 });
 });
 
 // ── Robuustheid: throw, timeout, ontbrekende/dubbele config ─────────────────
@@ -249,7 +301,7 @@ test("loader gooit (bv. netwerkfout) → shadow overgeslagen (reason load_error)
     assert.equal(res.source, "distance_tariff");
     assert.equal(res.fingerprint, quoteFingerprint(req));
   }
-  assert.deepEqual(shadow, { shadowSkipped: true, reason: "load_error" });
+  assert.deepEqual(shadow, { shadowSkipped: true, reason: "load_error", basePrice: 158, finalPrice: 158 });
 });
 
 test("high-demand-zones-loader gooit → zelfde bescherming (reason load_error), price ongewijzigd", async () => {
@@ -268,7 +320,7 @@ test("high-demand-zones-loader gooit → zelfde bescherming (reason load_error),
   );
   assert.equal(res.available, true);
   if (res.available) assert.equal(res.price, 158);
-  assert.deepEqual(shadow, { shadowSkipped: true, reason: "load_error" });
+  assert.deepEqual(shadow, { shadowSkipped: true, reason: "load_error", basePrice: 158, finalPrice: 158 });
 });
 
 test("hangende loader → begrensd door SHADOW_LOAD_TIMEOUT_MS, geen onbeperkt wachten, price ongewijzigd", async () => {
@@ -288,7 +340,7 @@ test("hangende loader → begrensd door SHADOW_LOAD_TIMEOUT_MS, geen onbeperkt w
   const elapsedMs = Date.now() - start;
   assert.equal(res.available, true);
   if (res.available) assert.equal(res.price, 158);
-  assert.deepEqual(shadow, { shadowSkipped: true, reason: "timeout" });
+  assert.deepEqual(shadow, { shadowSkipped: true, reason: "timeout", basePrice: 158, finalPrice: 158 });
   // Begrensd: niet te vroeg (timeout moet echt gelden) en niet te laat (ruime
   // marge voor test-jitter, maar bewijst dat er geen onbeperkt wachten is).
   assert.ok(elapsedMs >= SHADOW_LOAD_TIMEOUT_MS, `timeout ging te vroeg af: ${elapsedMs}ms < ${SHADOW_LOAD_TIMEOUT_MS}ms`);

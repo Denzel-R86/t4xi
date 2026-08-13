@@ -46,6 +46,32 @@
  */
 
 type PostcodeRule = { min: number; max: number; slug: string };
+type ExactPostcodeRule = { postcode: string; slug: string };
+
+/**
+ * Exacte (6-teken) postcode-matches — draaien VÓÓR de prefix-`POSTCODE_RULES`
+ * hieronder en veranderen niets aan het gedrag daarvan. Bewust NIET als
+ * 4-cijferige prefix-regel gemodelleerd: `POSTCODE_RULES` dekt hele wijken,
+ * maar deze twee bestemmingen zijn één specifiek gebouw op één specifieke
+ * postcode — een 4-cijferige prefix (bv. "5657" of "6041") omvat ook talloze
+ * andere, ongerelateerde adressen in dezelfde postcode-prefix (geverifieerd
+ * via PDOK: 5657 bevat o.a. Castendijkweg/Ekkersrijt/Parmentierweg; 6041 bevat
+ * o.a. Abdijhof/Andersonweg/Bakkerstraat) en zou die dus onterecht meenemen.
+ */
+const EXACT_POSTCODE_RULES: ExactPostcodeRule[] = [
+  // PDOK-anker (2026-08-12): Luchthavenweg 25, 5657EA Eindhoven.
+  { postcode: "5657EA", slug: "eindhoven-airport" },
+  // PDOK-anker (2026-08-12): Stadsweide 2/2A, 6041TD Roermond.
+  { postcode: "6041TD", slug: "designer-outlet-roermond" },
+];
+
+const FULL_POSTCODE_RE = /\b([1-9]\d{3})\s?([A-Za-z]{2})\b/;
+
+/** Volledige 6-teken postcode (bv. "5657EA"), of null. Los van postcode4() hieronder. */
+function fullPostcode(address: string): string | null {
+  const m = address.match(FULL_POSTCODE_RE);
+  return m ? `${m[1]}${m[2].toUpperCase()}` : null;
+}
 
 /**
  * Postcode-ranges → canonieke slug. Wordt op volgorde doorlopen: de eerste
@@ -173,6 +199,34 @@ const KEYWORD_RULES: { test: (full: string, place: string) => boolean; slug: str
   { test: (_f, p) => p.includes("utrecht"), slug: "utrecht" },
 ];
 
+/**
+ * Landmark-aliassen — bewust een APARTE, kleine lijst i.p.v. toevoegingen aan
+ * KEYWORD_RULES hierboven, zodat deze twee regels onafhankelijk te auditen en
+ * terug te draaien zijn. Elke regel vereist een EENDUIDIGE combinatie (nooit
+ * los "airport"/"outlet"/"eindhoven"/"roermond"/"luchthavenweg"/"stadsweide"):
+ *   · exacte naamvarianten ("eindhoven airport", "eindhoven-airport",
+ *     "designer outlet roermond", "mcarthurglen"+"roermond");
+ *   · huisnummerbewuste straatmatch + stad/postcode-context ("luchthavenweg 25"
+ *     + eindhoven/5657ea; "stadsweide 2(a)" + roermond/6041td).
+ * Draait vóór de generieke KEYWORD_RULES (hogere specificiteit wint).
+ */
+const LANDMARK_KEYWORD_RULES: { test: (full: string) => boolean; slug: string }[] = [
+  {
+    test: (f) =>
+      f.includes("eindhoven airport") ||
+      f.includes("eindhoven-airport") ||
+      (/luchthavenweg\s*25(-\d+)?\b/.test(f) && (f.includes("eindhoven") || f.includes("5657ea"))),
+    slug: "eindhoven-airport",
+  },
+  {
+    test: (f) =>
+      f.includes("designer outlet roermond") ||
+      (f.includes("mcarthurglen") && f.includes("roermond")) ||
+      (/stadsweide\s*2a?\b/.test(f) && (f.includes("roermond") || f.includes("6041td"))),
+    slug: "designer-outlet-roermond",
+  },
+];
+
 const POSTCODE_RE = /\b([1-9]\d{3})\s?[A-Za-z]{2}\b/;
 
 function postcode4(address: string): number | null {
@@ -196,6 +250,14 @@ function placeOf(lowerAddress: string): string {
 export function resolveLocationSlug(address: string): string | null {
   if (!address || !address.trim()) return null;
 
+  // Exacte postcode (6 tekens) — vóór de prefix-POSTCODE_RULES, verandert daar niets aan.
+  const fullPc = fullPostcode(address);
+  if (fullPc !== null) {
+    for (const rule of EXACT_POSTCODE_RULES) {
+      if (fullPc === rule.postcode) return rule.slug;
+    }
+  }
+
   const pc = postcode4(address);
   if (pc !== null) {
     for (const rule of POSTCODE_RULES) {
@@ -205,6 +267,12 @@ export function resolveLocationSlug(address: string): string | null {
 
   const full = address.toLowerCase();
   const place = placeOf(full);
+
+  // Landmark-aliassen — hoge specificiteit, vóór de generieke KEYWORD_RULES.
+  for (const rule of LANDMARK_KEYWORD_RULES) {
+    if (rule.test(full)) return rule.slug;
+  }
+
   for (const rule of KEYWORD_RULES) {
     if (rule.test(full, place)) return rule.slug;
   }

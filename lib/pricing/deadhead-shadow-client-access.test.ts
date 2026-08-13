@@ -77,7 +77,7 @@ test("ontbrekende service-role-client → shadowSkipped met specifieke reden 'no
   assert.equal(res.available, true);
   // 10.75 + 104.8*0.65 + 72*1.10 = 158.07 → €158 (zelfde fixture als de bestaande regressietests)
   if (res.available) assert.equal(res.price, 158);
-  assert.deepEqual(shadow, { shadowSkipped: true, reason: "no_service_role_client" });
+  assert.deepEqual(shadow, { shadowSkipped: true, reason: "no_service_role_client", basePrice: 158, finalPrice: 158 });
 });
 
 test("falende service-role-client (queryfout) → shadowSkipped, nooit een fout naar de offerte, klantprijs ongewijzigd", async () => {
@@ -94,7 +94,7 @@ test("falende service-role-client (queryfout) → shadowSkipped, nooit een fout 
   );
   assert.equal(res.available, true);
   if (res.available) assert.equal(res.price, 158);
-  assert.deepEqual(shadow, { shadowSkipped: true, reason: "load_error" });
+  assert.deepEqual(shadow, { shadowSkipped: true, reason: "load_error", basePrice: 158, finalPrice: 158 });
 });
 
 // ── Geen ongemerkt bredere service-role-toegang ──────────────────────────────

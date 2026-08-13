@@ -24,6 +24,9 @@ const SHADOW_IDENTIFIERS = [
   "ShadowDeadheadResult",
   "ShadowLogEntry",
   "deadhead-shadow",
+  "basePrice",
+  "finalPrice",
+  "resolveDeadheadPricing",
 ];
 
 function sourceOf(relPath: string): string {
