@@ -287,11 +287,20 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 /**
  * Wat er in `pricing_quote_logs.price_breakdown` terechtkomt. Bij een geslaagde
- * berekening de volledige shadow-uitkomst; anders een expliciete skip-reden.
+ * berekening de volledige deadhead-uitkomst; anders een expliciete skip-reden.
  * `null` betekent: deze offerte ging niet via het afstand-tarief (bv. vaste
  * route of "offerte op aanvraag") — dan is er niets om te loggen.
+ *
+ * `basePrice`/`finalPrice`/`applied` staan op BEIDE varianten: ook bij een
+ * skip is precies zichtbaar dat `finalPrice === basePrice` (fail-closed) en
+ * waarom. `applied` is uitsluitend `true` wanneer `finalPrice` daadwerkelijk
+ * de deadhead-aangepaste `shadowPrice` is — nooit bij `candidateShadowPrice`
+ * (die hoort uitsluitend bij classification "unknown" en is per ontwerp nooit
+ * `eligibleForActivation`).
  */
-export type ShadowLogEntry = ShadowDeadheadResult | { shadowSkipped: true; reason: ShadowSkipReason };
+export type ShadowLogEntry =
+  | (ShadowDeadheadResult & { applied: boolean; basePrice: number; finalPrice: number })
+  | { shadowSkipped: true; reason: ShadowSkipReason; basePrice: number; finalPrice: number };
 
 /** Set van locatie-ids resp. stad-ids die als "high-demand" (nooit perifeer) gelden. */
 export type HighDemandZoneIds = {
@@ -506,31 +515,24 @@ async function tryDistanceTariff(
   const route = await deps.getRoute(pickupRaw, dropoffRaw, input.departureAt);
   if (!route) return null;
 
-  // Enkel is al een heel bedrag (priceFromDistance rondt af); retour = 2× → ook heel.
-  const single = priceFromDistance(route.distanceKm, route.durationMin);
+  // Basisprijs — ALTIJD berekend uit de enkele-reisafstand (route.distanceKm/
+  // durationMin komen rechtstreeks van Google, nooit al verdubbeld voor een
+  // retour). Dit blijft de bindende prijs zodra deadhead niet van toepassing
+  // is of de berekening om welke reden dan ook faalt (fail-closed).
+  const basePrice = priceFromDistance(route.distanceKm, route.durationMin);
+
+  // Deadhead-model: past de enkele-reisprijs uitsluitend aan wanneer de
+  // bestaande, ongewijzigde classificatie/berekening `eligibleForActivation`
+  // + een geldige `shadowPrice` oplevert. `single` wordt hier ÉÉN keer bepaald
+  // en pas daarna (hieronder) x2 voor een retour — exact hetzelfde
+  // vermenigvuldigingspatroon als de bestaande retourprijs altijd al had, dus
+  // geen dubbele toeslag: de retourrit is en blijft "2× de (eventueel
+  // deadhead-aangepaste) enkele prijs", nooit een aparte tweede berekening.
+  const single = await resolveDeadheadPricing(deps, dropoff, route.distanceKm, route.durationMin, basePrice);
+
   const returnPrice = single * 2;
   const returnApplied = input.returnTrip === true;
   const price = returnApplied ? returnPrice : single;
-
-  // SHADOW-ONLY: raakt price/single/returnPrice hierboven op geen enkele manier
-  // aan. Best-effort, tijdsbegrensd (SHADOW_LOAD_TIMEOUT_MS) — een fout of
-  // trage/hangende dependency hier mag de offerte nooit laten falen of
-  // onbeperkt laten wachten.
-  if (deps.recordShadow) {
-    try {
-      await recordDeadheadShadow(deps, dropoff, route.distanceKm, route.durationMin);
-    } catch (e) {
-      deps.recordShadow({
-        shadowSkipped: true,
-        reason:
-          e instanceof ShadowTimeoutError
-            ? "timeout"
-            : e instanceof NoServiceRoleClientError
-              ? "no_service_role_client"
-              : "load_error",
-      });
-    }
-  }
 
   return {
     available: true,
@@ -557,39 +559,71 @@ async function tryDistanceTariff(
 }
 
 /**
- * SHADOW-ONLY. Classificeert de bestemming en berekent de deadhead-shadow-
- * uitkomst (of registreert een skip-reden bij ontbrekende config). Wordt door
- * de caller (`tryDistanceTariff`) in een try/catch aangeroepen — een fout hier
- * mag de offerte nooit laten falen. Geen enkel resultaat hiervan beïnvloedt
- * `price`/`single`/`returnPrice`.
+ * Bepaalt de daadwerkelijk toe te passen enkele-reisprijs. Roept de bestaande,
+ * ongewijzigde classificatie/berekening aan (`classifyDestination` +
+ * `computeShadowDeadhead`) en past `shadowPrice` uitsluitend toe wanneer
+ * `eligibleForActivation === true` én `shadowPrice` een geldig, positief getal
+ * is. In elk ander geval — `classification !== "peripheral"` (incl.
+ * "unknown", waar nooit `candidateShadowPrice` wordt gebruikt), ontbrekende
+ * config, ontbrekende service-role-client, queryfout of timeout — blijft
+ * `basePrice` de bindende prijs. Faalt NOOIT naar de caller toe: elke fout
+ * wordt hier al afgevangen, tijdsbegrensd door SHADOW_LOAD_TIMEOUT_MS, en
+ * gelogd (indien `recordShadow` is meegegeven) met `finalPrice === basePrice`.
  */
-async function recordDeadheadShadow(
+async function resolveDeadheadPricing(
   deps: ResolveQuoteDeps,
   dropoff: LocationRow | null,
   distanceKm: number,
-  durationMin: number
-): Promise<void> {
-  if (!deps.loadDeadheadConfig || !deps.loadHighDemandZones || !deps.recordShadow) return;
+  durationMin: number,
+  basePrice: number
+): Promise<number> {
+  const log = (entry: ShadowLogEntry) => deps.recordShadow?.(entry);
 
-  // Parallel laden (geen serieel wachten), begrensd door SHADOW_LOAD_TIMEOUT_MS
-  // in totaal — niet per aanroep — zodat de bovengrens op de toegevoegde
-  // latency altijd hetzelfde is, ongeacht hoeveel afhankelijkheden er laden.
-  const [config, zones] = await withTimeout(
-    Promise.all([deps.loadDeadheadConfig(), deps.loadHighDemandZones()]),
-    SHADOW_LOAD_TIMEOUT_MS
-  );
-  if (!config) {
-    deps.recordShadow({ shadowSkipped: true, reason: "missing_config" });
-    return;
+  if (!deps.loadDeadheadConfig || !deps.loadHighDemandZones) return basePrice;
+
+  try {
+    // Parallel laden (geen serieel wachten), begrensd door SHADOW_LOAD_TIMEOUT_MS
+    // in totaal — niet per aanroep — zodat de bovengrens op de toegevoegde
+    // latency altijd hetzelfde is, ongeacht hoeveel afhankelijkheden er laden.
+    const [config, zones] = await withTimeout(
+      Promise.all([deps.loadDeadheadConfig(), deps.loadHighDemandZones()]),
+      SHADOW_LOAD_TIMEOUT_MS
+    );
+    if (!config) {
+      log({ shadowSkipped: true, reason: "missing_config", basePrice, finalPrice: basePrice });
+      return basePrice;
+    }
+
+    const classification = classifyDestination({
+      dropoff: dropoff ? { id: dropoff.id, city_id: dropoff.city_id } : null,
+      highDemandLocationIds: zones.locationIds,
+      highDemandCityIds: zones.cityIds,
+    });
+    const result = computeShadowDeadhead({ distanceKm, durationMin, classification, config });
+
+    const applied =
+      result.eligibleForActivation &&
+      typeof result.shadowPrice === "number" &&
+      Number.isFinite(result.shadowPrice) &&
+      result.shadowPrice > 0;
+    const finalPrice = applied ? (result.shadowPrice as number) : basePrice;
+
+    log({ ...result, applied, basePrice, finalPrice });
+    return finalPrice;
+  } catch (e) {
+    log({
+      shadowSkipped: true,
+      reason:
+        e instanceof ShadowTimeoutError
+          ? "timeout"
+          : e instanceof NoServiceRoleClientError
+            ? "no_service_role_client"
+            : "load_error",
+      basePrice,
+      finalPrice: basePrice,
+    });
+    return basePrice;
   }
-
-  const classification = classifyDestination({
-    dropoff: dropoff ? { id: dropoff.id, city_id: dropoff.city_id } : null,
-    highDemandLocationIds: zones.locationIds,
-    highDemandCityIds: zones.cityIds,
-  });
-
-  deps.recordShadow(computeShadowDeadhead({ distanceKm, durationMin, classification, config }));
 }
 
 // ── Locatie-/klasse-resolutie ────────────────────────────────────────────────
