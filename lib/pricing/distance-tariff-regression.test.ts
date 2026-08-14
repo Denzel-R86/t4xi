@@ -13,10 +13,11 @@ import {
   resolveQuoteWith,
   quoteFingerprint,
   loadDeadheadConfig,
-  SHADOW_LOAD_TIMEOUT_MS,
+  SHADOW_LOAD_OUTER_TIMEOUT_MS,
   type ResolveQuoteDeps,
   type PricingQuoteInput,
   type ShadowLogEntry,
+  type DeadheadZoneAllowlist,
 } from "@/lib/pricing/service";
 import type { DeadheadConfig } from "@/lib/pricing/deadhead-shadow";
 import type { PricingSupabaseClient } from "@/lib/supabase/server";
@@ -41,15 +42,11 @@ const CONFIG: DeadheadConfig = { minDistanceKm: 80, deadheadFactor: 0.6, maxDead
 const NO_HIGH_DEMAND = { locationIds: new Set<string>(), cityIds: new Set<string>() };
 // Standaard: LEGE allowlist. `classification==='peripheral'` alleen mag nooit
 // meer activeren (hotfix 2026-08-13) — elke test die activatie verwacht moet
-// expliciet zijn eigen `loadDeadheadEligibleZoneCityIds` meegeven met het
+// expliciet zijn eigen `loadDeadheadZoneAllowlist` meegeven met het
 // betreffende city_id erin. Dit is bewust het "veilige" default zodat een
 // vergeten override altijd zichtbaar faalt als "geen activatie", nooit als
 // stilzwijgende activatie.
-const NO_ELIGIBLE_ZONES = new Set<string>();
-// Standaard: LEGE woonplaats-map EN een PDOK-lookup die niets vindt — een
-// onopgeloste bestemming promoveert dus nooit stilzwijgend naar een zone
-// tenzij een test dat expliciet met een eigen map/lookup aantoont.
-const NO_ZONE_BY_WOONPLAATS = new Map<string, string>();
+const NO_ELIGIBLE_ZONES: DeadheadZoneAllowlist = { cityIds: new Set(), byOfficialWoonplaats: new Map() };
 
 function makeDeps(o: Partial<ResolveQuoteDeps> & { onShadow?: (e: ShadowLogEntry) => void } = {}): ResolveQuoteDeps {
   const { onShadow, ...rest } = o;
@@ -60,8 +57,7 @@ function makeDeps(o: Partial<ResolveQuoteDeps> & { onShadow?: (e: ShadowLogEntry
     getRoute: async () => ({ distanceKm: 20, durationMin: 30 }),
     loadDeadheadConfig: async () => CONFIG,
     loadHighDemandZones: async () => NO_HIGH_DEMAND,
-    loadDeadheadEligibleZoneCityIds: async () => NO_ELIGIBLE_ZONES,
-    loadDeadheadZoneCityIdByWoonplaats: async () => NO_ZONE_BY_WOONPLAATS,
+    loadDeadheadZoneAllowlist: async () => NO_ELIGIBLE_ZONES,
     lookupOfficialWoonplaats: async () => null,
     recordShadow: onShadow,
     ...rest,
@@ -176,7 +172,10 @@ test("ACTIVATIE — bekende perifere bestemming >80km (qualifies=true) BINNEN de
     makeDeps({
       findLocation: async (raw) => (raw === "dropoff" ? dropoff : null),
       getRoute: async () => ({ distanceKm: 90, durationMin: 70 }),
-      loadDeadheadEligibleZoneCityIds: async () => new Set(["roermond-city-id"]),
+      loadDeadheadZoneAllowlist: async () => ({
+        cityIds: new Set(["roermond-city-id"]),
+        byOfficialWoonplaats: new Map([["roermond", "roermond-city-id"]]),
+      }),
       onShadow: (e) => {
         shadow = e;
       },
@@ -220,7 +219,7 @@ test("GEEN ACTIVATIE — bekende perifere bestemming >80km (qualifies=true) BUIT
     makeDeps({
       findLocation: async (raw) => (raw === "dropoff" ? dropoff : null),
       getRoute: async () => ({ distanceKm: 90, durationMin: 70 }),
-      // loadDeadheadEligibleZoneCityIds: default (lege set) — "arnhem-city-id" staat er niet in.
+      // loadDeadheadZoneAllowlist: default (lege allowlist) — "arnhem-city-id" staat er niet in.
       onShadow: (e) => {
         shadow = e;
       },
@@ -270,9 +269,15 @@ for (const city of NON_ZONE_PERIPHERAL_CITIES) {
       makeDeps({
         findLocation: async (raw) => (raw === "dropoff" ? dropoff : null),
         getRoute: async () => ({ distanceKm: city.km, durationMin: city.min }),
-        // Bewijst dat zelfs als de zone-eligible-zones-loader WÉL Eindhoven/Roermond
+        // Bewijst dat zelfs als de zone-allowlist-loader WÉL Eindhoven/Roermond
         // teruggeeft (realistische productie-allowlist), deze stad er terecht buiten valt.
-        loadDeadheadEligibleZoneCityIds: async () => new Set(["eindhoven-city-id", "roermond-city-id"]),
+        loadDeadheadZoneAllowlist: async () => ({
+          cityIds: new Set(["eindhoven-city-id", "roermond-city-id"]),
+          byOfficialWoonplaats: new Map([
+            ["eindhoven", "eindhoven-city-id"],
+            ["roermond", "roermond-city-id"],
+          ]),
+        }),
         onShadow: (e) => {
           shadow = e;
         },
@@ -289,7 +294,7 @@ for (const city of NON_ZONE_PERIPHERAL_CITIES) {
 }
 
 // ── Bewijs: ontbrekende zone-allowlist-dependency zelf → fail-closed ────────
-test("ontbrekende loadDeadheadEligibleZoneCityIds-dependency → shadow volledig overgeslagen (geen log), price ongewijzigd", async () => {
+test("ontbrekende loadDeadheadZoneAllowlist-dependency → shadow volledig overgeslagen (geen log), price ongewijzigd", async () => {
   let shadowCalled = false;
   const dropoff = { id: "roermond-id", slug: "roermond", name: "Roermond", active: true, location_type: "city" as const, city_id: "roermond-city-id" };
   const res = await resolveQuoteWith(
@@ -297,7 +302,7 @@ test("ontbrekende loadDeadheadEligibleZoneCityIds-dependency → shadow volledig
     makeDeps({
       findLocation: async (raw) => (raw === "dropoff" ? dropoff : null),
       getRoute: async () => ({ distanceKm: 90, durationMin: 70 }),
-      loadDeadheadEligibleZoneCityIds: undefined,
+      loadDeadheadZoneAllowlist: undefined,
       onShadow: () => {
         shadowCalled = true;
       },
@@ -308,12 +313,12 @@ test("ontbrekende loadDeadheadEligibleZoneCityIds-dependency → shadow volledig
   assert.equal(shadowCalled, false, "zonder deze dependency mag zelfs de skip-log niet lopen — zelfde patroon als de bestaande twee deps");
 });
 
-test("zone-eligible-zones-loader gooit → zelfde bescherming (reason load_error), price ongewijzigd", async () => {
+test("zone-allowlist-loader gooit (voor een aantoonbaar NIET-mogelijke bestemming) → zelfde bescherming (reason load_error), price ongewijzigd", async () => {
   let shadow: ShadowLogEntry | null = null;
   const res = await resolveQuoteWith(
     input(),
     makeDeps({
-      loadDeadheadEligibleZoneCityIds: async () => {
+      loadDeadheadZoneAllowlist: async () => {
         throw new Error("connection reset");
       },
       getRoute: async () => ({ distanceKm: 104.8, durationMin: 72 }),
@@ -322,6 +327,9 @@ test("zone-eligible-zones-loader gooit → zelfde bescherming (reason load_error
       },
     })
   );
+  // dropoff blijft null (default findLocation) en de ruwe tekst "dropoff" bevat
+  // geen postcode/plaatsnaam die op Eindhoven/Roermond wijst — couldPlausiblyBeInZone
+  // is dus false, en dit blijft het bestaande, veilige "load_error"-pad.
   assert.equal(res.available, true);
   if (res.available) assert.equal(res.price, 158);
   assert.deepEqual(shadow, { shadowSkipped: true, reason: "load_error", basePrice: 158, finalPrice: 158 });
@@ -350,7 +358,10 @@ test("ACTIVATIE + retour: deadhead loopt éénmaal door de enkele-reisprijs; bes
     makeDeps({
       findLocation: async (raw) => (raw === "dropoff" ? dropoff : null),
       getRoute: async () => ({ distanceKm: 90, durationMin: 70 }),
-      loadDeadheadEligibleZoneCityIds: async () => new Set(["roermond-city-id"]),
+      loadDeadheadZoneAllowlist: async () => ({
+        cityIds: new Set(["roermond-city-id"]),
+        byOfficialWoonplaats: new Map([["roermond", "roermond-city-id"]]),
+      }),
       loadDeadheadConfig: async () => {
         classifyCount += 1; // proxy: precies één keer geladen/berekend per offerte
         return CONFIG;
@@ -464,13 +475,17 @@ test("high-demand-zones-loader gooit → zelfde bescherming (reason load_error),
   assert.deepEqual(shadow, { shadowSkipped: true, reason: "load_error", basePrice: 158, finalPrice: 158 });
 });
 
-test("hangende loader → begrensd door SHADOW_LOAD_TIMEOUT_MS, geen onbeperkt wachten, price ongewijzigd", async () => {
+test("hangende loader (rauwe test-fake, geen eigen retry) → begrensd door het SHADOW_LOAD_OUTER_TIMEOUT_MS-veiligheidsnet, geen onbeperkt wachten, price ongewijzigd", async () => {
   let shadow: ShadowLogEntry | null = null;
   const start = Date.now();
   const res = await resolveQuoteWith(
     input(),
     makeDeps({
       // Lost nooit op — bewijst dat de quote NIET onbeperkt op deze dependency wacht.
+      // Dit is een RAUWE test-fake (geen withRetryOnce zoals de productie-
+      // cached-loaders) — die vallen terug op het buitenste veiligheidsnet
+      // (SHADOW_LOAD_OUTER_TIMEOUT_MS), niet op het per-poging-budget
+      // (SHADOW_LOAD_TIMEOUT_MS) dat uitsluitend binnen withRetryOnce geldt.
       loadDeadheadConfig: () => new Promise<DeadheadConfig | null>(() => {}),
       getRoute: async () => ({ distanceKm: 104.8, durationMin: 72 }),
       onShadow: (e) => {
@@ -484,10 +499,13 @@ test("hangende loader → begrensd door SHADOW_LOAD_TIMEOUT_MS, geen onbeperkt w
   assert.deepEqual(shadow, { shadowSkipped: true, reason: "timeout", basePrice: 158, finalPrice: 158 });
   // Begrensd: niet te vroeg (timeout moet echt gelden) en niet te laat (ruime
   // marge voor test-jitter, maar bewijst dat er geen onbeperkt wachten is).
-  assert.ok(elapsedMs >= SHADOW_LOAD_TIMEOUT_MS, `timeout ging te vroeg af: ${elapsedMs}ms < ${SHADOW_LOAD_TIMEOUT_MS}ms`);
   assert.ok(
-    elapsedMs < SHADOW_LOAD_TIMEOUT_MS + 300,
-    `verwacht ~${SHADOW_LOAD_TIMEOUT_MS}ms, duurde ${elapsedMs}ms — geen bovengrens op de wachttijd?`
+    elapsedMs >= SHADOW_LOAD_OUTER_TIMEOUT_MS,
+    `timeout ging te vroeg af: ${elapsedMs}ms < ${SHADOW_LOAD_OUTER_TIMEOUT_MS}ms`
+  );
+  assert.ok(
+    elapsedMs < SHADOW_LOAD_OUTER_TIMEOUT_MS + 300,
+    `verwacht ~${SHADOW_LOAD_OUTER_TIMEOUT_MS}ms, duurde ${elapsedMs}ms — geen bovengrens op de wachttijd?`
   );
 });
 

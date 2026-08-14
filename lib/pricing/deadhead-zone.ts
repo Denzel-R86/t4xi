@@ -91,3 +91,55 @@ export function resolveZoneCityIdFromPostcode4Fallback(
   }
   return null;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Betrouwbaarheidshardening (2026-08-14): een BREDE, uitsluitend DEFENSIEVE
+// pre-filter. Bepaalt NOOIT of deadhead activeert — uitsluitend of een
+// mislukte/onzekere zone-lookup (config/allowlist/PDOK allemaal onbeschikbaar,
+// zelfs na retry) mag terugvallen op de basisprijs, of in plaats daarvan de
+// hele offerte "onzeker" (fail-closed naar "Offerte op aanvraag") moet maken.
+// Te breed classificeren hier is VEILIG: het leidt hoogstens tot vaker
+// "Offerte op aanvraag", nooit tot een te lage bindende prijs. Daarom mag deze
+// functie — in tegenstelling tot alle activeringslogica elders — wél op een
+// brede postcode-honderdtallen-band en een letterlijke plaatsnaam in de tekst
+// leunen: dat is hier geen "losse trefwoorden zijn genoeg om te activeren"
+// (verboden), maar "losse aanwijzingen zijn genoeg om NIET te gokken" (vereist).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Ruime band rond de bekende Eindhoven/Roermond-postcodes — uitsluitend voor de veiligheidsbeslissing hierboven. */
+const PLAUSIBLE_ZONE_POSTCODE4_RANGES: ReadonlyArray<{ min: number; max: number }> = [
+  { min: 5600, max: 5699 }, // Eindhoven en ruime omgeving
+  { min: 6000, max: 6099 }, // Roermond en ruime omgeving
+];
+
+const PLAUSIBLE_ZONE_NAME_RE = /eindhoven|roermond/i;
+
+/**
+ * `dropoff` bekend (curated LocationRow) MET een echte stad (`city_id`
+ * non-null): altijd `true` — een reeds-opgeloste locatie met een stad is per
+ * definitie betrouwbaarder dan elke tekstheuristiek, en zonder de
+ * allowlist-load kunnen we niet uitsluiten dat die stad Eindhoven/Roermond is.
+ * `dropoff` bekend maar zonder stad (bv. Schiphol Airport, `city_id: null`):
+ * altijd `false` — een zone bindt op stad, dus zo'n locatie kan structureel
+ * nooit in een zone vallen, ongeacht welke config beschikbaar is.
+ * `dropoff` onopgelost: brede postcode4-band OF plaatsnaam letterlijk in de
+ * tekst.
+ */
+export function couldPlausiblyBeInZone(
+  dropoff: { city_id: string | null } | null,
+  dropoffRaw: string
+): boolean {
+  if (dropoff) return dropoff.city_id !== null;
+  const pc4 = extractPostcode4(dropoffRaw);
+  const inBroadRange = pc4 !== null && PLAUSIBLE_ZONE_POSTCODE4_RANGES.some((r) => pc4 >= r.min && pc4 <= r.max);
+  return inBroadRange || PLAUSIBLE_ZONE_NAME_RE.test(dropoffRaw);
+}
+
+/**
+ * Conservatieve ondergrens voor de veiligheidsbeslissing wanneer zelfs de
+ * config (dus ook `minDistanceKm`) niet geladen kon worden — ruim onder elke
+ * realistische configwaarde (default 80 km), zodat deze nooit een echt te
+ * korte rit blokkeert, maar wél iedere rit meeneemt die de configdrempel zou
+ * kunnen halen.
+ */
+export const PLAUSIBLE_ZONE_MIN_DISTANCE_KM_FLOOR = 50;

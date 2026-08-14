@@ -1,10 +1,10 @@
-// Regressietests voor de PDOK-woonplaats-IO-laag: bewijst dat elke fout,
-// timeout of leeg antwoord `null` oplevert (fail-closed) en dat een geldig
-// antwoord het EERSTE document met een `woonplaatsnaam`-veld gebruikt (dus
-// nooit een `type:"gemeente"`-document, dat dat veld niet heeft).
+// Regressietests voor de PDOK-woonplaats-IO-laag. CONTRACT (2026-08-14): gooit
+// bij elke echte storing (netwerk/timeout/HTTP/JSON), levert `null` uitsluitend
+// bij een GESLAAGDE aanroep zonder relevant document — de caller moet dat
+// onderscheid kunnen maken (zie service.ts's indeterminate-pad).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lookupOfficialWoonplaats, PDOK_ZONE_LOOKUP_TIMEOUT_MS } from "./pdok-woonplaats";
+import { lookupOfficialWoonplaats, PdokLookupError, PDOK_ZONE_LOOKUP_TIMEOUT_MS } from "./pdok-woonplaats";
 
 function withFakeFetch<T>(impl: typeof fetch, run: () => Promise<T>): Promise<T> {
   const original = globalThis.fetch;
@@ -61,7 +61,7 @@ test("lookupOfficialWoonplaats: adres-document met woonplaatsnaam als eerste →
   assert.equal(result, "Roermond");
 });
 
-test("lookupOfficialWoonplaats: leeg docs-array → null", async () => {
+test("lookupOfficialWoonplaats: geslaagd, maar leeg docs-array → null (zekere 'geen match', geen fout)", async () => {
   const result = await withFakeFetch(
     async () => jsonResponse({ response: { docs: [] } }),
     () => lookupOfficialWoonplaats("onbestaand adres")
@@ -69,7 +69,7 @@ test("lookupOfficialWoonplaats: leeg docs-array → null", async () => {
   assert.equal(result, null);
 });
 
-test("lookupOfficialWoonplaats: alle documenten zonder woonplaatsnaam (bv. uitsluitend gemeente-treffers) → null", async () => {
+test("lookupOfficialWoonplaats: geslaagd, alle documenten zonder woonplaatsnaam → null", async () => {
   const result = await withFakeFetch(
     async () => jsonResponse({ response: { docs: [{ type: "gemeente" }, { type: "gemeente" }] } }),
     () => lookupOfficialWoonplaats("Eindhoven")
@@ -77,45 +77,52 @@ test("lookupOfficialWoonplaats: alle documenten zonder woonplaatsnaam (bv. uitsl
   assert.equal(result, null);
 });
 
-test("lookupOfficialWoonplaats: HTTP-fout (niet ok) → null, geen throw", async () => {
-  const result = await withFakeFetch(
-    async () => jsonResponse({}, { ok: false }),
-    () => lookupOfficialWoonplaats("Eindhoven")
+test("lookupOfficialWoonplaats: HTTP-fout (niet ok) → gooit PdokLookupError, NOOIT null", async () => {
+  await assert.rejects(
+    () => withFakeFetch(async () => jsonResponse({}, { ok: false }), () => lookupOfficialWoonplaats("Eindhoven")),
+    PdokLookupError
   );
-  assert.equal(result, null);
 });
 
-test("lookupOfficialWoonplaats: netwerkfout (fetch gooit) → null, geen throw naar de caller", async () => {
-  const result = await withFakeFetch(
-    async () => {
-      throw new Error("connection reset");
-    },
-    () => lookupOfficialWoonplaats("Eindhoven")
+test("lookupOfficialWoonplaats: netwerkfout → gooit PdokLookupError, NOOIT null", async () => {
+  await assert.rejects(
+    () =>
+      withFakeFetch(
+        async () => {
+          throw new Error("connection reset");
+        },
+        () => lookupOfficialWoonplaats("Eindhoven")
+      ),
+    PdokLookupError
   );
-  assert.equal(result, null);
 });
 
-test("lookupOfficialWoonplaats: ongeldige JSON → null, geen throw", async () => {
-  const result = await withFakeFetch(
-    async () => new Response("dit is geen json", { status: 200 }),
-    () => lookupOfficialWoonplaats("Eindhoven")
+test("lookupOfficialWoonplaats: ongeldige JSON → gooit PdokLookupError, NOOIT null", async () => {
+  await assert.rejects(
+    () =>
+      withFakeFetch(
+        async () => new Response("dit is geen json", { status: 200 }),
+        () => lookupOfficialWoonplaats("Eindhoven")
+      ),
+    PdokLookupError
   );
-  assert.equal(result, null);
 });
 
-test("lookupOfficialWoonplaats: hangende fetch → begrensd door PDOK_ZONE_LOOKUP_TIMEOUT_MS, null, geen onbeperkt wachten", async () => {
+test("lookupOfficialWoonplaats: hangende fetch → begrensd door PDOK_ZONE_LOOKUP_TIMEOUT_MS, gooit PdokLookupError, geen onbeperkt wachten", async () => {
   const start = Date.now();
-  const result = await withFakeFetch(
-    (_url, init) =>
-      new Promise((_resolve, reject) => {
-        // Reageert zelf nooit — alleen de AbortSignal van de caller mag dit beëindigen.
-        const signal = init?.signal as AbortSignal | undefined;
-        signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
-      }),
-    () => lookupOfficialWoonplaats("Eindhoven")
+  await assert.rejects(
+    () =>
+      withFakeFetch(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            const signal = init?.signal as AbortSignal | undefined;
+            signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+          }),
+        () => lookupOfficialWoonplaats("Eindhoven")
+      ),
+    PdokLookupError
   );
   const elapsedMs = Date.now() - start;
-  assert.equal(result, null);
   assert.ok(elapsedMs >= PDOK_ZONE_LOOKUP_TIMEOUT_MS - 20, `timeout ging te vroeg af: ${elapsedMs}ms`);
   assert.ok(elapsedMs < PDOK_ZONE_LOOKUP_TIMEOUT_MS + 300, `verwacht ~${PDOK_ZONE_LOOKUP_TIMEOUT_MS}ms, duurde ${elapsedMs}ms`);
 });

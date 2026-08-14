@@ -16,6 +16,8 @@ import {
   type ShadowLogEntry,
 } from "@/lib/pricing/service";
 
+const EMPTY_ALLOWLIST = { cityIds: new Set<string>(), byOfficialWoonplaats: new Map<string, string>() };
+
 function sourceOf(relPath: string): string {
   return readFileSync(resolve(process.cwd(), relPath), "utf8");
 }
@@ -28,19 +30,42 @@ function resolveQuoteBlock(): string {
   return src.slice(start, end);
 }
 
+/**
+ * De service-role client wordt sinds 2026-08-14 niet meer rechtstreeks in
+ * resolveQuote() aangemaakt, maar binnen de module-scope gecachete loaders
+ * (cachedLoadDeadheadConfig/cachedLoadHighDemandZones/
+ * cachedLoadDeadheadZoneAllowlist) die er vlak vóór staan — vandaar dit
+ * bredere blok voor de client-toegangsscan.
+ */
+function cachedLoadersAndResolveQuoteBlock(): string {
+  const src = sourceOf("lib/pricing/service.ts");
+  const start = src.indexOf("const cachedLoadDeadheadConfig");
+  const end = src.indexOf("export async function resolveQuoteWith");
+  assert.ok(start > -1 && end > start, "kon de gecachete loaders + resolveQuote() niet lokaliseren voor de scan");
+  return src.slice(start, end);
+}
+
 // ── Bewijs: shadow-configtabellen via service-role, niet via de anon-client ──
 
-test("resolveQuote(): loadDeadheadConfig/loadHighDemandZones/loadDeadheadEligibleZoneCityIds krijgen de service-role client (createPricingLogClient), niet de anon read-client", () => {
-  const block = resolveQuoteBlock();
-  assert.match(block, /shadowConfigClient\s*=\s*createPricingLogClient\(\)/);
-  assert.match(block, /loadDeadheadConfig\(shadowConfigClient\)/);
-  assert.match(block, /loadHighDemandZones\(shadowConfigClient\)/);
-  assert.match(block, /loadDeadheadEligibleZoneCityIds\(shadowConfigClient\)/);
-  assert.match(block, /loadDeadheadZoneCityIdByWoonplaats\(shadowConfigClient\)/);
+test("de gecachete shadow-loaders (config/high-demand-zones/zone-allowlist) gebruiken de service-role client (createPricingLogClient), niet de anon read-client", () => {
+  const block = cachedLoadersAndResolveQuoteBlock();
+  // Alle drie roepen createPricingLogClient() aan binnen hun eigen load()-closure.
+  assert.match(block, /loadDeadheadConfig\(client\)/);
+  assert.match(block, /loadHighDemandZones\(client\)/);
+  assert.match(block, /loadDeadheadZoneAllowlist\(client\)/);
+  const logClientCalls = block.match(/createPricingLogClient\(\)/g) ?? [];
+  assert.ok(logClientCalls.length >= 3, `verwacht createPricingLogClient() minstens 3× (één per loader), telde ${logClientCalls.length}`);
   assert.doesNotMatch(block, /loadDeadheadConfig\(supabase\)/);
   assert.doesNotMatch(block, /loadHighDemandZones\(supabase\)/);
-  assert.doesNotMatch(block, /loadDeadheadEligibleZoneCityIds\(supabase\)/);
-  assert.doesNotMatch(block, /loadDeadheadZoneCityIdByWoonplaats\(supabase\)/);
+  assert.doesNotMatch(block, /loadDeadheadZoneAllowlist\(supabase\)/);
+});
+
+test("resolveQuote(): de shadow-deps wijzen naar de GECACHETE loaders (cachedLoad*), niet naar een losse, ongecachete aanroep", () => {
+  const block = resolveQuoteBlock();
+  assert.match(block, /loadDeadheadConfig:\s*cachedLoadDeadheadConfig/);
+  assert.match(block, /loadHighDemandZones:\s*cachedLoadHighDemandZones/);
+  assert.match(block, /loadDeadheadZoneAllowlist:\s*cachedLoadDeadheadZoneAllowlist/);
+  assert.match(block, /lookupOfficialWoonplaats:\s*retryingLookupOfficialWoonplaats/);
 });
 
 test("resolveQuote(): de publieke referentietabellen (locations/vehicle_classes/fixed_route_prices) blijven op de anon read-client", () => {
@@ -64,7 +89,14 @@ function makeDeps(o: Partial<ResolveQuoteDeps> = {}): ResolveQuoteDeps {
   };
 }
 
-const input: PricingQuoteInput = { pickup: "Laren", dropoff: "Eindhoven Airport" };
+// Bewust "Rotterdam" (niet "Eindhoven Airport" zoals voorheen): dit bestand
+// test de generieke claim "een onbeschikbare service-role-client breekt de
+// offerte nooit" — niet het NIEUWE, specifiekere indeterminate-gedrag voor een
+// mogelijk Eindhoven/Roermond-bestemming (dat heeft zijn eigen dekking in
+// deadhead-reliability.test.ts). "Rotterdam" triggert couldPlausiblyBeInZone
+// niet (geen postcode/plaatsnaam-match), dus dit blijft het oorspronkelijke,
+// eenvoudige "load_error/no_service_role_client → basisprijs"-pad.
+const input: PricingQuoteInput = { pickup: "Laren", dropoff: "Rotterdam" };
 
 test("ontbrekende service-role-client → shadowSkipped met specifieke reden 'no_service_role_client', klantprijs ongewijzigd", async () => {
   let shadow: ShadowLogEntry | null = null;
@@ -73,8 +105,7 @@ test("ontbrekende service-role-client → shadowSkipped met specifieke reden 'no
     makeDeps({
       loadDeadheadConfig: () => Promise.reject(new NoServiceRoleClientError()),
       loadHighDemandZones: () => Promise.reject(new NoServiceRoleClientError()),
-      loadDeadheadEligibleZoneCityIds: () => Promise.reject(new NoServiceRoleClientError()),
-      loadDeadheadZoneCityIdByWoonplaats: () => Promise.reject(new NoServiceRoleClientError()),
+      loadDeadheadZoneAllowlist: () => Promise.reject(new NoServiceRoleClientError()),
       recordShadow: (e) => {
         shadow = e;
       },
@@ -93,8 +124,7 @@ test("falende service-role-client (queryfout) → shadowSkipped, nooit een fout 
     makeDeps({
       loadDeadheadConfig: () => Promise.reject(new Error("connection refused")),
       loadHighDemandZones: async () => ({ locationIds: new Set<string>(), cityIds: new Set<string>() }),
-      loadDeadheadEligibleZoneCityIds: async () => new Set<string>(),
-      loadDeadheadZoneCityIdByWoonplaats: async () => new Map<string, string>(),
+      loadDeadheadZoneAllowlist: async () => EMPTY_ALLOWLIST,
       recordShadow: (e) => {
         shadow = e;
       },

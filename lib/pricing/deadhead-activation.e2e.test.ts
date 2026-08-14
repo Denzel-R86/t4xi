@@ -10,6 +10,7 @@ import {
   type ResolveQuoteDeps,
   type PricingQuoteInput,
   type ShadowLogEntry,
+  type DeadheadZoneAllowlist,
 } from "@/lib/pricing/service";
 import { resolveLocationSlug } from "@/lib/pricing/location-aliases";
 import type { DeadheadConfig } from "@/lib/pricing/deadhead-shadow";
@@ -43,8 +44,15 @@ const HIGH_DEMAND_WITH_ROTTERDAM_SCHIPHOL = {
 };
 // Exact de allowlist die migratie 20260813090000 zou seeden: uitsluitend
 // Eindhoven en Roermond (op city_id, niet op individuele locatie) — geen
-// enkele andere stad.
-const ELIGIBLE_ZONES_EINDHOVEN_ROERMOND = new Set(["eindhoven-city-id", "roermond-city-id"]);
+// enkele andere stad. `byOfficialWoonplaats` weerspiegelt dat `label` bij
+// seed exact `cities.name` is (de officiële plaatsnaam).
+const ELIGIBLE_ZONES_EINDHOVEN_ROERMOND: DeadheadZoneAllowlist = {
+  cityIds: new Set(["eindhoven-city-id", "roermond-city-id"]),
+  byOfficialWoonplaats: new Map([
+    ["eindhoven", "eindhoven-city-id"],
+    ["roermond", "roermond-city-id"],
+  ]),
+};
 
 /** Simuleert findLocation() end-to-end via de ECHTE alias-engine + de rijen die de migratie zou aanmaken. */
 async function simulateFindLocation(raw: string): Promise<(typeof KNOWN_LOCATIONS)[string] | null> {
@@ -61,21 +69,15 @@ function makeDeps(o: Partial<ResolveQuoteDeps> & { onShadow?: (e: ShadowLogEntry
     getRoute: async () => ({ distanceKm: 20, durationMin: 30 }),
     loadDeadheadConfig: async () => CONFIG,
     loadHighDemandZones: async () => NO_HIGH_DEMAND,
-    // HOTFIX 2026-08-13: default is de echte, goedgekeurde productie-allowlist
-    // (uitsluitend Eindhoven + Roermond) — niet leeg — omdat dit e2e-bestand
-    // specifiek de twee goedgekeurde landmarks + hun negatieve buurcases test.
-    // Testen die een NIET-goedgekeurde stad willen bewijzen (distance-tariff-
-    // regression.test.ts) geven zelf een afwijkende (lege of andere) allowlist mee.
-    loadDeadheadEligibleZoneCityIds: async () => ELIGIBLE_ZONES_EINDHOVEN_ROERMOND,
-    // HOTFIX 2026-08-14: default weerspiegelt de echte migratie-seed
-    // (label = officiële plaatsnaam) — zodat de PDOK-zonepromotie-tests in dit
-    // bestand realistisch zijn. lookupOfficialWoonplaats blijft standaard
-    // "niets gevonden"; individuele tests injecteren hun eigen fake PDOK-respons.
-    loadDeadheadZoneCityIdByWoonplaats: async () =>
-      new Map([
-        ["eindhoven", "eindhoven-city-id"],
-        ["roermond", "roermond-city-id"],
-      ]),
+    // HOTFIX 2026-08-13/14: default is de echte, goedgekeurde productie-
+    // allowlist (uitsluitend Eindhoven + Roermond, op city_id én officiële
+    // woonplaats) — niet leeg — omdat dit e2e-bestand specifiek de twee
+    // goedgekeurde landmarks + hun negatieve buurcases test. Testen die een
+    // NIET-goedgekeurde stad willen bewijzen (distance-tariff-regression.test.ts)
+    // geven zelf een afwijkende (lege of andere) allowlist mee.
+    loadDeadheadZoneAllowlist: async () => ELIGIBLE_ZONES_EINDHOVEN_ROERMOND,
+    // lookupOfficialWoonplaats blijft standaard "geslaagd, niets gevonden"
+    // (null) — individuele tests injecteren hun eigen fake PDOK-respons.
     lookupOfficialWoonplaats: async () => null,
     recordShadow: onShadow,
     ...rest,
@@ -182,22 +184,25 @@ test("HOTFIX-gedrag (bewust): een kale 'Eindhoven'-bestemming met city_id gelijk
 // "Roermond"). Onder de OUDE landmark-only-beperking activeerden deze terecht
 // niet; onder de NU bevestigde city-wide economische zone (optie A) horen ze
 // WEL te activeren — dit is dus geen regressie maar de bedoelde uitbreiding.
-// Hier gesimuleerd via de postcode4-fallback (lookupOfficialWoonplaats faalt/
-// levert niets op, exact zoals de standaard-fake in dit bestand) — de live
-// PDOK-primaire route wordt apart bewezen in de tests hieronder.
+// Hier gesimuleerd via een ECHTE storing van de live PDOK-lookup (gooit, zoals
+// PdokLookupError bij een netwerkfout/timeout) — de postcode4-fallback redt de
+// activering, precies waarvoor die fallback bestaat (punt 9). De live
+// PDOK-primaire route (geslaagd) wordt apart bewezen in de tests hieronder.
 const POSTCODE_FALLBACK_ZONE_ADDRESSES: Array<{ label: string; zone: "eindhoven" | "roermond" }> = [
   { label: "Castendijkweg 1, 5657ER Eindhoven", zone: "eindhoven" },
   { label: "Abdijhof 1, 6041HG Roermond", zone: "roermond" },
 ];
 
 for (const { label, zone } of POSTCODE_FALLBACK_ZONE_ADDRESSES) {
-  test(`city-wide zone via postcode4-fallback (live PDOK onbeschikbaar): "${label}" activeert (${zone})`, async () => {
+  test(`city-wide zone via postcode4-fallback (live PDOK gooit een storing): "${label}" activeert (${zone})`, async () => {
     let shadow: ShadowLogEntry | null = null;
     const res = await resolveQuoteWith(
       input(label),
       makeDeps({
         getRoute: async () => ({ distanceKm: 104.7, durationMin: 67 }),
-        lookupOfficialWoonplaats: async () => null, // live PDOK expliciet "onbeschikbaar"
+        lookupOfficialWoonplaats: async () => {
+          throw new Error("PDOK timeout (gesimuleerd)");
+        },
         onShadow: (e) => (shadow = e),
       })
     );
@@ -263,13 +268,13 @@ const NEGATIVE_DROPOFFS = [
 ];
 
 for (const dropoff of NEGATIVE_DROPOFFS) {
-  test(`geen landmarkmatch, geen postcode voor fallback, live PDOK onbeschikbaar → geen activering: "${dropoff}"`, async () => {
+  test(`geen landmarkmatch, geen postcode voor fallback, live PDOK vindt zelf niets relevants → geen activering: "${dropoff}"`, async () => {
     let shadow: ShadowLogEntry | null = null;
     const res = await resolveQuoteWith(
       input(dropoff),
       makeDeps({
         getRoute: async () => ({ distanceKm: 104.7, durationMin: 67 }),
-        lookupOfficialWoonplaats: async () => null,
+        lookupOfficialWoonplaats: async () => null, // geslaagd, geen relevant document — GEEN storing
         onShadow: (e) => (shadow = e),
       })
     );
