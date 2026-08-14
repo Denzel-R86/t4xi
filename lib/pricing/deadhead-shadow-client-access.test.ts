@@ -30,13 +30,17 @@ function resolveQuoteBlock(): string {
 
 // ── Bewijs: shadow-configtabellen via service-role, niet via de anon-client ──
 
-test("resolveQuote(): loadDeadheadConfig/loadHighDemandZones krijgen de service-role client (createPricingLogClient), niet de anon read-client", () => {
+test("resolveQuote(): loadDeadheadConfig/loadHighDemandZones/loadDeadheadEligibleZoneCityIds krijgen de service-role client (createPricingLogClient), niet de anon read-client", () => {
   const block = resolveQuoteBlock();
   assert.match(block, /shadowConfigClient\s*=\s*createPricingLogClient\(\)/);
   assert.match(block, /loadDeadheadConfig\(shadowConfigClient\)/);
   assert.match(block, /loadHighDemandZones\(shadowConfigClient\)/);
+  assert.match(block, /loadDeadheadEligibleZoneCityIds\(shadowConfigClient\)/);
+  assert.match(block, /loadDeadheadZoneCityIdByWoonplaats\(shadowConfigClient\)/);
   assert.doesNotMatch(block, /loadDeadheadConfig\(supabase\)/);
   assert.doesNotMatch(block, /loadHighDemandZones\(supabase\)/);
+  assert.doesNotMatch(block, /loadDeadheadEligibleZoneCityIds\(supabase\)/);
+  assert.doesNotMatch(block, /loadDeadheadZoneCityIdByWoonplaats\(supabase\)/);
 });
 
 test("resolveQuote(): de publieke referentietabellen (locations/vehicle_classes/fixed_route_prices) blijven op de anon read-client", () => {
@@ -69,6 +73,8 @@ test("ontbrekende service-role-client → shadowSkipped met specifieke reden 'no
     makeDeps({
       loadDeadheadConfig: () => Promise.reject(new NoServiceRoleClientError()),
       loadHighDemandZones: () => Promise.reject(new NoServiceRoleClientError()),
+      loadDeadheadEligibleZoneCityIds: () => Promise.reject(new NoServiceRoleClientError()),
+      loadDeadheadZoneCityIdByWoonplaats: () => Promise.reject(new NoServiceRoleClientError()),
       recordShadow: (e) => {
         shadow = e;
       },
@@ -87,6 +93,8 @@ test("falende service-role-client (queryfout) → shadowSkipped, nooit een fout 
     makeDeps({
       loadDeadheadConfig: () => Promise.reject(new Error("connection refused")),
       loadHighDemandZones: async () => ({ locationIds: new Set<string>(), cityIds: new Set<string>() }),
+      loadDeadheadEligibleZoneCityIds: async () => new Set<string>(),
+      loadDeadheadZoneCityIdByWoonplaats: async () => new Map<string, string>(),
       recordShadow: (e) => {
         shadow = e;
       },

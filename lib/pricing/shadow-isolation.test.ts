@@ -27,6 +27,16 @@ const SHADOW_IDENTIFIERS = [
   "basePrice",
   "finalPrice",
   "resolveDeadheadPricing",
+  "zoneEligible",
+  "loadDeadheadEligibleZoneCityIds",
+  "pricing_deadhead_eligible_zones",
+  "loadDeadheadZoneCityIdByWoonplaats",
+  "lookupOfficialWoonplaats",
+  "resolveZoneCityIdFromWoonplaats",
+  "resolveZoneCityIdFromPostcode4Fallback",
+  "woonplaatsnaam",
+  "deadhead-zone",
+  "pdok-woonplaats",
 ];
 
 function sourceOf(relPath: string): string {
