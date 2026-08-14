@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   isPublicTransitQuery,
   rankAddressSuggestions,
+  dedupeAgainstLocal,
   type AddressSuggestion,
 } from "@/components/shared/AddressAutocomplete";
 
@@ -35,4 +36,35 @@ test("dezelfde ranking werkt voor een andere stad en dedupliceert labels", () =>
     suggestion("duplicate", "Utrecht Centraal", "pdok"),
   ]);
   assert.deepEqual(ranked.map((item) => item.id), ["exact", "partial"]);
+});
+
+test("dedupeAgainstLocal filtert PDOK-resultaten die al lokaal getoond worden", () => {
+  const local: AddressSuggestion[] = [
+    {
+      id: "airport-ams",
+      label: "Evert van de Beekstraat 202, 1118 CP Schiphol",
+      source: "local",
+      location: {
+        id: "airport-ams",
+        name: "Amsterdam Airport Schiphol",
+        aliases: [],
+        address: "Evert van de Beekstraat 202, 1118 CP Schiphol",
+        city: "Schiphol",
+        country: "Nederland",
+        latitude: 52.3039,
+        longitude: 4.7479,
+        type: "airport",
+        category: "airport",
+      },
+    },
+  ];
+  const pdok: AddressSuggestion[] = [
+    suggestion("pdok-1", "Evert van de Beekstraat 202, 1118 CP Schiphol", "pdok"),
+    suggestion("pdok-2", "Schiphol, Haarlemmermeer, Noord-Holland", "pdok"),
+  ];
+  const result = dedupeAgainstLocal(pdok, local);
+  assert.deepEqual(
+    result.map((r) => r.id),
+    ["pdok-2"]
+  );
 });

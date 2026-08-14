@@ -1,29 +1,60 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import {
+  addressLabelFor,
+  displayLabelFor,
+  searchLocalLocations,
+  type LocalLocation,
+} from "@/lib/pricing/local-locations";
 
 /**
  * DE gedeelde adres-autocomplete — homepagehero, boekingsformulier en
  * tarievenpagina gebruiken exact dit component. Er mag geen tweede
  * implementatie naast bestaan (productieblokker 2, 2026-07-22).
  *
- * Bronnen: PDOK Locatieserver primair (adres + wijk + buurt + woonplaats,
- * zodat "Amsterdam Zuidas" en "Schiphol" ook als suggestie verschijnen),
- * Google Places (New) als fallback via /api/places (hotels en POI's zoals
- * "Hilton Schiphol"; de key blijft server-side).
+ * Bronnen, in weergavevolgorde:
+ * 1. Lokale dataset (lib/pricing/local-locations.ts) — vliegvelden + populaire
+ *    bestemmingen, synchroon en zonder netwerk-call gematcht, dus altijd
+ *    vóór de externe bronnen zichtbaar.
+ * 2. PDOK Locatieserver (adres + wijk + buurt + woonplaats, zodat "Amsterdam
+ *    Zuidas" en "Schiphol" ook als suggestie verschijnen).
+ * 3. Google Places (New) als fallback via /api/places (hotels en POI's zoals
+ *    "Hilton Schiphol"; de key blijft server-side).
  *
  * Vrije tekst blijft toegestaan: wie niets selecteert houdt zijn tekst, en de
  * centrale resolver (lib/pricing/location-aliases.ts) bepaalt server-side wat
- * die waard is. Dit component doet GEEN prijs- of locatielogica.
+ * die waard is. Dit component doet GEEN prijs- of locatielogica — ook een
+ * lokale suggestie levert uiteindelijk gewoon een adrestekst-`label` op, exact
+ * zoals een PDOK-suggestie dat doet, zodat de bestaande afstands-/route-/
+ * prijsberekening ongewijzigd blijft werken.
  */
 
 export type AddressSuggestion = {
   id: string;
+  /** Adrestekst die het invoerveld ingaat en naar de resolver/Routes API gaat. */
   label: string;
   /** "free" = niet gekozen uit een lijst (deep-link of losse tekst). */
-  source: "pdok" | "google" | "free";
+  source: "pdok" | "google" | "free" | "local";
+  /** Alleen bij `source: "local"` — hoe de suggestie in de lijst wordt getoond. */
+  displayLabel?: string;
+  /** Alleen bij `source: "local"` — volledige lokale locatie (incl. coördinaten). */
+  location?: LocalLocation;
 };
+
+const MIN_LOCAL_QUERY_LENGTH = 2;
+const MIN_PDOK_QUERY_LENGTH = 3;
+
+function toLocalSuggestion(loc: LocalLocation): AddressSuggestion {
+  return {
+    id: loc.id,
+    label: addressLabelFor(loc),
+    source: "local",
+    displayLabel: displayLabelFor(loc),
+    location: loc,
+  };
+}
 
 /**
  * Het free-endpoint (niet suggest): dat levert postcode als apart veld, zodat
@@ -125,9 +156,28 @@ function pdokLabel(d: PdokDoc): string {
 }
 
 /**
- * DE gedeelde suggestie-bron (PDOK → Google-fallback), met debounce en abort.
- * AddressAutocomplete rendert hem als veld; SentencePattern (homepagehero)
- * rendert hem als zin-invulling. Presentaties verschillen, de bron nooit.
+ * Filtert externe (PDOK/Google) suggesties die al door een lokale suggestie
+ * gedekt worden — voorkomt dubbele resultaten als PDOK hetzelfde adres of
+ * dezelfde woonplaats teruggeeft als onze lokale dataset.
+ */
+export function dedupeAgainstLocal(
+  externalSuggestions: AddressSuggestion[],
+  localSuggestions: AddressSuggestion[]
+): AddressSuggestion[] {
+  const localKeys = new Set(
+    localSuggestions.flatMap((s) => [
+      normalizeForRanking(s.label),
+      s.location ? normalizeForRanking(s.location.name) : null,
+    ].filter((v): v is string => Boolean(v)))
+  );
+  return externalSuggestions.filter((s) => !localKeys.has(normalizeForRanking(s.label)));
+}
+
+/**
+ * DE gedeelde suggestie-bron (lokale dataset → PDOK → Google-fallback), met
+ * debounce en abort voor de externe bronnen. AddressAutocomplete rendert hem
+ * als veld; SentencePattern (homepagehero) rendert hem als zin-invulling.
+ * Presentaties verschillen, de bron nooit.
  */
 export function useAddressSuggestions(query: string, enabled = true) {
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "empty">("idle");
@@ -135,7 +185,16 @@ export function useAddressSuggestions(query: string, enabled = true) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const abortRef = useRef<AbortController | null>(null);
 
-  const search = useCallback(async (q: string) => {
+  // Lokale matches zijn synchroon en zonder netwerk-call — nooit gedebouncet,
+  // altijd meteen zichtbaar (eis: lokale resultaten vóór PDOK, direct getoond).
+  const localMatches = useMemo(() => {
+    if (!enabled) return [];
+    const trimmed = query.trim();
+    if (trimmed.length < MIN_LOCAL_QUERY_LENGTH) return [];
+    return searchLocalLocations(trimmed).map(toLocalSuggestion);
+  }, [query, enabled]);
+
+  const search = useCallback(async (q: string, local: AddressSuggestion[]) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -158,7 +217,8 @@ export function useAddressSuggestions(query: string, enabled = true) {
         const docs: PdokDoc[] = data?.response?.docs ?? [];
         pdokSuggestions = docs.map((d) => ({ id: d.id, label: pdokLabel(d), source: "pdok" as const }));
         if (pdokSuggestions.length > 0 && !googlePromise) {
-          setSuggestions(rankAddressSuggestions(q, pdokSuggestions));
+          const ranked = dedupeAgainstLocal(rankAddressSuggestions(q, pdokSuggestions), local);
+          setSuggestions([...local, ...ranked]);
           setStatus("idle");
           return;
         }
@@ -166,27 +226,38 @@ export function useAddressSuggestions(query: string, enabled = true) {
       // 2. Google-fallback voor lege PDOK-resultaten; bij OV-intentie samenvoegen
       // en generiek op exacte/tokendekking rangschikken.
       const google = await (googlePromise ?? googleSuggestions(q, controller.signal));
-      const ranked = rankAddressSuggestions(q, [...pdokSuggestions, ...google]).slice(0, 6);
-      setSuggestions(ranked);
-      setStatus(ranked.length > 0 ? "idle" : "empty");
+      const ranked = dedupeAgainstLocal(
+        rankAddressSuggestions(q, [...pdokSuggestions, ...google]),
+        local
+      ).slice(0, 6);
+      const combined = [...local, ...ranked];
+      setSuggestions(combined);
+      setStatus(combined.length > 0 ? "idle" : "empty");
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
-        setSuggestions([]);
-        setStatus("error");
+        setSuggestions(local);
+        setStatus(local.length > 0 ? "idle" : "error");
       }
     }
   }, []);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
-    if (!enabled || query.trim().length < 3) {
+    if (!enabled) {
       setSuggestions([]);
       setStatus("idle");
       return;
     }
-    debounceRef.current = setTimeout(() => search(query.trim()), 250);
+    const trimmed = query.trim();
+    if (trimmed.length < MIN_PDOK_QUERY_LENGTH) {
+      // Onder de PDOK-drempel: alléén lokale resultaten, geen netwerk-call.
+      setSuggestions(localMatches);
+      setStatus("idle");
+      return;
+    }
+    debounceRef.current = setTimeout(() => search(trimmed, localMatches), 250);
     return () => clearTimeout(debounceRef.current);
-  }, [query, enabled, search]);
+  }, [query, enabled, search, localMatches]);
 
   const clear = useCallback(() => {
     setSuggestions([]);
@@ -338,7 +409,16 @@ export default function AddressAutocomplete({
                 i === activeIndex ? "bg-accent text-white" : "text-ink hover:bg-fog"
               }`}
             >
-              {s.label}
+              {s.displayLabel ? (
+                <span className="block">
+                  <span className="block font-medium">{s.displayLabel}</span>
+                  <span className={`block text-xs ${i === activeIndex ? "text-white/80" : "text-secondary"}`}>
+                    {s.location?.address}
+                  </span>
+                </span>
+              ) : (
+                s.label
+              )}
             </li>
           ))}
         </ul>
