@@ -1256,5 +1256,23 @@
     "punt_support": "Personal booking support",
     "punt_btw": "VAT",
     "afsluiting": "No hidden surcharges. No dynamic price hikes. Just a rate that keeps reliable premium service possible."
+  },
+  "consent": {
+    "titel": "Your privacy preferences",
+    "tekst": "We only use strictly necessary cookies to make the site and payment work. With your consent, we also use statistics and marketing cookies to understand how visitors use the site and to show relevant ads.",
+    "meerInfo": "Read our privacy statement",
+    "allesAccepteren": "Accept all",
+    "alleenNoodzakelijk": "Reject all",
+    "voorkeuren": "Adjust preferences",
+    "opslaan": "Save preferences",
+    "noodzakelijkKop": "Strictly necessary",
+    "noodzakelijkTekst": "Needed to make the site and the secure Stripe payment work. Cannot be turned off.",
+    "statistiekenKop": "Statistics",
+    "statistiekenTekst": "Helps us understand how visitors use the site, so we can improve it.",
+    "marketingKop": "Marketing",
+    "marketingTekst": "Used to show relevant ads and measure the effect of our campaigns.",
+    "altijdAan": "Always active",
+    "instellingenLink": "Cookie settings",
+    "sluiten": "Close"
   }
 }

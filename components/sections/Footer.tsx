@@ -3,6 +3,7 @@ import Icon from "@/components/ui/Icon";
 import Monogram from "@/components/ui/Monogram";
 import { BEDRIJF } from "@/lib/legal";
 import { useTranslations } from "next-intl";
+import CookieSettingsLink from "@/components/consent/CookieSettingsLink";
 
 export default function Footer() {
   const t = useTranslations("footer");
@@ -115,6 +116,7 @@ export default function Footer() {
           <nav aria-label={t("juridisch")} className="flex gap-4">
             <Link href="/privacy" className="hover:text-white">{t("privacy")}</Link>
             <Link href="/voorwaarden" className="hover:text-white">{t("voorwaarden")}</Link>
+            <CookieSettingsLink className="hover:text-white" />
           </nav>
         </div>
       </div>

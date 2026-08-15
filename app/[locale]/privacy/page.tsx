@@ -8,6 +8,7 @@ import {
   getBewaartermijnen,
   getLaatstBijgewerkt,
 } from "@/lib/legal";
+import { getCookieDisclosures, type CookieDisclosure } from "@/lib/consent/disclosure";
 
 /**
  * Privacyverklaring.
@@ -42,6 +43,61 @@ const P = "mt-3 text-secondary";
 /** Vaste Engelse gemaksvertaling-disclaimer bovenaan de EN-pagina. */
 const EN_DISCLAIMER =
   "This English version is provided for convenience. In the event of any inconsistency, the Dutch version shall prevail.";
+
+const COOKIE_LABELS_NL = {
+  doel: "Doel",
+  technieken: "Cookies/techniek",
+  bewaartermijn: "Bewaartermijn",
+  gegevens: "Gegevenscategorieën",
+  ontvanger: "Ontvanger",
+  doorgifte: "Internationale doorgifte",
+  intrekking: "Intrekking",
+} as const;
+
+const COOKIE_LABELS_EN = {
+  doel: "Purpose",
+  technieken: "Cookies/technique",
+  bewaartermijn: "Retention period",
+  gegevens: "Data categories",
+  ontvanger: "Recipient",
+  doorgifte: "International transfer",
+  intrekking: "Withdrawal",
+} as const;
+
+/** Eén kaart per leverancier: alle AVG/ePR-velden expliciet en concreet, niet als algemene alinea. */
+function CookieDisclosureCard({
+  d,
+  labels,
+}: {
+  d: CookieDisclosure;
+  labels: typeof COOKIE_LABELS_NL | typeof COOKIE_LABELS_EN;
+}) {
+  const rows: [string, string][] = [
+    [labels.doel, d.doel],
+    [labels.technieken, d.technieken],
+    [labels.bewaartermijn, d.bewaartermijn],
+    [labels.gegevens, d.gegevens],
+    [labels.ontvanger, d.ontvanger],
+    [labels.doorgifte, d.doorgifte],
+    [labels.intrekking, d.intrekking],
+  ];
+  return (
+    <div className="mt-4 rounded-lg border border-line p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-display text-sm font-bold text-ink">{d.naam}</span>
+        <span className="text-eyebrow font-medium uppercase text-stone">{d.categorieLabel}</span>
+      </div>
+      <dl className="mt-3 space-y-2.5 text-sm">
+        {rows.map(([label, value]) => (
+          <div key={label}>
+            <dt className="text-xs font-medium uppercase tracking-[0.06em] text-stone">{label}</dt>
+            <dd className="text-secondary">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
 
 export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -193,11 +249,21 @@ function PrivacyNL() {
 
       <h2 className={H2}>Cookies</h2>
       <p className={P}>
-        Deze website plaatst zelf geen tracking- of advertentiecookies en gebruikt geen
-        analysesoftware die u over websites heen volgt. Voor de betaalstap kan Stripe strikt
-        noodzakelijke beveiligings- en fraudepreventietechnieken gebruiken. Gaan wij later
-        niet-noodzakelijke analyse- of marketingcookies gebruiken, dan vragen wij vooraf uw
-        toestemming.
+        Hieronder staat per leverancier concreet welke cookies wij gebruiken, waarvoor, hoe lang
+        wij ze bewaren, welke gegevens ze bevatten, wie ze ontvangt en of er sprake is van
+        doorgifte buiten de EU. Stripe is de enige leverancier die zonder uw toestemming actief
+        is — de overige laden pas nádat u ze toestaat via de cookiebanner, en alleen als de
+        betreffende dienst daadwerkelijk geconfigureerd is. Bij een nieuwe leverancier of een
+        wijziging in het doel vragen wij opnieuw toestemming.
+      </p>
+      {getCookieDisclosures("nl").map((d) => (
+        <CookieDisclosureCard key={d.naam} d={d} labels={COOKIE_LABELS_NL} />
+      ))}
+      <p className={P}>
+        U kunt uw keuze voor statistiek- en marketingcookies op ieder moment wijzigen via{" "}
+        <span className="font-medium text-ink">Cookie-instellingen</span> onderaan de website.
+        Metingen stoppen dan direct en de bijbehorende cookies worden verwijderd — een
+        paginaherlading is daarvoor niet nodig.
       </p>
 
       <h2 className={H2}>Uw rechten</h2>
@@ -376,10 +442,21 @@ function PrivacyEN() {
 
       <h2 className={H2}>Cookies</h2>
       <p className={P}>
-        This website itself places no tracking or advertising cookies and uses no analytics
-        software that follows you across websites. During payment, Stripe may use strictly
-        necessary security and fraud-prevention technologies. If we later use non-essential
-        analytics or marketing cookies, we will ask for your consent in advance.
+        Below is, per provider, exactly which cookies we use, for what purpose, how long we keep
+        them, what data they contain, who receives them, and whether they are transferred outside
+        the EU. Stripe is the only provider active without your consent — the others load only
+        after you allow them in the cookie banner, and only if that service is actually
+        configured. If we add a new provider or change the purpose, we will ask for your consent
+        again.
+      </p>
+      {getCookieDisclosures("en").map((d) => (
+        <CookieDisclosureCard key={d.naam} d={d} labels={COOKIE_LABELS_EN} />
+      ))}
+      <p className={P}>
+        You can change your choice for statistics and marketing cookies at any time via{" "}
+        <span className="font-medium text-ink">Cookie settings</span> at the bottom of the
+        website. Measurement stops immediately and the related cookies are deleted — no page
+        reload is needed.
       </p>
 
       <h2 className={H2}>Your rights</h2>

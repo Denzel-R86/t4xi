@@ -1256,5 +1256,23 @@
     "punt_support": "Persoonlijke boekingsondersteuning",
     "punt_btw": "Btw",
     "afsluiting": "Geen verborgen toeslagen. Geen dynamische prijsverhogingen. Wel een tarief waarmee betrouwbare premium service mogelijk blijft."
+  },
+  "consent": {
+    "titel": "Uw privacyvoorkeuren",
+    "tekst": "Wij gebruiken alleen technisch noodzakelijke cookies om de site en de betaling te laten werken. Met uw toestemming gebruiken wij daarnaast statistiek- en marketingcookies om te begrijpen hoe bezoekers de site gebruiken en om relevante advertenties te tonen.",
+    "meerInfo": "Lees onze privacyverklaring",
+    "allesAccepteren": "Alles accepteren",
+    "alleenNoodzakelijk": "Alles weigeren",
+    "voorkeuren": "Voorkeuren aanpassen",
+    "opslaan": "Voorkeuren opslaan",
+    "noodzakelijkKop": "Strikt noodzakelijk",
+    "noodzakelijkTekst": "Nodig om de site en de beveiligde betaling via Stripe te laten werken. Kan niet worden uitgeschakeld.",
+    "statistiekenKop": "Statistieken",
+    "statistiekenTekst": "Helpt ons begrijpen hoe bezoekers de site gebruiken, zodat wij deze kunnen verbeteren.",
+    "marketingKop": "Marketing",
+    "marketingTekst": "Wordt gebruikt om relevante advertenties te tonen en het effect van onze campagnes te meten.",
+    "altijdAan": "Altijd actief",
+    "instellingenLink": "Cookie-instellingen",
+    "sluiten": "Sluiten"
   }
 }

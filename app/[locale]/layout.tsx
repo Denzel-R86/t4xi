@@ -18,9 +18,13 @@ import "../globals.css";
  * beter dragen. Kleur volgt de guide wél strikt: Primary Navy #28313B is het
  * accent (tailwind.config.ts → ink/accent).
  */
+import { Suspense } from "react";
 import Header from "@/components/sections/Header";
 import Footer from "@/components/sections/Footer";
 import StickyCta from "@/components/sections/StickyCta";
+import { ConsentProvider } from "@/components/consent/ConsentContext";
+import ConsentBanner from "@/components/consent/ConsentBanner";
+import Trackers from "@/components/consent/Trackers";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -146,10 +150,16 @@ export default async function RootLayout({
           {t("skipLink")}
         </a>
         <NextIntlClientProvider>
-          <Header />
-          <main id="content">{children}</main>
-          <Footer />
-          <StickyCta />
+          <ConsentProvider>
+            <Suspense fallback={null}>
+              <Trackers />
+            </Suspense>
+            <Header />
+            <main id="content">{children}</main>
+            <Footer />
+            <StickyCta />
+            <ConsentBanner />
+          </ConsentProvider>
         </NextIntlClientProvider>
       </body>
     </html>

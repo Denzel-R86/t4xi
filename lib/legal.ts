@@ -108,6 +108,7 @@ export const LAATST_BIJGEWERKT = "9 augustus 2026";
  * ═══════════════════════════════════════════════════════════════════════════ */
 
 import type { Locale } from "@/i18n/routing";
+import { hasStatisticsTracker, googleAdsId, metaPixelId } from "@/lib/consent/config";
 
 /** Engelse notatie van de laatste wijzigingsdatum. */
 export const LAATST_BIJGEWERKT_EN = "9 August 2026";
@@ -170,9 +171,42 @@ const BEWAARTERMIJNEN_EN = [
 type Verwerker = { naam: string; doel: string; regio: string };
 type Bewaartermijn = { gegevens: string; termijn: string; reden: string };
 
+/**
+ * Optionele trackers verschijnen alléén in de verwerkerstabel als het
+ * bijbehorende ID daadwerkelijk geconfigureerd is (lib/consent/config.ts).
+ * Zonder configuratie is de bewering "wij delen geen gegevens met Google/Meta
+ * voor marketing" feitelijk juist en blijft de tabel dat ook weergeven.
+ */
+function getOptioneleTrackerVerwerkers(locale: Locale): readonly Verwerker[] {
+  const rows: Verwerker[] = [];
+  if (hasStatisticsTracker) {
+    rows.push(
+      locale === "en"
+        ? { naam: "Google Analytics", doel: "website statistics, only after your consent", regio: "EU/US" }
+        : { naam: "Google Analytics", doel: "websitestatistieken, alleen na uw toestemming", regio: "EU/VS" },
+    );
+  }
+  if (googleAdsId) {
+    rows.push(
+      locale === "en"
+        ? { naam: "Google Ads", doel: "measuring ad performance, only after your consent", regio: "EU/US" }
+        : { naam: "Google Ads", doel: "meten van advertentie-effectiviteit, alleen na uw toestemming", regio: "EU/VS" },
+    );
+  }
+  if (metaPixelId) {
+    rows.push(
+      locale === "en"
+        ? { naam: "Meta Pixel", doel: "making Facebook/Instagram ads relevant, only after your consent", regio: "EU/US" }
+        : { naam: "Meta Pixel", doel: "relevante Facebook-/Instagramadvertenties, alleen na uw toestemming", regio: "EU/VS" },
+    );
+  }
+  return rows;
+}
+
 /** Verwerkers per locale (namen gelijk; doel en regio vertaald). */
 export function getVerwerkers(locale: Locale): readonly Verwerker[] {
-  return locale === "en" ? VERWERKERS_EN : VERWERKERS;
+  const basis = locale === "en" ? VERWERKERS_EN : VERWERKERS;
+  return [...basis, ...getOptioneleTrackerVerwerkers(locale)];
 }
 
 /** Verzamelde gegevens per locale. */

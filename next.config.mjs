@@ -33,12 +33,41 @@ try {
   // De environment-guard meldt een ongeldige productieconfiguratie afzonderlijk.
 }
 
+// Optionele statistiek-/marketingtrackers (lib/consent/config.ts kent dezelfde
+// validatie serverside). Zonder geldig ID blijft de bijbehorende CSP-origin
+// weg — de site staat dan geen enkele trackerverbinding toe, ook niet als
+// iemand het script elders zou proberen te injecteren.
+function validatedId(value, pattern) {
+  const trimmed = value?.trim();
+  return trimmed && pattern.test(trimmed) ? trimmed : null;
+}
+const gaMeasurementId = validatedId(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, /^G-[A-Z0-9]+$/);
+const googleAdsId = validatedId(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID, /^AW-[0-9]+$/);
+const metaPixelId = validatedId(process.env.NEXT_PUBLIC_META_PIXEL_ID, /^[0-9]{10,20}$/);
+const hasGoogleTag = Boolean(gaMeasurementId || googleAdsId);
+const hasMetaPixel = Boolean(metaPixelId);
+
+// Google's eigen CSP-richtlijn voor gtag.js vraagt om deze *.-subdomeinen,
+// omdat metingen regio-gesharded worden verzonden (bv. region1.google-analytics.com).
+const trackerScriptSrc = [
+  hasGoogleTag ? "https://www.googletagmanager.com" : "",
+  hasMetaPixel ? "https://connect.facebook.net" : "",
+].filter(Boolean).join(" ");
+const trackerConnectSrc = [
+  hasGoogleTag ? "https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com" : "",
+  hasMetaPixel ? "https://www.facebook.com" : "",
+].filter(Boolean).join(" ");
+const trackerImgSrc = hasMetaPixel ? "https://www.facebook.com" : "";
+
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Voorkomt dat `next dev`/`next build` steeds opnieuw AGENTS.md en CLAUDE.md
+  // in de projectroot genereren (Next.js 16-default, sinds versie 16.3.0).
+  agentRules: false,
   images: {
     remotePatterns: [
       {
@@ -70,14 +99,16 @@ const nextConfig = {
               "base-uri 'self'",
               "form-action 'self'",
               "frame-ancestors 'self'",
-              // Stripe.js (Payment Element) wordt geladen van js.stripe.com.
-              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.stripe.com ${sanityCoreOrigin}`,
+              // Stripe.js (Payment Element) wordt geladen van js.stripe.com. Tracker-
+              // origins (GA4/Google Ads/Meta Pixel) worden alleen toegevoegd als het
+              // bijbehorende ID daadwerkelijk geconfigureerd is.
+              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.stripe.com ${sanityCoreOrigin}${trackerScriptSrc ? ` ${trackerScriptSrc}` : ""}`,
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self'",
-              `img-src 'self' data: blob: ${sanityImageSource}`,
+              `img-src 'self' data: blob: ${sanityImageSource}${trackerImgSrc ? ` ${trackerImgSrc}` : ""}`,
               "worker-src 'self' blob:",
               // Stripe-API voor de Payment Element; overige = bestaande bronnen.
-              `connect-src 'self'${supabaseConnectOrigin} https://api.pdok.nl https://places.googleapis.com https://api.stripe.com ${sanityApiOrigin} ${sanityApiCdnOrigin} ${sanityWebSocketOrigin}`,
+              `connect-src 'self'${supabaseConnectOrigin} https://api.pdok.nl https://places.googleapis.com https://api.stripe.com ${sanityApiOrigin} ${sanityApiCdnOrigin} ${sanityWebSocketOrigin}${trackerConnectSrc ? ` ${trackerConnectSrc}` : ""}`,
               // Payment Element + 3D Secure draaien in Stripe-iframes.
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
             ].join("; "),
