@@ -624,6 +624,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_deadhead_eligible_zones: {
+        Row: {
+          active: boolean
+          city_id: string | null
+          created_at: string
+          id: string
+          label: string
+          location_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          label: string
+          location_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          location_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_deadhead_eligible_zones_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_deadhead_eligible_zones_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_high_demand_zones: {
         Row: {
           active: boolean

@@ -16,6 +16,18 @@ import {
   type DeadheadConfig,
   type ShadowDeadheadResult,
 } from "@/lib/pricing/deadhead-shadow";
+import {
+  normalizeOfficialWoonplaats,
+  resolveZoneCityIdFromWoonplaats,
+  resolveZoneCityIdFromPostcode4Fallback,
+  couldPlausiblyBeInZone,
+  PLAUSIBLE_ZONE_MIN_DISTANCE_KM_FLOOR,
+} from "@/lib/pricing/deadhead-zone";
+import {
+  lookupOfficialWoonplaats as pdokLookupOfficialWoonplaats,
+  PdokLookupError,
+  PDOK_ZONE_LOOKUP_TIMEOUT_MS,
+} from "@/lib/pricing/pdok-woonplaats";
 
 /**
  * T4XI Pricing Service — v1 (App Router, server-side).
@@ -244,18 +256,59 @@ export async function getPricingQuote(
 
 /**
  * Reden waarom de deadhead-shadowberekening voor deze offerte is overgeslagen —
- * uitsluitend informatief voor de log; blokkeert de offerte nooit.
+ * uitsluitend informatief voor de log; blokkeert de offerte normaliter nooit.
+ *
+ * `zone_lookup_unavailable` (2026-08-14, betrouwbaarheidshardening) is de ENE
+ * uitzondering: config/allowlist/PDOK zijn allemaal onbeschikbaar (zelfs na de
+ * ene retry) VOOR EEN MOGELIJK Eindhoven/Roermond-bestemming — zie
+ * `couldPlausiblyBeInZone`. Dan wordt de hele offerte "onzeker" en NIET
+ * teruggezet op de lagere basisprijs; de log registreert dat via deze reden,
+ * `tryDistanceTariff` geeft `null` terug (→ "Offerte op aanvraag").
  */
-type ShadowSkipReason = "missing_config" | "load_error" | "timeout" | "no_service_role_client";
+type ShadowSkipReason =
+  | "missing_config"
+  | "load_error"
+  | "timeout"
+  | "no_service_role_client"
+  | "zone_lookup_unavailable";
 
 /**
- * Bovengrens op de tijd die de shadow-berekening (config + high-demand-zones
- * laden) aan de offerte mag toevoegen. SHADOW-ONLY: dit begrenst uitsluitend
- * hoelang er op de config/zones gewacht wordt — geen onbeperkt wachten, ook
- * niet bij een tragere of hangende dependency. Bij overschrijding wordt de
- * berekening overgeslagen (reason "timeout"); de offerte gaat gewoon door.
+ * Bovengrens op de tijd die ÉÉN poging van de shadow-berekening (config +
+ * high-demand-zones + zone-allowlist laden) aan de offerte mag toevoegen.
+ * SHADOW-ONLY: dit begrenst uitsluitend hoelang er per poging op de
+ * config/zones gewacht wordt — geen onbeperkt wachten, ook niet bij een
+ * tragere of hangende dependency. Bij overschrijding van BEIDE pogingen
+ * (zie SHADOW_LOAD_RETRY_TIMEOUT_MS/withRetryOnce) wordt de berekening
+ * overgeslagen; de offerte gaat in de meeste gevallen gewoon door met de
+ * basisprijs (zie ShadowSkipReason hierboven voor de ene uitzondering).
  */
 export const SHADOW_LOAD_TIMEOUT_MS = 400;
+
+/**
+ * Budget voor de ENE gerichte retry na een mislukte/trage eerste poging
+ * (2026-08-14). Een cold-start-vertraagde eerste query is typisch eenmalig —
+ * dezelfde dependency, opnieuw aangeroepen, is op een net-opgestarte
+ * serverinstance doorgaans al snel. Aparte, iets ruimere marge dan de eerste
+ * poging, zodat een structureel trage/uitgevallen dependency niet eindeloos
+ * méér tijd krijgt dan nodig — dit is een POGING, geen tweede volledige
+ * wachttijd "voor de zekerheid".
+ */
+export const SHADOW_LOAD_RETRY_TIMEOUT_MS = 400;
+
+/** Zelfde retry-budget voor de PDOK-woonplaatslookup (los van de Supabase-batch hierboven). */
+export const PDOK_ZONE_LOOKUP_RETRY_TIMEOUT_MS = PDOK_ZONE_LOOKUP_TIMEOUT_MS;
+
+/**
+ * Uitsluitend een VEILIGHEIDSNET (2026-08-14): de productie-deps begrenzen
+ * zichzelf al (withRetryOnce, hierboven), maar een test- of toekomstige
+ * aanroeper die dat patroon niet gebruikt mag nooit onbeperkt kunnen laten
+ * hangen. Ruim boven het productie-worstcase (2× SHADOW_LOAD_(RETRY_)TIMEOUT_MS
+ * = 800ms) zodat een legitieme retry hier nooit doorheen gesneden wordt.
+ */
+export const SHADOW_LOAD_OUTER_TIMEOUT_MS = 900;
+
+/** Zelfde veiligheidsnet-redenering voor de PDOK-zonepromotiestap (productie-worstcase 1000ms). */
+export const PDOK_ZONE_LOOKUP_OUTER_TIMEOUT_MS = 1100;
 
 class ShadowTimeoutError extends Error {}
 
@@ -286,6 +339,53 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 /**
+ * Precies ÉÉN gerichte retry (2026-08-14): probeert `load()` opnieuw — een
+ * NIEUWE aanroep, niet dezelfde hangende promise opnieuw afwachten — als de
+ * eerste poging faalt of `timeoutMs` overschrijdt. De tweede poging krijgt
+ * `retryTimeoutMs`. Faalt ook die, dan wordt de LAATSTE fout doorgegeven.
+ * Geen onbeperkte retries, geen backoff-lus — exact twee pogingen, altijd
+ * begrensd.
+ */
+export async function withRetryOnce<T>(load: () => Promise<T>, timeoutMs: number, retryTimeoutMs: number): Promise<T> {
+  try {
+    return await withTimeout(load(), timeoutMs);
+  } catch {
+    return await withTimeout(load(), retryTimeoutMs);
+  }
+}
+
+/**
+ * Korte-TTL, server-side (module-scope, NOOIT client-side) cache met
+ * in-flight-deduplicatie (2026-08-14). Voorkomt twee dingen tegelijk:
+ *  1. Herhaalde Supabase-round-trips voor configuratie die zelden verandert
+ *     (elke warme aanroep binnen de TTL gebruikt het gecachete resultaat).
+ *  2. Een "thundering herd" bij een cold start: meerdere gelijktijdige
+ *     offertes op een net-opgestarte instance delen ÉÉN onderliggende load
+ *     (`inFlight`) in plaats van elk hun eigen trage aanroep te starten.
+ * Een MISLUKTE load wordt NOOIT gecachet (anders zou een tijdelijke storing
+ * voor de volledige TTL blijven hangen) — de eerstvolgende aanroep na een
+ * mislukking probeert gewoon opnieuw.
+ */
+export function cachedLoader<T>(ttlMs: number, load: () => Promise<T>): () => Promise<T> {
+  let cached: { value: T; expiresAt: number } | null = null;
+  let inFlight: Promise<T> | null = null;
+  return function loadCached(): Promise<T> {
+    if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value);
+    if (inFlight) return inFlight;
+    const attempt = load();
+    inFlight = attempt
+      .then((value) => {
+        cached = { value, expiresAt: Date.now() + ttlMs };
+        return value;
+      })
+      .finally(() => {
+        inFlight = null;
+      });
+    return inFlight;
+  };
+}
+
+/**
  * Wat er in `pricing_quote_logs.price_breakdown` terechtkomt. Bij een geslaagde
  * berekening de volledige deadhead-uitkomst; anders een expliciete skip-reden.
  * `null` betekent: deze offerte ging niet via het afstand-tarief (bv. vaste
@@ -297,9 +397,22 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
  * de deadhead-aangepaste `shadowPrice` is — nooit bij `candidateShadowPrice`
  * (die hoort uitsluitend bij classification "unknown" en is per ontwerp nooit
  * `eligibleForActivation`).
+ *
+ * `zoneEligible` (2026-08-13, hotfix): `classification==='peripheral'` +
+ * `eligibleForActivation` ALLEEN is niet langer voldoende om `applied:true`
+ * te worden — de bestemming moet bovendien `dropoff.city_id` hebben dat in de
+ * expliciete `pricing_deadhead_eligible_zones`-allowlist staat (server-side,
+ * datagedreven — zie loadDeadheadZoneAllowlist). Dit voorkomt dat elke
+ * willekeurige, al herkenbare stad >80 km buiten high-demand ongewild
+ * activeert.
+ *
+ * Een `shadowSkipped`-entry met `reason:"zone_lookup_unavailable"`
+ * (2026-08-14) betekent NIET "offerte ging door met de basisprijs" zoals de
+ * andere skip-redenen — die specifieke reden hoort altijd samen met een
+ * `unavailable("route_not_fixed")`-resultaat (zie resolveDeadheadPricing).
  */
 export type ShadowLogEntry =
-  | (ShadowDeadheadResult & { applied: boolean; basePrice: number; finalPrice: number })
+  | (ShadowDeadheadResult & { applied: boolean; basePrice: number; finalPrice: number; zoneEligible: boolean })
   | { shadowSkipped: true; reason: ShadowSkipReason; basePrice: number; finalPrice: number };
 
 /** Set van locatie-ids resp. stad-ids die als "high-demand" (nooit perifeer) gelden. */
@@ -337,6 +450,28 @@ export type ResolveQuoteDeps = {
   /** SHADOW-ONLY. Geconfigureerde high-demand-bestemmingen (nooit "perifeer"). */
   loadHighDemandZones?: () => Promise<HighDemandZoneIds>;
   /**
+   * Expliciete allowlist van stad-ids waarbinnen deadhead-activering is
+   * toegestaan, plus de officiële-woonplaats → city_id map voor dezelfde
+   * actieve zones (2026-08-13/14, city-wide zonefix — één query, zie
+   * loadDeadheadZoneAllowlist). Ontbreekt deze dep, dan wordt NOOIT
+   * geactiveerd (fail-closed) — `classification==='peripheral'` alleen is
+   * nooit voldoende. Faalt de load (i.p.v. gewoon ontbrekend) voor een
+   * mogelijk Eindhoven/Roermond-bestemming, dan wordt de HELE offerte
+   * onzeker (zie couldPlausiblyBeInZone) — nooit stilzwijgend de basisprijs.
+   */
+  loadDeadheadZoneAllowlist?: () => Promise<DeadheadZoneAllowlist>;
+  /**
+   * SHADOW-ONLY: PDOK-woonplaatslookup voor een onopgeloste, lange
+   * bestemming (2026-08-14). `null` = geslaagd, geen relevant document (zekere
+   * "geen match"). Een throw = de lookup zelf is mislukt/timed out — dat is
+   * NIET hetzelfde als "geen match" en kan de offerte onzeker maken voor een
+   * mogelijk Eindhoven/Roermond-bestemming (zie couldPlausiblyBeInZone).
+   * Ontbreekt deze dep, dan wordt een onopgeloste bestemming nooit gepromoveerd
+   * — exact het gedrag van vóór deze hotfix. Nooit gebruikt voor een bekende,
+   * al-opgeloste `LocationRow` (die blijft leidend).
+   */
+  lookupOfficialWoonplaats?: (address: string) => Promise<string | null>;
+  /**
    * SHADOW-ONLY, best-effort side-channel: registreert de shadow-uitkomst van
    * deze offerte voor de caller (resolveQuote → logQuote). Geen effect op
    * `price` of op het geretourneerde PricingQuoteResult.
@@ -344,19 +479,83 @@ export type ResolveQuoteDeps = {
   recordShadow?: (entry: ShadowLogEntry) => void;
 };
 
+/**
+ * Korte TTL: deze configuratie verandert in de praktijk hoogstens een paar
+ * keer per jaar (nieuwe/aangepaste zone, ander deadhead-percentage) — 60s is
+ * ruim genoeg om cold-start-round-trips te vermijden op een warme instance,
+ * en kort genoeg dat een wijziging binnen een minuut overal zichtbaar is.
+ * Puur server-side (module-scope in dit bestand); nooit naar de client
+ * gestuurd, nooit route-/klantgegevens erin (zie DeadheadConfig/HighDemand-
+ * ZoneIds/DeadheadZoneAllowlist — geen van drieën bevat iets adres- of
+ * persoonsgebonden).
+ */
+const SHADOW_CONFIG_CACHE_TTL_MS = 60_000;
+
+/**
+ * Module-scope gecachete + retryende loaders (2026-08-14). Gedefinieerd
+ * vóór hun eerste gebruik in resolveQuote() hieronder, maar ná de
+ * onderliggende `loadDeadheadConfig`/`loadHighDemandZones`/
+ * `loadDeadheadZoneAllowlist`-functiedeclaraties verderop in dit bestand —
+ * dat werkt omdat `function`-declaraties gehoist worden. `createPricingLogClient()`
+ * wordt bewust ELKE poging opnieuw aangeroepen (goedkoop, synchroon) in plaats
+ * van ook de client zelf te cachen — alleen het QUERYRESULTAAT wordt gecachet.
+ */
+const cachedLoadDeadheadConfig = cachedLoader(SHADOW_CONFIG_CACHE_TTL_MS, () =>
+  withRetryOnce(
+    () => {
+      const client = createPricingLogClient();
+      if (!client) return Promise.reject(new NoServiceRoleClientError());
+      return loadDeadheadConfig(client);
+    },
+    SHADOW_LOAD_TIMEOUT_MS,
+    SHADOW_LOAD_RETRY_TIMEOUT_MS
+  )
+);
+
+const cachedLoadHighDemandZones = cachedLoader(SHADOW_CONFIG_CACHE_TTL_MS, () =>
+  withRetryOnce(
+    () => {
+      const client = createPricingLogClient();
+      if (!client) return Promise.reject(new NoServiceRoleClientError());
+      return loadHighDemandZones(client);
+    },
+    SHADOW_LOAD_TIMEOUT_MS,
+    SHADOW_LOAD_RETRY_TIMEOUT_MS
+  )
+);
+
+const cachedLoadDeadheadZoneAllowlist = cachedLoader(SHADOW_CONFIG_CACHE_TTL_MS, () =>
+  withRetryOnce(
+    () => {
+      const client = createPricingLogClient();
+      if (!client) return Promise.reject(new NoServiceRoleClientError());
+      return loadDeadheadZoneAllowlist(client);
+    },
+    SHADOW_LOAD_TIMEOUT_MS,
+    SHADOW_LOAD_RETRY_TIMEOUT_MS
+  )
+);
+
+/**
+ * PDOK-lookup met precies één retry (2026-08-14) — NIET gecached (hoge
+ * cardinaliteit, per-adres; caching zou nauwelijks hits opleveren en zou een
+ * adres-sleutel vereisen, wat dichter bij "routegegevens bewaren" komt dan
+ * gewenst voor een cache die uitsluitend bedoeld is voor zelden-veranderende
+ * configuratie).
+ */
+function retryingLookupOfficialWoonplaats(address: string): Promise<string | null> {
+  return withRetryOnce(
+    () => pdokLookupOfficialWoonplaats(address),
+    PDOK_ZONE_LOOKUP_TIMEOUT_MS,
+    PDOK_ZONE_LOOKUP_RETRY_TIMEOUT_MS
+  );
+}
+
 async function resolveQuote(
   input: PricingQuoteInput
 ): Promise<{ result: PricingQuoteResult; shadow: ShadowLogEntry | null }> {
   const supabase = createPricingReadClient();
   if (!supabase) return { result: unavailable("data_unavailable"), shadow: null };
-
-  // SHADOW-ONLY: pricing_deadhead_config/pricing_high_demand_zones zijn
-  // RLS-only zonder publieke policy — de anon-key `supabase` hierboven ziet
-  // daar altijd 0 rijen. Uitsluitend voor deze twee tabellen de service-role
-  // client (dezelfde als voor pricing_quote_logs-writes); de publieke
-  // referentietabellen (locations/vehicle_classes/fixed_route_prices) blijven
-  // op de anon-key read-client — geen ongemerkt bredere verhoogde toegang.
-  const shadowConfigClient = createPricingLogClient();
 
   let shadow: ShadowLogEntry | null = null;
   const deps: ResolveQuoteDeps = {
@@ -365,14 +564,18 @@ async function resolveQuote(
     findFixedRoute: (pickupId, dropoffId, vehicleClassId) =>
       findFixedRoute(supabase, pickupId, dropoffId, vehicleClassId),
     getRoute: getDrivingRoute,
-    loadDeadheadConfig: () =>
-      shadowConfigClient
-        ? loadDeadheadConfig(shadowConfigClient)
-        : Promise.reject(new NoServiceRoleClientError()),
-    loadHighDemandZones: () =>
-      shadowConfigClient
-        ? loadHighDemandZones(shadowConfigClient)
-        : Promise.reject(new NoServiceRoleClientError()),
+    // SHADOW-ONLY, service-role-only tabellen (pricing_deadhead_config/
+    // pricing_high_demand_zones/pricing_deadhead_eligible_zones zijn RLS-only
+    // zonder publieke policy — de anon-key `supabase` hierboven ziet daar
+    // altijd 0 rijen): elk begrensd, gecached en één keer geretried, zie
+    // cachedLoadDeadheadConfig/cachedLoadHighDemandZones/
+    // cachedLoadDeadheadZoneAllowlist hierboven. De publieke referentietabellen
+    // (locations/vehicle_classes/fixed_route_prices) blijven op de anon-key
+    // read-client — geen ongemerkt bredere verhoogde toegang.
+    loadDeadheadConfig: cachedLoadDeadheadConfig,
+    loadHighDemandZones: cachedLoadHighDemandZones,
+    loadDeadheadZoneAllowlist: cachedLoadDeadheadZoneAllowlist,
+    lookupOfficialWoonplaats: retryingLookupOfficialWoonplaats,
     recordShadow: (entry) => {
       shadow = entry;
     },
@@ -528,7 +731,17 @@ async function tryDistanceTariff(
   // vermenigvuldigingspatroon als de bestaande retourprijs altijd al had, dus
   // geen dubbele toeslag: de retourrit is en blijft "2× de (eventueel
   // deadhead-aangepaste) enkele prijs", nooit een aparte tweede berekening.
-  const single = await resolveDeadheadPricing(deps, dropoff, route.distanceKm, route.durationMin, basePrice);
+  //
+  // `indeterminate` (2026-08-14, betrouwbaarheidshardening): de zonestatus van
+  // een MOGELIJK Eindhoven/Roermond-bestemming kon niet betrouwbaar worden
+  // vastgesteld (config/allowlist/PDOK allemaal onbeschikbaar, zelfs na retry).
+  // Dan wordt deze rit NOOIT bindend tegen de basisprijs verkocht — de hele
+  // offerte valt terug op "Offerte op aanvraag" via de bestaande, ongewijzigde
+  // unavailable-plumbing in resolveQuoteWith (geen aparte snapshot-/
+  // boekingscode nodig: die loopt uitsluitend bij `available === true`).
+  const outcome = await resolveDeadheadPricing(deps, dropoff, dropoffRaw, route.distanceKm, route.durationMin, basePrice);
+  if ("indeterminate" in outcome) return null;
+  const single = outcome.price;
 
   const returnPrice = single * 2;
   const returnApplied = input.returnTrip === true;
@@ -558,72 +771,162 @@ async function tryDistanceTariff(
   };
 }
 
+/** Uitkomst van resolveDeadheadPricing — zie de indeterminate-toelichting bij de aanroep in tryDistanceTariff. */
+type DeadheadPricingOutcome = { price: number } | { indeterminate: true };
+
 /**
  * Bepaalt de daadwerkelijk toe te passen enkele-reisprijs. Roept de bestaande,
  * ongewijzigde classificatie/berekening aan (`classifyDestination` +
  * `computeShadowDeadhead`) en past `shadowPrice` uitsluitend toe wanneer
- * `eligibleForActivation === true` én `shadowPrice` een geldig, positief getal
- * is. In elk ander geval — `classification !== "peripheral"` (incl.
- * "unknown", waar nooit `candidateShadowPrice` wordt gebruikt), ontbrekende
- * config, ontbrekende service-role-client, queryfout of timeout — blijft
- * `basePrice` de bindende prijs. Faalt NOOIT naar de caller toe: elke fout
- * wordt hier al afgevangen, tijdsbegrensd door SHADOW_LOAD_TIMEOUT_MS, en
- * gelogd (indien `recordShadow` is meegegeven) met `finalPrice === basePrice`.
+ * `eligibleForActivation === true`, `shadowPrice` een geldig, positief getal
+ * is, ÉN de bestemming (`dropoff.city_id`) in de expliciete
+ * deadhead-eligible-zone-allowlist staat (2026-08-13, hotfix — zie
+ * loadDeadheadZoneAllowlist). `classification==='peripheral'` alleen is dus
+ * NOOIT meer voldoende: een reeds herkenbare, willekeurige stad >80 km buiten
+ * high-demand die niet expliciet in de allowlist staat, activeert niet.
+ *
+ * In de meeste storingsgevallen — "unknown" (waar nooit `candidateShadowPrice`
+ * wordt gebruikt), niet-toegestane zone, ontbrekende service-role-client,
+ * queryfout of timeout ná de ene retry — blijft `{price: basePrice}` de
+ * bindende uitkomst. UITZONDERING (2026-08-14): faalt de zone-autoriteit
+ * (config/allowlist/PDOK) structureel VOOR EEN MOGELIJK Eindhoven/Roermond-
+ * bestemming (zie couldPlausiblyBeInZone), dan is de uitkomst
+ * `{indeterminate: true}` — de caller MAG dan nooit de basisprijs binden.
  */
 async function resolveDeadheadPricing(
   deps: ResolveQuoteDeps,
   dropoff: LocationRow | null,
+  dropoffRaw: string,
   distanceKm: number,
   durationMin: number,
   basePrice: number
-): Promise<number> {
+): Promise<DeadheadPricingOutcome> {
   const log = (entry: ShadowLogEntry) => deps.recordShadow?.(entry);
+  const dropoffForPlausibility = dropoff ? { city_id: dropoff.city_id } : null;
 
-  if (!deps.loadDeadheadConfig || !deps.loadHighDemandZones) return basePrice;
-
-  try {
-    // Parallel laden (geen serieel wachten), begrensd door SHADOW_LOAD_TIMEOUT_MS
-    // in totaal — niet per aanroep — zodat de bovengrens op de toegevoegde
-    // latency altijd hetzelfde is, ongeacht hoeveel afhankelijkheden er laden.
-    const [config, zones] = await withTimeout(
-      Promise.all([deps.loadDeadheadConfig(), deps.loadHighDemandZones()]),
-      SHADOW_LOAD_TIMEOUT_MS
-    );
-    if (!config) {
-      log({ shadowSkipped: true, reason: "missing_config", basePrice, finalPrice: basePrice });
-      return basePrice;
-    }
-
-    const classification = classifyDestination({
-      dropoff: dropoff ? { id: dropoff.id, city_id: dropoff.city_id } : null,
-      highDemandLocationIds: zones.locationIds,
-      highDemandCityIds: zones.cityIds,
-    });
-    const result = computeShadowDeadhead({ distanceKm, durationMin, classification, config });
-
-    const applied =
-      result.eligibleForActivation &&
-      typeof result.shadowPrice === "number" &&
-      Number.isFinite(result.shadowPrice) &&
-      result.shadowPrice > 0;
-    const finalPrice = applied ? (result.shadowPrice as number) : basePrice;
-
-    log({ ...result, applied, basePrice, finalPrice });
-    return finalPrice;
-  } catch (e) {
-    log({
-      shadowSkipped: true,
-      reason:
-        e instanceof ShadowTimeoutError
-          ? "timeout"
-          : e instanceof NoServiceRoleClientError
-            ? "no_service_role_client"
-            : "load_error",
-      basePrice,
-      finalPrice: basePrice,
-    });
-    return basePrice;
+  if (!deps.loadDeadheadConfig || !deps.loadHighDemandZones || !deps.loadDeadheadZoneAllowlist) {
+    return { price: basePrice };
   }
+
+  let config: DeadheadConfig | null;
+  let zones: HighDemandZoneIds;
+  let allowlist: DeadheadZoneAllowlist;
+  try {
+    // Parallel laden (geen serieel wachten), begrensd door
+    // SHADOW_LOAD_OUTER_TIMEOUT_MS als uiterst veiligheidsnet — de productie-
+    // deps begrenzen (en retryen) zichzelf al ruim binnen dat net, zie
+    // cachedLoadDeadheadConfig/cachedLoadHighDemandZones/
+    // cachedLoadDeadheadZoneAllowlist. De externe PDOK-lookup hieronder loopt
+    // bewust NIET in dezelfde Promise.all: apart systeem, eigen begrenzing.
+    [config, zones, allowlist] = await withTimeout(
+      Promise.all([deps.loadDeadheadConfig(), deps.loadHighDemandZones(), deps.loadDeadheadZoneAllowlist()]),
+      SHADOW_LOAD_OUTER_TIMEOUT_MS
+    );
+  } catch (e) {
+    // De zone-autoriteit zelf is onbereikbaar (zelfs na de ingebouwde retry).
+    // Voor een bestemming die aantoonbaar NIET Eindhoven/Roermond zou kunnen
+    // zijn (of te kort voor de drempel) blijft de basisprijs veilig — die
+    // bestemming zou toch nooit geactiveerd hebben. Voor een MOGELIJKE
+    // Eindhoven/Roermond-bestemming (couldPlausiblyBeInZone) mag deze
+    // onzekerheid nooit stilzwijgend de lage basisprijs opleveren.
+    const reason: ShadowSkipReason =
+      e instanceof ShadowTimeoutError ? "timeout" : e instanceof NoServiceRoleClientError ? "no_service_role_client" : "load_error";
+    if (
+      couldPlausiblyBeInZone(dropoffForPlausibility, dropoffRaw) &&
+      distanceKm > PLAUSIBLE_ZONE_MIN_DISTANCE_KM_FLOOR
+    ) {
+      log({ shadowSkipped: true, reason: "zone_lookup_unavailable", basePrice, finalPrice: basePrice });
+      return { indeterminate: true };
+    }
+    log({ shadowSkipped: true, reason, basePrice, finalPrice: basePrice });
+    return { price: basePrice };
+  }
+
+  if (!config) {
+    // Expliciet 0 (of >1, defensief) actieve configrijen — een bewuste,
+    // operationele "uitgeschakeld"-toestand, geen storing. Blijft altijd
+    // gewoon de basisprijs, nooit indeterminate.
+    log({ shadowSkipped: true, reason: "missing_config", basePrice, finalPrice: basePrice });
+    return { price: basePrice };
+  }
+
+  // Zone-promotie (hotfix 2026-08-14, city-wide economische zones): een
+  // ONOPGELOSTE, lange bestemming krijgt een kans om via de OFFICIËLE
+  // PDOK-woonplaats alsnog aan Eindhoven/Roermond gekoppeld te worden.
+  // Uitsluitend wanneer er nog geen bekende LocationRow is (die blijft altijd
+  // leidend — geen dubbele lookup voor Eindhoven Airport/Designer Outlet
+  // Roermond) EN de afstand de (nu bekende, echte) drempel al haalt.
+  let effectiveDropoff: { id: string; city_id: string | null } | null = dropoff
+    ? { id: dropoff.id, city_id: dropoff.city_id }
+    : null;
+  if (!effectiveDropoff && distanceKm > config.minDistanceKm && deps.lookupOfficialWoonplaats) {
+    const zoneLookup = await resolveZoneCityIdForRawDropoff(
+      dropoffRaw,
+      deps.lookupOfficialWoonplaats,
+      allowlist.byOfficialWoonplaats
+    );
+    if (zoneLookup.cityId) {
+      effectiveDropoff = { id: `zone:${zoneLookup.cityId}`, city_id: zoneLookup.cityId };
+    } else if (zoneLookup.liveLookupFailed && couldPlausiblyBeInZone(dropoffForPlausibility, dropoffRaw)) {
+      // PDOK zelf onbereikbaar (niet: "succesvol geen match") vóór een
+      // adres dat plausibel Eindhoven/Roermond zou kunnen zijn — onzeker,
+      // nooit stilzwijgend de basisprijs.
+      log({ shadowSkipped: true, reason: "zone_lookup_unavailable", basePrice, finalPrice: basePrice });
+      return { indeterminate: true };
+    }
+  }
+
+  const classification = classifyDestination({
+    dropoff: effectiveDropoff,
+    highDemandLocationIds: zones.locationIds,
+    highDemandCityIds: zones.cityIds,
+  });
+  const result = computeShadowDeadhead({ distanceKm, durationMin, classification, config });
+
+  const zoneEligible = Boolean(effectiveDropoff?.city_id && allowlist.cityIds.has(effectiveDropoff.city_id));
+  const applied =
+    result.eligibleForActivation &&
+    zoneEligible &&
+    typeof result.shadowPrice === "number" &&
+    Number.isFinite(result.shadowPrice) &&
+    result.shadowPrice > 0;
+  const finalPrice = applied ? (result.shadowPrice as number) : basePrice;
+
+  log({ ...result, applied, basePrice, finalPrice, zoneEligible });
+  return { price: finalPrice };
+}
+
+/** Uitkomst van de PDOK-zonepromotiepoging — onderscheidt "geen match" van "lookup zelf mislukt". */
+type ZoneLookupOutcome = { cityId: string | null; liveLookupFailed: boolean };
+
+/**
+ * Probeert eerst de live, officiële PDOK-woonplaats voor het ruwe
+ * dropoff-adres (begrensd door PDOK_ZONE_LOOKUP_OUTER_TIMEOUT_MS —
+ * veiligheidsnet, productie-deps retryen al zelf); levert die geen match op
+ * (PDOK zelf succesvol, gewoon een andere plaats), dan de smalle, individueel
+ * geverifieerde postcode4-fallback. `liveLookupFailed` onderscheidt "de live
+ * aanroep zelf is mislukt/timed out" van "PDOK antwoordde prima, gewoon geen
+ * relevant document" — dat verschil bepaalt of de caller mag terugvallen op
+ * de basisprijs of de offerte onzeker moet maken.
+ */
+async function resolveZoneCityIdForRawDropoff(
+  dropoffRaw: string,
+  lookupOfficialWoonplaats: (address: string) => Promise<string | null>,
+  cityIdByWoonplaats: ReadonlyMap<string, string>
+): Promise<ZoneLookupOutcome> {
+  let woonplaats: string | null = null;
+  let liveLookupFailed = false;
+  try {
+    woonplaats = await withTimeout(lookupOfficialWoonplaats(dropoffRaw), PDOK_ZONE_LOOKUP_OUTER_TIMEOUT_MS);
+  } catch {
+    liveLookupFailed = true;
+  }
+  if (woonplaats) {
+    const zoneCityId = resolveZoneCityIdFromWoonplaats(woonplaats, cityIdByWoonplaats);
+    if (zoneCityId) return { cityId: zoneCityId, liveLookupFailed: false };
+  }
+  const fallbackCityId = resolveZoneCityIdFromPostcode4Fallback(dropoffRaw, cityIdByWoonplaats);
+  return { cityId: fallbackCityId, liveLookupFailed };
 }
 
 // ── Locatie-/klasse-resolutie ────────────────────────────────────────────────
@@ -760,6 +1063,42 @@ export async function loadHighDemandZones(supabase: PricingSupabaseClient): Prom
     if (row.location_id) locationIds.add(row.location_id);
   }
   return { cityIds, locationIds };
+}
+
+/** Beide zichten op dezelfde actieve deadhead-eligible-zone-rijen — één query. */
+export type DeadheadZoneAllowlist = {
+  /** Stadsniveau-allowlist (city_id) — beslist `zoneEligible` voor elke bekende dropoff. */
+  cityIds: ReadonlySet<string>;
+  /** Officiële-woonplaats → city_id — koppelt een ONOPGELOSTE bestemming via PDOK. */
+  byOfficialWoonplaats: ReadonlyMap<string, string>;
+};
+
+/**
+ * Expliciete, server-side allowlist van steden waarvoor deadhead-activering
+ * is toegestaan (hotfix 2026-08-13/14, migratie 20260813090000, city-wide
+ * zoneclassificatie). Eén query levert beide zichten: `cityIds` (bindt op
+ * stadsniveau — zowel Eindhoven Airport als Designer Outlet Roermond resolven
+ * via hun `city_id`) én `byOfficialWoonplaats` (de `label`-kolom is bij seed
+ * exact `cities.name`, dus de officiële plaatsnaam — geen aparte tabel nodig).
+ * Voorheen twee losse queries op dezelfde tabel (2026-08-14 samengevoegd:
+ * minder round-trips, kleiner cold-start-risico).
+ */
+export async function loadDeadheadZoneAllowlist(
+  supabase: PricingSupabaseClient
+): Promise<DeadheadZoneAllowlist> {
+  const res = await supabase
+    .from("pricing_deadhead_eligible_zones")
+    .select("city_id, label")
+    .eq("active", true);
+  if (res.error) throw res.error;
+  const cityIds = new Set<string>();
+  const byOfficialWoonplaats = new Map<string, string>();
+  for (const row of res.data ?? []) {
+    if (!row.city_id) continue;
+    cityIds.add(row.city_id);
+    byOfficialWoonplaats.set(normalizeOfficialWoonplaats(row.label), row.city_id);
+  }
+  return { cityIds, byOfficialWoonplaats };
 }
 
 // ── Regel-gebaseerde fallback (INTERN — v1 niet klantzichtbaar) ──────────────
