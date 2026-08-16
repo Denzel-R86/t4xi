@@ -12,6 +12,7 @@ import {
   searchLocalLocations,
   normalizeSearchValue,
 } from "./local-locations";
+import { nsStations } from "./ns-stations";
 
 function firstId(query: string): string | undefined {
   return searchLocalLocations(query)[0]?.id;
@@ -23,10 +24,24 @@ function ids(query: string): string[] {
 
 // ── Basisdataset ─────────────────────────────────────────────────────────────
 
-test("combineert vliegvelden en populaire bestemmingen zonder overlap", () => {
-  assert.equal(localLocations.length, airports.length + popularDestinations.length);
+test("combineert vliegvelden, populaire bestemmingen en treinstations zonder overlap", () => {
+  assert.equal(localLocations.length, airports.length + popularDestinations.length + nsStations.length);
   const idSet = new Set(localLocations.map((l) => l.id));
   assert.equal(idSet.size, localLocations.length, "alle id's moeten uniek zijn");
+});
+
+test("alle NS-stations uit de rijdendetreinen.nl-dataset zijn geladen (397 min. 1 bewust uitgesloten dubbel met Schiphol-luchthaven)", () => {
+  assert.equal(nsStations.length, 396);
+  for (const station of nsStations) {
+    assert.equal(station.type, "popular_destination");
+    assert.equal(station.category, "station");
+    assert.ok(station.city, `${station.id}: mist city`);
+  }
+});
+
+test("het NS-station 'Schiphol Airport' (SHL) is bewust uitgesloten — 'schip' moet de luchthaven blijven vinden", () => {
+  assert.ok(!nsStations.some((s) => s.id === "station-shl"));
+  assert.equal(firstId("schip"), "airport-ams");
 });
 
 test("elke locatie heeft geldige WGS84-coördinaten binnen een plausibel bereik", () => {
@@ -66,7 +81,35 @@ test("matcht op plaatsnaam", () => {
 
 test("matcht op adres", () => {
   assert.ok(ids("europalaan").includes("efteling"));
-  assert.ok(ids("stationsplein").includes("amsterdam-centraal"));
+});
+
+// ── NS-stations ──────────────────────────────────────────────────────────────
+
+test("Amsterdam Amstel is vindbaar op naam, kort en met 'station' erbij", () => {
+  assert.equal(firstId("Amsterdam Amstel"), "station-asa");
+  assert.equal(firstId("amstel"), "station-asa");
+  assert.equal(firstId("amsterdam amstel station"), "station-asa");
+});
+
+test("Amsterdam Centraal komt maar één keer terug (geen dubbel met de oude losse entry)", () => {
+  const found = ids("amsterdam centraal");
+  const occurrences = found.filter((id) => id === "station-asd").length;
+  assert.equal(occurrences, 1);
+  assert.equal(firstId("amsterdam cs"), "station-asd");
+});
+
+test("willekeurige stations zijn vindbaar op naam en op 'station <naam>'", () => {
+  assert.equal(firstId("Utrecht Centraal"), "station-ut");
+  assert.equal(firstId("Rotterdam Centraal"), "station-rtd");
+  assert.equal(firstId("Den Haag Centraal"), "station-gvc");
+  assert.equal(firstId("Zwolle"), "station-zl");
+  assert.equal(firstId("station Sloterdijk"), "station-ass");
+  assert.equal(firstId("Duivendrecht station"), "station-dvd");
+});
+
+test("stationscode alleen botst niet met een luchthaven-IATA-code (bv. OST = Olst-station vs. Ostend-Airport)", () => {
+  assert.equal(firstId("OST"), "airport-ost", "IATA-exact moet blijven winnen op een losse 3-letterige code");
+  assert.ok(ids("olst").includes("station-ost"));
 });
 
 // ── Expliciete testgevallen uit de opdracht ─────────────────────────────────
