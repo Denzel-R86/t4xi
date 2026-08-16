@@ -22,6 +22,8 @@
  * van die bestaande adrestekst-gebaseerde flow.
  */
 
+import { nsStations } from "./ns-stations";
+
 export type LocalLocationCategory =
   | "airport"
   | "station"
@@ -394,18 +396,9 @@ export const airports: LocalLocation[] = [
 
 export const popularDestinations: LocalLocation[] = [
   // Amsterdam
-  {
-    id: "amsterdam-centraal",
-    name: "Amsterdam Centraal Station",
-    aliases: ["Amsterdam CS", "Centraal Station Amsterdam", "Amsterdam Central Station"],
-    address: "Stationsplein 15, 1012 AB Amsterdam",
-    city: "Amsterdam",
-    country: "Nederland",
-    latitude: 52.378431,
-    longitude: 4.900188,
-    type: "popular_destination",
-    category: "station",
-  },
+  // Amsterdam Centraal (en alle overige Nederlandse treinstations) komt uit
+  // `nsStations` (lib/pricing/ns-stations.ts) — hier bewust niet nogmaals
+  // opgenomen, anders staat hetzelfde station tweemaal in de zoekresultaten.
   {
     id: "anne-frank-huis",
     name: "Anne Frank Huis",
@@ -1059,8 +1052,8 @@ export const popularDestinations: LocalLocation[] = [
   },
 ];
 
-/** Alle lokale locaties samen: vliegvelden + populaire bestemmingen. */
-export const localLocations: LocalLocation[] = [...airports, ...popularDestinations];
+/** Alle lokale locaties samen: vliegvelden + populaire bestemmingen + treinstations. */
+export const localLocations: LocalLocation[] = [...airports, ...popularDestinations, ...nsStations];
 
 // ── Normalisatie ─────────────────────────────────────────────────────────────
 
@@ -1192,6 +1185,7 @@ const CATEGORY_ICON: Partial<Record<LocalLocationCategory, string>> = {
   stadium: "🎟️",
   event_venue: "🎟️",
   cruise_terminal: "🚢",
+  station: "🚉",
 };
 
 const DEFAULT_ICON = "📍";
