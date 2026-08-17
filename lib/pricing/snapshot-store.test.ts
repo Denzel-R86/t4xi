@@ -190,7 +190,7 @@ test("persist: autoritatieve velden komen uit de server-snapshot, niet uit input
 const quoteRouteSrc = readFileSync(resolve(process.cwd(), "app/api/pricing/quote/route.ts"), "utf8");
 
 test("quote-route: input alleen uit bekende velden; geen autoritatieve velden uit de body", () => {
-  assert.match(quoteRouteSrc, /const \{ pickup, dropoff, vehicleClass, returnTrip, passengers, luggage, date, time \} = body/);
+  assert.match(quoteRouteSrc, /const \{ pickup, dropoff, vehicleClass, returnTrip, passengers, luggage, date, time, returnDate, returnTime \} = body/);
   assert.doesNotMatch(quoteRouteSrc, /body\.(quoteId|price|amount|total|pricingVersion|pricingSource|totalCents|subtotalCents)/);
 });
 
@@ -198,6 +198,11 @@ test("quote-route: quoteId alleen bij bevestigde opslag; prijsvelden onafhankeli
   assert.match(quoteRouteSrc, /const stored = await persistPriceSnapshot\(snapshot\)/);
   assert.match(quoteRouteSrc, /if \(stored\) quoteId = snapshot\.quoteId/);
   assert.match(quoteRouteSrc, /\.\.\.\(quoteId \? \{ quoteId \} : \{\}\)/);
-  // Prijsvelden komen uit de quote (`result`), niet uit de snapshot of persist-uitkomst.
-  assert.match(quoteRouteSrc, /price: result\.price/);
+  // Getoonde prijs = snapshot-TOTAAL (incl. nachttarief), onafhankelijk van de
+  // persist-uitkomst (`stored` gate't alleen quoteId, niet de prijs).
+  assert.match(quoteRouteSrc, /const displayPrice = snapshot \? snapshot\.totalCents \/ 100 : result\.price/);
+  assert.match(quoteRouteSrc, /price: displayPrice/);
+  // nightSurcharge komt uit de per-ritdeel `night_*`-adjustments (isNightAdjustmentCode),
+  // niet uit total−subtotal, zodat andere adjustments niet als "nacht" tellen.
+  assert.match(quoteRouteSrc, /isNightAdjustmentCode\(a\.code\)/);
 });

@@ -117,22 +117,16 @@ export default function BookingSection({
       setSubmit({ status: "error", message: t("valAdres") });
       return;
     }
-    if (needsFlight && flightNumber.trim() === "") {
-      setSubmit({
-        status: "error",
-        message: isArrival ? t("valVluchtAankomst") : t("valVluchtVertrek"),
-      });
+    if (flightRequired && flightNumber.trim() === "") {
+      setSubmit({ status: "error", message: t("valVluchtAankomst") });
       return;
     }
     if (tab === "retour" && (!returnDate || !returnTime)) {
       setSubmit({ status: "error", message: t("valRetourMoment") });
       return;
     }
-    if (tab === "retour" && needsFlight && returnFlightNumber.trim() === "") {
-      setSubmit({
-        status: "error",
-        message: isArrival ? t("valVluchtRetourVertrek") : t("valVluchtRetourAankomst"),
-      });
+    if (returnFlightRequired && returnFlightNumber.trim() === "") {
+      setSubmit({ status: "error", message: t("valVluchtRetourAankomst") });
       return;
     }
 
@@ -205,6 +199,8 @@ export default function BookingSection({
     passengers: persons,
     date,
     time,
+    // Retourtijd meesturen zodat het nachttarief per ritdeel wordt berekend.
+    ...(tab === "retour" ? { returnDate, returnTime } : {}),
   });
   // Het vluchtnummerveld verschijnt zodra de engine zegt dat één zijde een
   // luchthaven is — ook bij "offerte op aanvraag". Ritten vanaf Schiphol hebben nog
@@ -212,6 +208,14 @@ export default function BookingSection({
   const airport = quote.airport;
   const needsFlight = Boolean(airport?.isTransfer);
   const isArrival = airport?.direction === "arrival";
+  // Een vluchtnummer is alléén VERPLICHT bij een AANKOMST (dan volgt de chauffeur de
+  // landing). Bij een VERTREK (adres → Schiphol) is het veld optioneel. De retourrit
+  // keert de richting om, dus daar geldt de omgekeerde plicht.
+  const outboundDirection: "arrival" | "departure" | null = airport?.direction ?? null;
+  const returnDirection: "arrival" | "departure" | null =
+    outboundDirection === "arrival" ? "departure" : outboundDirection === "departure" ? "arrival" : null;
+  const flightRequired = needsFlight && isArrival;
+  const returnFlightRequired = needsFlight && tab === "retour" && returnDirection === "arrival";
 
   const priceNote =
     quote.status === "idle"
@@ -399,7 +403,9 @@ export default function BookingSection({
             <div className="sm:col-span-2">
               <label htmlFor="f-flight" className={labelCls}>
                 {isArrival ? t("vluchtAankomend") : t("vluchtVertrekkend")}{" "}
-                <span className="text-accent">{t("verplicht")}</span>
+                <span className={flightRequired ? "text-accent" : "text-stone"}>
+                  {flightRequired ? t("verplicht") : t("optioneel")}
+                </span>
               </label>
               <input
                 id="f-flight"
@@ -410,7 +416,7 @@ export default function BookingSection({
                 autoComplete="off"
                 spellCheck={false}
                 maxLength={8}
-                required
+                required={flightRequired}
                 aria-describedby="f-flight-help"
                 className={inputCls}
               />
@@ -419,14 +425,17 @@ export default function BookingSection({
               </p>
 
               {/* Live vluchtkaart (7.9A): debounced check op /api/flights/* zodra
-                  een vluchtnummer is ingevoerd. Read-only; wijzigt de boeking niet. */}
-              <FlightCard flightNumber={flightNumber} />
+                  een vluchtnummer is ingevoerd. Richting meegeven zodat het JUISTE
+                  ritdeel (vertrek vs aankomst) van hetzelfde vluchtnummer wordt getoond. */}
+              <FlightCard flightNumber={flightNumber} direction={outboundDirection} />
 
               {tab === "retour" && (
                 <div className="mt-4 border-t border-line pt-4">
                   <label htmlFor="f-return-flight" className={labelCls}>
-                    {t("retourVlucht")} — {isArrival ? t("vluchtVertrekkend") : t("vluchtAankomend")} {" "}
-                    <span className="text-accent">{t("verplicht")}</span>
+                    {t("retourVlucht")} — {isArrival ? t("vluchtVertrekkend") : t("vluchtAankomend")}{" "}
+                    <span className={returnFlightRequired ? "text-accent" : "text-stone"}>
+                      {returnFlightRequired ? t("verplicht") : t("optioneel")}
+                    </span>
                   </label>
                   <input
                     id="f-return-flight"
@@ -436,10 +445,10 @@ export default function BookingSection({
                     autoComplete="off"
                     spellCheck={false}
                     maxLength={8}
-                    required
+                    required={returnFlightRequired}
                     className={inputCls}
                   />
-                  <FlightCard flightNumber={returnFlightNumber} />
+                  <FlightCard flightNumber={returnFlightNumber} direction={returnDirection} />
                 </div>
               )}
 

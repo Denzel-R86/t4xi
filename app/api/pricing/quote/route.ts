@@ -6,7 +6,7 @@ import {
   type PricingQuoteResult,
   type UnavailableReason,
 } from "@/lib/pricing/service";
-import type { PriceSnapshot } from "@/lib/pricing/snapshot";
+import { isNightAdjustmentCode, type PriceSnapshot } from "@/lib/pricing/snapshot";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 
 /**
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
   }
 
   // 2. Input valideren (type-veilig)
-  const { pickup, dropoff, vehicleClass, returnTrip, passengers, luggage, date, time } = body;
+  const { pickup, dropoff, vehicleClass, returnTrip, passengers, luggage, date, time, returnDate, returnTime } = body;
 
   if (typeof pickup !== "string" || pickup.trim() === "") {
     return badRequest("Veld 'pickup' is verplicht en moet een niet-lege string zijn.");
@@ -135,6 +135,24 @@ export async function POST(request: Request) {
     }
   }
 
+  // Retour-vertrek (optioneel) → bepaalt het nachttarief van het retour-ritdeel.
+  // Zodra één deel wordt meegestuurd, moeten retourdatum én -tijd geldig zijn.
+  let returnDepartureAt: string | undefined;
+  if (returnDate !== undefined || returnTime !== undefined) {
+    if (typeof returnDate !== "string" || typeof returnTime !== "string") {
+      return badRequest("'returnDate' en 'returnTime' moeten samen als strings worden meegestuurd.");
+    }
+    const normalizedReturnDate = returnDate.trim();
+    const normalizedReturnTime = returnTime.trim();
+    if (!isExistingCalendarDate(normalizedReturnDate)) {
+      return badRequest("'returnDate' moet een bestaande datum in formaat YYYY-MM-DD zijn.");
+    }
+    returnDepartureAt = amsterdamDepartureIso(normalizedReturnDate, normalizedReturnTime) ?? undefined;
+    if (!returnDepartureAt) {
+      return badRequest("'returnTime' moet een geldige tijd in formaat HH:MM zijn.");
+    }
+  }
+
   const input: PricingQuoteInput = {
     pickup: pickup.trim(),
     dropoff: dropoff.trim(),
@@ -143,6 +161,7 @@ export async function POST(request: Request) {
     ...(passengers !== undefined ? { passengers } : {}),
     ...(luggage !== undefined ? { luggage } : {}),
     ...(departureAt !== undefined ? { departureAt } : {}),
+    ...(returnDepartureAt !== undefined ? { returnDepartureAt } : {}),
   };
 
   // 3. Offerte ophalen via de centrale prijsfunctie (quote = pass-through om
@@ -169,9 +188,22 @@ export async function POST(request: Request) {
       const stored = await persistPriceSnapshot(snapshot);
       if (stored) quoteId = snapshot.quoteId;
     }
+    // Getoonde prijs = snapshot-TOTAAL (incl. eventueel nachttarief), zodat wat de
+    // klant ziet exact overeenkomt met wat de boeking (quote-lock) afrekent. Zonder
+    // snapshot (zeldzaam) valt het terug op het basisbedrag.
+    const displayPrice = snapshot ? snapshot.totalCents / 100 : result.price;
+    // Nachttoeslag expliciet uit de per-ritdeel `night_*`-adjustments sommeren —
+    // niet als total−subtotal, zodat toekomstige andere adjustments niet als "nacht"
+    // worden gelabeld.
+    const nightCents = (snapshot?.adjustments ?? [])
+      .filter((a) => isNightAdjustmentCode(a.code))
+      .reduce((sum, a) => sum + a.amountCents, 0);
+    const nightSurcharge = nightCents / 100;
     return json(200, {
         available: true,
-        price: result.price,
+        price: displayPrice,
+        subtotal: result.price,
+        nightSurcharge,
         currency: result.currency,
         singlePrice: result.singlePrice,
         returnPrice: result.returnPrice,

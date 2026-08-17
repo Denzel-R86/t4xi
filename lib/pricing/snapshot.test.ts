@@ -201,3 +201,87 @@ test("uuidv7: uniek over vele aanroepen", () => {
   for (let i = 0; i < 1000; i++) set.add(uuidv7());
   assert.equal(set.size, 1000);
 });
+
+// ── buildPriceSnapshot: nachttarief +15% PER RITDEEL over singlePrice ─────────
+import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
+
+const NIGHT = amsterdamDepartureIso("2026-07-15", "23:30")!; // nacht
+const NIGHT2 = amsterdamDepartureIso("2026-07-16", "05:30")!; // nacht (retourdeel)
+const DAY = amsterdamDepartureIso("2026-07-15", "12:00")!; // dag
+const DAY2 = amsterdamDepartureIso("2026-07-16", "12:00")!; // dag (retourdeel)
+
+// ── Enkele rit ───────────────────────────────────────────────────────────────
+test("enkele rit nacht → +15% night_outbound over singlePrice", () => {
+  const s = buildPriceSnapshot(availableQuote(100), { quoteId: QID, now: NOW, departureAt: NIGHT })!;
+  assert.equal(s.subtotalCents, 10000);
+  assert.deepEqual(s.adjustments.map((a) => a.code), ["night_outbound"]);
+  assert.equal(s.adjustments[0].amountCents, 1500);
+  assert.equal(s.adjustments[0].label, "Nachttarief");
+  assert.equal(s.totalCents, 11500);
+  assert.equal(validateSnapshot(s).ok, true);
+});
+
+test("enkele rit dag → geen toeslag", () => {
+  const s = buildPriceSnapshot(availableQuote(100), { quoteId: QID, now: NOW, departureAt: DAY })!;
+  assert.deepEqual(s.adjustments, []);
+  assert.equal(s.totalCents, 10000);
+});
+
+test("enkele rit zonder departureAt → geen toeslag (basisprijs, bv. hero)", () => {
+  const s = buildPriceSnapshot(availableQuote(100), { quoteId: QID, now: NOW })!;
+  assert.deepEqual(s.adjustments, []);
+  assert.equal(s.totalCents, s.subtotalCents);
+});
+
+test("enkele rit nacht: afronding op hele cent (single 99.99 → 1500)", () => {
+  const s = buildPriceSnapshot(availableQuote(99.99), { quoteId: QID, now: NOW, departureAt: NIGHT })!;
+  assert.equal(s.adjustments[0].amountCents, 1500); // round(9999*0.15)
+  assert.equal(s.totalCents, 11499);
+  assert.equal(validateSnapshot(s).ok, true);
+});
+
+// ── Retour-matrix (fixed: subtotal = gekorte bundel €184, singlePrice €102) ───
+const fixedRetour = () => availableQuote(184, { singlePrice: 102, returnPrice: 184, returnApplied: true });
+const LEG = 1530; // round(10200 * 0.15)
+
+test("retour dag→dag → geen toeslag", () => {
+  const s = buildPriceSnapshot(fixedRetour(), { quoteId: QID, now: NOW, departureAt: DAY, returnDepartureAt: DAY2 })!;
+  assert.deepEqual(s.adjustments, []);
+  assert.equal(s.totalCents, 18400);
+});
+
+test("retour dag→nacht → alleen night_return (+15% over singlePrice)", () => {
+  const s = buildPriceSnapshot(fixedRetour(), { quoteId: QID, now: NOW, departureAt: DAY, returnDepartureAt: NIGHT2 })!;
+  assert.deepEqual(s.adjustments.map((a) => a.code), ["night_return"]);
+  assert.equal(s.adjustments[0].amountCents, LEG);
+  assert.equal(s.totalCents, 18400 + LEG);
+  assert.equal(validateSnapshot(s).ok, true);
+});
+
+test("retour nacht→dag → alleen night_outbound", () => {
+  const s = buildPriceSnapshot(fixedRetour(), { quoteId: QID, now: NOW, departureAt: NIGHT, returnDepartureAt: DAY2 })!;
+  assert.deepEqual(s.adjustments.map((a) => a.code), ["night_outbound"]);
+  assert.equal(s.adjustments[0].label, "Nachttarief heenrit");
+  assert.equal(s.totalCents, 18400 + LEG);
+});
+
+test("retour nacht→nacht → beide ritdelen +15% over singlePrice", () => {
+  const s = buildPriceSnapshot(fixedRetour(), { quoteId: QID, now: NOW, departureAt: NIGHT, returnDepartureAt: NIGHT2 })!;
+  assert.deepEqual(s.adjustments.map((a) => a.code), ["night_outbound", "night_return"]);
+  assert.equal(s.totalCents, 18400 + LEG + LEG);
+  assert.equal(validateSnapshot(s).ok, true);
+});
+
+test("distance-tariff retour nacht→nacht → +15% over single per ritdeel", () => {
+  // distance: returnPrice = single*2 → subtotal 200, singlePrice 100 → 2×1500
+  const q = availableQuote(200, { source: "distance_tariff", singlePrice: 100, returnPrice: 200, returnApplied: true });
+  const s = buildPriceSnapshot(q, { quoteId: QID, now: NOW, departureAt: NIGHT, returnDepartureAt: NIGHT2 })!;
+  assert.equal(s.pricingSource, "dynamic");
+  assert.equal(s.totalCents, 20000 + 1500 + 1500);
+  assert.equal(validateSnapshot(s).ok, true);
+});
+
+test("retour zonder retourtijd → alleen heen-ritdeel kan nacht krijgen", () => {
+  const s = buildPriceSnapshot(fixedRetour(), { quoteId: QID, now: NOW, departureAt: NIGHT })!;
+  assert.deepEqual(s.adjustments.map((a) => a.code), ["night_outbound"]);
+});

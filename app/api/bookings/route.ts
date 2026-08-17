@@ -173,6 +173,9 @@ export async function POST(request: Request) {
   if (Date.parse(departureAt) <= Date.now()) return bad("Vertrekmoment ligt in het verleden.");
 
   const returnTrip = rideType === "retour";
+  // Retour-vertrekinstant (ISO) — nodig voor het nachttarief van het retour-ritdeel
+  // én voor de quote-lock-vingerafdruk (die de vertrektijden meeneemt).
+  let returnDepartureAt: string | undefined;
   if (returnTrip) {
     if (!DATE_RE.test(returnDate)) return bad("Retourdatum is verplicht (YYYY-MM-DD).");
     if (!TIME_RE.test(returnTime)) return bad("Retourtijd is verplicht (HH:MM).");
@@ -181,6 +184,7 @@ export async function POST(request: Request) {
     if (!outwardAt || !returnAt || Date.parse(returnAt) <= Date.parse(outwardAt)) {
       return bad("Het retourmoment moet na het vertrek van de heenrit liggen.");
     }
+    returnDepartureAt = returnAt;
   } else if (returnDate || returnTime || returnFlightNumber) {
     return bad("Retourgegevens zijn alleen toegestaan bij een retourrit.");
   }
@@ -212,6 +216,7 @@ export async function POST(request: Request) {
       returnTrip,
       passengers: persons,
       departureAt,
+      ...(returnDepartureAt !== undefined ? { returnDepartureAt } : {}),
       quoteId: str(body.quoteId) || null,
     },
     { now, readSnapshot: readPriceSnapshot }

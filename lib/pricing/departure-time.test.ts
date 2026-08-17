@@ -30,3 +30,28 @@ test("ongeldig formaat of onmogelijke waarden → null", () => {
 test("niet-bestaande Amsterdamse zomertijd → null", () => {
   assert.equal(amsterdamDepartureIso("2026-03-29", "02:30"), null);
 });
+
+// ── isNightTariff: venster [23:00, 06:00) in Amsterdamse lokale tijd ──────────
+import { isNightTariff } from "@/lib/pricing/departure-time";
+
+test("isNightTariff: grenzen 23:00 (nacht) en 06:00 (dag)", () => {
+  const iso = (d: string, t: string) => amsterdamDepartureIso(d, t)!;
+  assert.equal(isNightTariff(iso("2026-07-15", "22:59")), false, "22:59 = dag");
+  assert.equal(isNightTariff(iso("2026-07-15", "23:00")), true, "23:00 = nacht");
+  assert.equal(isNightTariff(iso("2026-07-15", "05:59")), true, "05:59 = nacht");
+  assert.equal(isNightTariff(iso("2026-07-15", "06:00")), false, "06:00 = dag");
+  assert.equal(isNightTariff(iso("2026-07-15", "00:00")), true, "00:00 = nacht");
+  assert.equal(isNightTariff(iso("2026-07-15", "12:00")), false, "12:00 = dag");
+});
+
+test("isNightTariff: DST-correct — 23:30 nacht in zomer- én wintertijd", () => {
+  assert.equal(isNightTariff(amsterdamDepartureIso("2026-07-15", "23:30")!), true);
+  assert.equal(isNightTariff(amsterdamDepartureIso("2026-01-15", "23:30")!), true);
+  assert.equal(isNightTariff(amsterdamDepartureIso("2026-01-15", "03:00")!), true);
+});
+
+test("isNightTariff: leeg/ongeldig → false (fail-open)", () => {
+  assert.equal(isNightTariff(null), false);
+  assert.equal(isNightTariff(""), false);
+  assert.equal(isNightTariff("niet-een-datum"), false);
+});

@@ -39,7 +39,16 @@ const TONE_CLASSES: Record<FlightTone, string> = {
   neutral: "border-line bg-fog text-secondary",
 };
 
-export default function FlightCard({ flightNumber }: { flightNumber: string }) {
+export default function FlightCard({
+  flightNumber,
+  direction = null,
+}: {
+  flightNumber: string;
+  /** Ritrichting: bepaalt WELK ritdeel (vertrek/aankomst) van hetzelfde
+   *  vluchtnummer wordt getoond. Bij een vertrek adres → Schiphol tonen we de
+   *  vertrekvlucht, niet de gelijknamige aankomst. */
+  direction?: "arrival" | "departure" | null;
+}) {
   const t = useTranslations("booking.flightCard");
   const format = useFormatter();
   const [state, setState] = useState<State>({ kind: "idle" });
@@ -56,7 +65,8 @@ export default function FlightCard({ flightNumber }: { flightNumber: string }) {
     setState({ kind: "loading" });
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/flights/${encodeURIComponent(normalized)}`, {
+        const qs = direction ? `?direction=${direction}` : "";
+        const res = await fetch(`/api/flights/${encodeURIComponent(normalized)}${qs}`, {
           signal: controller.signal,
         });
         const data = await res.json().catch(() => ({}));
@@ -77,7 +87,7 @@ export default function FlightCard({ flightNumber }: { flightNumber: string }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [normalized, valid]);
+  }, [normalized, valid, direction]);
 
   if (state.kind === "idle") return null;
 

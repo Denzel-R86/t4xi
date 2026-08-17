@@ -41,15 +41,25 @@ export type Quote =
 export function useRouteQuote(
   pickup: AddressSuggestion | null,
   dropoff: AddressSuggestion | null,
-  opts?: { returnTrip?: boolean; passengers?: number; date?: string; time?: string }
+  opts?: {
+    returnTrip?: boolean;
+    passengers?: number;
+    date?: string;
+    time?: string;
+    returnDate?: string;
+    returnTime?: string;
+  }
 ): Quote {
   const [quote, setQuote] = useState<Quote>({ status: "idle" });
   const returnTrip = opts?.returnTrip ?? false;
   const passengers = opts?.passengers ?? 1;
   // Optioneel gepland vertrek — de server rekent date+time om naar een UTC-instant
-  // voor traffic-aware routing. Leeg laten waar er geen datum/tijd is (homepagehero).
+  // voor traffic-aware routing én het nachttarief. Leeg laten waar er geen datum/tijd
+  // is (homepagehero). Retourtijd bepaalt het nachttarief van het retour-ritdeel.
   const date = opts?.date ?? "";
   const time = opts?.time ?? "";
+  const returnDate = opts?.returnDate ?? "";
+  const returnTime = opts?.returnTime ?? "";
 
   useEffect(() => {
     if (!pickup || !dropoff) {
@@ -69,6 +79,7 @@ export function useRouteQuote(
             returnTrip,
             passengers,
             ...(date && time ? { date, time } : {}),
+            ...(returnTrip && returnDate && returnTime ? { returnDate, returnTime } : {}),
           }),
           signal: controller.signal,
         });
@@ -106,7 +117,7 @@ export function useRouteQuote(
       clearTimeout(timer);
       controller.abort();
     };
-  }, [pickup, dropoff, returnTrip, passengers, date, time]);
+  }, [pickup, dropoff, returnTrip, passengers, date, time, returnDate, returnTime]);
 
   return quote;
 }

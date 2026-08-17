@@ -179,3 +179,95 @@ test("zonder quoteId geeft capaciteitsoverschrijding een nette fout", async () =
 // create_booking_from_snapshot (FOR UPDATE-lock + consumed_at + unieke index op
 // bookings.quote_id) en apart bewezen met een integratietest tegen een Supabase-
 // branch (niet-productie) — zie het sessieverslag/migratie 20260807120000.
+
+// ── Nachttarief op het no-quoteId-pad (deterministische vaste route) ─────────
+import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
+
+const NIGHT_ISO = amsterdamDepartureIso("2026-08-20", "23:30")!;
+const DAY_ISO = amsterdamDepartureIso("2026-08-20", "12:00")!;
+
+const availableSingle = (price: number): PricingQuoteResult => ({
+  available: true, source: "fixed_route_prices", price, singlePrice: price, returnPrice: null,
+  returnApplied: false, currency: "EUR", vatRate: 9, distanceKm: 10, estimatedDurationMin: 15,
+  vehicleClass: "executive-ev", route: { pickupSlug: "a", dropoffSlug: "b", label: null },
+  isAirportTransfer: false, airport: NO_AIRPORT, dataSource: "supabase", fingerprint: "x",
+});
+const availableRetour = (singlePrice: number, returnPrice: number): PricingQuoteResult => ({
+  ...(availableSingle(singlePrice) as Extract<PricingQuoteResult, { available: true }>),
+  price: returnPrice, returnPrice, returnApplied: true,
+});
+const NIGHT_RET = amsterdamDepartureIso("2026-08-21", "05:30")!; // retour-ritdeel nacht
+const DAY_RET = amsterdamDepartureIso("2026-08-21", "12:00")!; // retour-ritdeel dag
+
+test("no-quoteId: enkele vaste route 's nachts → +15% nachttoeslag", async () => {
+  const out = await resolveBookingPrice(
+    req({ quoteId: null, departureAt: NIGHT_ISO }),
+    deps({ computeQuote: async () => availableSingle(100) })
+  );
+  assert.equal(out.kind, "priced");
+  if (out.kind !== "priced") return;
+  assert.equal(out.priceEuros, 115); // 100 + 15%
+});
+
+test("no-quoteId: enkele vaste route overdag → basisprijs (geen toeslag)", async () => {
+  const out = await resolveBookingPrice(
+    req({ quoteId: null, departureAt: DAY_ISO }),
+    deps({ computeQuote: async () => availableSingle(100) })
+  );
+  assert.equal(out.kind, "priced");
+  if (out.kind !== "priced") return;
+  assert.equal(out.priceEuros, 100);
+});
+
+test("no-quoteId: retour nacht→nacht → +15% per ritdeel over singlePrice", async () => {
+  const out = await resolveBookingPrice(
+    req({ quoteId: null, returnTrip: true, departureAt: NIGHT_ISO, returnDepartureAt: NIGHT_RET }),
+    deps({ computeQuote: async () => availableRetour(100, 184) })
+  );
+  assert.equal(out.kind, "priced");
+  if (out.kind !== "priced") return;
+  assert.equal(out.priceEuros, 214); // 184 bundel + 15 (heen) + 15 (retour)
+});
+
+test("no-quoteId: retour dag→nacht → alleen retour-ritdeel +15%", async () => {
+  const out = await resolveBookingPrice(
+    req({ quoteId: null, returnTrip: true, departureAt: DAY_ISO, returnDepartureAt: NIGHT_RET }),
+    deps({ computeQuote: async () => availableRetour(100, 184) })
+  );
+  assert.equal(out.kind, "priced");
+  if (out.kind !== "priced") return;
+  assert.equal(out.priceEuros, 199); // 184 + 15 (alleen retour)
+});
+
+test("no-quoteId: retour nacht→dag → alleen heen-ritdeel +15%", async () => {
+  const out = await resolveBookingPrice(
+    req({ quoteId: null, returnTrip: true, departureAt: NIGHT_ISO, returnDepartureAt: DAY_RET }),
+    deps({ computeQuote: async () => availableRetour(100, 184) })
+  );
+  assert.equal(out.kind, "priced");
+  if (out.kind !== "priced") return;
+  assert.equal(out.priceEuros, 199); // 184 + 15 (alleen heen)
+});
+
+test("quote-lock: vingerafdruk bevat vertrektijd → afwijkende tijd = mismatch", async () => {
+  const dep = amsterdamDepartureIso("2026-08-19", "23:00")!;
+  const base = stored();
+  const storedNight = stored({
+    routeSnapshot: {
+      ...base.routeSnapshot,
+      fingerprint: quoteFingerprint({
+        pickup: "Almere Poort, Almere",
+        dropoff: "Almere Buiten, Almere",
+        returnTrip: false,
+        departureAt: dep,
+      }),
+    },
+  });
+  const okOut = await resolveBookingPrice(req({ departureAt: dep }), deps({ readSnapshot: async () => storedNight }));
+  assert.equal(okOut.kind, "priced");
+  const other = amsterdamDepartureIso("2026-08-19", "12:00")!;
+  const badOut = await resolveBookingPrice(req({ departureAt: other }), deps({ readSnapshot: async () => storedNight }));
+  assert.equal(badOut.kind, "error");
+  if (badOut.kind !== "error") return;
+  assert.equal(badOut.error, "quote_mismatch");
+});

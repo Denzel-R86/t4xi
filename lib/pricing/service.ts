@@ -66,6 +66,11 @@ export type PricingQuoteInput = {
    */
   departureAt?: string;
   /**
+   * Gepland vertrek van de RETOURrit als UTC ISO-8601-instant. Alleen relevant bij
+   * returnTrip; gebruikt om per ritdeel te bepalen of het nachttarief geldt.
+   */
+  returnDepartureAt?: string;
+  /**
    * INTERN. Standaard true. Op `false` slaat de service het afstand-tarief
    * (Google-routing) over en levert alleen een vaste route óf "offerte op
    * aanvraag". Gebruikt door de booking-tak ZONDER geldige prijs-snapshot: een
@@ -231,12 +236,19 @@ export function quoteFingerprint(input: {
   dropoff: string;
   vehicleClass?: string;
   returnTrip?: boolean;
+  departureAt?: string;
+  returnDepartureAt?: string;
 }): string {
   const pickup = slugify(input.pickup ?? "");
   const dropoff = slugify(input.dropoff ?? "");
   const cls = slugify(input.vehicleClass ?? DEFAULT_VEHICLE_CLASS) || DEFAULT_VEHICLE_CLASS;
   const ret = input.returnTrip === true ? "retour" : "enkel";
-  return [pickup, dropoff, cls, ret].join("|");
+  // Vertrek-instants horen in de vingerafdruk: het nachttarief hangt van de
+  // ophaaltijd af, dus een snapshot mag niet worden hergebruikt voor een andere
+  // heen- of retourtijd (anders zou een dagprijs een nachtrit kunnen binden).
+  const dep = (input.departureAt ?? "").trim();
+  const retDep = (input.returnDepartureAt ?? "").trim();
+  return [pickup, dropoff, cls, ret, dep, retDep].join("|");
 }
 
 // ── Publieke service ─────────────────────────────────────────────────────────

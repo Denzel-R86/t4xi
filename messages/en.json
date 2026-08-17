@@ -86,6 +86,7 @@
     "vluchtVertrekkend": "Departure flight number",
     "retourVlucht": "Return flight number",
     "verplicht": "— required",
+    "optioneel": "— optional",
     "vluchtHelpAankomst": "We track your flight and adjust the pick-up time if your flight is delayed.",
     "vluchtHelpVertrek": "We use your flight number to plan the ride around your departure time.",
     "aasKop": "Airport Arrival Service included",
