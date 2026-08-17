@@ -14,10 +14,13 @@ import {
 import {
   buildPriceSnapshot,
   checkSnapshotUsable,
+  nightSurchargeCents,
   uuidv7,
   type PriceSnapshot,
   type StoredSnapshot,
 } from "@/lib/pricing/snapshot";
+import { isNightTariff } from "@/lib/pricing/departure-time";
+import { eurosToCents } from "@/lib/payments/create-intent";
 
 /**
  * DE centrale, server-side entrypoint voor een klantprijs (Sprint 7.6 — PR 7.6.2).
@@ -91,6 +94,10 @@ export async function calculateBookingPrice(
     ? buildPriceSnapshot(quote, {
         quoteId: (deps.generateQuoteId ?? uuidv7)(),
         now: (deps.now ?? (() => new Date()))(),
+        // Ophaaltijden meegeven zodat het nachttarief (+15% 23:00–06:00) PER RITDEEL
+        // als adjustment in de snapshot komt. Afwezig → geen toeslag (basisprijs).
+        ...(input.departureAt !== undefined ? { departureAt: input.departureAt } : {}),
+        ...(input.returnDepartureAt !== undefined ? { returnDepartureAt: input.returnDepartureAt } : {}),
       })
     : null;
   return { quote, contractVersion: "legacy-passthrough", snapshot };
@@ -106,6 +113,8 @@ export type BookingPriceRequest = {
   returnTrip: boolean;
   passengers: number;
   departureAt?: string;
+  /** Vertrek van de retourrit (ISO); bepaalt het nachttarief van het retour-ritdeel. */
+  returnDepartureAt?: string;
   /** Quote-lock id uit de getoonde prijs; leeg/afwezig → geen lock. */
   quoteId?: string | null;
 };
@@ -176,6 +185,8 @@ export async function resolveBookingPrice(
         dropoff: req.dropoff,
         vehicleClass: req.vehicleClass,
         returnTrip: req.returnTrip,
+        departureAt: req.departureAt,
+        returnDepartureAt: req.returnDepartureAt,
       }),
     });
     if (!usable.ok) {
@@ -207,13 +218,22 @@ export async function resolveBookingPrice(
     returnTrip: req.returnTrip,
     passengers: req.passengers,
     ...(req.departureAt !== undefined ? { departureAt: req.departureAt } : {}),
+    ...(req.returnDepartureAt !== undefined ? { returnDepartureAt: req.returnDepartureAt } : {}),
     allowDistanceTariff: false,
   });
 
   if (quote.available) {
+    // Nachttoeslag ook op dit no-quoteId-pad (deterministische vaste route), PER
+    // RITDEEL: +15% over de enkele-rit-prijs voor elk ritdeel waarvan de eigen
+    // ophaaltijd tussen 23:00–06:00 valt. Zelfde basis/afronding als de snapshot.
+    const baseCents = eurosToCents(quote.price);
+    const legSurcharge = nightSurchargeCents(eurosToCents(quote.singlePrice));
+    let nightCents = 0;
+    if (isNightTariff(req.departureAt)) nightCents += legSurcharge;
+    if (quote.returnApplied && isNightTariff(req.returnDepartureAt)) nightCents += legSurcharge;
     return {
       kind: "priced",
-      priceEuros: quote.price,
+      priceEuros: (baseCents + nightCents) / 100,
       currency: quote.currency,
       returnApplied: quote.returnApplied,
       airport: quote.airport,

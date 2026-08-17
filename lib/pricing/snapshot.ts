@@ -5,7 +5,22 @@
 // Contract: docs/architecture/price-snapshot-contract.md.
 // ─────────────────────────────────────────────────────────────────────────────
 import { eurosToCents } from "@/lib/payments/create-intent";
+import { isNightTariff } from "@/lib/pricing/departure-time";
 import type { AirportContext, PricingQuoteResult } from "@/lib/pricing/service";
+
+/** Nachttoeslag: +15% wanneer de ophaaltijd tussen 23:00 en 06:00 valt. */
+export const NIGHT_SURCHARGE_RATE = 0.15;
+
+/** Toeslagbedrag in hele centen (afgerond) voor een basisbedrag in centen. */
+export function nightSurchargeCents(baseCents: number): number {
+  return Math.round(baseCents * NIGHT_SURCHARGE_RATE);
+}
+
+/** Stabiele codes van de per-ritdeel nachttoeslag-adjustments. */
+export const NIGHT_ADJUSTMENT_CODES = ["night_outbound", "night_return"] as const;
+export function isNightAdjustmentCode(code: string): boolean {
+  return (NIGHT_ADJUSTMENT_CODES as readonly string[]).includes(code);
+}
 
 /** Centrale prijsversie. Inert in 7.6.3 (opgeslagen, geen branch-logica). */
 export const PRICING_VERSION = "2026.07.v1";
@@ -126,7 +141,7 @@ const isIntGte0 = (n: number) => Number.isInteger(n) && n >= 0;
  */
 export function buildPriceSnapshot(
   quote: AvailableQuote,
-  opts: { quoteId: string; now: Date }
+  opts: { quoteId: string; now: Date; departureAt?: string; returnDepartureAt?: string }
 ): PriceSnapshot | null {
   const pricingSource = mapPricingSource(quote.source);
   if (pricingSource === null) return null;
@@ -135,14 +150,44 @@ export function buildPriceSnapshot(
   const calculatedAt = opts.now.toISOString();
   const expiresAt = new Date(opts.now.getTime() + QUOTE_TTL_MS).toISOString();
 
+  // Nachttoeslag PER RITDEEL: +15% over de ENKELE-RIT-prijs (singlePrice) van elk
+  // ritdeel waarvan de eigen ophaaltijd tussen 23:00–06:00 valt. Zo krijgt bij een
+  // retour uitsluitend het nacht-ritdeel de toeslag (heen overdag + terug 's nachts
+  // → alleen op de terugrit, en omgekeerd). Basis is bewust singlePrice (echte DB-
+  // waarde), niet een verdeling van de gekorte retour-bundel. Zonder datum/tijd
+  // (bv. homepage-hero) → geen toeslag, alleen het basisbedrag.
+  const adjustments: PriceSnapshotAdjustment[] = [];
+  const legSurcharge = nightSurchargeCents(eurosToCents(quote.singlePrice));
+  if (legSurcharge > 0 && isNightTariff(opts.departureAt)) {
+    adjustments.push({
+      code: "night_outbound",
+      label: quote.returnApplied ? "Nachttarief heenrit" : "Nachttarief",
+      amountCents: legSurcharge,
+      taxable: true,
+      vatRate: quote.vatRate,
+      sortOrder: 1,
+    });
+  }
+  if (quote.returnApplied && legSurcharge > 0 && isNightTariff(opts.returnDepartureAt)) {
+    adjustments.push({
+      code: "night_return",
+      label: "Nachttarief retour",
+      amountCents: legSurcharge,
+      taxable: true,
+      vatRate: quote.vatRate,
+      sortOrder: 2,
+    });
+  }
+  const totalCents = cents + adjustments.reduce((s, a) => s + a.amountCents, 0);
+
   return {
     quoteId: opts.quoteId,
     pricingVersion: PRICING_VERSION,
     pricingSource,
     currency: "EUR",
     subtotalCents: cents,
-    adjustments: [],
-    totalCents: cents,
+    adjustments,
+    totalCents,
     routeSnapshot: {
       pickupSlug: quote.route.pickupSlug,
       dropoffSlug: quote.route.dropoffSlug,

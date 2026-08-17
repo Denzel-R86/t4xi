@@ -37,6 +37,26 @@ function tzOffsetMs(instant: Date): number {
 }
 
 /**
+ * Nachttarief-venster: is de (Amsterdamse) ophaaltijd tussen 23:00 en 06:00?
+ * Inclusief 23:00, exclusief 06:00 — dus [23:00, 06:00). Pure functie op een
+ * absoluut instant; leest de LOKALE uur-component in Europe/Amsterdam (DST-correct).
+ * Retourneert false bij een ongeldig instant (fail-open: geen toeslag bij twijfel).
+ */
+export function isNightTariff(departureIso: string | null | undefined): boolean {
+  if (!departureIso) return false;
+  const d = new Date(departureIso);
+  if (Number.isNaN(d.getTime())) return false;
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: TZ,
+    hourCycle: "h23",
+    hour: "2-digit",
+  }).formatToParts(d);
+  const hour = Number(parts.find((p) => p.type === "hour")?.value);
+  if (Number.isNaN(hour)) return false;
+  return hour >= 23 || hour < 6;
+}
+
+/**
  * Zet `date` ("YYYY-MM-DD") + `time` ("HH:MM") als Amsterdamse wandkloktijd om naar
  * een UTC ISO-8601-instant. Retourneert `null` bij een ongeldig formaat of een
  * onbestaande datum/tijd. Ook een niet-bestaande lokale tijd tijdens de overgang
