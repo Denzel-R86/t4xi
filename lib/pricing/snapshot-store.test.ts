@@ -15,17 +15,21 @@ import {
 } from "@/lib/pricing/snapshot-store";
 import { buildPriceSnapshot, type PriceSnapshot } from "@/lib/pricing/snapshot";
 import { NO_AIRPORT, type PricingQuoteResult } from "@/lib/pricing/service";
+import { eurosToCents } from "@/lib/payments/create-intent";
 
 type AvailableQuote = Extract<PricingQuoteResult, { available: true }>;
 
 function availableQuote(price: number): AvailableQuote {
   return {
     available: true, source: "fixed_route_prices", price, singlePrice: price,
-    returnPrice: null, returnApplied: false, currency: "EUR", vatRate: 9,
+    returnPrice: null, returnApplied: false,
+    priceCents: eurosToCents(price), singlePriceCents: eurosToCents(price), returnPriceCents: null,
+    currency: "EUR", vatRate: 9,
     distanceKm: 61, estimatedDurationMin: 54, vehicleClass: "executive-ev",
     route: { pickupSlug: "rotterdam", dropoffSlug: "schiphol", label: "RTM → AMS" },
     isAirportTransfer: true, airport: NO_AIRPORT, dataSource: "supabase",
     fingerprint: "rotterdam|schiphol|executive-ev|enkel",
+    pickupApproach: null,
   };
 }
 

@@ -33,6 +33,9 @@ function availableFixed(price: number): AvailableQuote {
     singlePrice: price,
     returnPrice: null,
     returnApplied: false,
+    priceCents: eurosToCents(price),
+    singlePriceCents: eurosToCents(price),
+    returnPriceCents: null,
     currency: "EUR",
     vatRate: 9,
     distanceKm: 22.5,
@@ -43,6 +46,7 @@ function availableFixed(price: number): AvailableQuote {
     airport: { ...NO_AIRPORT, dropoffIsAirport: true, isAirportDropoff: true, isAirportTransfer: true },
     dataSource: "supabase",
     fingerprint: "rotterdam|schiphol|executive-ev|enkel",
+    pickupApproach: null,
   };
 }
 
@@ -52,6 +56,8 @@ function availableReturn(singlePrice: number, returnPrice: number): AvailableQuo
     price: returnPrice,
     returnPrice,
     returnApplied: true,
+    priceCents: eurosToCents(returnPrice),
+    returnPriceCents: eurosToCents(returnPrice),
   };
 }
 

@@ -20,6 +20,7 @@ import {
   type DeadheadZoneAllowlist,
 } from "@/lib/pricing/service";
 import type { DeadheadConfig } from "@/lib/pricing/deadhead-shadow";
+import { neutralPickupApproachDeps, wrapGetRouteWithNeutralApproach } from "@/lib/pricing/pickup-approach-fake";
 
 // ── Laag 1: withRetryOnce ────────────────────────────────────────────────────
 
@@ -155,12 +156,13 @@ const NO_HIGH_DEMAND = { locationIds: new Set<string>(), cityIds: new Set<string
 const vclass = { id: "veh-exec-ev", code: "executive-ev", max_passengers: 4, max_luggage: 3, active: true };
 
 function makeDeps(o: Partial<ResolveQuoteDeps> & { onShadow?: (e: ShadowLogEntry) => void } = {}): ResolveQuoteDeps {
-  const { onShadow, ...rest } = o;
+  const { onShadow, getRoute: passengerGetRoute, ...rest } = o;
   return {
     findLocation: async () => null,
     findVehicleClass: async () => vclass,
     findFixedRoute: async () => null,
-    getRoute: async () => ({ distanceKm: 104.7, durationMin: 67 }),
+    getRoute: wrapGetRouteWithNeutralApproach(passengerGetRoute ?? (async () => ({ distanceKm: 104.7, durationMin: 67 }))),
+    ...neutralPickupApproachDeps,
     loadDeadheadConfig: async () => CONFIG,
     loadHighDemandZones: async () => NO_HIGH_DEMAND,
     loadDeadheadZoneAllowlist: async () => ({ cityIds: new Set(), byOfficialWoonplaats: new Map() }),

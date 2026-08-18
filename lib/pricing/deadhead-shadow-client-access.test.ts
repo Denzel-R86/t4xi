@@ -15,6 +15,7 @@ import {
   type PricingQuoteInput,
   type ShadowLogEntry,
 } from "@/lib/pricing/service";
+import { neutralPickupApproachDeps, wrapGetRouteWithNeutralApproach } from "@/lib/pricing/pickup-approach-fake";
 
 const EMPTY_ALLOWLIST = { cityIds: new Set<string>(), byOfficialWoonplaats: new Map<string, string>() };
 
@@ -80,12 +81,14 @@ test("resolveQuote(): de publieke referentietabellen (locations/vehicle_classes/
 const vclass = { id: "veh-exec-ev", code: "executive-ev", max_passengers: 4, max_luggage: 3, active: true };
 
 function makeDeps(o: Partial<ResolveQuoteDeps> = {}): ResolveQuoteDeps {
+  const { getRoute: passengerGetRoute, ...rest } = o;
   return {
     findLocation: async () => null,
     findVehicleClass: async () => vclass,
     findFixedRoute: async () => null,
-    getRoute: async () => ({ distanceKm: 104.8, durationMin: 72 }),
-    ...o,
+    getRoute: wrapGetRouteWithNeutralApproach(passengerGetRoute ?? (async () => ({ distanceKm: 104.8, durationMin: 72 }))),
+    ...neutralPickupApproachDeps,
+    ...rest,
   };
 }
 

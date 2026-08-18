@@ -594,6 +594,48 @@ export type Database = {
           },
         ]
       }
+      pricing_approach_fee_config: {
+        Row: {
+          active: boolean
+          created_at: string
+          customer_share_pct: number
+          free_km: number
+          full_coverage_km: number
+          id: string
+          max_approach_km: number
+          max_customer_component_cents: number
+          per_km_cents: number
+          per_min_cents: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          customer_share_pct?: number
+          free_km?: number
+          full_coverage_km?: number
+          id?: string
+          max_approach_km?: number
+          max_customer_component_cents?: number
+          per_km_cents?: number
+          per_min_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          customer_share_pct?: number
+          free_km?: number
+          full_coverage_km?: number
+          id?: string
+          max_approach_km?: number
+          max_customer_component_cents?: number
+          per_km_cents?: number
+          per_min_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pricing_deadhead_config: {
         Row: {
           active: boolean
@@ -707,6 +749,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pricing_operational_bases: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          label: string
+          latitude: number
+          longitude: number
+          postcode: string
+          slug: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label: string
+          latitude: number
+          longitude: number
+          postcode: string
+          slug: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label?: string
+          latitude?: number
+          longitude?: number
+          postcode?: string
+          slug?: string
+        }
+        Relationships: []
       }
       pricing_quote_logs: {
         Row: {
@@ -839,6 +914,38 @@ export type Database = {
           version?: string
         }
         Relationships: []
+      }
+      pricing_service_areas: {
+        Row: {
+          active: boolean
+          base_id: string
+          created_at: string
+          gemeente_naam: string
+          id: string
+        }
+        Insert: {
+          active?: boolean
+          base_id: string
+          created_at?: string
+          gemeente_naam: string
+          id?: string
+        }
+        Update: {
+          active?: boolean
+          base_id?: string
+          created_at?: string
+          gemeente_naam?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_service_areas_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_operational_bases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       spatial_ref_sys: {
         Row: {

@@ -4,7 +4,6 @@
 // in-memory PriceSnapshot-object + validatie. Persistentie zit in snapshot-store.ts.
 // Contract: docs/architecture/price-snapshot-contract.md.
 // ─────────────────────────────────────────────────────────────────────────────
-import { eurosToCents } from "@/lib/payments/create-intent";
 import { isNightTariff } from "@/lib/pricing/departure-time";
 import type { AirportContext, PricingQuoteResult } from "@/lib/pricing/service";
 
@@ -146,7 +145,12 @@ export function buildPriceSnapshot(
   const pricingSource = mapPricingSource(quote.source);
   if (pricingSource === null) return null;
 
-  const cents = eurosToCents(quote.price);
+  // Cent-precisie (2026-08-18, pickup-aanrijmodel): `quote.priceCents` is de
+  // DEFINITIEVE, al-op-de-cent-afgeronde waarde uit de service — geen aparte
+  // euro→cent-herberekening hier. `eurosToCents(quote.price)` zou bij een
+  // niet-hele-euro-aanrijcomponent tot 99 cent kunnen afwijken, omdat `price`
+  // zelf al is afgerond op hele euro's vóór deze functie ze ziet.
+  const cents = quote.priceCents;
   const calculatedAt = opts.now.toISOString();
   const expiresAt = new Date(opts.now.getTime() + QUOTE_TTL_MS).toISOString();
 
@@ -157,7 +161,7 @@ export function buildPriceSnapshot(
   // waarde), niet een verdeling van de gekorte retour-bundel. Zonder datum/tijd
   // (bv. homepage-hero) → geen toeslag, alleen het basisbedrag.
   const adjustments: PriceSnapshotAdjustment[] = [];
-  const legSurcharge = nightSurchargeCents(eurosToCents(quote.singlePrice));
+  const legSurcharge = nightSurchargeCents(quote.singlePriceCents);
   if (legSurcharge > 0 && isNightTariff(opts.departureAt)) {
     adjustments.push({
       code: "night_outbound",
