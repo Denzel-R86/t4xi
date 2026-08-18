@@ -7,6 +7,7 @@ import AddressAutocomplete, {
 } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import Icon from "@/components/ui/Icon";
+import TariffComparison from "@/components/tarieven/TariffComparison";
 import { useTranslations } from "next-intl";
 import { track } from "@/lib/analytics";
 import {
@@ -489,6 +490,8 @@ function ResultCard({
             </div>
           ))}
         </dl>
+
+        <TariffComparison distanceKm={distanceKm} durationMin={durationMin} price={price} />
 
         <ul className="mt-6 grid gap-2 sm:grid-cols-2">
           {proofs.map((k) => (
