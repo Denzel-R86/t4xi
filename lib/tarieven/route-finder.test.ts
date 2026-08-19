@@ -7,6 +7,8 @@ import {
   buildQuoteRequestText,
   buildWhatsappHref,
   formatDuration,
+  isRouteFinderDetailsComplete,
+  resolveRouteFinderView,
   type RouteFinderTrip,
 } from "./route-finder";
 
@@ -99,4 +101,83 @@ test("formatDuration rekent minuten om naar uren", () => {
   assert.equal(formatDuration(60), "1 u");
   assert.equal(formatDuration(75), "1 u 15 min");
   assert.equal(formatDuration(0), "");
+});
+
+// ── 2026-08-19 (hotfix): datum/tijd/bagage verplicht vóór een quote-call ────
+// (regressie: RouteFinder gaf voorheen geen luggage door aan useRouteQuote,
+// waardoor elke route "op aanvraag" toonde — ook routes met een bestaande
+// vaste prijs, bv. 1361BP Almere → Schiphol).
+
+test("isRouteFinderDetailsComplete: alle drie verplicht, geen enkele stille default", () => {
+  assert.equal(isRouteFinderDetailsComplete("", "", ""), false, "niets ingevuld");
+  assert.equal(isRouteFinderDetailsComplete("2026-09-01", "", ""), false, "alleen datum");
+  assert.equal(isRouteFinderDetailsComplete("2026-09-01", "10:00", ""), false, "datum+tijd, geen bagage — de exacte regressie van deze hotfix");
+  assert.equal(isRouteFinderDetailsComplete("", "10:00", "handbagage"), false, "geen datum");
+  assert.equal(isRouteFinderDetailsComplete("2026-09-01", "", "handbagage"), false, "geen tijd");
+  assert.equal(isRouteFinderDetailsComplete("2026-09-01", "10:00", "handbagage"), true, "alle drie compleet");
+});
+
+test("isRouteFinderDetailsComplete: 'geen-bagage' is een geldige, bewuste keuze — telt als compleet", () => {
+  assert.equal(isRouteFinderDetailsComplete("2026-09-01", "10:00", "geen-bagage"), true);
+});
+
+test("resolveRouteFinderView: niet ingediend of onvolledige adressen → hidden", () => {
+  const base = { hasPickup: true, hasDropoff: true, detailsComplete: true, quoteStatus: "ready" as const, hasStops: false };
+  assert.equal(resolveRouteFinderView({ ...base, submitted: false }), "hidden");
+  assert.equal(resolveRouteFinderView({ ...base, submitted: true, hasPickup: false }), "hidden");
+  assert.equal(resolveRouteFinderView({ ...base, submitted: true, hasDropoff: false }), "hidden");
+});
+
+test("resolveRouteFinderView: adressen compleet maar datum/tijd/bagage niet → incomplete, NOOIT prijs of offerte-op-aanvraag", () => {
+  const base = { submitted: true, hasPickup: true, hasDropoff: true, hasStops: false };
+  // Zelfs een toevallig 'ready'/'onrequest' quoteStatus mag nooit doorlekken vóór complete invoer.
+  assert.equal(resolveRouteFinderView({ ...base, detailsComplete: false, quoteStatus: "ready" }), "incomplete");
+  assert.equal(resolveRouteFinderView({ ...base, detailsComplete: false, quoteStatus: "onrequest" }), "incomplete");
+  assert.equal(resolveRouteFinderView({ ...base, detailsComplete: false, quoteStatus: "idle" }), "incomplete");
+  assert.equal(resolveRouteFinderView({ ...base, detailsComplete: false, quoteStatus: "loading" }), "incomplete");
+});
+
+test("resolveRouteFinderView: complete invoer → normale statusafleiding (loading/ready/onrequest)", () => {
+  const base = { submitted: true, hasPickup: true, hasDropoff: true, detailsComplete: true };
+  assert.equal(resolveRouteFinderView({ ...base, quoteStatus: "loading", hasStops: false }), "loading");
+  assert.equal(resolveRouteFinderView({ ...base, quoteStatus: "ready", hasStops: false }), "ready");
+  assert.equal(resolveRouteFinderView({ ...base, quoteStatus: "ready", hasStops: true }), "onrequest", "tussenstops kennen nog geen automatisch tarief");
+  assert.equal(resolveRouteFinderView({ ...base, quoteStatus: "onrequest", hasStops: false }), "onrequest");
+  assert.equal(resolveRouteFinderView({ ...base, quoteStatus: "error", hasStops: false }), "onrequest");
+});
+
+// ── Structurele controle: alle drie useRouteQuote-consumenten ───────────────
+// geven nu expliciet een geldige bagagecategorie door, of vereisen (via
+// `ready`) een bewuste keuze vóór de fetch — geen enkele blijft op de oude,
+// impliciete lege-string-default hangen die deze regressie veroorzaakte.
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { classifyLuggage } from "@/lib/pricing/luggage";
+
+test("RouteFinder's bagagecategorieën zijn stuk voor stuk server-geldig (classifyLuggage → nooit 'invalid')", () => {
+  const src = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
+  const match = src.match(/const LUGGAGE_CATEGORIES = \[([\s\S]*?)\] as const;/);
+  assert.ok(match, "LUGGAGE_CATEGORIES niet gevonden in RouteFinder.tsx");
+  const values = [...match![1].matchAll(/value:\s*"([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(values.length >= 4, "verwacht minimaal dezelfde categorieën als hero/boeken");
+  for (const value of values) {
+    assert.notEqual(classifyLuggage(value).kind, "invalid", `'${value}' moet een server-geldige bagagecategorie zijn`);
+  }
+  // "Geen bagage" moet expliciet aanwezig zijn (verplicht per opdracht).
+  assert.ok(values.includes("geen-bagage"), "'geen-bagage' ontbreekt als optie");
+});
+
+test("alle drie useRouteQuote-aanroepen geven 'luggage' door — geen enkele op de stille lege-string-default", () => {
+  const consumers = [
+    "components/tarieven/RouteFinder.tsx",
+    "components/booking/BookingSection.tsx",
+    "components/horizon/patterns.tsx",
+  ];
+  for (const file of consumers) {
+    const src = readFileSync(resolve(process.cwd(), file), "utf8");
+    const call = src.match(/useRouteQuote\(\s*pickup\s*,\s*dropoff\s*,\s*\{[^}]*\}/);
+    assert.ok(call, `${file}: geen useRouteQuote(pickup, dropoff, {...})-aanroep gevonden`);
+    assert.match(call![0], /luggage\s*[,:]/, `${file}: useRouteQuote-aanroep geeft geen 'luggage' door`);
+  }
 });

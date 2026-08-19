@@ -15,7 +15,9 @@ import {
   buildQuoteRequestText,
   buildWhatsappHref,
   formatDuration,
+  isRouteFinderDetailsComplete,
   matchSchipholRoute,
+  resolveRouteFinderView,
   routeSummary,
   type StopInput,
 } from "@/lib/tarieven/route-finder";
@@ -39,6 +41,22 @@ const inputCls =
 const labelCls = "mb-1.5 block text-xs font-bold text-secondary";
 
 type StopState = { id: string; selection: AddressSuggestion | null; text: string; waitRequested: boolean };
+
+/**
+ * 2026-08-19 (hotfix): dezelfde bagagecategorieën als de homepagehero en
+ * /boeken (zie components/horizon/patterns.tsx / components/booking/
+ * BookingSection.tsx) — bewust een eigen `LUGGAGE_CATEGORIES`-constante i.p.v.
+ * gedeeld, om deze drie losstaande UI's niet onnodig aan elkaar te koppelen;
+ * de WAARDEN (en dus wat de server accepteert via lib/pricing/luggage.ts)
+ * blijven wél identiek.
+ */
+const LUGGAGE_CATEGORIES = [
+  { value: "geen-bagage", labelKey: "bagageOptieGeen" },
+  { value: "handbagage", labelKey: "bagageOptieHand" },
+  { value: "1-2-koffers", labelKey: "bagageOptie12" },
+  { value: "3-koffers", labelKey: "bagageOptie3" },
+  { value: "overleg", labelKey: "bagageOptieOverleg" },
+] as const;
 
 /** Effectief bruikbaar adres: gekozen suggestie of vrije tekst (≥3 tekens). */
 function effectiveAddress(
@@ -70,6 +88,12 @@ export default function RouteFinder() {
   const [passengers, setPassengers] = useState(1);
   const [bigLuggage, setBigLuggage] = useState(1);
   const [handLuggage, setHandLuggage] = useState(1);
+  // 2026-08-19 (hotfix): bewuste bagagecategorie voor de Pricing Engine (los van
+  // bigLuggage/handLuggage hierboven, die uitsluitend de capaciteitsvermelding in
+  // de resultaatkaart/offerteaanvraag voeden). Leeg — GEEN stille default zoals
+  // "handbagage" — zodat de keuze net als in de hero/boekingsformulier altijd
+  // bewust gemaakt wordt.
+  const [luggage, setLuggage] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("08:00");
   const [returnDate, setReturnDate] = useState("");
@@ -99,9 +123,17 @@ export default function RouteFinder() {
   );
   const hasStops = resolvedStops.length > 0;
 
+  // 2026-08-19 (hotfix): datum, tijd én een bewuste bagagecategorie zijn nu
+  // verplicht vóórdat useRouteQuote() ook maar een quote-API-call doet — zelfde
+  // regel, zelfde `ready`-mechanisme als de hero en /boeken (zie
+  // components/shared/useRouteQuote.ts). Vóór complete invoer blijft de hook op
+  // "idle" staan: geen prijs, geen offerte-op-aanvraag, geen quote-API-call.
+  // Puur/apart getest — zie lib/tarieven/route-finder.test.ts.
+  const detailsComplete = isRouteFinderDetailsComplete(date, time, luggage);
+
   // Live, autoritatieve richtprijs + luchthavencontext — exact dezelfde keten als
   // de homepagehero en /boeken. Het resultaat wordt pas getóónd na "Bereken".
-  const quote = useRouteQuote(pickup, dropoff, { returnTrip, passengers, date, time });
+  const quote = useRouteQuote(pickup, dropoff, { returnTrip, passengers, date, time, luggage, ready: detailsComplete });
   const airport = quote.airport;
   const needsFlight = Boolean(airport?.isTransfer);
   const isArrival = airport?.direction === "arrival";
@@ -137,16 +169,16 @@ export default function RouteFinder() {
     setSubmitted(true);
   }
 
-  // Resultaatstatus afleiden. Met tussenstops of zonder vaste route: geen
-  // automatisch tarief → offerteaanvraag (nooit een verzonnen bedrag).
-  const view: "hidden" | "loading" | "ready" | "onrequest" =
-    !submitted || !pickup || !dropoff
-      ? "hidden"
-      : quote.status === "loading"
-        ? "loading"
-        : quote.status === "ready" && !hasStops
-          ? "ready"
-          : "onrequest";
+  // Resultaatstatus afleiden — puur/apart getest, zie
+  // lib/tarieven/route-finder.test.ts (resolveRouteFinderView).
+  const view = resolveRouteFinderView({
+    submitted,
+    hasPickup: Boolean(pickup),
+    hasDropoff: Boolean(dropoff),
+    detailsComplete,
+    quoteStatus: quote.status,
+    hasStops,
+  });
 
   // Analytics op het getoonde resultaat (geen adressen — alleen kenmerken).
   const reported = useRef<string>("");
@@ -197,6 +229,25 @@ export default function RouteFinder() {
             onSelect={setDropoffSel}
             onTextChange={setDropoffText}
           />
+          {/* 2026-08-19 (hotfix): direct zichtbaar, niet achter "+ Datum, tijd &
+              bagage" verstopt — bewust dezelfde toegankelijkheid als Van/Naar
+              hierboven, zodat de vereiste bewuste bagagekeuze niet per ongeluk
+              overgeslagen wordt. */}
+          <div className="sm:col-span-2 sm:max-w-xs">
+            <label htmlFor={`${ids}-luggage-primary`} className={labelCls}>{t("bagageKopLabel")}</label>
+            <select
+              id={`${ids}-luggage-primary`}
+              value={luggage}
+              required
+              onChange={(e) => setLuggage(e.target.value)}
+              className={inputCls}
+            >
+              <option value="" disabled>{t("bagageKiesPlaceholder")}</option>
+              {LUGGAGE_CATEGORIES.map((l) => (
+                <option key={l.value} value={l.value}>{t(l.labelKey)}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Tussenstops — subtiel uitklapbaar */}
@@ -385,6 +436,12 @@ export default function RouteFinder() {
 
       {/* ── Resultaat ── */}
       <div ref={resultRef} aria-live="polite" className="mt-8 scroll-mt-24">
+        {view === "incomplete" && (
+          <div className="rounded-[28px] border border-line bg-card p-6 text-center text-sm text-secondary shadow-card">
+            {t("incompleteMelding")}
+          </div>
+        )}
+
         {view === "loading" && (
           <div className="rounded-[28px] border border-line bg-card p-6 text-center text-sm text-secondary shadow-card">
             {t("berekenen")}
