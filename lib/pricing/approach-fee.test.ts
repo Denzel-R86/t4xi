@@ -5,12 +5,18 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { computeApproachFee, computeExemptionFactor, type ApproachFeeConfig } from "@/lib/pricing/approach-fee";
 
+// maxApproachKm: 35 → 40 (2026-08-19, tweede bijwerking van PR #20). Reden:
+// Utrecht Centraal (36,0km) en Utrecht centrum (35,8km) zitten allebei net
+// boven de oude 35km-grens terwijl gemeente Utrecht expliciet aan basis
+// Amsterdam-Zuidoost is toegewezen; Lelystad (38,8km vanaf basis Almere)
+// evenzo. De cap op €25 klantcomponent en de "boven de grens → Offerte op
+// aanvraag"-regel blijven ongewijzigd — alleen de grens zelf schuift op.
 const CONFIG: ApproachFeeConfig = {
   customerSharePct: 0.5,
   freeKm: 5,
   fullCoverageKm: 15,
   maxCustomerComponentCents: 2500,
-  maxApproachKm: 35,
+  maxApproachKm: 40,
   perKmCents: 65,
   perMinCents: 110,
 };
@@ -45,8 +51,8 @@ test("computeExemptionFactor: 20km → 1", () => {
 test("computeExemptionFactor: 30km → 1", () => {
   assert.equal(computeExemptionFactor(30, CONFIG), 1);
 });
-test("computeExemptionFactor: 35km (maxApproachKm) → 1", () => {
-  assert.equal(computeExemptionFactor(35, CONFIG), 1);
+test("computeExemptionFactor: 40km (maxApproachKm) → 1", () => {
+  assert.equal(computeExemptionFactor(40, CONFIG), 1);
 });
 
 // ── computeApproachFee: prijs/flow op de vereiste kilometerpunten ───────────
@@ -110,13 +116,18 @@ test("computeApproachFee: 30km/0min → geen cap", () => {
   assert.equal(r.capped, false);
 });
 
-test("computeApproachFee: exact 35km (maxApproachKm) → nog steeds status fee, niet offer_on_request", () => {
-  const r = computeApproachFee({ distanceKm: 35, durationMin: 0, config: CONFIG });
+test("computeApproachFee: 39.9km (net onder maxApproachKm) → status fee, automatische prijs", () => {
+  const r = computeApproachFee({ distanceKm: 39.9, durationMin: 0, config: CONFIG });
   assert.equal(r.status, "fee");
 });
 
-test("computeApproachFee: 35.1km (net boven maxApproachKm) → offer_on_request", () => {
-  const r = computeApproachFee({ distanceKm: 35.1, durationMin: 0, config: CONFIG });
+test("computeApproachFee: exact 40km (maxApproachKm) → nog steeds status fee, niet offer_on_request", () => {
+  const r = computeApproachFee({ distanceKm: 40, durationMin: 0, config: CONFIG });
+  assert.equal(r.status, "fee");
+});
+
+test("computeApproachFee: 40.1km (net boven maxApproachKm) → offer_on_request", () => {
+  const r = computeApproachFee({ distanceKm: 40.1, durationMin: 0, config: CONFIG });
   assert.equal(r.status, "offer_on_request");
 });
 
@@ -128,16 +139,16 @@ test("computeApproachFee: 50km → offer_on_request, geen component berekend", (
 // ── Cap ───────────────────────────────────────────────────────────────────────
 
 test("computeApproachFee: cap bij €25 — grote referentie wordt afgetopt, capped=true, t4xiAbsorbedReferenceCents blijft kloppen", () => {
-  // 35km + 100min → referentie = 35*65 + 100*110 = 2275 + 11000 = 13275ct.
-  // component vóór cap = round(0.5*13275*1) = 6638ct > 2500ct → gecapt.
-  const r = computeApproachFee({ distanceKm: 35, durationMin: 100, config: CONFIG });
+  // 40km + 100min (op de nieuwe maxApproachKm) → referentie = 40*65 + 100*110 = 2600 + 11000 = 13600ct.
+  // component vóór cap = round(0.5*13600*1) = 6800ct > 2500ct → gecapt.
+  const r = computeApproachFee({ distanceKm: 40, durationMin: 100, config: CONFIG });
   assert.equal(r.status, "fee");
   if (r.status !== "fee") return;
-  assert.equal(r.referenceCents, 13275);
-  assert.equal(r.customerComponentBeforeCapCents, 6638);
+  assert.equal(r.referenceCents, 13600);
+  assert.equal(r.customerComponentBeforeCapCents, 6800);
   assert.equal(r.customerComponentCents, 2500);
   assert.equal(r.capped, true);
-  assert.equal(r.t4xiAbsorbedReferenceCents, 13275 - 2500);
+  assert.equal(r.t4xiAbsorbedReferenceCents, 13600 - 2500);
 });
 
 test("computeApproachFee: net onder de cap → capped=false", () => {
