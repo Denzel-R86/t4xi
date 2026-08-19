@@ -47,6 +47,14 @@ const BASE_ALMERE: OperationalBase = {
   latitude: 52.342886,
   longitude: 5.139465,
 };
+const BASE_AMSTERDAM_ZUIDOOST: OperationalBase = {
+  id: "base-amsterdam-zuidoost-id",
+  slug: "amsterdam-zuidoost",
+  label: "Amsterdam-Zuidoost",
+  postcode: "1102JL",
+  latitude: 52.319773,
+  longitude: 4.956975,
+};
 const BASE_SPIJKENISSE: OperationalBase = {
   id: "base-spijkenisse-id",
   slug: "spijkenisse",
@@ -57,19 +65,28 @@ const BASE_SPIJKENISSE: OperationalBase = {
 };
 const BASES = new Map([
   [BASE_ALMERE.slug, BASE_ALMERE],
+  [BASE_AMSTERDAM_ZUIDOOST.slug, BASE_AMSTERDAM_ZUIDOOST],
   [BASE_SPIJKENISSE.slug, BASE_SPIJKENISSE],
 ]);
 const BASE_ALMERE_ADDRESS = `${BASE_ALMERE.postcode} ${BASE_ALMERE.label}`;
+const BASE_AMSTERDAM_ZUIDOOST_ADDRESS = `${BASE_AMSTERDAM_ZUIDOOST.postcode} ${BASE_AMSTERDAM_ZUIDOOST.label}`;
 const BASE_SPIJKENISSE_ADDRESS = `${BASE_SPIJKENISSE.postcode} ${BASE_SPIJKENISSE.label}`;
+const KNOWN_BASE_ADDRESSES = new Set([BASE_ALMERE_ADDRESS, BASE_AMSTERDAM_ZUIDOOST_ADDRESS, BASE_SPIJKENISSE_ADDRESS]);
 
+// Zelfde definitieve indeling als de migratie (2026-08-18, derde standplaats
+// Amsterdam-Zuidoost): Amsterdam/Diemen/Amstelveen/Utrecht verhuisd van basis
+// Almere naar basis Amsterdam-Zuidoost; Utrecht uitsluitend de gemeente zelf
+// (Nieuwegein/Stichtse Vecht/De Bilt/Zeist/Bunnik/Houten/IJsselstein/Woerden
+// blijven bewust ongeconfigureerd — geen rij hieronder).
 const SERVICE_AREAS = new Map([
   ["almere", "almere"],
   ["lelystad", "almere"],
-  ["amsterdam", "almere"],
-  ["diemen", "almere"],
-  ["amstelveen", "almere"],
   ["hilversum", "almere"],
   ["laren", "almere"],
+  ["amsterdam", "amsterdam-zuidoost"],
+  ["diemen", "amsterdam-zuidoost"],
+  ["amstelveen", "amsterdam-zuidoost"],
+  ["utrecht", "amsterdam-zuidoost"],
   ["nissewaard", "spijkenisse"],
   ["rotterdam", "spijkenisse"],
 ]);
@@ -89,7 +106,7 @@ function makeGetRoute(o: MakeDepsOptions) {
   const approach = { distanceKm: o.approachKm ?? 2, durationMin: o.approachMin ?? 4 };
   const passenger = { distanceKm: o.passengerKm ?? 20, durationMin: o.passengerMin ?? 25 };
   return async (origin: string, _destination: string, _departureAt?: string) => {
-    if (origin === BASE_ALMERE_ADDRESS || origin === BASE_SPIJKENISSE_ADDRESS) {
+    if (KNOWN_BASE_ADDRESSES.has(origin)) {
       if (o.baseRouteCallsCounter) o.baseRouteCallsCounter.count += 1;
       return approach;
     }
@@ -152,17 +169,46 @@ test("pickup in gemeente Nissewaard → toegewezen aan basis Spijkenisse", async
   assert.equal(assertApplied(logged).baseSlug, "spijkenisse");
 });
 
-for (const g of ["lelystad", "diemen", "amstelveen"]) {
-  test(`pickup in gemeente ${g} (definitieve, later toegevoegde servicegebieden) → toegewezen aan basis Almere`, async () => {
+test("pickup in gemeente Lelystad → toegewezen aan basis Almere", async () => {
+  let logged: PickupApproachLogEntry | null = null;
+  const res = await resolveQuoteWith(
+    input("Lelystad", "Schiphol"),
+    makeDeps({ gemeente: "lelystad", onPickupApproach: (e) => (logged = e) })
+  );
+  assert.equal(res.available, true);
+  assert.equal(assertApplied(logged).baseSlug, "almere");
+});
+
+for (const g of ["amsterdam", "diemen", "amstelveen", "utrecht"]) {
+  test(`pickup in gemeente ${g} → toegewezen aan basis Amsterdam-Zuidoost (derde standplaats, 2026-08-18)`, async () => {
     let logged: PickupApproachLogEntry | null = null;
     const res = await resolveQuoteWith(
       input(g, "Schiphol"),
       makeDeps({ gemeente: g, onPickupApproach: (e) => (logged = e) })
     );
     assert.equal(res.available, true);
-    assert.equal(assertApplied(logged).baseSlug, "almere");
+    const applied = assertApplied(logged);
+    assert.equal(applied.baseSlug, "amsterdam-zuidoost");
+    assert.equal(applied.baseId, BASE_AMSTERDAM_ZUIDOOST.id);
   });
 }
+
+for (const g of ["nieuwegein", "stichtse vecht", "de bilt", "zeist", "bunnik", "houten", "ijsselstein", "woerden"]) {
+  test(`pickup in gemeente ${g} (rondom Utrecht, NIET expliciet goedgekeurd) → blijft unassigned → Offerte op aanvraag`, async () => {
+    const res = await resolveQuoteWith(input(g, "Schiphol"), makeDeps({ gemeente: g }));
+    assert.equal(res.available, false);
+  });
+}
+
+test("Weesp-adres met officiële PDOK-gemeente 'Amsterdam' (sinds de herindeling van 2022) → toegewezen aan basis Amsterdam-Zuidoost, geen aparte servicegebied-rij nodig", async () => {
+  let logged: PickupApproachLogEntry | null = null;
+  const res = await resolveQuoteWith(
+    input("Weesp", "Schiphol"),
+    makeDeps({ gemeente: "amsterdam", onPickupApproach: (e) => (logged = e) })
+  );
+  assert.equal(res.available, true);
+  assert.equal(assertApplied(logged).baseSlug, "amsterdam-zuidoost");
+});
 
 // ── Negatief/grensgeval: Laren (NH) vs. de officiële gemeente Lochem (Gelderland) ──
 
@@ -462,4 +508,46 @@ test("concurrency: twee gelijktijdige offertes voor verschillende gemeenten inte
   ]);
   assert.equal(almere.available, true);
   assert.equal(spijkenisse.available, true);
+});
+
+// ── Migratie: geen gemeente mag aan twee standplaatsen tegelijk gekoppeld worden ──
+
+test("migratie: de seed-VALUES-lijst wijst geen enkele gemeente toe aan meer dan één standplaats (statische controle op de nog niet toegepaste SQL)", async () => {
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+  const src = fs.readFileSync(
+    path.resolve(process.cwd(), "supabase/migrations/20260818120000_pickup_approach_fee.sql"),
+    "utf8"
+  );
+  const tupleRegex = /\('([a-z-]+)',\s*'([^']+)'\)/g;
+  const baseByGemeente = new Map<string, string>();
+  let match: RegExpExecArray | null;
+  while ((match = tupleRegex.exec(src)) !== null) {
+    const [, baseSlug, gemeente] = match;
+    const key = gemeente.toLowerCase();
+    const existing = baseByGemeente.get(key);
+    assert.ok(
+      !existing || existing === baseSlug,
+      `gemeente '${gemeente}' staat zowel bij '${existing}' als bij '${baseSlug}' — dubbele actieve toewijzing`
+    );
+    baseByGemeente.set(key, baseSlug);
+  }
+  assert.ok(baseByGemeente.size > 0, "de seed-tuples moeten wel gevonden zijn — anders test deze regex niets");
+  assert.equal(baseByGemeente.get("amsterdam"), "amsterdam-zuidoost");
+  assert.equal(baseByGemeente.get("diemen"), "amsterdam-zuidoost");
+  assert.equal(baseByGemeente.get("amstelveen"), "amsterdam-zuidoost");
+  assert.equal(baseByGemeente.get("utrecht"), "amsterdam-zuidoost");
+});
+
+test("migratie: seed-inserts voor standplaatsen/servicegebieden gebruiken geen 'on conflict do nothing' — een botsing moet de migratie hard laten falen", async () => {
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+  const src = fs.readFileSync(
+    path.resolve(process.cwd(), "supabase/migrations/20260818120000_pickup_approach_fee.sql"),
+    "utf8"
+  );
+  const seedStart = src.indexOf("-- Seed");
+  const seedBlock = src.slice(seedStart);
+  assert.doesNotMatch(seedBlock, /insert into public\.pricing_operational_bases[\s\S]*?on conflict do nothing/);
+  assert.doesNotMatch(seedBlock, /insert into public\.pricing_service_areas[\s\S]*?on conflict do nothing/);
 });

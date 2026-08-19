@@ -1,6 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Migratie: pickup-aanrijmodel (operationele standplaatsen + servicegebieden)
--- Datum: 2026-08-18
+-- Datum: 2026-08-18 (bijgewerkt 2026-08-18: derde standplaats Amsterdam-
+-- Zuidoost toegevoegd — deze migratie is NOG NIET toegepast, dus rechtstreeks
+-- bijgewerkt i.p.v. een aparte volgmigratie; zie punt 8 van het verzoek.)
 --
 -- Commercieel akkoord (2026-08-18): een dynamisch geprijsde rit vanaf een
 -- ophaallocatie buiten de operationele standplaatsregio's is voortaan
@@ -19,6 +21,12 @@
 -- Bewust GEEN privé-huisadres opgeslagen: `postcode`/`latitude`/`longitude`
 -- zijn het officiële PDOK-postcodecentroïde van de standplaats — een
 -- operationeel referentiepunt, geen exact bedrijfsadres.
+--
+-- Seed-inserts zijn BEWUST NIET "on conflict do nothing": een botsing met de
+-- partial unique index (bv. een gemeente die al actief aan een ANDERE
+-- standplaats gekoppeld staat, of een dubbele actieve standplaats-slug) moet
+-- de hele migratie hard laten falen (transactie rolt terug, BEGIN/COMMIT
+-- hierboven) — nooit stilzwijgend overschrijven of overslaan.
 --
 -- NIET AUTOMATISCH TOEGEPAST — eerst review door de eigenaar, daarna pas:
 --   supabase db push   (of via MCP apply_migration)
@@ -110,14 +118,26 @@ alter table public.pricing_approach_fee_config enable row level security;
 -- Seed
 -- ─────────────────────────────────────────────────────────────────────────
 
--- Standplaatsen: officiële PDOK-postcodecentroïden (2026-08-15/18 geverifieerd).
+-- Standplaatsen: officiële PDOK-postcodecentroïden (2026-08-15/18 geverifieerd
+-- via api.pdok.nl/bzk/locatieserver — 1102JL: gemeente/woonplaats Amsterdam,
+-- centroide_ll POINT(4.95697474 52.31977259); GEEN huisnummer opgeslagen).
 insert into public.pricing_operational_bases (slug, label, postcode, latitude, longitude)
 values
   ('almere', 'Almere', '1361BP', 52.342886, 5.139465),
-  ('spijkenisse', 'Spijkenisse', '3201LG', 51.852165, 4.335123)
-on conflict do nothing;
+  ('amsterdam-zuidoost', 'Amsterdam-Zuidoost', '1102JL', 52.319773, 4.956975),
+  ('spijkenisse', 'Spijkenisse', '3201LG', 51.852165, 4.335123);
 
--- Servicegebieden — uitsluitend de expliciet goedgekeurde gemeenten (2026-08-18).
+-- Servicegebieden — uitsluitend de expliciet goedgekeurde gemeenten (2026-08-18,
+-- bijgewerkt met de derde standplaats Amsterdam-Zuidoost). Weesp krijgt GEEN
+-- eigen rij: sinds de gemeentelijke herindeling van 2022 is de officiële PDOK-
+-- gemeente van Weesp al "Amsterdam" (geverifieerd), dus de Amsterdam-rij dekt
+-- Weesp automatisch. Zelfde redenering voor Bussum/Naarden/Muiden/Muiderberg,
+-- die alle vier officieel onder gemeente "Gooise Meren" vallen.
+--
+-- Utrecht: UITSLUITEND de officiële gemeente Utrecht zelf — Nieuwegein,
+-- Stichtse Vecht, De Bilt, Zeist, Bunnik, Houten, IJsselstein en Woerden zijn
+-- elk hun eigen, aparte gemeente en blijven bewust ongeconfigureerd
+-- ("unassigned" → Offerte op aanvraag) totdat expliciet toegevoegd.
 insert into public.pricing_service_areas (base_id, gemeente_naam)
 select b.id, g.gemeente_naam
 from public.pricing_operational_bases b
@@ -126,10 +146,6 @@ join (
     -- Basis Almere: regio Almere/Flevoland
     ('almere', 'Almere'),
     ('almere', 'Lelystad'),
-    -- Basis Almere: regio Amsterdam
-    ('almere', 'Amsterdam'),
-    ('almere', 'Diemen'),
-    ('almere', 'Amstelveen'),
     -- Basis Almere: regio Het Gooi
     ('almere', 'Blaricum'),
     ('almere', 'Hilversum'),
@@ -137,6 +153,12 @@ join (
     ('almere', 'Laren'),
     ('almere', 'Eemnes'),
     ('almere', 'Gooise Meren'),
+    -- Basis Amsterdam-Zuidoost: regio Amsterdam (incl. Weesp via gemeente Amsterdam)
+    ('amsterdam-zuidoost', 'Amsterdam'),
+    ('amsterdam-zuidoost', 'Diemen'),
+    ('amsterdam-zuidoost', 'Amstelveen'),
+    -- Basis Amsterdam-Zuidoost: regio Utrecht (voorlopig uitsluitend de gemeente zelf)
+    ('amsterdam-zuidoost', 'Utrecht'),
     -- Basis Spijkenisse: regio Rotterdam
     ('spijkenisse', 'Nissewaard'),
     ('spijkenisse', 'Rotterdam'),
@@ -145,8 +167,7 @@ join (
     ('spijkenisse', 'Vlaardingen'),
     ('spijkenisse', 'Capelle aan den IJssel'),
     ('spijkenisse', 'Voorne aan Zee')
-) as g(base_slug, gemeente_naam) on g.base_slug = b.slug
-on conflict do nothing;
+) as g(base_slug, gemeente_naam) on g.base_slug = b.slug;
 
 -- Aanrijmodel-configuratie: exact de door de eigenaar goedgekeurde parameters
 -- (2026-08-18) — 50% klantaandeel, 0–5km vrij, 5–15km lineaire uitfasering,
