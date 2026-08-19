@@ -21,6 +21,7 @@ import {
 } from "@/lib/pricing/service";
 import type { DeadheadConfig } from "@/lib/pricing/deadhead-shadow";
 import type { PricingSupabaseClient } from "@/lib/supabase/server";
+import { neutralPickupApproachDeps, wrapGetRouteWithNeutralApproach } from "@/lib/pricing/pickup-approach-fake";
 
 /** De computed (niet-overgeslagen) variant van ShadowLogEntry, voor test-asserties. */
 type ComputedShadow = Exclude<ShadowLogEntry, { shadowSkipped: true }>;
@@ -49,12 +50,13 @@ const NO_HIGH_DEMAND = { locationIds: new Set<string>(), cityIds: new Set<string
 const NO_ELIGIBLE_ZONES: DeadheadZoneAllowlist = { cityIds: new Set(), byOfficialWoonplaats: new Map() };
 
 function makeDeps(o: Partial<ResolveQuoteDeps> & { onShadow?: (e: ShadowLogEntry) => void } = {}): ResolveQuoteDeps {
-  const { onShadow, ...rest } = o;
+  const { onShadow, getRoute: passengerGetRoute, ...rest } = o;
   return {
     findLocation: async () => null,
     findVehicleClass: async () => vclass,
     findFixedRoute: async () => null,
-    getRoute: async () => ({ distanceKm: 20, durationMin: 30 }),
+    getRoute: wrapGetRouteWithNeutralApproach(passengerGetRoute ?? (async () => ({ distanceKm: 20, durationMin: 30 }))),
+    ...neutralPickupApproachDeps,
     loadDeadheadConfig: async () => CONFIG,
     loadHighDemandZones: async () => NO_HIGH_DEMAND,
     loadDeadheadZoneAllowlist: async () => NO_ELIGIBLE_ZONES,

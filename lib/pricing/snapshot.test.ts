@@ -13,17 +13,27 @@ import {
   type PriceSnapshot,
 } from "@/lib/pricing/snapshot";
 import { NO_AIRPORT, type PricingQuoteResult } from "@/lib/pricing/service";
+import { eurosToCents } from "@/lib/payments/create-intent";
 
 type AvailableQuote = Extract<PricingQuoteResult, { available: true }>;
 
 function availableQuote(price: number, over: Partial<AvailableQuote> = {}): AvailableQuote {
-  return {
+  // priceCents/singlePriceCents/returnPriceCents worden ná `over` afgeleid van
+  // de UITEINDELIJKE price/singlePrice/returnPrice — anders zou een test die
+  // singlePrice/returnPrice overschrijft (bv. de retourmatrix hieronder) een
+  // inconsistente cent-waarde krijgen, precies de drift die priceCents/
+  // singlePriceCents in de echte service moeten voorkomen.
+  const base: AvailableQuote = {
     available: true,
     source: "fixed_route_prices",
     price,
     singlePrice: price,
     returnPrice: null,
     returnApplied: false,
+    priceCents: eurosToCents(price),
+    singlePriceCents: eurosToCents(price),
+    returnPriceCents: null,
+    rideOnlySinglePriceCents: eurosToCents(price),
     currency: "EUR",
     vatRate: 9,
     distanceKm: 61,
@@ -34,7 +44,17 @@ function availableQuote(price: number, over: Partial<AvailableQuote> = {}): Avai
     airport: { ...NO_AIRPORT, dropoffIsAirport: true, isAirportDropoff: true, isAirportTransfer: true },
     dataSource: "supabase",
     fingerprint: "rotterdam|schiphol|executive-ev|enkel",
+    pickupApproach: null,
     ...over,
+  };
+  return {
+    ...base,
+    priceCents: over.priceCents ?? eurosToCents(base.price),
+    singlePriceCents: over.singlePriceCents ?? eurosToCents(base.singlePrice),
+    returnPriceCents: over.returnPriceCents ?? (base.returnPrice !== null ? eurosToCents(base.returnPrice) : null),
+    // Zonder expliciete override (en zonder pickupApproach) gelijk aan
+    // singlePriceCents — exact het vaste-route-gedrag (geen aanrijcomponent).
+    rideOnlySinglePriceCents: over.rideOnlySinglePriceCents ?? eurosToCents(base.singlePrice),
   };
 }
 

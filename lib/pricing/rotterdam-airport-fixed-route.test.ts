@@ -131,11 +131,30 @@ test("luchthavencontext en vluchtnummerplicht zijn actief: dropoffIsAirport/isAi
 });
 
 test("kaal 'Rotterdam' (de stad) blijft de stad — nooit per ongeluk de luchthaven", async () => {
+  // Na samenvoeging met het pickup-aanrijmodel (PR #20) loopt elke NIET-vaste
+  // route eerst door resolvePickupApproach() — zonder die deps zou dit adres
+  // fail-closed op "Offerte op aanvraag" vallen, wat hier niets zegt over de
+  // luchthaven-hotfix zelf. Fakes hieronder laten die stap slagen (gemeente
+  // "Amsterdam" → basis "amsterdam-zuidoost", ruim binnen de 40km-grens).
   const res = await resolveQuoteWith(
     input("Amsterdam", "Rotterdam"),
     makeDeps({
       findFixedRoute: async () => null, // geen vaste stad-route in deze fake — irrelevant voor het punt van de test
-      getRoute: async () => ({ distanceKm: 80, durationMin: 70 }),
+      getRoute: async (origin) =>
+        origin === "1102JL Amsterdam-Zuidoost" ? { distanceKm: 12, durationMin: 15 } : { distanceKm: 80, durationMin: 70 },
+      loadApproachFeeConfig: async () => ({
+        customerSharePct: 0.5,
+        freeKm: 5,
+        fullCoverageKm: 15,
+        maxCustomerComponentCents: 2500,
+        maxApproachKm: 40,
+        perKmCents: 65,
+        perMinCents: 110,
+      }),
+      loadOperationalBases: async () =>
+        new Map([["amsterdam-zuidoost", { id: "base-amsterdam-zuidoost", slug: "amsterdam-zuidoost", label: "Amsterdam-Zuidoost", postcode: "1102JL", latitude: 52.319773, longitude: 4.956975 }]]),
+      loadServiceAreaBaseSlugs: async () => new Map([["amsterdam", "amsterdam-zuidoost"]]),
+      lookupOfficialGemeente: async () => "Amsterdam",
     })
   );
   assert.equal(res.available, true);

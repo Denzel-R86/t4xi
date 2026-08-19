@@ -16,6 +16,7 @@ import { resolveLocationSlug } from "@/lib/pricing/location-aliases";
 import type { DeadheadConfig } from "@/lib/pricing/deadhead-shadow";
 import { buildPriceSnapshot, checkSnapshotUsable, uuidv7, type StoredSnapshot } from "@/lib/pricing/snapshot";
 import type { PricingQuoteResult } from "@/lib/pricing/service";
+import { neutralPickupApproachDeps, wrapGetRouteWithNeutralApproach } from "@/lib/pricing/pickup-approach-fake";
 
 type ComputedShadow = Exclude<ShadowLogEntry, { shadowSkipped: true }>;
 function assertComputed(shadow: ShadowLogEntry | null): ComputedShadow {
@@ -61,12 +62,13 @@ async function simulateFindLocation(raw: string): Promise<(typeof KNOWN_LOCATION
 }
 
 function makeDeps(o: Partial<ResolveQuoteDeps> & { onShadow?: (e: ShadowLogEntry) => void } = {}): ResolveQuoteDeps {
-  const { onShadow, ...rest } = o;
+  const { onShadow, getRoute: passengerGetRoute, ...rest } = o;
   return {
     findLocation: async (raw) => (raw === "pickup" ? null : simulateFindLocation(raw)),
     findVehicleClass: async () => vclass,
     findFixedRoute: async () => null,
-    getRoute: async () => ({ distanceKm: 20, durationMin: 30 }),
+    getRoute: wrapGetRouteWithNeutralApproach(passengerGetRoute ?? (async () => ({ distanceKm: 20, durationMin: 30 }))),
+    ...neutralPickupApproachDeps,
     loadDeadheadConfig: async () => CONFIG,
     loadHighDemandZones: async () => NO_HIGH_DEMAND,
     // HOTFIX 2026-08-13/14: default is de echte, goedgekeurde productie-

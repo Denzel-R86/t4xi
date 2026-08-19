@@ -4,7 +4,6 @@
 // in-memory PriceSnapshot-object + validatie. Persistentie zit in snapshot-store.ts.
 // Contract: docs/architecture/price-snapshot-contract.md.
 // ─────────────────────────────────────────────────────────────────────────────
-import { eurosToCents } from "@/lib/payments/create-intent";
 import { isNightTariff } from "@/lib/pricing/departure-time";
 import type { AirportContext, PricingQuoteResult } from "@/lib/pricing/service";
 
@@ -16,8 +15,16 @@ export function nightSurchargeCents(baseCents: number): number {
   return Math.round(baseCents * NIGHT_SURCHARGE_RATE);
 }
 
-/** Stabiele codes van de per-ritdeel nachttoeslag-adjustments. */
-export const NIGHT_ADJUSTMENT_CODES = ["night_outbound", "night_return"] as const;
+/**
+ * Stabiele codes van alle nacht-gerelateerde adjustments — de per-ritdeel
+ * toeslag (PR #19) ÉN de eenmalige aanrijcomponent-nachtpremie (2026-08-19).
+ * Samen gebruikt door app/api/pricing/quote/route.ts om het publieke
+ * `nightSurcharge`-veld te vullen: zonder `pickup_approach_night_premium`
+ * hierin zou `subtotal + nightSurcharge !== price` kunnen gelden zodra een
+ * nachtelijke pickup een aanrijcomponent heeft — een reken-inconsistentie in
+ * de publieke respons, niet alleen intern.
+ */
+export const NIGHT_ADJUSTMENT_CODES = ["night_outbound", "night_return", "pickup_approach_night_premium"] as const;
 export function isNightAdjustmentCode(code: string): boolean {
   return (NIGHT_ADJUSTMENT_CODES as readonly string[]).includes(code);
 }
@@ -146,18 +153,26 @@ export function buildPriceSnapshot(
   const pricingSource = mapPricingSource(quote.source);
   if (pricingSource === null) return null;
 
-  const cents = eurosToCents(quote.price);
+  // Cent-precisie (2026-08-18, pickup-aanrijmodel): `quote.priceCents` is de
+  // DEFINITIEVE, al-op-de-cent-afgeronde waarde uit de service — geen aparte
+  // euro→cent-herberekening hier. `eurosToCents(quote.price)` zou bij een
+  // niet-hele-euro-aanrijcomponent tot 99 cent kunnen afwijken, omdat `price`
+  // zelf al is afgerond op hele euro's vóór deze functie ze ziet.
+  const cents = quote.priceCents;
   const calculatedAt = opts.now.toISOString();
   const expiresAt = new Date(opts.now.getTime() + QUOTE_TTL_MS).toISOString();
 
-  // Nachttoeslag PER RITDEEL: +15% over de ENKELE-RIT-prijs (singlePrice) van elk
-  // ritdeel waarvan de eigen ophaaltijd tussen 23:00–06:00 valt. Zo krijgt bij een
+  // Nachttoeslag PER RITDEEL: +15% over de ENKELE-RIT-prijs van UITSLUITEND de
+  // passagiersrit (`rideOnlySinglePriceCents`, 2026-08-19) van elk ritdeel
+  // waarvan de eigen ophaaltijd tussen 23:00–06:00 valt. Zo krijgt bij een
   // retour uitsluitend het nacht-ritdeel de toeslag (heen overdag + terug 's nachts
-  // → alleen op de terugrit, en omgekeerd). Basis is bewust singlePrice (echte DB-
-  // waarde), niet een verdeling van de gekorte retour-bundel. Zonder datum/tijd
-  // (bv. homepage-hero) → geen toeslag, alleen het basisbedrag.
+  // → alleen op de terugrit, en omgekeerd). Basis is bewust `rideOnlySinglePriceCents`
+  // — NIET `singlePriceCents` (dat zou ook de pickup-aanrijcomponent belasten; die
+  // krijgt hieronder haar eigen, EENMALIGE nachtpremie, zie approachNightPremiumCents
+  // — nooit de generieke per-ritdeel-toeslag, en nooit tweemaal bij een retour).
+  // Zonder datum/tijd (bv. homepage-hero) → geen toeslag, alleen het basisbedrag.
   const adjustments: PriceSnapshotAdjustment[] = [];
-  const legSurcharge = nightSurchargeCents(eurosToCents(quote.singlePrice));
+  const legSurcharge = nightSurchargeCents(quote.rideOnlySinglePriceCents);
   if (legSurcharge > 0 && isNightTariff(opts.departureAt)) {
     adjustments.push({
       code: "night_outbound",
@@ -176,6 +191,23 @@ export function buildPriceSnapshot(
       taxable: true,
       vatRate: quote.vatRate,
       sortOrder: 2,
+    });
+  }
+  // Pickup-aanrijcomponent-nachtpremie (2026-08-19, commercieel akkoord — optie
+  // B): EENMALIG, uitsluitend bepaald door de OORSPRONKELIJKE pickup-tijd
+  // (al vastgesteld in resolvePickupApproach() via quote.pickupApproach —
+  // GEEN nieuwe isNightTariff-aanroep hier, dus geen risico op een andere
+  // "nacht"-definitie of een retourtijd die per ongeluk meetelt). Bij een
+  // retour precies éénmaal, nooit per ritdeel — in tegenstelling tot
+  // night_outbound/night_return hierboven.
+  if (quote.pickupApproach && quote.pickupApproach.approachNightPremiumCents > 0) {
+    adjustments.push({
+      code: "pickup_approach_night_premium",
+      label: "Nachttoeslag aanrijcomponent",
+      amountCents: quote.pickupApproach.approachNightPremiumCents,
+      taxable: true,
+      vatRate: quote.vatRate,
+      sortOrder: 3,
     });
   }
   const totalCents = cents + adjustments.reduce((s, a) => s + a.amountCents, 0);

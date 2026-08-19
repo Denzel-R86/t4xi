@@ -28,6 +28,20 @@ import {
   PdokLookupError,
   PDOK_ZONE_LOOKUP_TIMEOUT_MS,
 } from "@/lib/pricing/pdok-woonplaats";
+import { resolveBaseIdForGemeente, normalizeGemeenteNaam } from "@/lib/pricing/service-area";
+import {
+  computeApproachFee,
+  computeApproachNightPremiumCents,
+  type ApproachFeeConfig,
+  type ApproachFeeResult,
+} from "@/lib/pricing/approach-fee";
+import { isNightTariff } from "@/lib/pricing/departure-time";
+import {
+  lookupOfficialGemeente as pdokLookupOfficialGemeente,
+  PdokGemeenteLookupError,
+  PDOK_GEMEENTE_LOOKUP_TIMEOUT_MS,
+} from "@/lib/pricing/pdok-gemeente";
+import { eurosToCents } from "@/lib/payments/create-intent";
 
 /**
  * T4XI Pricing Service — v1 (App Router, server-side).
@@ -144,15 +158,100 @@ export function airportContext(
   };
 }
 
+/**
+ * Interne (NOOIT publiek te lekken) doorsnede van de pickup-aanrijcomponent
+ * die daadwerkelijk in `price`/`singlePrice`/`returnPrice` is verwerkt
+ * (2026-08-18). `null` = geen aanrijcomponent van toepassing — vaste route,
+ * of een dynamische rit waarvan de pickup binnen de vrije afstand valt (dan
+ * is de component €0, maar nog steeds "toegepast": zie `customerComponentCents`).
+ *
+ * Bewust GEEN `driverPayout`/`chauffeurCost`/`settlement`-veldnamen:
+ * `t4xiAbsorbedReferenceCents` is een boekhoudkundige referentie, geen
+ * technisch afgedwongen chauffeursuitbetaling (die bestaat vandaag niet —
+ * zie het auditrapport van 2026-08-18).
+ */
+export type PickupApproachBreakdown = {
+  baseId: string;
+  baseSlug: string;
+  serviceAreaGemeente: string;
+  distanceKm: number;
+  durationMin: number;
+  referenceCents: number;
+  exemptionFactor: number;
+  customerSharePct: number;
+  customerComponentBeforeCapCents: number;
+  /** Dag-gecapte klantcomponent (max 2500ct) — ONGEWIJZIGD door de nachtpremie hieronder. */
+  customerComponentCents: number;
+  capped: boolean;
+  t4xiAbsorbedReferenceCents: number;
+  /**
+   * Nachtpremie (2026-08-19, commercieel akkoord — optie B): `true` als de
+   * OORSPRONKELIJKE pickup-tijd (input.departureAt — nooit een retourtijd)
+   * binnen het bestaande nachtvenster van PR #19 valt (isNightTariff).
+   * Bepaalt of `approachNightPremiumCents` hieronder > 0 is. Bij een retour
+   * blijft dit gebaseerd op UITSLUITEND de heenreis-pickup — nooit de
+   * retourtijd, en nooit tweemaal toegepast.
+   */
+  isNightPickup: boolean;
+  /**
+   * Eenmalige 15%-nachtpremie op `customerComponentCents` (0 overdag).
+   * Zelfde tarief/afrondingsregel als PR #19's bestaande nachttoeslag (zie
+   * computeApproachNightPremiumCents in approach-fee.ts) — geen tweede
+   * definitie van "nacht" of van de toeslagformule.
+   */
+  approachNightPremiumCents: number;
+  /**
+   * customerComponentCents + approachNightPremiumCents — puur informatief
+   * (logging/rapportage). Maximaal 2500 + round(2500×0.15) = 2875ct (€28,75).
+   */
+  totalPickupContributionCents: number;
+};
+
+/**
+ * SHADOW-ONLY, INTERN logregel voor het pickup-aanrijmodel (2026-08-18) —
+ * uitsluitend voor `pricing_quote_logs.price_breakdown`, nooit publiek. Bewust
+ * GEEN `driverPayout`/`chauffeurCost`/`settlement`-veldnamen: dit is een
+ * rekenkundige referentie, geen technisch afgedwongen chauffeursuitbetaling
+ * (die bestaat vandaag niet in dit systeem — zie het auditrapport van
+ * 2026-08-18). Bevat NOOIT PII of secrets — uitsluitend ids/gemeentenaam/
+ * afstand/tijd/bedragen.
+ */
+export type PickupApproachLogEntry =
+  | (PickupApproachBreakdown & { outcome: "applied"; finalPriceCents: number })
+  | { outcome: "offer_on_request"; reason: "beyond_max_approach_km" | "unassigned_service_area" | "config_or_routing_unavailable" };
+
 export type PricingQuoteResult =
   | {
       available: true;
       source: "fixed_route_prices" | "distance_tariff";
-      /** toegepaste prijs (retour indien gevraagd én beschikbaar, anders enkel) */
+      /** toegepaste prijs (retour indien gevraagd én beschikbaar, anders enkel) — HELE euro's, uitsluitend presentatie. */
       price: number;
       singlePrice: number;
       returnPrice: number | null;
       returnApplied: boolean;
+      /**
+       * Centnauwkeurige, DEFINITIEVE bedragen (2026-08-18) — de bron van
+       * waarheid voor snapshot/boeking/retry. `price`/`singlePrice`/
+       * `returnPrice` hierboven zijn uitsluitend een afgeronde presentatie
+       * van dezelfde waarde; er vindt nergens stroomafwaarts een aparte
+       * euro→cent-herberekening plaats.
+       */
+      priceCents: number;
+      singlePriceCents: number;
+      returnPriceCents: number | null;
+      /**
+       * Enkele-reisprijs van UITSLUITEND de passagiersrit (evt. deadhead-
+       * aangepast), in cent — EXCLUSIEF de pickup-aanrijcomponent (2026-08-19,
+       * optie B). Voor een vaste route gelijk aan `singlePriceCents`
+       * (`pickupApproach` is dan altijd `null`). snapshot.ts gebruikt dit —
+       * niet `singlePriceCents` — om PR #19's bestaande nachttoeslag
+       * UITSLUITEND over de passagiersrit te berekenen; de aanrijcomponent
+       * krijgt zijn eigen, eenmalige nachtpremie via
+       * `pickupApproach.approachNightPremiumCents`. Zo wordt de component
+       * nooit ongemerkt nogmaals (of dubbel bij een retour) met het
+       * nachttarief vermenigvuldigd.
+       */
+      rideOnlySinglePriceCents: number;
       currency: "EUR";
       vatRate: number;
       distanceKm: number;
@@ -169,6 +268,8 @@ export type PricingQuoteResult =
        * bevestigen van de boeking opnieuw berekend en vergeleken. Zie quoteFingerprint.
        */
       fingerprint: string;
+      /** INTERN — zie PickupApproachBreakdown. Nooit in de publieke API-response opnemen. */
+      pickupApproach: PickupApproachBreakdown | null;
     }
   | {
       available: false;
@@ -260,9 +361,9 @@ export function quoteFingerprint(input: {
 export async function getPricingQuote(
   input: PricingQuoteInput
 ): Promise<PricingQuoteResult> {
-  const { result, shadow } = await resolveQuote(input);
+  const { result, shadow, pickupApproach } = await resolveQuote(input);
   // Loggen mag de offerte nooit blokkeren of laten falen.
-  void logQuote(input, result, shadow).catch(() => {});
+  void logQuote(input, result, shadow, pickupApproach).catch(() => {});
   return result;
 }
 
@@ -489,6 +590,41 @@ export type ResolveQuoteDeps = {
    * `price` of op het geretourneerde PricingQuoteResult.
    */
   recordShadow?: (entry: ShadowLogEntry) => void;
+
+  // ── Pickup-aanrijmodel (2026-08-18) ─────────────────────────────────────────
+  /**
+   * Enige actieve aanrijmodel-configuratie, of `null` als die ontbreekt (of
+   * onverhoopt niet eenduidig is). Ontbreekt deze dep, faalt hij, of levert
+   * hij `null` op voor een DYNAMISCHE rit, dan wordt de HELE offerte
+   * "Offerte op aanvraag" (fail-closed — in tegenstelling tot het
+   * SHADOW-ONLY deadhead-patroon hierboven: dit raakt wél de bindende prijs).
+   */
+  loadApproachFeeConfig?: () => Promise<ApproachFeeConfig | null>;
+  /** Actieve operationele standplaatsen, per slug. */
+  loadOperationalBases?: () => Promise<ReadonlyMap<string, OperationalBase>>;
+  /** Officiële-gemeentenaam (genormaliseerd) → standplaats-slug, voor alle actieve servicegebieden. */
+  loadServiceAreaBaseSlugs?: () => Promise<ReadonlyMap<string, string>>;
+  /**
+   * PDOK-gemeentelookup voor het PICKUP-adres. `null` = geslaagd, geen
+   * relevant document. Een throw = de lookup zelf is mislukt/timed out.
+   * Ontbreekt deze dep, dan kan een dynamische rit nooit een servicegebied
+   * vaststellen → altijd "Offerte op aanvraag" voor die rit.
+   */
+  lookupOfficialGemeente?: (address: string) => Promise<string | null>;
+  /**
+   * INTERN, best-effort side-channel voor het pickup-aanrijmodel — apart van
+   * `recordShadow` omdat dit een ANDERE, prijsbepalende component betreft.
+   */
+  recordPickupApproach?: (entry: PickupApproachLogEntry) => void;
+};
+
+export type OperationalBase = {
+  id: string;
+  slug: string;
+  label: string;
+  postcode: string;
+  latitude: number;
+  longitude: number;
 };
 
 /**
@@ -563,13 +699,61 @@ function retryingLookupOfficialWoonplaats(address: string): Promise<string | nul
   );
 }
 
-async function resolveQuote(
-  input: PricingQuoteInput
-): Promise<{ result: PricingQuoteResult; shadow: ShadowLogEntry | null }> {
+/** Zelfde retry-patroon, voor de PICKUP-gemeentelookup (2026-08-18, pickup-aanrijmodel). */
+function retryingLookupOfficialGemeente(address: string): Promise<string | null> {
+  return withRetryOnce(
+    () => pdokLookupOfficialGemeente(address),
+    PDOK_GEMEENTE_LOOKUP_TIMEOUT_MS,
+    PDOK_GEMEENTE_LOOKUP_TIMEOUT_MS
+  );
+}
+
+const cachedLoadApproachFeeConfig = cachedLoader(SHADOW_CONFIG_CACHE_TTL_MS, () =>
+  withRetryOnce(
+    () => {
+      const client = createPricingLogClient();
+      if (!client) return Promise.reject(new NoServiceRoleClientError());
+      return loadApproachFeeConfig(client);
+    },
+    SHADOW_LOAD_TIMEOUT_MS,
+    SHADOW_LOAD_RETRY_TIMEOUT_MS
+  )
+);
+
+const cachedLoadOperationalBases = cachedLoader(SHADOW_CONFIG_CACHE_TTL_MS, () =>
+  withRetryOnce(
+    () => {
+      const client = createPricingLogClient();
+      if (!client) return Promise.reject(new NoServiceRoleClientError());
+      return loadOperationalBases(client);
+    },
+    SHADOW_LOAD_TIMEOUT_MS,
+    SHADOW_LOAD_RETRY_TIMEOUT_MS
+  )
+);
+
+const cachedLoadServiceAreaBaseSlugs = cachedLoader(SHADOW_CONFIG_CACHE_TTL_MS, () =>
+  withRetryOnce(
+    () => {
+      const client = createPricingLogClient();
+      if (!client) return Promise.reject(new NoServiceRoleClientError());
+      return loadServiceAreaBaseSlugs(client);
+    },
+    SHADOW_LOAD_TIMEOUT_MS,
+    SHADOW_LOAD_RETRY_TIMEOUT_MS
+  )
+);
+
+async function resolveQuote(input: PricingQuoteInput): Promise<{
+  result: PricingQuoteResult;
+  shadow: ShadowLogEntry | null;
+  pickupApproach: PickupApproachLogEntry | null;
+}> {
   const supabase = createPricingReadClient();
-  if (!supabase) return { result: unavailable("data_unavailable"), shadow: null };
+  if (!supabase) return { result: unavailable("data_unavailable"), shadow: null, pickupApproach: null };
 
   let shadow: ShadowLogEntry | null = null;
+  let pickupApproach: PickupApproachLogEntry | null = null;
   const deps: ResolveQuoteDeps = {
     findLocation: (raw) => findLocation(supabase, raw),
     findVehicleClass: (code) => findVehicleClass(supabase, code),
@@ -591,9 +775,17 @@ async function resolveQuote(
     recordShadow: (entry) => {
       shadow = entry;
     },
+    // Pickup-aanrijmodel (2026-08-18) — zelfde service-role/cache/retry-patroon.
+    loadApproachFeeConfig: cachedLoadApproachFeeConfig,
+    loadOperationalBases: cachedLoadOperationalBases,
+    loadServiceAreaBaseSlugs: cachedLoadServiceAreaBaseSlugs,
+    lookupOfficialGemeente: retryingLookupOfficialGemeente,
+    recordPickupApproach: (entry) => {
+      pickupApproach = entry;
+    },
   };
   const result = await resolveQuoteWith(input, deps);
-  return { result, shadow };
+  return { result, shadow, pickupApproach };
 }
 
 /**
@@ -648,6 +840,10 @@ export async function resolveQuoteWith(
     }
 
     if (fixed) {
+      // Vaste route: bewust GEEN homebase-load, GEEN base→pickup-routing, GEEN
+      // aanrijcomponent — precies zoals vereist (2026-08-18). `pickupApproach`
+      // blijft hier altijd `null`, en resolvePickupApproach() wordt hier nooit
+      // aangeroepen (dat gebeurt uitsluitend in tryDistanceTariff hieronder).
       const wantReturn = input.returnTrip === true;
       const returnPrice = fixed.return_price ?? null;
       const returnApplied = wantReturn && returnPrice !== null;
@@ -660,6 +856,11 @@ export async function resolveQuoteWith(
         singlePrice: fixed.price,
         returnPrice,
         returnApplied,
+        priceCents: eurosToCents(price),
+        singlePriceCents: eurosToCents(fixed.price),
+        returnPriceCents: returnPrice !== null ? eurosToCents(returnPrice) : null,
+        // Vaste route: geen aanrijcomponent, dus gelijk aan singlePriceCents.
+        rideOnlySinglePriceCents: eurosToCents(fixed.price),
         currency: "EUR",
         vatRate: fixed.vat_rate,
         distanceKm: fixed.distance_km,
@@ -674,6 +875,7 @@ export async function resolveQuoteWith(
         airport,
         dataSource: "supabase",
         fingerprint: quoteFingerprint(input),
+        pickupApproach: null,
       };
     }
   }
@@ -727,6 +929,17 @@ async function tryDistanceTariff(
   vehicleClass: VehicleClassRow | null,
   airport: AirportContext
 ): Promise<PricingQuoteResult | null> {
+  // Pickup-aanrijmodel (2026-08-18) — EERST: servicegebied/routing/config,
+  // vóór de passagiersroute (bespaart een onnodige Google-aanroep wanneer de
+  // pickup toch al buiten elk servicegebied valt). Landelijke beperking,
+  // expliciet bevestigd door de eigenaar: een pickup buiten de twee
+  // servicegebieden — of boven de maximale aanrijafstand, of bij een
+  // config-/routingstoring — levert GEEN dynamische prijs op. De hele
+  // offerte valt terug op "Offerte op aanvraag" via de bestaande,
+  // ongewijzigde unavailable-plumbing in resolveQuoteWith (return null hier).
+  const approach = await resolvePickupApproach(deps, pickupRaw, input.departureAt);
+  if (approach.outcome === "offer_on_request") return null;
+
   const route = await deps.getRoute(pickupRaw, dropoffRaw, input.departureAt);
   if (!route) return null;
 
@@ -753,11 +966,22 @@ async function tryDistanceTariff(
   // boekingscode nodig: die loopt uitsluitend bij `available === true`).
   const outcome = await resolveDeadheadPricing(deps, dropoff, dropoffRaw, route.distanceKm, route.durationMin, basePrice);
   if ("indeterminate" in outcome) return null;
-  const single = outcome.price;
+  const x = outcome.price; // enkele-reisprijs vóór aanrijcomponent (evt. deadhead-aangepast), hele euro's
 
-  const returnPrice = single * 2;
+  // Cent-precisie (2026-08-18): de aanrijcomponent wordt ÉÉNMAAL, hierboven in
+  // resolvePickupApproach()/computeApproachFee(), afgerond op hele centen.
+  // Vanaf hier uitsluitend optellen in centen — nooit opnieuw afronden of in
+  // euro's terugrekenen vóór het einde. Retour = 2× X (de enkele-reisprijs
+  // vóór aanrijcomponent) + de aanrijcomponent ÉÉNMAAL — nooit verdubbeld.
+  const xCents = eurosToCents(x);
+  const approachComponentCents = approach.breakdown.customerComponentCents;
+  const singleCents = xCents + approachComponentCents;
+  const returnCentsRaw = xCents * 2 + approachComponentCents;
+  const single = Math.round(singleCents / 100);
+  const returnPrice = Math.round(returnCentsRaw / 100);
   const returnApplied = input.returnTrip === true;
   const price = returnApplied ? returnPrice : single;
+  const priceCents = returnApplied ? returnCentsRaw : singleCents;
 
   return {
     available: true,
@@ -766,6 +990,14 @@ async function tryDistanceTariff(
     singlePrice: single,
     returnPrice,
     returnApplied,
+    priceCents,
+    singlePriceCents: singleCents,
+    returnPriceCents: returnCentsRaw,
+    // Uitsluitend de passagiersrit (evt. deadhead-aangepast), EXCLUSIEF de
+    // aanrijcomponent — zie het uitgebreide veldcommentaar bij
+    // PricingQuoteResult. Gebruikt door snapshot.ts voor PR #19's bestaande
+    // nachttoeslag, zodat die nooit ongemerkt ook de aanrijcomponent belast.
+    rideOnlySinglePriceCents: xCents,
     currency: "EUR",
     vatRate: DEFAULT_DISTANCE_TARIFF.vatRate,
     distanceKm: route.distanceKm,
@@ -780,7 +1012,114 @@ async function tryDistanceTariff(
     airport,
     dataSource: "routing",
     fingerprint: quoteFingerprint(input),
+    pickupApproach: approach.breakdown,
   };
+}
+
+/** Uitkomst van resolvePickupApproach — zie de toelichting bij de aanroep in tryDistanceTariff. */
+type PickupApproachOutcome =
+  | { outcome: "applied"; breakdown: PickupApproachBreakdown }
+  | {
+      outcome: "offer_on_request";
+      reason: "beyond_max_approach_km" | "unassigned_service_area" | "config_or_routing_unavailable";
+    };
+
+/**
+ * Bepaalt het servicegebied van de pickup (via de officiële PDOK-gemeente),
+ * routeert T4XI-standplaats → pickup, en berekent de aanrijcomponent
+ * (2026-08-18). FAIL-CLOSED, in tegenstelling tot het SHADOW-ONLY
+ * deadhead-patroon hierboven: dit raakt de bindende prijs, dus ontbrekende
+ * config/bases/servicegebieden, een storing, of een pickup buiten elk
+ * servicegebied levert altijd `offer_on_request` op — nooit stilzwijgend de
+ * basisprijs zonder aanrijcomponent.
+ */
+async function resolvePickupApproach(
+  deps: ResolveQuoteDeps,
+  pickupRaw: string,
+  departureAt: string | undefined
+): Promise<PickupApproachOutcome> {
+  const log = (entry: PickupApproachLogEntry) => deps.recordPickupApproach?.(entry);
+  const offer = (reason: "beyond_max_approach_km" | "unassigned_service_area" | "config_or_routing_unavailable"): PickupApproachOutcome => {
+    const outcome: PickupApproachOutcome = { outcome: "offer_on_request", reason };
+    log(outcome);
+    return outcome;
+  };
+
+  if (
+    !deps.loadApproachFeeConfig ||
+    !deps.loadOperationalBases ||
+    !deps.loadServiceAreaBaseSlugs ||
+    !deps.lookupOfficialGemeente
+  ) {
+    return offer("config_or_routing_unavailable");
+  }
+
+  let config: ApproachFeeConfig | null;
+  let bases: ReadonlyMap<string, OperationalBase>;
+  let baseSlugByGemeente: ReadonlyMap<string, string>;
+  try {
+    // Parallel laden, begrensd door SHADOW_LOAD_OUTER_TIMEOUT_MS als uiterst
+    // veiligheidsnet — de productie-deps (cachedLoad*) begrenzen en retryen
+    // zichzelf al ruim binnen dat net.
+    [config, bases, baseSlugByGemeente] = await withTimeout(
+      Promise.all([deps.loadApproachFeeConfig(), deps.loadOperationalBases(), deps.loadServiceAreaBaseSlugs()]),
+      SHADOW_LOAD_OUTER_TIMEOUT_MS
+    );
+  } catch {
+    return offer("config_or_routing_unavailable");
+  }
+  if (!config) return offer("config_or_routing_unavailable");
+
+  let gemeente: string | null;
+  try {
+    gemeente = await withTimeout(deps.lookupOfficialGemeente(pickupRaw), PDOK_ZONE_LOOKUP_OUTER_TIMEOUT_MS);
+  } catch {
+    return offer("config_or_routing_unavailable");
+  }
+  if (!gemeente) return offer("unassigned_service_area");
+
+  const baseSlug = resolveBaseIdForGemeente(gemeente, baseSlugByGemeente);
+  if (!baseSlug) return offer("unassigned_service_area");
+  const base = bases.get(baseSlug);
+  if (!base) return offer("config_or_routing_unavailable");
+
+  const baseRoute = await deps.getRoute(`${base.postcode} ${base.label}`, pickupRaw, departureAt);
+  if (!baseRoute) return offer("config_or_routing_unavailable");
+
+  const fee = computeApproachFee({ distanceKm: baseRoute.distanceKm, durationMin: baseRoute.durationMin, config });
+  if (fee.status === "offer_on_request") return offer("beyond_max_approach_km");
+
+  // Nachtpremie (2026-08-19, optie B) — uitsluitend bepaald door de
+  // OORSPRONKELIJKE pickup-tijd (`departureAt`, de parameter van deze
+  // functie — nooit een retourtijd; tryDistanceTariff geeft hier altijd
+  // `input.departureAt` door, nooit `input.returnDepartureAt`). Toegepast op
+  // de REEDS DAG-GECAPTE component — de €25-dagcap zelf verandert niet.
+  // Berekend hier, ÉÉNMAAL, binnen dezelfde base→pickup-routingaanroep en
+  // servicegebiedlookup hierboven — geen tweede aanroep van beide nodig, ook
+  // niet bij een retour (tryDistanceTariff roept resolvePickupApproach zelf
+  // al maar éénmaal aan per offerte).
+  const isNightPickup = isNightTariff(departureAt);
+  const approachNightPremiumCents = isNightPickup ? computeApproachNightPremiumCents(fee.customerComponentCents) : 0;
+
+  const breakdown: PickupApproachBreakdown = {
+    baseId: base.id,
+    baseSlug: base.slug,
+    serviceAreaGemeente: gemeente,
+    distanceKm: baseRoute.distanceKm,
+    durationMin: baseRoute.durationMin,
+    referenceCents: fee.referenceCents,
+    exemptionFactor: fee.exemptionFactor,
+    customerSharePct: config.customerSharePct,
+    customerComponentBeforeCapCents: fee.customerComponentBeforeCapCents,
+    customerComponentCents: fee.customerComponentCents,
+    capped: fee.capped,
+    t4xiAbsorbedReferenceCents: fee.t4xiAbsorbedReferenceCents,
+    isNightPickup,
+    approachNightPremiumCents,
+    totalPickupContributionCents: fee.customerComponentCents + approachNightPremiumCents,
+  };
+  log({ ...breakdown, outcome: "applied", finalPriceCents: fee.customerComponentCents + approachNightPremiumCents });
+  return { outcome: "applied", breakdown };
 }
 
 /** Uitkomst van resolveDeadheadPricing — zie de indeterminate-toelichting bij de aanroep in tryDistanceTariff. */
@@ -1127,6 +1466,80 @@ export async function loadDeadheadZoneAllowlist(
   return { cityIds, byOfficialWoonplaats };
 }
 
+// ── Pickup-aanrijmodel config (2026-08-18) ───────────────────────────────────
+
+/** Enige actieve aanrijmodel-configuratie. `null` bij nul (of onverhoopt >1) actieve rijen. */
+export async function loadApproachFeeConfig(supabase: PricingSupabaseClient): Promise<ApproachFeeConfig | null> {
+  const res = await supabase
+    .from("pricing_approach_fee_config")
+    .select(
+      "customer_share_pct, free_km, full_coverage_km, max_customer_component_cents, max_approach_km, per_km_cents, per_min_cents"
+    )
+    .eq("active", true)
+    .limit(2);
+  if (res.error) throw res.error;
+  const rows = res.data ?? [];
+  if (rows.length !== 1) return null;
+  const row = rows[0]!;
+  return {
+    customerSharePct: row.customer_share_pct,
+    freeKm: row.free_km,
+    fullCoverageKm: row.full_coverage_km,
+    maxCustomerComponentCents: row.max_customer_component_cents,
+    maxApproachKm: row.max_approach_km,
+    perKmCents: row.per_km_cents,
+    perMinCents: row.per_min_cents,
+  };
+}
+
+/** Actieve operationele standplaatsen, per slug. */
+export async function loadOperationalBases(
+  supabase: PricingSupabaseClient
+): Promise<ReadonlyMap<string, OperationalBase>> {
+  const res = await supabase
+    .from("pricing_operational_bases")
+    .select("id, slug, label, postcode, latitude, longitude")
+    .eq("active", true);
+  if (res.error) throw res.error;
+  const map = new Map<string, OperationalBase>();
+  for (const row of res.data ?? []) {
+    map.set(row.slug, {
+      id: row.id,
+      slug: row.slug,
+      label: row.label,
+      postcode: row.postcode,
+      latitude: row.latitude,
+      longitude: row.longitude,
+    });
+  }
+  return map;
+}
+
+/**
+ * Officiële-gemeentenaam (genormaliseerd) → standplaats-slug, voor alle
+ * actieve servicegebieden van een actieve standplaats. Twee losse queries +
+ * JS-join (i.p.v. een PostgREST-embed) — eenvoudiger te verifiëren en geen
+ * afhankelijkheid van `!inner`-filtergedrag op de geëmbedde relatie.
+ */
+export async function loadServiceAreaBaseSlugs(
+  supabase: PricingSupabaseClient
+): Promise<ReadonlyMap<string, string>> {
+  const [basesRes, areasRes] = await Promise.all([
+    supabase.from("pricing_operational_bases").select("id, slug").eq("active", true),
+    supabase.from("pricing_service_areas").select("base_id, gemeente_naam").eq("active", true),
+  ]);
+  if (basesRes.error) throw basesRes.error;
+  if (areasRes.error) throw areasRes.error;
+  const slugById = new Map<string, string>();
+  for (const row of basesRes.data ?? []) slugById.set(row.id, row.slug);
+  const map = new Map<string, string>();
+  for (const row of areasRes.data ?? []) {
+    const slug = slugById.get(row.base_id);
+    if (slug) map.set(normalizeGemeenteNaam(row.gemeente_naam), slug);
+  }
+  return map;
+}
+
 // ── Regel-gebaseerde fallback (INTERN — v1 niet klantzichtbaar) ──────────────
 
 // ── Analytics-/auditlog ──────────────────────────────────────────────────────
@@ -1140,10 +1553,21 @@ export async function loadDeadheadZoneAllowlist(
 async function logQuote(
   input: PricingQuoteInput,
   result: PricingQuoteResult,
-  shadow: ShadowLogEntry | null = null
+  shadow: ShadowLogEntry | null = null,
+  pickupApproach: PickupApproachLogEntry | null = null
 ): Promise<void> {
   const logger = createPricingLogClient();
   if (!logger) return; // geen service-role key → stil overslaan
+
+  // `pickupApproach` genest onder een eigen sleutel — de bestaande, al-live
+  // shadow-structuur (top-level velden als `applied`/`reason`) blijft exact
+  // ongewijzigd, zodat bestaande queries/tests op price_breakdown->>'...'
+  // blijven werken. `null` wanneer er geen dynamische pickup-aanrijstap was
+  // (bv. een vaste route).
+  const breakdown: Json | null =
+    shadow || pickupApproach
+      ? ({ ...(shadow as unknown as Record<string, Json>), pickupApproach: pickupApproach as unknown as Json } as Json)
+      : null;
 
   const row: TablesInsert<"pricing_quote_logs"> = {
     pickup_input: input.pickup ?? null,
@@ -1167,7 +1591,7 @@ async function logQuote(
     distance_km: result.available ? result.distanceKm : null,
     estimated_duration_min: result.available ? result.estimatedDurationMin : null,
     error_code: result.available ? null : result.reason,
-    price_breakdown: shadow ? (shadow as unknown as Json) : null,
+    price_breakdown: breakdown,
     request_payload: {
       pickup: input.pickup,
       dropoff: input.dropoff,

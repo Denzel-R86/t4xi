@@ -20,7 +20,6 @@ import {
   type StoredSnapshot,
 } from "@/lib/pricing/snapshot";
 import { isNightTariff } from "@/lib/pricing/departure-time";
-import { eurosToCents } from "@/lib/payments/create-intent";
 
 /**
  * DE centrale, server-side entrypoint voor een klantprijs (Sprint 7.6 — PR 7.6.2).
@@ -226,8 +225,8 @@ export async function resolveBookingPrice(
     // Nachttoeslag ook op dit no-quoteId-pad (deterministische vaste route), PER
     // RITDEEL: +15% over de enkele-rit-prijs voor elk ritdeel waarvan de eigen
     // ophaaltijd tussen 23:00–06:00 valt. Zelfde basis/afronding als de snapshot.
-    const baseCents = eurosToCents(quote.price);
-    const legSurcharge = nightSurchargeCents(eurosToCents(quote.singlePrice));
+    const baseCents = quote.priceCents;
+    const legSurcharge = nightSurchargeCents(quote.singlePriceCents);
     let nightCents = 0;
     if (isNightTariff(req.departureAt)) nightCents += legSurcharge;
     if (quote.returnApplied && isNightTariff(req.returnDepartureAt)) nightCents += legSurcharge;

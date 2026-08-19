@@ -8,6 +8,7 @@ import {
 import { priceFromDistance } from "@/lib/pricing/distance-tariff";
 import { getDrivingRoute, resolveDepartureTime } from "@/lib/pricing/routing";
 import { mapPricingSource, buildPriceSnapshot, validateSnapshot } from "@/lib/pricing/snapshot";
+import { neutralPickupApproachDeps, wrapGetRouteWithNeutralApproach } from "@/lib/pricing/pickup-approach-fake";
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -42,13 +43,17 @@ const fixedRow = {
 
 // Default deps: locaties onbekend, klasse bekend, geen vaste route, routing levert
 // een normale rit. Tests overschrijven per geval alleen wat relevant is.
-const baseDeps = (o: Partial<ResolveQuoteDeps> = {}): ResolveQuoteDeps => ({
-  findLocation: async () => null,
-  findVehicleClass: async () => vclass,
-  findFixedRoute: async () => null,
-  getRoute: async () => ({ distanceKm: 20, durationMin: 30 }),
-  ...o,
-});
+const baseDeps = (o: Partial<ResolveQuoteDeps> = {}): ResolveQuoteDeps => {
+  const { getRoute: passengerGetRoute, ...rest } = o;
+  return {
+    findLocation: async () => null,
+    findVehicleClass: async () => vclass,
+    findFixedRoute: async () => null,
+    getRoute: wrapGetRouteWithNeutralApproach(passengerGetRoute ?? (async () => ({ distanceKm: 20, durationMin: 30 }))),
+    ...neutralPickupApproachDeps,
+    ...rest,
+  };
+};
 
 const input = (o: Partial<PricingQuoteInput> = {}): PricingQuoteInput => ({
   pickup: "Sterduinstraat 2, 1361BP Almere",

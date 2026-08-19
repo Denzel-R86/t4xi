@@ -138,9 +138,32 @@ test("plain 'Rotterdam' en 'Rotterdam Centraal' blijven ongewijzigd naar dezelfd
 });
 
 test("een écht straatadres in het centrum (met postcode) blijft naar de wijk-slug resolven — geen vaste route voor die combinatie, dus distance_tariff (ongewijzigd, bestaand gedrag)", async () => {
+  // Na samenvoeging met het pickup-aanrijmodel (PR #20) loopt elke NIET-vaste
+  // route eerst door resolvePickupApproach() — zonder die deps zou dit adres
+  // fail-closed op "Offerte op aanvraag" vallen (config_or_routing_unavailable),
+  // wat hier niets zegt over de Rotterdam-centrum-hotfix zelf. Fakes hieronder
+  // laten die stap slagen (gemeente "Rotterdam" → basis "spijkenisse", ruim
+  // binnen de 40km-grens) zodat deze test weer uitsluitend de vaste-route-vs-
+  // distance_tariff-vraag beantwoordt.
   const res = await resolveQuoteWith(
     input("Coolsingel 40, 3011 AD Rotterdam", "Rotterdam Airport"),
-    makeDeps({ getRoute: async () => ({ distanceKm: 7.6, durationMin: 10 }) })
+    makeDeps({
+      getRoute: async (origin) =>
+        origin === "3201LG Spijkenisse" ? { distanceKm: 12, durationMin: 15 } : { distanceKm: 7.6, durationMin: 10 },
+      loadApproachFeeConfig: async () => ({
+        customerSharePct: 0.5,
+        freeKm: 5,
+        fullCoverageKm: 15,
+        maxCustomerComponentCents: 2500,
+        maxApproachKm: 40,
+        perKmCents: 65,
+        perMinCents: 110,
+      }),
+      loadOperationalBases: async () =>
+        new Map([["spijkenisse", { id: "base-spijkenisse", slug: "spijkenisse", label: "Spijkenisse", postcode: "3201LG", latitude: 51.852165, longitude: 4.335123 }]]),
+      loadServiceAreaBaseSlugs: async () => new Map([["rotterdam", "spijkenisse"]]),
+      lookupOfficialGemeente: async () => "Rotterdam",
+    })
   );
   assert.equal(res.available, true);
   assert.equal(res.available && res.source, "distance_tariff", "rotterdam-centrum heeft geen eigen vaste route — dat is bestaand, ongewijzigd gedrag");

@@ -7,6 +7,7 @@ import {
 } from "@/lib/pricing/engine";
 import { NO_AIRPORT, quoteFingerprint, type PricingQuoteResult } from "@/lib/pricing/service";
 import type { StoredSnapshot } from "@/lib/pricing/snapshot";
+import { eurosToCents } from "@/lib/payments/create-intent";
 
 const NOW = new Date("2026-08-19T10:00:00.000Z");
 const QID = "0192f0c0-0000-7000-8000-0000000abcde";
@@ -87,11 +88,14 @@ test("prijs blijft gelijk ook al zou routing NU een andere reistijd/prijs geven"
     deps({
       computeQuote: async () => ({
         available: true, source: "distance_tariff", price: 999, singlePrice: 999,
-        returnPrice: 1998, returnApplied: false, currency: "EUR", vatRate: 9,
+        returnPrice: 1998, returnApplied: false,
+        priceCents: eurosToCents(999), singlePriceCents: eurosToCents(999), returnPriceCents: eurosToCents(1998),
+        rideOnlySinglePriceCents: eurosToCents(999),
+        currency: "EUR", vatRate: 9,
         distanceKm: 500, estimatedDurationMin: 600, vehicleClass: "executive-ev",
         route: { pickupSlug: "x", dropoffSlug: "y", label: null },
         isAirportTransfer: false, airport: NO_AIRPORT, dataSource: "routing",
-        fingerprint: "x|y|executive-ev|enkel",
+        fingerprint: "x|y|executive-ev|enkel", pickupApproach: null,
       }),
     })
   );
@@ -143,11 +147,15 @@ test("client kan bedrag/btw/bron niet aanpassen: het bindende bedrag komt UITSLU
 
 const fixedQuote = (): PricingQuoteResult => ({
   available: true, source: "fixed_route_prices", price: 50, singlePrice: 50,
-  returnPrice: 90, returnApplied: false, currency: "EUR", vatRate: 9,
+  returnPrice: 90, returnApplied: false,
+  priceCents: eurosToCents(50), singlePriceCents: eurosToCents(50), returnPriceCents: eurosToCents(90),
+  rideOnlySinglePriceCents: eurosToCents(50),
+  currency: "EUR", vatRate: 9,
   distanceKm: 17, estimatedDurationMin: 20, vehicleClass: "executive-ev",
   route: { pickupSlug: "amsterdam-zuidas", dropoffSlug: "schiphol-airport", label: "vast" },
   isAirportTransfer: true, airport: { ...NO_AIRPORT, dropoffIsAirport: true, isAirportDropoff: true, isAirportTransfer: true },
   dataSource: "supabase", fingerprint: "amsterdam-zuidas|schiphol-airport|executive-ev|enkel",
+  pickupApproach: null,
 });
 
 test("zonder quoteId werkt een vaste route en wordt routing UITGEZET (allowDistanceTariff:false)", async () => {
@@ -188,13 +196,18 @@ const DAY_ISO = amsterdamDepartureIso("2026-08-20", "12:00")!;
 
 const availableSingle = (price: number): PricingQuoteResult => ({
   available: true, source: "fixed_route_prices", price, singlePrice: price, returnPrice: null,
-  returnApplied: false, currency: "EUR", vatRate: 9, distanceKm: 10, estimatedDurationMin: 15,
+  returnApplied: false,
+  priceCents: eurosToCents(price), singlePriceCents: eurosToCents(price), returnPriceCents: null,
+  rideOnlySinglePriceCents: eurosToCents(price),
+  currency: "EUR", vatRate: 9, distanceKm: 10, estimatedDurationMin: 15,
   vehicleClass: "executive-ev", route: { pickupSlug: "a", dropoffSlug: "b", label: null },
   isAirportTransfer: false, airport: NO_AIRPORT, dataSource: "supabase", fingerprint: "x",
+  pickupApproach: null,
 });
 const availableRetour = (singlePrice: number, returnPrice: number): PricingQuoteResult => ({
   ...(availableSingle(singlePrice) as Extract<PricingQuoteResult, { available: true }>),
   price: returnPrice, returnPrice, returnApplied: true,
+  priceCents: eurosToCents(returnPrice), returnPriceCents: eurosToCents(returnPrice),
 });
 const NIGHT_RET = amsterdamDepartureIso("2026-08-21", "05:30")!; // retour-ritdeel nacht
 const DAY_RET = amsterdamDepartureIso("2026-08-21", "12:00")!; // retour-ritdeel dag
