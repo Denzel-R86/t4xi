@@ -122,3 +122,21 @@ export function amsterdamDepartureIso(date: string, time: string): string | null
   }
   return result.toISOString();
 }
+
+/**
+ * Vandaag ("YYYY-MM-DD") in Europe/Amsterdam, uitgaande van `now` (default:
+ * het huidige moment). Puur/injecteerbaar zodat een "datum in het verleden"-
+ * check (2026-08-19, hotfix) DST-correct en testbaar is — nooit de servers
+ * eigen (doorgaans UTC) kalenderdag gebruiken, die kan rond middernacht een
+ * andere dag zijn dan in Amsterdam.
+ */
+export function amsterdamTodayISO(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}

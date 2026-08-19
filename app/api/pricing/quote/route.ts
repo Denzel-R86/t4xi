@@ -7,7 +7,7 @@ import {
   type UnavailableReason,
 } from "@/lib/pricing/service";
 import { isNightAdjustmentCode, type PriceSnapshot } from "@/lib/pricing/snapshot";
-import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
+import { amsterdamDepartureIso, amsterdamTodayISO } from "@/lib/pricing/departure-time";
 import { classifyLuggage } from "@/lib/pricing/luggage";
 
 /**
@@ -142,6 +142,14 @@ export async function POST(request: Request) {
   const normalizedTime = time.trim();
   if (!isExistingCalendarDate(normalizedDate)) {
     return badRequest("'date' moet een bestaande datum in formaat YYYY-MM-DD zijn.");
+  }
+  // 2026-08-19 (audit-fix): "niet in het verleden" werd tot nu toe alleen door de
+  // UI afgedwongen (het `min`-attribuut op het datumveld) — rechtstreeks de API
+  // aanroepen met een datum in het verleden gaf gewoon een geldige, bindbare
+  // prijs + snapshot. Vergelijking op DAG-granulariteit in Europe/Amsterdam,
+  // zelfde grens als de client (`date >= todayISO()`).
+  if (normalizedDate < amsterdamTodayISO()) {
+    return badRequest("'date' mag niet in het verleden liggen.");
   }
   const departureAt = amsterdamDepartureIso(normalizedDate, normalizedTime) ?? undefined;
   if (!departureAt) {

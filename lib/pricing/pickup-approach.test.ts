@@ -1216,6 +1216,28 @@ test("Gooi-floor: geen centendrift — finale singlePriceCents/returnPriceCents 
   assert.equal(res.priceCents, res.singlePriceCents, "enkele rit: priceCents === singlePriceCents");
 });
 
+test("Gooi-floor: de bodemlookup roept nooit getRoute (Google Directions) aan — uitsluitend de bestaande aanrij- en passagiersroute-aanroepen blijven staan", async () => {
+  let totalGetRouteCalls = 0;
+  const baseGetRoute = makeGetRoute({ passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0 });
+  const res = await resolveQuoteWith(
+    input("Laren", "Schiphol"),
+    makeFloorDeps({
+      referencePriceEuro: 102,
+      getRoute: async (origin, destination, departureAt) => {
+        totalGetRouteCalls += 1;
+        return baseGetRoute(origin, destination, departureAt);
+      },
+    })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.economicFloor?.floorApplied, true);
+  // Exact 2: (1) basis→pickup aanrijafstand, (2) pickup→dropoff passagiersroute —
+  // beide al bestaand vóór deze hotfix. resolveEconomicFloorReferenceCents()
+  // gebruikt uitsluitend findLocation/findFixedRoute (DB-lookups), nooit getRoute.
+  assert.equal(totalGetRouteCalls, 2, "de bodemlookup (findLocation/findFixedRoute) doet geen eigen Google-routingaanroep — geen extra of recursieve call");
+});
+
 test("Gooi-floor: intern gelogd met oorspronkelijke prijs, referentieprijs, toegepaste floor en finale prijs; nooit publiek", async () => {
   let logged: PickupApproachLogEntry | null = null;
   const res = await resolveQuoteWith(
