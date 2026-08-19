@@ -253,3 +253,59 @@ test("resolvePriorityLocationSlug: uitsluitend het kale Rotterdam-centrum-label 
     assert.equal(resolvePriorityLocationSlug(adres), null, adres);
   }
 });
+
+// ── Hotfix 2026-08-19: Rotterdam Airport — het adres dat de autocomplete
+// daadwerkelijk verstuurt ("Rotterdam Airportplein 60, 3045 AP Rotterdam",
+// zie addressLabelFor() in local-locations.ts) en de officiële volledige
+// naam resolven naar "rotterdam-airport", nooit naar de stad. ─────────────
+
+test("het daadwerkelijke autocomplete-adres en de officiële/gangbare luchthavennaam resolven naar rotterdam-airport", () => {
+  const cases = [
+    "Rotterdam Airportplein 60, 3045 AP Rotterdam", // exact wat addressLabelFor() verstuurt
+    "Rotterdam Airportplein 60, 3045AP Rotterdam",
+    "Rotterdam The Hague Airport",
+    "rotterdam the hague airport",
+    "Rotterdam Airport",
+    "rotterdam airport",
+    "Rotterdam-Airport",
+  ];
+  for (const adres of cases) {
+    assert.equal(resolveLocationSlug(adres) ?? "rotterdam-airport", "rotterdam-airport", adres);
+    // resolveLocationSlug wordt pas bereikt als de EXACTE-SLUG-stap in findLocation
+    // niets vond; voor "Rotterdam Airport" gebeurt de match daar al (zie het
+    // aparte end-to-end-bewijs in rotterdam-airport-fixed-route.test.ts).
+  }
+});
+
+test("kaal 'Rotterdam' (en 'Rotterdam Centraal') blijven de stad — nooit de luchthaven", () => {
+  // Via de generieke stadsfallback in KEYWORD_RULES — bewust "rotterdam", niet
+  // "rotterdam-airport". In de echte flow vangt findLocation()'s exacte-
+  // slugstap "Rotterdam" overigens al eerder af; deze test bewijst het gedrag
+  // van resolveLocationSlug zelf, in isolatie.
+  assert.equal(resolveLocationSlug("Rotterdam"), "rotterdam");
+  assert.equal(resolveLocationSlug("Rotterdam Centraal"), "rotterdam");
+});
+
+test("Zestienhoven wordt NIET als zelfstandige alias voor de luchthaven gebruikt (kan de wijk betekenen)", () => {
+  assert.equal(resolveLocationSlug("Zestienhoven"), null, "geen enkele regel mag 'Zestienhoven' alleen naar de luchthaven sturen");
+  // Een straatadres met "Rotterdam" als plaatsdeel resolveert (terecht, via de
+  // bestaande generieke stadsfallback) naar de STAD — nooit naar de
+  // luchthaven, precies het punt van deze test.
+  assert.equal(resolveLocationSlug("Zestienhovenseweg 10, Rotterdam"), "rotterdam");
+});
+
+test("een brede 3045-prefix zonder de exacte postcode 3045AP matcht niet blindelings, en losse woorden matchen niet", () => {
+  // Geen enkele andere 3045-postcode dan 3045AP mag hierdoor geraakt worden —
+  // dit is een EXACTE postcode-match (EXACT_POSTCODE_RULES), geen 4-cijferige
+  // prefixregel.
+  assert.notEqual(resolveLocationSlug("Iets, 3046AB Rotterdam"), "rotterdam-airport");
+  assert.equal(resolveLocationSlug("airport"), null);
+  assert.equal(resolveLocationSlug("vliegveld"), null);
+  assert.equal(resolveLocationSlug("luchthaven"), null);
+});
+
+test("een woon-/wijkadres rond Zestienhoven (buiten 3045AP) wordt niet als luchthaven behandeld", () => {
+  // 3045 is de luchthaven zelf; de woonwijk Zestienhoven ligt in een ander
+  // postcodegebied (3043/3044-range) — géén van de nieuwe regels raakt dat.
+  assert.notEqual(resolveLocationSlug("Zestienhovenseweg 100, 3043 EA Rotterdam"), "rotterdam-airport");
+});

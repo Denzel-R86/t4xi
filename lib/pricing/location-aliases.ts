@@ -63,6 +63,17 @@ const EXACT_POSTCODE_RULES: ExactPostcodeRule[] = [
   { postcode: "5657EA", slug: "eindhoven-airport" },
   // PDOK-anker (2026-08-12): Stadsweide 2/2A, 6041TD Roermond.
   { postcode: "6041TD", slug: "designer-outlet-roermond" },
+  // PDOK-anker (2026-08-19, hotfix): Rotterdam Airportplein, 3045AP Rotterdam
+  // — PDOK bevestigt dat dit postcode UITSLUITEND "Rotterdam Airportplein"-
+  // adressen bevat (44 resultaten, geen enkel ander adres), dus veilig als
+  // exacte match. Zonder deze regel viel dit postcode terug op de generieke
+  // Rotterdam-stadsrange (3000–3089 in POSTCODE_RULES), waardoor het adres
+  // dat de autocomplete daadwerkelijk verstuurt voor de luchthaven
+  // (`addressLabelFor()` in local-locations.ts stuurt altijd het volledige
+  // `address`-veld, nooit de kale naam) ten onrechte op de STAD resolveerde —
+  // luchthavencontext en vluchtnummerplicht gingen verloren, en de klant
+  // betaalde de stadsprijs i.p.v. de vaste luchthavenprijs.
+  { postcode: "3045AP", slug: "rotterdam-airport" },
 ];
 
 const FULL_POSTCODE_RE = /\b([1-9]\d{3})\s?([A-Za-z]{2})\b/;
@@ -224,6 +235,24 @@ const LANDMARK_KEYWORD_RULES: { test: (full: string) => boolean; slug: string }[
       (f.includes("mcarthurglen") && f.includes("roermond")) ||
       (/stadsweide\s*2a?\b/.test(f) && (f.includes("roermond") || f.includes("6041td"))),
     slug: "designer-outlet-roermond",
+  },
+  // Hotfix 2026-08-19: uitsluitend VOLLEDIGE, ondubbelzinnige luchthavennamen
+  // — "Rotterdam Airport" (de bestaande alias, tot nu toe alleen bij toeval
+  // via een letterlijke slug-match werkend) en de officiële volledige naam
+  // "Rotterdam The Hague Airport". Bewust GEEN losse woorden ("airport",
+  // "vliegveld", "luchthaven", "Rotterdam") en GEEN "Zestienhoven" — dat is
+  // de wijknaam en zou een woon-/wijkadres ten onrechte als luchthaven
+  // kunnen classificeren. Het huisnummerbewuste adrespatroon vangt het geval
+  // waarin de postcode ontbreekt (EXACT_POSTCODE_RULES hierboven dekt de
+  // postcode-aanwezige variant al).
+  {
+    test: (f) =>
+      f.includes("rotterdam the hague airport") ||
+      f.includes("rotterdam-the-hague-airport") ||
+      f.includes("rotterdam airport") ||
+      f.includes("rotterdam-airport") ||
+      (/rotterdam airportplein\s*60(-\d+)?\b/.test(f) && (f.includes("rotterdam") || f.includes("3045ap"))),
+    slug: "rotterdam-airport",
   },
 ];
 
