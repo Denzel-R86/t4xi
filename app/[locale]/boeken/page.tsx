@@ -3,6 +3,7 @@ import BookingSection from "@/components/booking/BookingSection";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import { LUGGAGE_PIECES } from "@/lib/pricing/luggage";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -48,6 +49,9 @@ export default async function BoekenPage({
   const initialTime = timeRaw && /^([01]\d|2[0-3]):[0-5]\d$/.test(timeRaw) ? timeRaw : undefined;
   const initialReturnDate = returnDateRaw && /^\d{4}-\d{2}-\d{2}$/.test(returnDateRaw) ? returnDateRaw : undefined;
   const initialReturnTime = returnTimeRaw && /^([01]\d|2[0-3]):[0-5]\d$/.test(returnTimeRaw) ? returnTimeRaw : undefined;
+  const luggageRaw = first(query?.luggage);
+  const initialLuggage =
+    luggageRaw && Object.prototype.hasOwnProperty.call(LUGGAGE_PIECES, luggageRaw) ? luggageRaw : undefined;
   const t = await getTranslations({ locale, namespace: "boekenPagina" });
   return (
     <section className="mx-auto grid max-w-site items-start gap-12 px-6 py-16 md:py-24 lg:grid-cols-2">
@@ -83,6 +87,7 @@ export default async function BoekenPage({
           initialTime={initialTime}
           initialReturnDate={initialReturnDate}
           initialReturnTime={initialReturnTime}
+          initialLuggage={initialLuggage}
         />
       </ScrollReveal>
     </section>

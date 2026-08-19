@@ -53,6 +53,7 @@ import { Reveal, Odometer, usePrefersReducedMotion } from "./motion";
 import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import { useTranslations } from "next-intl";
+import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 
 /* ── de ruggengraat ─────────────────────────────────────────────────────── */
 
@@ -160,6 +161,7 @@ export function NarrativePattern({
   echo,
   note,
   as: Tag = "h2",
+  titleClassName,
 }: {
   kicker: string;
   voice: string;
@@ -167,6 +169,15 @@ export function NarrativePattern({
   /** Stille steunregel (max één, klein, secundair). */
   note?: string;
   as?: "h1" | "h2";
+  /**
+   * 2026-08-19 (hotfix): optionele override van de titelgrootte. De standaard
+   * `7.6vw`-schaal is getuned voor een bijna-volle breedte (zoals de overige
+   * drie aanroepen, binnen `Viewport`); in een smallere kolom (bv. de 48%-
+   * splitkolom van de homepage-hero) overschiet diezelfde `vw`-waarde de
+   * kolombreedte, waardoor "Van voordeur" ongewenst midden in het woord
+   * afbreekt. Ongebruikt blijft het bestaande gedrag exact ongewijzigd.
+   */
+  titleClassName?: string;
 }) {
   return (
     <div>
@@ -177,7 +188,7 @@ export function NarrativePattern({
         </p>
       </Reveal>
       <Reveal delay={1}>
-        <Tag className="mt-6 font-display text-[clamp(44px,7.6vw,108px)] font-extrabold leading-[0.98] tracking-[-0.03em] text-ink">
+        <Tag className={titleClassName ?? "mt-6 font-display text-[clamp(44px,7.6vw,108px)] font-extrabold leading-[0.98] tracking-[-0.03em] text-ink"}>
           {voice}
           {echo && (
             <>
@@ -225,6 +236,33 @@ export function Dash() {
  *  Suggesties en prijs komen uit de GEDEELDE bronnen (useAddressSuggestions,
  *  useRouteQuote): dit is dezelfde keten als het boekingsformulier, alleen in
  *  zin-presentatie. Vrije tekst blijft toegestaan. */
+/** ISO-datum van vandaag (lokale tijd) — uitsluitend voor de `min`-grens van het HTML-datumveld (dat werkt alleen op dagniveau). */
+function todayISO(): string {
+  const d = new Date();
+  const tzOffsetMs = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+}
+
+/**
+ * 2026-08-19 (audit-correctie): toetst het VOLLEDIGE vertrekmoment (datum +
+ * tijd) in Europe/Amsterdam, niet alleen de datum. Hergebruikt uitsluitend
+ * `amsterdamDepartureIso` (dezelfde helper als de server in
+ * app/api/pricing/quote/route.ts en components/booking/BookingSection.tsx) —
+ * geen tweede tijdzone-implementatie.
+ */
+function isFutureAmsterdamDeparture(date: string, time: string): boolean {
+  const iso = amsterdamDepartureIso(date, time);
+  return iso !== null && new Date(iso).getTime() >= Date.now();
+}
+
+const HERO_LUGGAGE = [
+  { value: "geen-bagage", labelKey: "bagageGeen" },
+  { value: "handbagage", labelKey: "bagageHand" },
+  { value: "1-2-koffers", labelKey: "bagage12" },
+  { value: "3-koffers", labelKey: "bagage3" },
+  { value: "overleg", labelKey: "bagageOverleg" },
+] as const;
+
 export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: string }) {
   const t = useTranslations("zin");
   const [from, setFrom] = useState("");
@@ -233,6 +271,12 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   const [toResolved, setToResolved] = useState("");
   const [activeField, setActiveField] = useState<"from" | "to" | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
+  // 2026-08-19 (hotfix): datum, tijd en bagage zijn direct zichtbaar in de hero
+  // (geen inklap-stap) en verplicht vóórdat er een prijs getoond of quote-API-
+  // call gedaan wordt — zie components/shared/useRouteQuote.ts's `ready`-optie.
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [luggage, setLuggage] = useState("");
 
   // Eén gedeelde suggestiebron voor het actieve veld.
   const activeQuery = activeField === "from" ? from : activeField === "to" ? to : "";
@@ -253,12 +297,23 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     },
     [to, toResolved]
   );
-  const quote = useRouteQuote(pickup, dropoff);
+  // Zelfde betekenis als de server-side check (volledig vertrekmoment, niet alleen de datum).
+  const departureValid = Boolean(date) && Boolean(time) && isFutureAmsterdamDeparture(date, time);
+  const addressesSet = Boolean(pickup && dropoff);
+  const quoteReady = addressesSet && departureValid && Boolean(luggage);
+  const quote = useRouteQuote(pickup, dropoff, { date, time, luggage, ready: quoteReady });
 
   const href =
-    pickup && dropoff
-      ? `/boeken?pickup=${encodeURIComponent(pickup.label)}&dropoff=${encodeURIComponent(dropoff.label)}`
-      : confirmHref;
+    quoteReady && pickup && dropoff
+      ? `/boeken?pickup=${encodeURIComponent(pickup.label)}&dropoff=${encodeURIComponent(dropoff.label)}&date=${date}&time=${time}&luggage=${encodeURIComponent(luggage)}`
+      : pickup && dropoff
+        ? `/boeken?pickup=${encodeURIComponent(pickup.label)}&dropoff=${encodeURIComponent(dropoff.label)}`
+        : confirmHref;
+  // Zolang adressen al bekend zijn maar datum/tijd/bagage nog niet compleet zijn,
+  // is "Bevestig" bewust niet-navigeerbaar — de klant moet de zin eerst afmaken.
+  function onConfirmClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (addressesSet && !quoteReady) e.preventDefault();
+  }
 
   function choose(s: AddressSuggestion) {
     const shortLabel = s.label.split(",")[0]?.trim() || s.label;
@@ -360,13 +415,55 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         {t("voor")} {blank("from", from, setFrom, () => setFromResolved(""), t("phVertrek"), t("ariaVertrek"))} {t("tussen")}{" "}
         {blank("to", to, setTo, () => setToResolved(""), t("phBestemming"), t("ariaBestemming"))}.
       </div>
+      <div className="mt-2 font-display text-[clamp(15px,1.7vw,20px)] font-light leading-[1.6] text-ink/75">
+        {t("op")}{" "}
+        <span className="hz-focus relative inline-block align-baseline">
+          <input
+            type="date"
+            className="hz-blank font-display font-medium"
+            style={{ width: "10.5ch" }}
+            min={todayISO()}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            aria-label={t("ariaDatum")}
+          />
+        </span>{" "}
+        {t("om")}{" "}
+        <span className="hz-focus relative inline-block align-baseline">
+          <input
+            type="time"
+            className="hz-blank font-display font-medium"
+            style={{ width: "6ch" }}
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            aria-label={t("ariaTijd")}
+          />
+        </span>{" "}
+        {t("met")}{" "}
+        <span className="hz-focus relative inline-block align-baseline">
+          <select
+            className="hz-blank font-display font-medium"
+            value={luggage}
+            onChange={(e) => setLuggage(e.target.value)}
+            aria-label={t("ariaBagage")}
+          >
+            <option value="" disabled>{t("kiesBagage")}</option>
+            {HERO_LUGGAGE.map((l) => (
+              <option key={l.value} value={l.value}>{t(l.labelKey)}</option>
+            ))}
+          </select>
+        </span>
+        .
+      </div>
       <div
         className="mt-4 flex flex-wrap items-baseline gap-x-7 gap-y-3"
         aria-live="polite"
         aria-busy={quote.status === "loading"}
       >
         <Stamp>
-          {quote.status === "ready" ? (
+          {addressesSet && !quoteReady ? (
+            <>{t("kiesDatumTijdBagage")}</>
+          ) : quote.status === "ready" ? (
             <>
               {t("vastePrijs")}<Dash />
               <b className="font-semibold text-ink">
@@ -392,7 +489,11 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         </Stamp>
         <Link
           href={href}
-          className="hz-confirm-btn px-7 py-3 text-[12px] font-medium uppercase tracking-[0.14em] text-ink no-underline"
+          onClick={onConfirmClick}
+          aria-disabled={addressesSet && !quoteReady}
+          className={`hz-confirm-btn px-7 py-3 text-[12px] font-medium uppercase tracking-[0.14em] text-ink no-underline ${
+            addressesSet && !quoteReady ? "cursor-not-allowed opacity-40" : ""
+          }`}
         >
           <span>{t("bevestig")}</span>
         </Link>

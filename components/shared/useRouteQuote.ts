@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { AddressSuggestion } from "@/components/shared/AddressAutocomplete";
+import { formatEuro } from "@/lib/format/currency";
 
 /**
  * DE gedeelde live-quote-flow: AddressAutocomplete → deze hook →
@@ -48,6 +49,24 @@ export function useRouteQuote(
     time?: string;
     returnDate?: string;
     returnTime?: string;
+    /**
+     * 2026-08-19 (hotfix): bewust gekozen bagagecategorie (zelfde catalogus als
+     * /api/bookings, lib/pricing/luggage.ts — "geen-bagage" is een geldige,
+     * expliciete keuze). Wordt als 'luggageCategory' meegestuurd naar
+     * /api/pricing/quote, dat een prijs zonder geldige bagagekeuze weigert
+     * (server-side afdwinging naast de `ready`-gate hieronder).
+     */
+    luggage?: string;
+    /**
+     * 2026-08-19 (hotfix): datum, tijd en bagage zijn nu verplicht vóórdat
+     * enige prijs getoond of quote-API-call gedaan wordt (adres-alleen mag
+     * nooit meer een prijs opleveren). De aanroeper berekent `ready` uit
+     * pickup+dropoff+date+time+bagagekeuze en geeft dat hier expliciet door.
+     * Standaard `true` zodat bestaande aanroepers die dit (nog) niet doorgeven
+     * ongewijzigd blijven werken — beide huidige aanroepers (hero,
+     * boekingsformulier) geven dit nu wél expliciet door.
+     */
+    ready?: boolean;
   }
 ): Quote {
   const [quote, setQuote] = useState<Quote>({ status: "idle" });
@@ -60,9 +79,14 @@ export function useRouteQuote(
   const time = opts?.time ?? "";
   const returnDate = opts?.returnDate ?? "";
   const returnTime = opts?.returnTime ?? "";
+  const luggage = opts?.luggage ?? "";
+  const ready = opts?.ready ?? true;
 
   useEffect(() => {
-    if (!pickup || !dropoff) {
+    // 2026-08-19 (hotfix): zonder `ready` (datum/tijd/bagage nog niet compleet)
+    // wordt er NOOIT gefetcht, ook niet als pickup+dropoff al bekend zijn —
+    // dit is de kern van "geen prijs/quote-call vóór datum, tijd en bagage".
+    if (!pickup || !dropoff || !ready) {
       setQuote({ status: "idle" });
       return;
     }
@@ -78,7 +102,9 @@ export function useRouteQuote(
             dropoff: dropoff.label,
             returnTrip,
             passengers,
-            ...(date && time ? { date, time } : {}),
+            date,
+            time,
+            luggageCategory: luggage,
             ...(returnTrip && returnDate && returnTime ? { returnDate, returnTime } : {}),
           }),
           signal: controller.signal,
@@ -87,7 +113,7 @@ export function useRouteQuote(
         if (res.ok && data.available) {
           setQuote({
             status: "ready",
-            amount: `€${data.price}`,
+            amount: formatEuro(Number(data.price)),
             price: Number(data.price),
             returnApplied: Boolean(data.returnApplied),
             distanceKm: Number(data.distanceKm) || 0,
@@ -117,7 +143,7 @@ export function useRouteQuote(
       clearTimeout(timer);
       controller.abort();
     };
-  }, [pickup, dropoff, returnTrip, passengers, date, time, returnDate, returnTime]);
+  }, [pickup, dropoff, ready, returnTrip, passengers, date, time, luggage, returnDate, returnTime]);
 
   return quote;
 }

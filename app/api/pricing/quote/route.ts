@@ -8,6 +8,7 @@ import {
 } from "@/lib/pricing/service";
 import { isNightAdjustmentCode, type PriceSnapshot } from "@/lib/pricing/snapshot";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
+import { classifyLuggage } from "@/lib/pricing/luggage";
 
 /**
  * POST /api/pricing/quote
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
   }
 
   // 2. Input valideren (type-veilig)
-  const { pickup, dropoff, vehicleClass, returnTrip, passengers, luggage, date, time, returnDate, returnTime } = body;
+  const { pickup, dropoff, vehicleClass, returnTrip, passengers, luggage, luggageCategory, date, time, returnDate, returnTime } = body;
 
   if (typeof pickup !== "string" || pickup.trim() === "") {
     return badRequest("Veld 'pickup' is verplicht en moet een niet-lege string zijn.");
@@ -115,24 +116,50 @@ export async function POST(request: Request) {
   ) {
     return badRequest("'luggage' moet een geheel getal van 0 of hoger zijn.");
   }
+  // 2026-08-19 (hotfix): een bewust gekozen bagagecategorie (zelfde catalogus als
+  // /api/bookings, zie lib/pricing/luggage.ts) is verplicht vóórdat er een prijs
+  // getoond wordt — óók "geen-bagage" moet expliciet gekozen zijn. Dit is de
+  // server-side afdwinging naast de UI-gate in useRouteQuote/SentencePattern/
+  // BookingSection; bypassen van de UI mag nooit alsnog een prijs opleveren
+  // zonder een geldige bagagekeuze. Losstaand van het bestaande numerieke
+  // 'luggage'-veld hierboven (capaciteitscontrole tegen vehicle_classes.max_luggage).
+  if (typeof luggageCategory !== "string" || classifyLuggage(luggageCategory).kind === "invalid") {
+    return badRequest("'luggageCategory' is verplicht: kies eerst uw bagage voordat een prijs opgevraagd wordt.");
+  }
 
-  // Volledig afwezig is toegestaan. Zodra één deel wordt meegestuurd, moeten datum
-  // én tijd geldig zijn; een clientfout mag niet stil op een andere verkeersinschatting
-  // terugvallen dan de klant heeft aangevraagd.
-  let departureAt: string | undefined;
-  if (date !== undefined || time !== undefined) {
-    if (typeof date !== "string" || typeof time !== "string") {
-      return badRequest("'date' en 'time' moeten samen als strings worden meegestuurd.");
-    }
-    const normalizedDate = date.trim();
-    const normalizedTime = time.trim();
-    if (!isExistingCalendarDate(normalizedDate)) {
-      return badRequest("'date' moet een bestaande datum in formaat YYYY-MM-DD zijn.");
-    }
-    departureAt = amsterdamDepartureIso(normalizedDate, normalizedTime) ?? undefined;
-    if (!departureAt) {
-      return badRequest("'time' moet een geldige tijd in formaat HH:MM zijn.");
-    }
+  // 2026-08-19 (hotfix): datum en tijd zijn niet langer optioneel — zonder een
+  // geldig, niet-in-het-verleden vertrekmoment mag geen enkele prijs (vast of
+  // dynamisch) berekend worden. Dit is de server-side afdwinging van dezelfde
+  // regel die de UI al toepast: omzeilen van de UI mag nooit alsnog een prijs
+  // opleveren zonder datum, tijd en bagage.
+  if (typeof date !== "string" || date.trim() === "") {
+    return badRequest("'date' is verplicht: kies eerst een datum voordat een prijs opgevraagd wordt.");
+  }
+  if (typeof time !== "string" || time.trim() === "") {
+    return badRequest("'time' is verplicht: kies eerst een tijd voordat een prijs opgevraagd wordt.");
+  }
+  const normalizedDate = date.trim();
+  const normalizedTime = time.trim();
+  if (!isExistingCalendarDate(normalizedDate)) {
+    return badRequest("'date' moet een bestaande datum in formaat YYYY-MM-DD zijn.");
+  }
+  const departureAt = amsterdamDepartureIso(normalizedDate, normalizedTime) ?? undefined;
+  if (!departureAt) {
+    return badRequest("'time' moet een geldige tijd in formaat HH:MM zijn.");
+  }
+  // 2026-08-19 (audit-correctie): "niet in het verleden" toetst het VOLLEDIGE
+  // vertrekmoment (datum + tijd), niet alleen de datum — anders zou "vandaag,
+  // maar een uur geleden" gewoon een geldige, bindbare prijs opleveren. Eerdere
+  // versie toetste uitsluitend op dag-granulariteit; dat was zelf al een tweede,
+  // aparte tijdzone-implementatie naast `amsterdamDepartureIso` — nu precies
+  // ÉÉN mechanisme: `departureAt` is al het DST-correcte, Amsterdamse
+  // vertrekinstant (fail-closed op een niet-bestaande lokale tijd, zie
+  // amsterdamDepartureIso), simpelweg vergeleken met "nu". Dit dekt automatisch
+  // alle vier de gevraagde gevallen: gisteren (altijd vóór nu), vandaag-met-
+  // verstreken-tijd (vóór nu), vandaag-met-toekomstige-tijd (na nu), morgen
+  // (na nu) — zonder een tweede datumvergelijking nodig te hebben.
+  if (new Date(departureAt).getTime() < Date.now()) {
+    return badRequest("'date'/'time' mogen niet in het verleden liggen.");
   }
 
   // Retour-vertrek (optioneel) → bepaalt het nachttarief van het retour-ritdeel.

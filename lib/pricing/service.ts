@@ -220,6 +220,30 @@ export type PickupApproachLogEntry =
   | (PickupApproachBreakdown & { outcome: "applied"; finalPriceCents: number })
   | { outcome: "offer_on_request"; reason: "beyond_max_approach_km" | "unassigned_service_area" | "config_or_routing_unavailable" };
 
+/**
+ * Economische prijsbodem (2026-08-19, hotfix) — INTERN, NOOIT publiek te
+ * lekken. Voorkomt dat een dynamische aanrijrit (basis + aanrijcomponent)
+ * ooit goedkoper uitkomt dan dezelfde bestemming vanuit een vergelijkbare,
+ * bestaande vaste route vanaf de standplaats zelf. `referencePriceCents` komt
+ * UITSLUITEND uit de bestaande `fixed_route_prices`-catalogus (nooit een
+ * hardcoded bedrag) — opgezocht via de locatie waarnaar de standplaats-
+ * postcode zelf resolveert. `null` op het quote-resultaat = geen vergelijkbare
+ * vaste route gevonden (of niet van toepassing) → de bestaande dynamische
+ * formule blijft ongewijzigd gelden.
+ */
+export type PickupApproachEconomicFloor = {
+  /** Slug van de locatie waarnaar de standplaats-postcode zelf resolveert (bv. "almere-poort"). */
+  referenceLocationSlug: string;
+  /** Vaste prijs van referenceLocationSlug → dezelfde bestemming/voertuigklasse, in cent. */
+  referencePriceCents: number;
+  /** X (enkele-reisprijs vóór aanrijcomponent, evt. deadhead-aangepast) vóór de bodem, in cent. */
+  originalRidePriceCents: number;
+  /** max(originalRidePriceCents, referencePriceCents) — de uiteindelijk gebruikte X, in cent. */
+  flooredRidePriceCents: number;
+  /** true als de referentieprijs daadwerkelijk hoger was dan de oorspronkelijke berekening. */
+  floorApplied: boolean;
+};
+
 export type PricingQuoteResult =
   | {
       available: true;
@@ -270,6 +294,8 @@ export type PricingQuoteResult =
       fingerprint: string;
       /** INTERN — zie PickupApproachBreakdown. Nooit in de publieke API-response opnemen. */
       pickupApproach: PickupApproachBreakdown | null;
+      /** INTERN — zie PickupApproachEconomicFloor. Nooit in de publieke API-response opnemen. */
+      economicFloor: PickupApproachEconomicFloor | null;
     }
   | {
       available: false;
@@ -876,6 +902,7 @@ export async function resolveQuoteWith(
         dataSource: "supabase",
         fingerprint: quoteFingerprint(input),
         pickupApproach: null,
+        economicFloor: null,
       };
     }
   }
@@ -973,7 +1000,38 @@ async function tryDistanceTariff(
   // Vanaf hier uitsluitend optellen in centen — nooit opnieuw afronden of in
   // euro's terugrekenen vóór het einde. Retour = 2× X (de enkele-reisprijs
   // vóór aanrijcomponent) + de aanrijcomponent ÉÉNMAAL — nooit verdubbeld.
-  const xCents = eurosToCents(x);
+  const xCentsRaw = eurosToCents(x);
+
+  // Economische prijsbodem (2026-08-19, hotfix): een aanrijrit mag nooit
+  // goedkoper zijn dan dezelfde bestemming vanuit een vergelijkbare, al
+  // bestaande vaste route vanaf de standplaats zelf. Werkt UITSLUITEND op X
+  // (vóór de aanrijcomponent) — de component wordt hierna, zoals altijd,
+  // exact éénmaal opgeteld, dus dit blijft algebraïsch identiek aan
+  // max(X+component, referentie+component). Alles stroomafwaarts
+  // (nachttoeslag op rideOnlySinglePriceCents, retour = 2×X+component) werkt
+  // hierdoor automatisch correct met de GEFLOORDE X — geen aparte
+  // nachtberekening, geen dubbele toeslag, geen aparte retourformule nodig.
+  let xCents = xCentsRaw;
+  let economicFloor: PickupApproachEconomicFloor | null = null;
+  const floorReference = await resolveEconomicFloorReferenceCents(
+    deps,
+    approach.base,
+    approach.breakdown.serviceAreaGemeente,
+    dropoff,
+    vehicleClass
+  );
+  if (floorReference) {
+    const floorApplied = floorReference.referencePriceCents > xCentsRaw;
+    xCents = Math.max(xCentsRaw, floorReference.referencePriceCents);
+    economicFloor = {
+      referenceLocationSlug: floorReference.referenceLocationSlug,
+      referencePriceCents: floorReference.referencePriceCents,
+      originalRidePriceCents: xCentsRaw,
+      flooredRidePriceCents: xCents,
+      floorApplied,
+    };
+  }
+
   const approachComponentCents = approach.breakdown.customerComponentCents;
   const singleCents = xCents + approachComponentCents;
   const returnCentsRaw = xCents * 2 + approachComponentCents;
@@ -1013,12 +1071,78 @@ async function tryDistanceTariff(
     dataSource: "routing",
     fingerprint: quoteFingerprint(input),
     pickupApproach: approach.breakdown,
+    economicFloor,
   };
+}
+
+/**
+ * Officiële PDOK-gemeentenamen waarvoor de economische prijsbodem geldt
+ * (2026-08-19, audit-correctie). Basis "almere" bedient ook Almere zelf en
+ * Lelystad — een rit die AL vanuit Almere/Lelystad vertrekt is geen
+ * "verder-weg-dan-de-standplaats"-geval en mag deze bodem dus nooit krijgen.
+ * Bewust een EXACTE gemeente-set (geen substring-/prefixmatch): dezelfde
+ * normalisatie (`normalizeGemeenteNaam`) als de rest van het aanrijmodel.
+ */
+const GOOI_ECONOMIC_FLOOR_GEMEENTEN = new Set(
+  ["Blaricum", "Eemnes", "Gooise Meren", "Hilversum", "Huizen", "Laren"].map(normalizeGemeenteNaam)
+);
+
+/**
+ * Economische-prijsbodem-referentie (2026-08-19, hotfix; scope gecorrigeerd
+ * 2026-08-19 na audit): zoekt de vaste route van "de locatie waarnaar de
+ * standplaats-postcode zelf resolveert" naar dezelfde bestemming/
+ * voertuigklasse — bv. voor basis Almere (1361BP) is dat de vaste route
+ * "almere-poort" → bestemming. Bewust GEEN hardcoded bedrag: uitsluitend de
+ * bestaande `fixed_route_prices`-catalogus, via dezelfde `findLocation`/
+ * `findFixedRoute`-deps als de rest van deze module.
+ *
+ * Scope: UITSLUITEND wanneer de al-bepaalde `serviceAreaGemeente` (uit
+ * resolvePickupApproach — GEEN nieuwe PDOK-call) exact één van de zes Gooi-
+ * gemeenten is (GOOI_ECONOMIC_FLOOR_GEMEENTEN). `base.slug === "almere"`
+ * alleen is te breed: die basis bedient ook Almere zelf en Lelystad, die
+ * hier expliciet buiten blijven. `base` wordt uitsluitend nog gebruikt om de
+ * standplaats-referentielocatie (1361BP → almere-poort) op te zoeken.
+ *
+ * `null` (verkeerde/ontbrekende gemeente, geen vergelijkbare vaste route,
+ * geen bekende bestemming/voertuigklasse, of storing) → de bestaande
+ * dynamische formule blijft ongewijzigd gelden, exact zoals vereist.
+ */
+async function resolveEconomicFloorReferenceCents(
+  deps: ResolveQuoteDeps,
+  base: OperationalBase,
+  serviceAreaGemeente: string,
+  dropoff: LocationRow | null,
+  vehicleClass: VehicleClassRow | null
+): Promise<{ referencePriceCents: number; referenceLocationSlug: string } | null> {
+  if (!GOOI_ECONOMIC_FLOOR_GEMEENTEN.has(normalizeGemeenteNaam(serviceAreaGemeente))) return null;
+  if (!dropoff || !vehicleClass) return null;
+
+  let baseLocation: LocationRow | null;
+  try {
+    baseLocation = await deps.findLocation(`${base.postcode} ${base.label}`);
+  } catch {
+    return null;
+  }
+  if (!baseLocation) return null;
+
+  let fixed: FixedRouteRow | null;
+  try {
+    fixed = await deps.findFixedRoute(baseLocation.id, dropoff.id, vehicleClass.id);
+  } catch {
+    return null;
+  }
+  if (!fixed) return null;
+
+  return { referencePriceCents: eurosToCents(fixed.price), referenceLocationSlug: baseLocation.slug };
 }
 
 /** Uitkomst van resolvePickupApproach — zie de toelichting bij de aanroep in tryDistanceTariff. */
 type PickupApproachOutcome =
-  | { outcome: "applied"; breakdown: PickupApproachBreakdown }
+  // `base` (2026-08-19, hotfix): de volledige standplaats, niet alleen
+  // baseId/baseSlug — tryDistanceTariff heeft `base.postcode`/`base.label`
+  // nodig voor de economische-prijsbodem-referentielookup, zonder de
+  // standplaatsen-Map een tweede keer te laden.
+  | { outcome: "applied"; breakdown: PickupApproachBreakdown; base: OperationalBase }
   | {
       outcome: "offer_on_request";
       reason: "beyond_max_approach_km" | "unassigned_service_area" | "config_or_routing_unavailable";
@@ -1119,7 +1243,7 @@ async function resolvePickupApproach(
     totalPickupContributionCents: fee.customerComponentCents + approachNightPremiumCents,
   };
   log({ ...breakdown, outcome: "applied", finalPriceCents: fee.customerComponentCents + approachNightPremiumCents });
-  return { outcome: "applied", breakdown };
+  return { outcome: "applied", breakdown, base };
 }
 
 /** Uitkomst van resolveDeadheadPricing — zie de indeterminate-toelichting bij de aanroep in tryDistanceTariff. */
@@ -1564,9 +1688,19 @@ async function logQuote(
   // ongewijzigd, zodat bestaande queries/tests op price_breakdown->>'...'
   // blijven werken. `null` wanneer er geen dynamische pickup-aanrijstap was
   // (bv. een vaste route).
+  // economicFloor (2026-08-19, hotfix) — uitsluitend gevuld op een BESCHIKBARE
+  // offerte, rechtstreeks van `result` gelezen (in tegenstelling tot shadow/
+  // pickupApproach heeft dit geen apart record*-side-channel nodig: het komt
+  // nooit voor bij een offer_on_request-uitkomst, dus `result.economicFloor`
+  // is altijd de volledige, definitieve waarheid).
+  const economicFloor = result.available ? result.economicFloor : null;
   const breakdown: Json | null =
-    shadow || pickupApproach
-      ? ({ ...(shadow as unknown as Record<string, Json>), pickupApproach: pickupApproach as unknown as Json } as Json)
+    shadow || pickupApproach || economicFloor
+      ? ({
+          ...(shadow as unknown as Record<string, Json>),
+          pickupApproach: pickupApproach as unknown as Json,
+          economicFloor: economicFloor as unknown as Json,
+        } as Json)
       : null;
 
   const row: TablesInsert<"pricing_quote_logs"> = {

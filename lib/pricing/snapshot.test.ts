@@ -45,6 +45,7 @@ function availableQuote(price: number, over: Partial<AvailableQuote> = {}): Avai
     dataSource: "supabase",
     fingerprint: "rotterdam|schiphol|executive-ev|enkel",
     pickupApproach: null,
+    economicFloor: null,
     ...over,
   };
   return {

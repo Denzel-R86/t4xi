@@ -55,3 +55,14 @@ test("isNightTariff: leeg/ongeldig → false (fail-open)", () => {
   assert.equal(isNightTariff(""), false);
   assert.equal(isNightTariff("niet-een-datum"), false);
 });
+
+// 2026-08-19 (audit-correctie): de eerdere `amsterdamTodayISO()`-dag-check is
+// verwijderd — die was zelf een tweede, aparte tijdzone-implementatie naast
+// `amsterdamDepartureIso`, en toetste bovendien alleen de DATUM, niet het
+// volledige vertrekmoment ("vandaag, een uur geleden" zou zijn doorgekomen).
+// De "niet in het verleden"-regel toetst nu rechtstreeks in
+// app/api/pricing/quote/route.ts: `new Date(departureAt).getTime() < Date.now()`
+// — hergebruikt uitsluitend `amsterdamDepartureIso` (hierboven al DST-correct
+// getest), geen tweede implementatie. Zie
+// lib/pricing/quote-route-hardening.test.ts voor de HTTP-niveau-tests van die
+// combinatie (gisteren/vandaag-verstreken/vandaag-toekomstig/morgen).

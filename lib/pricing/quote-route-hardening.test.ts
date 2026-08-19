@@ -43,3 +43,140 @@ test("quote: alle responsepaden lopen door de private/no-store helper", () => {
   assert.equal(routeSource.match(/NextResponse\.json/g)?.length, 1);
   assert.match(routeSource, /private, no-store, max-age=0/);
 });
+
+// ── 2026-08-19 (audit PR #23): server-side afdwinging van datum/tijd/bagage ──
+// bewijst dat het rechtstreeks aanroepen van de API (UI omzeild) NOOIT alsnog
+// een prijs, quoteId of snapshot oplevert zonder deze drie geldige velden.
+
+test("quote: ontbrekende bagagecategorie geeft 400, geen prijs", async () => {
+  const response = await quote(
+    post({ pickup: "Amsterdam", dropoff: "Schiphol", date: "2099-01-01", time: "10:00" })
+  );
+  assert.equal(response.status, 400);
+  assertPrivateNoStore(response);
+  const body = await response.json();
+  assert.equal(body.available, false);
+  assert.equal("price" in body, false);
+  assert.equal("quoteId" in body, false);
+});
+
+test("quote: ongeldige bagagecategorie geeft 400 (niet stil terugvallen op een default)", async () => {
+  for (const luggageCategory of ["", "extra-grote-bagage", "handbagage; drop table", null, 42]) {
+    const response = await quote(
+      post({ pickup: "Amsterdam", dropoff: "Schiphol", date: "2099-01-01", time: "10:00", luggageCategory })
+    );
+    assert.equal(response.status, 400, `luggageCategory=${JSON.stringify(luggageCategory)} moet 400 geven`);
+  }
+});
+
+test("quote: 'overleg' (offerte-op-aanvraag-bagage) is een GELDIGE, bewuste keuze — geen 400 op basis van bagage alleen", async () => {
+  // 'overleg' is geen bindende categorie (zie lib/pricing/luggage.ts), maar wél
+  // een bewuste, geldige keuze — mag dus niet op de bagage-check zelf stranden.
+  const response = await quote(
+    post({ pickup: "Amsterdam", dropoff: "Schiphol", date: "2099-01-01", time: "10:00", luggageCategory: "overleg" })
+  );
+  const body = await response.json();
+  assert.notEqual(body.message, "'luggageCategory' is verplicht: kies eerst uw bagage voordat een prijs opgevraagd wordt.");
+});
+
+test("quote: geldige bagage, maar datum in het verleden → 400, geen prijs (bypass van de UI mag nooit een prijs opleveren)", async () => {
+  const response = await quote(
+    post({ pickup: "Amsterdam", dropoff: "Schiphol", date: "2020-01-01", time: "10:00", luggageCategory: "handbagage" })
+  );
+  assert.equal(response.status, 400);
+  assertPrivateNoStore(response);
+  const body = await response.json();
+  assert.equal(body.available, false);
+  assert.match(body.message, /verleden/);
+  assert.equal("price" in body, false);
+  assert.equal("quoteId" in body, false);
+});
+
+test("quote: gisteren (relatief t.o.v. nu) wordt geweigerd — bewijst dat de grens dynamisch is, geen hardcoded jaartal", async () => {
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 2); // 2 dagen marge voor tijdzone-afronding rond middernacht
+  const yyyy = yesterday.getUTCFullYear();
+  const mm = String(yesterday.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(yesterday.getUTCDate()).padStart(2, "0");
+  const response = await quote(
+    post({ pickup: "Amsterdam", dropoff: "Schiphol", date: `${yyyy}-${mm}-${dd}`, time: "10:00", luggageCategory: "handbagage" })
+  );
+  assert.equal(response.status, 400);
+  const body = await response.json();
+  assert.match(body.message, /verleden/);
+});
+
+// ── 2026-08-19 (audit-correctie): VOLLEDIG vertrekmoment (datum + tijd), niet ──
+// alleen de datum — "vandaag, een uur geleden" moet net zo geweigerd worden
+// als "gisteren". Testhulp zet een echt instant om naar Amsterdamse
+// wandkloktijd-strings, puur om het testverzoek op te bouwen (géén tweede
+// productie-tijdimplementatie — uitsluitend Intl, hier ter plekke).
+function toAmsterdamDateTime(instant: Date): { date: string; time: string } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Amsterdam",
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(instant);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
+  return { date: `${get("year")}-${get("month")}-${get("day")}`, time: `${get("hour")}:${get("minute")}` };
+}
+
+test("quote: VANDAAG met een reeds VERSTREKEN tijd → 400 (datum alleen zou dit gemist hebben)", async () => {
+  const { date, time } = toAmsterdamDateTime(new Date(Date.now() - 15 * 60 * 1000));
+  const response = await quote(
+    post({ pickup: "Amsterdam", dropoff: "Schiphol", date, time, luggageCategory: "handbagage" })
+  );
+  assert.equal(response.status, 400);
+  const body = await response.json();
+  assert.match(body.message, /verleden/);
+  assert.equal("price" in body, false);
+  assert.equal("quoteId" in body, false);
+});
+
+test("quote: VANDAAG met een toekomstige tijd → toegestaan (geen 'verleden'-afwijzing)", async () => {
+  const { date, time } = toAmsterdamDateTime(new Date(Date.now() + 60 * 60 * 1000));
+  const response = await quote(
+    post({ pickup: "Amsterdam", dropoff: "Schiphol", date, time, luggageCategory: "handbagage" })
+  );
+  const body = await response.json().catch(() => ({}));
+  assert.notEqual(response.status, 400, `verwacht geen 400 voor een toekomstig moment vandaag (kreeg: ${JSON.stringify(body)})`);
+});
+
+test("quote: MORGEN → toegestaan (geen 'verleden'-afwijzing)", async () => {
+  const { date, time } = toAmsterdamDateTime(new Date(Date.now() + 24 * 60 * 60 * 1000));
+  const response = await quote(
+    post({ pickup: "Amsterdam", dropoff: "Schiphol", date, time, luggageCategory: "handbagage" })
+  );
+  const body = await response.json().catch(() => ({}));
+  assert.notEqual(response.status, 400, `verwacht geen 400 voor morgen (kreeg: ${JSON.stringify(body)})`);
+});
+
+test("quote: niet-bestaande Amsterdamse zomertijd-wandkloktijd (DST-overgang) → 400, fail-closed — niet stilzwijgend een ander instant kiezen", async () => {
+  // 2027-03-28 02:30 bestaat niet in Amsterdam (klok springt 02:00 → 03:00).
+  // amsterdamDepartureIso() geeft hiervoor al null (bestaand, getest gedrag) —
+  // dit bewijst dat de route die weigering doorzet naar een 400, nooit een
+  // prijs op basis van een geraden/verkeerd instant.
+  const response = await quote(
+    post({ pickup: "Amsterdam", dropoff: "Schiphol", date: "2027-03-28", time: "02:30", luggageCategory: "handbagage" })
+  );
+  assert.equal(response.status, 400);
+  const body = await response.json();
+  assert.equal("price" in body, false);
+  assert.equal("quoteId" in body, false);
+});
+
+test("quote: vaste route (Amsterdam → Schiphol) is GEEN uitzondering op de volledige-vertrekmoment-check", async () => {
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 2);
+  const { date } = toAmsterdamDateTime(yesterday);
+  const response = await quote(
+    post({ pickup: "Amsterdam Centraal", dropoff: "Schiphol", date, time: "10:00", luggageCategory: "handbagage" })
+  );
+  assert.equal(response.status, 400);
+  const body = await response.json();
+  assert.match(body.message, /verleden/);
+});

@@ -4,6 +4,9 @@
 // Alleen exact bekende categorieën zijn toegestaan. De GEDOCUMENTEERDE
 // capaciteitstoewijzing (stuks bagage) wordt in de RPC vergeleken met
 // vehicle_classes.max_luggage:
+//   · 'geen-bagage'  → 0 stuks, helemaal geen bagage (2026-08-19, hotfix: expliciete
+//                      keuze — voorheen was 'handbagage' de stille default, waardoor
+//                      "geen bagage" nooit bewust gekozen hoefde te worden)
 //   · 'handbagage'   → 0 stuks ruimbagage (alleen handbagage)
 //   · '1-2-koffers'  → 2 stuks
 //   · '3-koffers'    → 3 stuks
@@ -14,6 +17,7 @@
 
 /** Gedocumenteerde capaciteitstoewijzing per bindende bagagecategorie (stuks). */
 export const LUGGAGE_PIECES: Readonly<Record<string, number>> = {
+  "geen-bagage": 0,
   handbagage: 0,
   "1-2-koffers": 2,
   "3-koffers": 3,

@@ -95,7 +95,7 @@ test("prijs blijft gelijk ook al zou routing NU een andere reistijd/prijs geven"
         distanceKm: 500, estimatedDurationMin: 600, vehicleClass: "executive-ev",
         route: { pickupSlug: "x", dropoffSlug: "y", label: null },
         isAirportTransfer: false, airport: NO_AIRPORT, dataSource: "routing",
-        fingerprint: "x|y|executive-ev|enkel", pickupApproach: null,
+        fingerprint: "x|y|executive-ev|enkel", pickupApproach: null, economicFloor: null,
       }),
     })
   );
@@ -155,7 +155,7 @@ const fixedQuote = (): PricingQuoteResult => ({
   route: { pickupSlug: "amsterdam-zuidas", dropoffSlug: "schiphol-airport", label: "vast" },
   isAirportTransfer: true, airport: { ...NO_AIRPORT, dropoffIsAirport: true, isAirportDropoff: true, isAirportTransfer: true },
   dataSource: "supabase", fingerprint: "amsterdam-zuidas|schiphol-airport|executive-ev|enkel",
-  pickupApproach: null,
+  pickupApproach: null, economicFloor: null,
 });
 
 test("zonder quoteId werkt een vaste route en wordt routing UITGEZET (allowDistanceTariff:false)", async () => {
@@ -202,7 +202,7 @@ const availableSingle = (price: number): PricingQuoteResult => ({
   currency: "EUR", vatRate: 9, distanceKm: 10, estimatedDurationMin: 15,
   vehicleClass: "executive-ev", route: { pickupSlug: "a", dropoffSlug: "b", label: null },
   isAirportTransfer: false, airport: NO_AIRPORT, dataSource: "supabase", fingerprint: "x",
-  pickupApproach: null,
+  pickupApproach: null, economicFloor: null,
 });
 const availableRetour = (singlePrice: number, returnPrice: number): PricingQuoteResult => ({
   ...(availableSingle(singlePrice) as Extract<PricingQuoteResult, { available: true }>),

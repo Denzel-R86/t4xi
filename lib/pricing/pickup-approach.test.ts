@@ -86,6 +86,20 @@ const SERVICE_AREAS = new Map([
   ["lelystad", "almere"],
   ["hilversum", "almere"],
   ["laren", "almere"],
+  // 2026-08-19 (audit-correctie): de resterende Gooi-gemeenten ontbraken nog
+  // in deze fake servicegebied-map — zonder deze rijen kon geen enkele test
+  // "beschikbaar"-gedrag simuleren voor Blaricum/Eemnes/Gooise Meren/Huizen,
+  // terwijl de LIVE productie-data (pricing_service_areas) ze wél allemaal
+  // aan basis "almere" toewijst.
+  ["blaricum", "almere"],
+  ["eemnes", "almere"],
+  ["gooise meren", "almere"],
+  ["huizen", "almere"],
+  // "bussum" bestaat NIET als PDOK-gemeentenaam (het is een plaats binnen
+  // gemeente "Gooise Meren") — uitsluitend hier toegevoegd zodat de
+  // substringmatch-test hieronder de floor-gate zelf test (exacte Set-match),
+  // losstaand van de servicegebied-toewijzingslaag.
+  ["bussum", "almere"],
   ["amsterdam", "amsterdam-zuidoost"],
   ["diemen", "amsterdam-zuidoost"],
   ["amstelveen", "amsterdam-zuidoost"],
@@ -1002,4 +1016,370 @@ test("backward compat: een 'oude-stijl' StoredSnapshot (exact zoals vóór dit P
     expectedFingerprint: "amsterdam-centrum|schiphol-airport|executive-ev|enkel",
   });
   assert.deepEqual(usability, { ok: true });
+});
+
+// ── Economische prijsbodem voor Het Gooi (2026-08-19, hotfix) ───────────────
+// finale ritprijs = max(normale berekende ritprijs, vaste Almere-referentie +
+// pickupApproachComponent). De referentie komt UITSLUITEND uit de bestaande
+// fixed_route_prices-catalogus (nooit hardcoded), via de locatie waarnaar de
+// standplaats-postcode zelf resolveert (1361BP Almere → "almere-poort").
+
+const ALMERE_POORT_LOCATION = {
+  id: "loc-almere-poort",
+  slug: "almere-poort",
+  name: "Almere Poort",
+  active: true,
+  location_type: "district",
+  city_id: null,
+};
+const SCHIPHOL_LOCATION = {
+  id: "loc-schiphol-airport",
+  slug: "schiphol-airport",
+  name: "Schiphol",
+  active: true,
+  location_type: "airport",
+  city_id: null,
+};
+
+function makeFloorDeps(o: MakeDepsOptions & { referencePriceEuro?: number | null } = {}) {
+  // Default "Laren" — een van de zes Gooi-gemeenten (2026-08-19, audit-
+  // correctie: de floor gaat nu op de EXACTE gemeente, niet meer op
+  // basis.slug === "almere" alleen — Almere/Lelystad delen dezelfde basis
+  // maar vallen bewust buiten de floor, zie de nieuwe scope-tests hieronder).
+  const { referencePriceEuro = 102, gemeente = "Laren", ...rest } = o;
+  return makeDeps({
+    ...rest,
+    gemeente,
+    findLocation: async (raw: string) => {
+      if (raw === BASE_ALMERE_ADDRESS) return ALMERE_POORT_LOCATION;
+      if (raw === "Schiphol") return SCHIPHOL_LOCATION;
+      return null;
+    },
+    findFixedRoute: async (pickupId, dropoffId) => {
+      if (referencePriceEuro === null) return null;
+      if (pickupId === ALMERE_POORT_LOCATION.id && dropoffId === SCHIPHOL_LOCATION.id) {
+        return {
+          price: referencePriceEuro,
+          return_price: referencePriceEuro * 2 - 20, // irrelevant voor de bodem — de bodem gebruikt uitsluitend `price`
+          currency: "EUR",
+          distance_km: 39,
+          estimated_duration_min: 38,
+          vat_rate: 9,
+          source_label: "Almere Poort → Schiphol",
+          valid_from: "2026-07-05T00:00:00.000Z",
+          active: true,
+        };
+      }
+      return null;
+    },
+  });
+}
+
+test("Gooi-floor: X ligt onder de referentie → bodem toegepast, finale prijs = referentie + component (nooit lager dan de vaste Almere-route)", async () => {
+  // X (passagiersrit) laag houden zodat de referentie (€102) evident hoger is.
+  const res = await resolveQuoteWith(
+    input("Laren", "Schiphol"),
+    makeFloorDeps({ passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.ok(res.economicFloor, "economicFloor moet gevuld zijn wanneer een referentieroute is gevonden");
+  assert.equal(res.economicFloor!.floorApplied, true);
+  assert.equal(res.economicFloor!.referencePriceCents, 10200);
+  assert.equal(res.economicFloor!.referenceLocationSlug, "almere-poort");
+  assert.equal(res.economicFloor!.flooredRidePriceCents, 10200, "X onder de referentie → geflooerd op de referentie zelf");
+  assert.ok(res.economicFloor!.originalRidePriceCents < 10200, "de oorspronkelijke X moet daadwerkelijk lager zijn geweest dan de referentie");
+  // component = 163ct (10km/0min, zie approach-fee.test.ts)
+  assert.equal(res.pickupApproach?.customerComponentCents, 163);
+  assert.equal(res.singlePriceCents, 10200 + 163, "finale prijs = referentie + component, exact éénmaal");
+  assert.ok(res.price >= 102, "nooit lager dan de vaste Almere-referentieprijs zelf");
+});
+
+test("Gooi-floor: X ligt al boven de referentie → bodem NIET toegepast, geen kunstmatige verlaging of ophoging", async () => {
+  // Grote passagiersafstand zodat X vanzelf > €102 uitkomt, ruim boven de referentie.
+  const res = await resolveQuoteWith(
+    input("Laren", "Schiphol"),
+    makeFloorDeps({ passengerKm: 120, passengerMin: 90, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.ok(res.economicFloor);
+  assert.equal(res.economicFloor!.floorApplied, false);
+  assert.equal(res.economicFloor!.flooredRidePriceCents, res.economicFloor!.originalRidePriceCents, "geen wijziging aan X wanneer die al boven de referentie ligt");
+});
+
+test("Gooi-floor: geen vergelijkbare vaste Almere-route gevonden → economicFloor blijft null, bestaande dynamische formule ongewijzigd", async () => {
+  const withoutFloor = await resolveQuoteWith(
+    input("Laren", "Schiphol"),
+    makeFloorDeps({ passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: null })
+  );
+  const withFloorDepsButNoRoute = await resolveQuoteWith(
+    input("Laren", "Schiphol"),
+    makeDeps({ passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0 }) // findLocation/findFixedRoute blijven de kale defaults (altijd null)
+  );
+  for (const res of [withoutFloor, withFloorDepsButNoRoute]) {
+    assert.equal(res.available, true);
+    if (!res.available) continue;
+    assert.equal(res.economicFloor, null);
+  }
+});
+
+test("Gooi-floor: vaste routes blijven volledig ongewijzigd — economicFloor altijd null, geen enkele bodemlookup", async () => {
+  let findFixedRouteCalls = 0;
+  const res = await resolveQuoteWith(
+    input("amsterdam-centrum", "schiphol-airport"),
+    makeDeps({
+      findLocation: async (raw) => ({
+        id: `${raw}-id`,
+        slug: raw,
+        name: raw,
+        active: true,
+        location_type: "city",
+        city_id: null,
+      }),
+      findFixedRoute: async () => {
+        findFixedRouteCalls += 1;
+        return {
+          price: 57,
+          return_price: 103,
+          currency: "EUR",
+          distance_km: 26,
+          estimated_duration_min: 31,
+          vat_rate: 9,
+          source_label: "Amsterdam → Schiphol",
+          valid_from: "2026-01-01T00:00:00.000Z",
+          active: true,
+        };
+      },
+    })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.source, "fixed_route_prices");
+  assert.equal(res.economicFloor, null);
+  assert.equal(findFixedRouteCalls, 1, "uitsluitend de ENE, bestaande vaste-routecheck — geen extra bodemlookup voor een vaste route");
+});
+
+test("Gooi-floor: andere basis (Amsterdam-Zuidoost) + andere gemeente (Utrecht) blijft economicFloor null, ook als hun eigen referentielocatie toevallig een vaste route heeft", async () => {
+  const res = await resolveQuoteWith(
+    input("Utrecht Centraal", "Schiphol"),
+    makeDeps({
+      gemeente: "utrecht",
+      passengerKm: 20,
+      passengerMin: 20,
+      approachKm: 10,
+      approachMin: 0,
+      findLocation: async (raw) => {
+        if (raw === BASE_AMSTERDAM_ZUIDOOST_ADDRESS) return ALMERE_POORT_LOCATION; // zelfde fake-locatie hergebruikt, puur om te bewijzen dat 'ie hier NOOIT opgevraagd wordt
+        if (raw === "Schiphol") return SCHIPHOL_LOCATION;
+        return null;
+      },
+      findFixedRoute: async (pickupId, dropoffId) =>
+        pickupId === ALMERE_POORT_LOCATION.id && dropoffId === SCHIPHOL_LOCATION.id
+          ? { price: 999, return_price: 1800, currency: "EUR", distance_km: 1, estimated_duration_min: 1, vat_rate: 9, source_label: "test", valid_from: "2026-01-01T00:00:00.000Z", active: true }
+          : null,
+    })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.economicFloor, null, "basis amsterdam-zuidoost/gemeente utrecht mag de Gooi-floor-mechaniek nooit activeren");
+});
+
+// ── Scope-correctie (2026-08-19, audit): de floor gaat op de EXACTE, al-
+// bepaalde serviceAreaGemeente — geen nieuwe PDOK-call, geen substringmatch,
+// geen brede "basis === almere". Almere zelf en Lelystad delen dezelfde
+// basis als de zes Gooi-gemeenten maar vallen er bewust buiten: een rit die
+// AL vanuit Almere/Lelystad vertrekt is geen "verder-weg-dan-de-standplaats"-
+// geval. ────────────────────────────────────────────────────────────────────
+
+const GOOI_GEMEENTEN = ["Blaricum", "Eemnes", "Gooise Meren", "Hilversum", "Huizen", "Laren"];
+
+for (const gemeente of GOOI_GEMEENTEN) {
+  test(`Gooi-floor: positief — gemeente '${gemeente}' krijgt de bodem toegepast`, async () => {
+    const res = await resolveQuoteWith(
+      input(gemeente, "Schiphol"),
+      makeFloorDeps({ gemeente, passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+    );
+    assert.equal(res.available, true);
+    if (!res.available) return;
+    assert.ok(res.economicFloor, `economicFloor moet gevuld zijn voor gemeente '${gemeente}'`);
+    assert.equal(res.economicFloor!.floorApplied, true);
+    assert.equal(res.economicFloor!.referencePriceCents, 10200);
+  });
+}
+
+for (const gemeente of ["Almere", "Lelystad"]) {
+  test(`Gooi-floor: negatief — gemeente '${gemeente}' (zelfde basis 'almere', GEEN Gooi-gemeente) krijgt NOOIT de bodem`, async () => {
+    const res = await resolveQuoteWith(
+      input(gemeente, "Schiphol"),
+      makeFloorDeps({ gemeente, passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+    );
+    assert.equal(res.available, true);
+    if (!res.available) return;
+    assert.equal(res.economicFloor, null, `'${gemeente}' deelt basis 'almere' met de Gooi-gemeenten maar mag de floor niet activeren`);
+  });
+}
+
+for (const gemeente of ["Amsterdam", "Utrecht"]) {
+  test(`Gooi-floor: negatief — gemeente '${gemeente}' (andere basis, andere regio) krijgt NOOIT de bodem`, async () => {
+    const res = await resolveQuoteWith(
+      input(gemeente, "Schiphol"),
+      makeFloorDeps({ gemeente, passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+    );
+    assert.equal(res.available, true);
+    if (!res.available) return;
+    assert.equal(res.economicFloor, null);
+  });
+}
+
+test("Gooi-floor: negatief — ontbrekende/onbekende gemeente (PDOK levert niets bruikbaars) krijgt NOOIT de bodem", async () => {
+  // gemeente: null → resolvePickupApproach valt terug op "offer_on_request"
+  // (bestaand, ongewijzigd gedrag) — geen prijs, dus ook geen floor mogelijk.
+  const res = await resolveQuoteWith(
+    input("Ergens onbekend", "Schiphol"),
+    makeFloorDeps({ gemeente: null, passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, false);
+});
+
+test("Gooi-floor: normalisatie is EXACT (trim/hoofdletters), geen brede substringmatch — 'Bussum' (plaats binnen gemeente Gooise Meren, geen exacte match) krijgt geen floor", async () => {
+  const res = await resolveQuoteWith(
+    input("Bussum", "Schiphol"),
+    makeFloorDeps({ gemeente: "Bussum", passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(
+    res.economicFloor,
+    null,
+    "PDOK levert voor Bussum de officiële gemeentenaam 'Gooise Meren', nooit 'Bussum' zelf — dit bewijst dat er geen losse substring-/plaatsnaam-heuristiek in de floor zit"
+  );
+});
+
+test("Gooi-floor: hoofdletter-/spatievarianten van een Gooi-gemeente activeren de floor nog steeds (zelfde normalisatie als de rest van het aanrijmodel)", async () => {
+  const res = await resolveQuoteWith(
+    input("Laren", "Schiphol"),
+    makeFloorDeps({ gemeente: "  LAREN  ", passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.economicFloor?.floorApplied, true);
+});
+
+test("Gooi-floor: vaste routes blijven ongewijzigd, ook al ligt de gemeente binnen Het Gooi (herbevestiging na de scope-correctie)", async () => {
+  let findFixedRouteCalls = 0;
+  const res = await resolveQuoteWith(
+    input("amsterdam-centrum", "schiphol-airport"),
+    makeDeps({
+      gemeente: "Hilversum", // een Gooi-gemeente — bewijst dat de vaste-route-tak de floor-lookup nooit raadpleegt
+      findLocation: async (raw) => ({ id: `${raw}-id`, slug: raw, name: raw, active: true, location_type: "city", city_id: null }),
+      findFixedRoute: async () => {
+        findFixedRouteCalls += 1;
+        return { price: 57, return_price: 103, currency: "EUR", distance_km: 26, estimated_duration_min: 31, vat_rate: 9, source_label: "Amsterdam → Schiphol", valid_from: "2026-01-01T00:00:00.000Z", active: true };
+      },
+    })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.source, "fixed_route_prices");
+  assert.equal(res.economicFloor, null);
+  assert.equal(findFixedRouteCalls, 1, "uitsluitend de ENE, bestaande vaste-routecheck — geen extra bodemlookup, ook niet voor een Gooi-gemeente");
+});
+
+test("Gooi-floor: retour = 2× de GEFLOORDE X + 1× aanrijcomponent, nooit tweemaal de referentie of de component", async () => {
+  const res = await resolveQuoteWith(
+    input("Laren", "Schiphol", { returnTrip: true }),
+    makeFloorDeps({ passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.economicFloor?.floorApplied, true);
+  const flooredXCents = res.economicFloor!.flooredRidePriceCents;
+  const componentCents = res.pickupApproach!.customerComponentCents;
+  assert.equal(res.returnPriceCents, flooredXCents * 2 + componentCents);
+  assert.notEqual(res.returnPriceCents, (flooredXCents + componentCents) * 2, "nooit de foutieve 2×(X+component)-variant");
+});
+
+test("Gooi-floor: nachttoeslag werkt automatisch correct op de GEFLOORDE ritprijs — geen dubbele toeslag, geen aparte nachtberekening nodig", async () => {
+  const res = await resolveQuoteWith(
+    input("Laren", "Schiphol", { departureAt: "2026-08-20T02:00:00.000Z" }),
+    makeFloorDeps({ passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.economicFloor?.floorApplied, true);
+  // rideOnlySinglePriceCents moet de GEFLOORDE X zijn, niet de oorspronkelijke lagere X.
+  assert.equal(res.rideOnlySinglePriceCents, res.economicFloor!.flooredRidePriceCents);
+  const snap = buildPriceSnapshot(res, {
+    quoteId: "0192f0c0-0000-7000-8000-000000000f10",
+    now: new Date("2026-08-19T10:00:00.000Z"),
+    departureAt: "2026-08-20T02:00:00.000Z",
+  });
+  assert.ok(snap);
+  if (!snap) return;
+  const nightAdj = snap.adjustments.find((a) => a.code === "night_outbound");
+  assert.ok(nightAdj);
+  assert.equal(nightAdj!.amountCents, Math.round(res.economicFloor!.flooredRidePriceCents * NIGHT_SURCHARGE_RATE), "de nachttoeslag rekent over de GEFLOORDE ritprijs, niet de oorspronkelijke lagere X");
+});
+
+test("Gooi-floor: geen centendrift — finale singlePriceCents/returnPriceCents zijn cent-precies herleidbaar uit referentie + component", async () => {
+  const res = await resolveQuoteWith(
+    input("Laren", "Schiphol"),
+    makeFloorDeps({ passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  const { referencePriceCents } = res.economicFloor!;
+  const componentCents = res.pickupApproach!.customerComponentCents;
+  assert.equal(res.singlePriceCents, referencePriceCents + componentCents);
+  assert.equal(res.returnPriceCents, referencePriceCents * 2 + componentCents);
+  assert.equal(res.priceCents, res.singlePriceCents, "enkele rit: priceCents === singlePriceCents");
+});
+
+test("Gooi-floor: de bodemlookup roept nooit getRoute (Google Directions) aan — uitsluitend de bestaande aanrij- en passagiersroute-aanroepen blijven staan", async () => {
+  let totalGetRouteCalls = 0;
+  const baseGetRoute = makeGetRoute({ passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0 });
+  const res = await resolveQuoteWith(
+    input("Laren", "Schiphol"),
+    makeFloorDeps({
+      referencePriceEuro: 102,
+      getRoute: async (origin, destination, departureAt) => {
+        totalGetRouteCalls += 1;
+        return baseGetRoute(origin, destination, departureAt);
+      },
+    })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.economicFloor?.floorApplied, true);
+  // Exact 2: (1) basis→pickup aanrijafstand, (2) pickup→dropoff passagiersroute —
+  // beide al bestaand vóór deze hotfix. resolveEconomicFloorReferenceCents()
+  // gebruikt uitsluitend findLocation/findFixedRoute (DB-lookups), nooit getRoute.
+  assert.equal(totalGetRouteCalls, 2, "de bodemlookup (findLocation/findFixedRoute) doet geen eigen Google-routingaanroep — geen extra of recursieve call");
+});
+
+test("Gooi-floor: intern gelogd met oorspronkelijke prijs, referentieprijs, toegepaste floor en finale prijs; nooit publiek", async () => {
+  let logged: PickupApproachLogEntry | null = null;
+  const res = await resolveQuoteWith(
+    input("Laren", "Schiphol"),
+    makeFloorDeps({ passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102, onPickupApproach: (e) => (logged = e) })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  // pickupApproach-log blijft ongewijzigd (economicFloor zit niet op DEZE
+  // log-entry maar rechtstreeks op het resultaat, zie logQuote()).
+  assert.ok(logged);
+  assert.equal(res.economicFloor?.originalRidePriceCents !== undefined, true);
+  assert.equal(res.economicFloor?.referencePriceCents, 10200);
+  assert.equal(res.economicFloor?.floorApplied, true);
+  assert.equal(res.economicFloor?.flooredRidePriceCents, 10200);
+
+  const src = (await import("node:fs")).readFileSync(
+    (await import("node:path")).resolve(process.cwd(), "app/api/pricing/quote/route.ts"),
+    "utf8"
+  );
+  const successBlockStart = src.indexOf("return json(200, {");
+  const successBlockEnd = src.indexOf("});", successBlockStart);
+  const block = src.slice(successBlockStart, successBlockEnd);
+  assert.doesNotMatch(block, /economicFloor/, "economicFloor mag nooit in de publieke quote-response staan");
 });
