@@ -128,3 +128,38 @@ export function formatDuration(minutes: number): string {
   const m = Math.round(minutes % 60);
   return m === 0 ? `${h} u` : `${h} u ${m} min`;
 }
+
+/**
+ * 2026-08-19 (hotfix): datum, tijd én een bewuste bagagecategorie zijn
+ * verplicht vóórdat er ook maar een quote-API-call gedaan wordt — dit bepaalt
+ * zowel `useRouteQuote`'s `ready`-optie als de resultaatweergave hieronder.
+ * Geen enkele waarde krijgt een stille default hier — een lege string is
+ * altijd "nog niet compleet".
+ */
+export function isRouteFinderDetailsComplete(date: string, time: string, luggage: string): boolean {
+  return Boolean(date) && Boolean(time) && Boolean(luggage);
+}
+
+export type RouteFinderView = "hidden" | "incomplete" | "loading" | "ready" | "onrequest";
+
+/**
+ * Leidt de resultaatweergave af. Vóór een compleet, geldig datum/tijd/bagage-
+ * moment ("incomplete") mag NOCH een prijs NOCH de offerte-op-aanvraag-
+ * fallback getoond worden — uitsluitend de neutrale instructie. Met
+ * tussenstops of zonder vaste route: geen automatisch tarief →
+ * offerteaanvraag (nooit een verzonnen bedrag).
+ */
+export function resolveRouteFinderView(input: {
+  submitted: boolean;
+  hasPickup: boolean;
+  hasDropoff: boolean;
+  detailsComplete: boolean;
+  quoteStatus: "idle" | "loading" | "error" | "ready" | "onrequest";
+  hasStops: boolean;
+}): RouteFinderView {
+  if (!input.submitted || !input.hasPickup || !input.hasDropoff) return "hidden";
+  if (!input.detailsComplete) return "incomplete";
+  if (input.quoteStatus === "loading") return "loading";
+  if (input.quoteStatus === "ready" && !input.hasStops) return "ready";
+  return "onrequest";
+}
