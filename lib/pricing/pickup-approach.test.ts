@@ -753,72 +753,220 @@ test("nachttarief overdag: geen enkele toeslag, subtotalCents blijft exact price
   assert.equal(snap.subtotalCents, res.singlePriceCents);
 });
 
-test("nachttarief 's nachts, ENKELE rit: het bestaande contract (15% van singlePriceCents) rekent de toeslag MECHANISCH ook over de aanrijcomponent — nog geen expliciete commerciële beslissing hierover, dit is het HUIDIGE gedrag", async () => {
+// ── Optie B (2026-08-19, commercieel akkoord): eenmalige nachtpremie op de
+// pickup-aanrijcomponent, technisch losgekoppeld van PR #19's bestaande
+// per-ritdeel nachttoeslag op de passagiersrit. Vier dag/nacht-combinaties ×
+// enkele/retour — bewijst dat de premie uitsluitend van de HEENREIS-pickup-
+// tijd afhangt en nooit méér dan éénmaal wordt toegepast. ────────────────────
+
+const APPROACH = { approachKm: 10, approachMin: 0 }; // component = 163ct, premie = round(163×0,15) = 24ct
+const APPROACH_COMPONENT_CENTS = 163;
+const APPROACH_NIGHT_PREMIUM_CENTS = 24;
+
+test("heen nacht, enkele rit: precies 2 adjustments (bestaande nachttoeslag op UITSLUITEND de rit + de eenmalige approach-nachtpremie), nooit over de component samengevoegd", async () => {
   const res = await resolveQuoteWith(
     input("Almere", "Schiphol", { departureAt: "2026-08-20T02:00:00.000Z" }),
-    makeDeps({ approachKm: 10, approachMin: 0 }) // component = 163ct (zie approach-fee.test.ts)
+    makeDeps(APPROACH)
   );
   assert.equal(res.available, true);
   if (!res.available) return;
-  const componentCents = res.pickupApproach?.customerComponentCents ?? 0;
-  assert.equal(componentCents, 163);
+  assert.equal(res.pickupApproach?.customerComponentCents, APPROACH_COMPONENT_CENTS);
+  assert.equal(res.pickupApproach?.isNightPickup, true);
+  assert.equal(res.pickupApproach?.approachNightPremiumCents, APPROACH_NIGHT_PREMIUM_CENTS);
+  assert.equal(res.pickupApproach?.totalPickupContributionCents, APPROACH_COMPONENT_CENTS + APPROACH_NIGHT_PREMIUM_CENTS);
+
   const snap = buildPriceSnapshot(res, {
-    quoteId: "0192f0c0-0000-7000-8000-000000000fed",
+    quoteId: "0192f0c0-0000-7000-8000-000000000f01",
     now: new Date("2026-08-19T10:00:00.000Z"),
     departureAt: "2026-08-20T02:00:00.000Z",
   });
   assert.ok(snap);
   if (!snap) return;
-  assert.equal(snap.adjustments.length, 1);
-  // HUIDIG (mechanisch, ongewijzigd t.o.v. vóór dit PR): 15% van de VOLLEDIGE
-  // singlePriceCents, dus INCLUSIEF de 163ct aanrijcomponent — niet uitsluitend
-  // over de rit-zonder-aanrijcomponent (X). Round(0.15 * res.singlePriceCents).
-  const expectedMechanical = Math.round(res.singlePriceCents * NIGHT_SURCHARGE_RATE);
-  assert.equal(snap.adjustments[0]!.amountCents, expectedMechanical);
-  // Puur ter documentatie: het deel van die toeslag dat aan de aanrijcomponent
-  // is toe te schrijven (15% van 163ct), zodat het rapport dit exact kan citeren.
-  const surchargeAttributableToComponent = Math.round(componentCents * NIGHT_SURCHARGE_RATE);
-  assert.equal(surchargeAttributableToComponent, 24);
+  assert.equal(snap.adjustments.length, 2);
+  const rideOnlyNightAdj = snap.adjustments.find((a) => a.code === "night_outbound");
+  const premiumAdj = snap.adjustments.find((a) => a.code === "pickup_approach_night_premium");
+  assert.ok(rideOnlyNightAdj && premiumAdj);
+  // De bestaande nachttoeslag is UITSLUITEND 15% van de rit-zonder-component (X),
+  // niet van singlePriceCents (X+component) — het bewijs dat de splitsing werkt.
+  assert.equal(rideOnlyNightAdj!.amountCents, Math.round(res.rideOnlySinglePriceCents * NIGHT_SURCHARGE_RATE));
+  assert.equal(premiumAdj!.amountCents, APPROACH_NIGHT_PREMIUM_CENTS);
+  assert.equal(
+    snap.totalCents,
+    res.singlePriceCents + rideOnlyNightAdj!.amountCents + premiumAdj!.amountCents
+  );
 });
 
-test("nachttarief RETOUR, BEIDE ritdelen 's nachts: het bestaande contract telt de aanrijcomponent-toeslag TWEEMAAL (eenmaal per ritdeel), terwijl de aanrijcomponent zelf maar ÉÉNMAAL in het subtotaal zit — dit is het concrete 'dubbele toeslag'-risico uit het verzoek, nog NIET gecorrigeerd zonder commercieel akkoord", async () => {
+test("heen dag, enkele rit: geen enkele nachtgerelateerde adjustment, ook geen approach-nachtpremie", async () => {
+  const res = await resolveQuoteWith(
+    input("Almere", "Schiphol", { departureAt: "2026-08-20T12:00:00.000Z" }),
+    makeDeps(APPROACH)
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.pickupApproach?.isNightPickup, false);
+  assert.equal(res.pickupApproach?.approachNightPremiumCents, 0);
+  const snap = buildPriceSnapshot(res, {
+    quoteId: "0192f0c0-0000-7000-8000-000000000f02",
+    now: new Date("2026-08-19T10:00:00.000Z"),
+    departureAt: "2026-08-20T12:00:00.000Z",
+  });
+  assert.ok(snap);
+  if (!snap) return;
+  assert.equal(snap.adjustments.length, 0);
+  assert.equal(snap.totalCents, res.singlePriceCents);
+});
+
+test("heen nacht / terug dag, RETOUR: de approach-nachtpremie telt mee (heenreis is 's nachts), night_return blijft weg (terugreis is overdag)", async () => {
+  const res = await resolveQuoteWith(
+    input("Almere", "Schiphol", {
+      returnTrip: true,
+      departureAt: "2026-08-20T02:00:00.000Z",
+      returnDepartureAt: "2026-08-21T12:00:00.000Z",
+    }),
+    makeDeps(APPROACH)
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.pickupApproach?.isNightPickup, true);
+  assert.equal(res.pickupApproach?.approachNightPremiumCents, APPROACH_NIGHT_PREMIUM_CENTS);
+  const snap = buildPriceSnapshot(res, {
+    quoteId: "0192f0c0-0000-7000-8000-000000000f03",
+    now: new Date("2026-08-19T10:00:00.000Z"),
+    departureAt: "2026-08-20T02:00:00.000Z",
+    returnDepartureAt: "2026-08-21T12:00:00.000Z",
+  });
+  assert.ok(snap);
+  if (!snap) return;
+  const codes = snap.adjustments.map((a) => a.code).sort();
+  assert.deepEqual(codes, ["night_outbound", "pickup_approach_night_premium"]);
+});
+
+test("heen dag / terug nacht, RETOUR: de approach-nachtpremie blijft weg (heenreis-pickup is overdag), night_return telt wél mee — uitsluitend de HEENREIS-tijd bepaalt de premie", async () => {
+  const res = await resolveQuoteWith(
+    input("Almere", "Schiphol", {
+      returnTrip: true,
+      departureAt: "2026-08-20T12:00:00.000Z",
+      returnDepartureAt: "2026-08-21T02:00:00.000Z",
+    }),
+    makeDeps(APPROACH)
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.pickupApproach?.isNightPickup, false, "de RETOURtijd mag de premie nooit bepalen");
+  assert.equal(res.pickupApproach?.approachNightPremiumCents, 0);
+  const snap = buildPriceSnapshot(res, {
+    quoteId: "0192f0c0-0000-7000-8000-000000000f04",
+    now: new Date("2026-08-19T10:00:00.000Z"),
+    departureAt: "2026-08-20T12:00:00.000Z",
+    returnDepartureAt: "2026-08-21T02:00:00.000Z",
+  });
+  assert.ok(snap);
+  if (!snap) return;
+  const codes = snap.adjustments.map((a) => a.code).sort();
+  assert.deepEqual(codes, ["night_return"]);
+});
+
+test("heen nacht / terug nacht, RETOUR: de FIX — de approach-nachtpremie telt precies ÉÉNMAAL mee, niet tweemaal (dit was het bug-scenario vóór optie B)", async () => {
   const res = await resolveQuoteWith(
     input("Almere", "Schiphol", {
       returnTrip: true,
       departureAt: "2026-08-20T02:00:00.000Z",
       returnDepartureAt: "2026-08-21T03:00:00.000Z",
     }),
-    makeDeps({ approachKm: 10, approachMin: 0 })
+    makeDeps(APPROACH)
   );
   assert.equal(res.available, true);
   if (!res.available) return;
-  const componentCents = res.pickupApproach?.customerComponentCents ?? 0;
-  assert.equal(componentCents, 163, "de aanrijcomponent zit precies éénmaal in het subtotaal (bestaand, correct gedrag)");
+  assert.equal(res.pickupApproach?.customerComponentCents, APPROACH_COMPONENT_CENTS, "de component zelf zit nog steeds precies éénmaal in het subtotaal");
+  assert.equal(res.pickupApproach?.approachNightPremiumCents, APPROACH_NIGHT_PREMIUM_CENTS);
   const snap = buildPriceSnapshot(res, {
-    quoteId: "0192f0c0-0000-7000-8000-000000000abc",
+    quoteId: "0192f0c0-0000-7000-8000-000000000f05",
     now: new Date("2026-08-19T10:00:00.000Z"),
     departureAt: "2026-08-20T02:00:00.000Z",
     returnDepartureAt: "2026-08-21T03:00:00.000Z",
   });
   assert.ok(snap);
   if (!snap) return;
-  assert.equal(snap.adjustments.length, 2, "beide ritdelen zijn 's nachts → twee aparte nachttoeslag-adjustments");
-  const totalSurcharge = snap.adjustments.reduce((s, a) => s + a.amountCents, 0);
-  // Elke toeslag afzonderlijk = round(0.15 * singlePriceCents) — dus de
-  // aanrijcomponent (163ct) wordt daarbinnen TWEE keer met 15% belast, terwijl
-  // hij zelf maar ÉÉN keer in het subtotaal voorkomt. Het verschil met een
-  // ontwerp waarin de component maar éénmaal wordt belast, is exact één extra
-  // toepassing van 15% op de component (round(0.15*163) = 24ct).
-  const perLeg = Math.round(res.singlePriceCents * NIGHT_SURCHARGE_RATE);
-  assert.equal(totalSurcharge, perLeg * 2);
-  const componentSurchargeOnce = Math.round(componentCents * NIGHT_SURCHARGE_RATE);
-  const xOnlySinglePriceCents = res.singlePriceCents - componentCents;
-  const perLegIfComponentExcluded = Math.round(xOnlySinglePriceCents * NIGHT_SURCHARGE_RATE);
-  const noDoubleCountTotal = perLegIfComponentExcluded * 2 + componentSurchargeOnce;
+  // Precies 3 adjustments: night_outbound + night_return (elk over de rit-alleen)
+  // + de premie ÉÉNMAAL — NIET vier (wat de oude, ongecorrigeerde mechanische
+  // route zou hebben gegeven door de premie ook in elke ritdeel-toeslag mee te
+  // nemen).
+  assert.equal(snap.adjustments.length, 3);
+  const premiumAdjustments = snap.adjustments.filter((a) => a.code === "pickup_approach_night_premium");
+  assert.equal(premiumAdjustments.length, 1, "de approach-nachtpremie mag nooit tweemaal voorkomen, ook niet als beide ritdelen 's nachts zijn");
+  assert.equal(premiumAdjustments[0]!.amountCents, APPROACH_NIGHT_PREMIUM_CENTS);
+  const rideOnlyNightTotal = snap.adjustments
+    .filter((a) => a.code === "night_outbound" || a.code === "night_return")
+    .reduce((s, a) => s + a.amountCents, 0);
+  const expectedPerLeg = Math.round(res.rideOnlySinglePriceCents * NIGHT_SURCHARGE_RATE);
+  assert.equal(rideOnlyNightTotal, expectedPerLeg * 2);
   assert.equal(
-    totalSurcharge - noDoubleCountTotal,
-    componentSurchargeOnce,
-    "het huidige mechanische gedrag belast de aanrijcomponent exact éénmaal MEER dan een 'component-telt-maar-één-keer'-ontwerp zou doen"
+    snap.totalCents,
+    res.returnPriceCents! + rideOnlyNightTotal + APPROACH_NIGHT_PREMIUM_CENTS
+  );
+});
+
+test("cent-consistentie: de definitieve snapshot.totalCents is exact reproduceerbaar uit priceCents/rideOnlySinglePriceCents/pickupApproach — geen drift", async () => {
+  const res = await resolveQuoteWith(
+    input("Almere", "Schiphol", { departureAt: "2026-08-20T02:00:00.000Z" }),
+    makeDeps(APPROACH)
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  const snap = buildPriceSnapshot(res, {
+    quoteId: "0192f0c0-0000-7000-8000-000000000f06",
+    now: new Date("2026-08-19T10:00:00.000Z"),
+    departureAt: "2026-08-20T02:00:00.000Z",
+  });
+  assert.ok(snap);
+  if (!snap) return;
+  const recomputedTotal =
+    res.priceCents +
+    Math.round(res.rideOnlySinglePriceCents * NIGHT_SURCHARGE_RATE) +
+    (res.pickupApproach?.approachNightPremiumCents ?? 0);
+  assert.equal(snap.totalCents, recomputedTotal);
+  assert.equal(snap.totalCents, snap.subtotalCents + snap.adjustments.reduce((s, a) => s + a.amountCents, 0));
+});
+
+test("vaste route: krijgt nooit een pickupComponent of een approach-nachtpremie, ook niet 's nachts", async () => {
+  const res = await resolveQuoteWith(
+    input("amsterdam-centrum", "schiphol-airport"),
+    makeDeps({
+      findLocation: async (raw) => ({
+        id: `${raw}-id`,
+        slug: raw,
+        name: raw,
+        active: true,
+        location_type: "city",
+        city_id: null,
+      }),
+      findFixedRoute: async () => ({
+        price: 57,
+        return_price: 103,
+        currency: "EUR",
+        distance_km: 26,
+        estimated_duration_min: 31,
+        vat_rate: 9,
+        source_label: "Amsterdam → Schiphol",
+        valid_from: "2026-01-01T00:00:00.000Z",
+        active: true,
+      }),
+    })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.pickupApproach, null);
+  assert.equal(res.rideOnlySinglePriceCents, res.singlePriceCents);
+  const snap = buildPriceSnapshot(res, {
+    quoteId: "0192f0c0-0000-7000-8000-000000000f07",
+    now: new Date("2026-08-19T10:00:00.000Z"),
+    departureAt: "2026-08-20T02:00:00.000Z", // 's nachts
+  });
+  assert.ok(snap);
+  if (!snap) return;
+  assert.ok(
+    !snap.adjustments.some((a) => a.code === "pickup_approach_night_premium"),
+    "een vaste route heeft geen pickupApproach, dus nooit een approach-nachtpremie"
   );
 });
 

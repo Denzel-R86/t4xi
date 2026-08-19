@@ -29,7 +29,13 @@ import {
   PDOK_ZONE_LOOKUP_TIMEOUT_MS,
 } from "@/lib/pricing/pdok-woonplaats";
 import { resolveBaseIdForGemeente, normalizeGemeenteNaam } from "@/lib/pricing/service-area";
-import { computeApproachFee, type ApproachFeeConfig, type ApproachFeeResult } from "@/lib/pricing/approach-fee";
+import {
+  computeApproachFee,
+  computeApproachNightPremiumCents,
+  type ApproachFeeConfig,
+  type ApproachFeeResult,
+} from "@/lib/pricing/approach-fee";
+import { isNightTariff } from "@/lib/pricing/departure-time";
 import {
   lookupOfficialGemeente as pdokLookupOfficialGemeente,
   PdokGemeenteLookupError,
@@ -174,9 +180,31 @@ export type PickupApproachBreakdown = {
   exemptionFactor: number;
   customerSharePct: number;
   customerComponentBeforeCapCents: number;
+  /** Dag-gecapte klantcomponent (max 2500ct) — ONGEWIJZIGD door de nachtpremie hieronder. */
   customerComponentCents: number;
   capped: boolean;
   t4xiAbsorbedReferenceCents: number;
+  /**
+   * Nachtpremie (2026-08-19, commercieel akkoord — optie B): `true` als de
+   * OORSPRONKELIJKE pickup-tijd (input.departureAt — nooit een retourtijd)
+   * binnen het bestaande nachtvenster van PR #19 valt (isNightTariff).
+   * Bepaalt of `approachNightPremiumCents` hieronder > 0 is. Bij een retour
+   * blijft dit gebaseerd op UITSLUITEND de heenreis-pickup — nooit de
+   * retourtijd, en nooit tweemaal toegepast.
+   */
+  isNightPickup: boolean;
+  /**
+   * Eenmalige 15%-nachtpremie op `customerComponentCents` (0 overdag).
+   * Zelfde tarief/afrondingsregel als PR #19's bestaande nachttoeslag (zie
+   * computeApproachNightPremiumCents in approach-fee.ts) — geen tweede
+   * definitie van "nacht" of van de toeslagformule.
+   */
+  approachNightPremiumCents: number;
+  /**
+   * customerComponentCents + approachNightPremiumCents — puur informatief
+   * (logging/rapportage). Maximaal 2500 + round(2500×0.15) = 2875ct (€28,75).
+   */
+  totalPickupContributionCents: number;
 };
 
 /**
@@ -211,6 +239,19 @@ export type PricingQuoteResult =
       priceCents: number;
       singlePriceCents: number;
       returnPriceCents: number | null;
+      /**
+       * Enkele-reisprijs van UITSLUITEND de passagiersrit (evt. deadhead-
+       * aangepast), in cent — EXCLUSIEF de pickup-aanrijcomponent (2026-08-19,
+       * optie B). Voor een vaste route gelijk aan `singlePriceCents`
+       * (`pickupApproach` is dan altijd `null`). snapshot.ts gebruikt dit —
+       * niet `singlePriceCents` — om PR #19's bestaande nachttoeslag
+       * UITSLUITEND over de passagiersrit te berekenen; de aanrijcomponent
+       * krijgt zijn eigen, eenmalige nachtpremie via
+       * `pickupApproach.approachNightPremiumCents`. Zo wordt de component
+       * nooit ongemerkt nogmaals (of dubbel bij een retour) met het
+       * nachttarief vermenigvuldigd.
+       */
+      rideOnlySinglePriceCents: number;
       currency: "EUR";
       vatRate: number;
       distanceKm: number;
@@ -818,6 +859,8 @@ export async function resolveQuoteWith(
         priceCents: eurosToCents(price),
         singlePriceCents: eurosToCents(fixed.price),
         returnPriceCents: returnPrice !== null ? eurosToCents(returnPrice) : null,
+        // Vaste route: geen aanrijcomponent, dus gelijk aan singlePriceCents.
+        rideOnlySinglePriceCents: eurosToCents(fixed.price),
         currency: "EUR",
         vatRate: fixed.vat_rate,
         distanceKm: fixed.distance_km,
@@ -950,6 +993,11 @@ async function tryDistanceTariff(
     priceCents,
     singlePriceCents: singleCents,
     returnPriceCents: returnCentsRaw,
+    // Uitsluitend de passagiersrit (evt. deadhead-aangepast), EXCLUSIEF de
+    // aanrijcomponent — zie het uitgebreide veldcommentaar bij
+    // PricingQuoteResult. Gebruikt door snapshot.ts voor PR #19's bestaande
+    // nachttoeslag, zodat die nooit ongemerkt ook de aanrijcomponent belast.
+    rideOnlySinglePriceCents: xCents,
     currency: "EUR",
     vatRate: DEFAULT_DISTANCE_TARIFF.vatRate,
     distanceKm: route.distanceKm,
@@ -1041,6 +1089,18 @@ async function resolvePickupApproach(
   const fee = computeApproachFee({ distanceKm: baseRoute.distanceKm, durationMin: baseRoute.durationMin, config });
   if (fee.status === "offer_on_request") return offer("beyond_max_approach_km");
 
+  // Nachtpremie (2026-08-19, optie B) — uitsluitend bepaald door de
+  // OORSPRONKELIJKE pickup-tijd (`departureAt`, de parameter van deze
+  // functie — nooit een retourtijd; tryDistanceTariff geeft hier altijd
+  // `input.departureAt` door, nooit `input.returnDepartureAt`). Toegepast op
+  // de REEDS DAG-GECAPTE component — de €25-dagcap zelf verandert niet.
+  // Berekend hier, ÉÉNMAAL, binnen dezelfde base→pickup-routingaanroep en
+  // servicegebiedlookup hierboven — geen tweede aanroep van beide nodig, ook
+  // niet bij een retour (tryDistanceTariff roept resolvePickupApproach zelf
+  // al maar éénmaal aan per offerte).
+  const isNightPickup = isNightTariff(departureAt);
+  const approachNightPremiumCents = isNightPickup ? computeApproachNightPremiumCents(fee.customerComponentCents) : 0;
+
   const breakdown: PickupApproachBreakdown = {
     baseId: base.id,
     baseSlug: base.slug,
@@ -1054,8 +1114,11 @@ async function resolvePickupApproach(
     customerComponentCents: fee.customerComponentCents,
     capped: fee.capped,
     t4xiAbsorbedReferenceCents: fee.t4xiAbsorbedReferenceCents,
+    isNightPickup,
+    approachNightPremiumCents,
+    totalPickupContributionCents: fee.customerComponentCents + approachNightPremiumCents,
   };
-  log({ ...breakdown, outcome: "applied", finalPriceCents: fee.customerComponentCents });
+  log({ ...breakdown, outcome: "applied", finalPriceCents: fee.customerComponentCents + approachNightPremiumCents });
   return { outcome: "applied", breakdown };
 }
 

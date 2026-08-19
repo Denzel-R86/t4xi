@@ -36,6 +36,7 @@ function availableFixed(price: number): AvailableQuote {
     priceCents: eurosToCents(price),
     singlePriceCents: eurosToCents(price),
     returnPriceCents: null,
+    rideOnlySinglePriceCents: eurosToCents(price),
     currency: "EUR",
     vatRate: 9,
     distanceKm: 22.5,

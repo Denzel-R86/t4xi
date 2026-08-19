@@ -3,7 +3,12 @@
 // met de door de eigenaar goedgekeurde productieconfiguratie.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeApproachFee, computeExemptionFactor, type ApproachFeeConfig } from "@/lib/pricing/approach-fee";
+import {
+  computeApproachFee,
+  computeApproachNightPremiumCents,
+  computeExemptionFactor,
+  type ApproachFeeConfig,
+} from "@/lib/pricing/approach-fee";
 
 // maxApproachKm: 35 → 40 (2026-08-19, tweede bijwerking van PR #20). Reden:
 // Utrecht Centraal (36,0km) en Utrecht centrum (35,8km) zitten allebei net
@@ -170,4 +175,36 @@ test("computeApproachFee: negatieve/NaN afstand of tijd wordt als 0 behandeld (d
   if (r.status !== "fee") return;
   assert.equal(r.referenceCents, 0);
   assert.equal(r.customerComponentCents, 0);
+});
+
+// ── computeApproachNightPremiumCents (2026-08-19, commercieel akkoord — optie B) ──
+// Eenmalige nachtpremie op de REEDS DAG-GECAPTE component. Hergebruikt
+// nightSurchargeCents/NIGHT_SURCHARGE_RATE uit snapshot.ts (PR #19) — zelfde
+// 15%/afrondingsregel, hier uitsluitend op de exacte centbedragen getest.
+
+test("computeApproachNightPremiumCents: component van 0ct (binnen de vrije afstand) → premie 0", () => {
+  assert.equal(computeApproachNightPremiumCents(0), 0);
+});
+
+test("computeApproachNightPremiumCents: component van 1ct → premie rondt af naar 0 (round(1×0,15)=round(0,15)=0)", () => {
+  assert.equal(computeApproachNightPremiumCents(1), 0);
+});
+
+test("computeApproachNightPremiumCents: afrondingsgrens rond x,5 — round-half-up, zelfde regel als nightSurchargeCents", () => {
+  // 9ct × 15% = 1,35 → rondt naar 1 (net onder de .5-grens)
+  assert.equal(computeApproachNightPremiumCents(9), 1);
+  // 10ct × 15% = 1,5 → rondt naar 2 (exact op de grens, round-half-up)
+  assert.equal(computeApproachNightPremiumCents(10), 2);
+  // 11ct × 15% = 1,65 → rondt naar 2 (net boven de grens)
+  assert.equal(computeApproachNightPremiumCents(11), 2);
+});
+
+test("computeApproachNightPremiumCents: gecapte component van 2500ct (de €25-dagcap) → nachtpremie exact 375ct (samen €28,75, de vereiste maximale pickupgerelateerde klantbijdrage)", () => {
+  assert.equal(computeApproachNightPremiumCents(2500), 375);
+  assert.equal(2500 + computeApproachNightPremiumCents(2500), 2875);
+});
+
+test("computeApproachNightPremiumCents: negatieve/NaN input wordt als 0 behandeld (defensief, geen crash)", () => {
+  assert.equal(computeApproachNightPremiumCents(-5), 0);
+  assert.equal(computeApproachNightPremiumCents(Number.NaN), 0);
 });

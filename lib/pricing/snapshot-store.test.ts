@@ -24,6 +24,7 @@ function availableQuote(price: number): AvailableQuote {
     available: true, source: "fixed_route_prices", price, singlePrice: price,
     returnPrice: null, returnApplied: false,
     priceCents: eurosToCents(price), singlePriceCents: eurosToCents(price), returnPriceCents: null,
+    rideOnlySinglePriceCents: eurosToCents(price),
     currency: "EUR", vatRate: 9,
     distanceKm: 61, estimatedDurationMin: 54, vehicleClass: "executive-ev",
     route: { pickupSlug: "rotterdam", dropoffSlug: "schiphol", label: "RTM → AMS" },
