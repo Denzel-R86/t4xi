@@ -53,6 +53,7 @@ import { Reveal, Odometer, usePrefersReducedMotion } from "./motion";
 import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import { useTranslations } from "next-intl";
+import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 
 /* ── de ruggengraat ─────────────────────────────────────────────────────── */
 
@@ -235,11 +236,23 @@ export function Dash() {
  *  Suggesties en prijs komen uit de GEDEELDE bronnen (useAddressSuggestions,
  *  useRouteQuote): dit is dezelfde keten als het boekingsformulier, alleen in
  *  zin-presentatie. Vrije tekst blijft toegestaan. */
-/** ISO-datum van vandaag (lokale tijd) — grens voor "niet in het verleden". */
+/** ISO-datum van vandaag (lokale tijd) — uitsluitend voor de `min`-grens van het HTML-datumveld (dat werkt alleen op dagniveau). */
 function todayISO(): string {
   const d = new Date();
   const tzOffsetMs = d.getTimezoneOffset() * 60000;
   return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+}
+
+/**
+ * 2026-08-19 (audit-correctie): toetst het VOLLEDIGE vertrekmoment (datum +
+ * tijd) in Europe/Amsterdam, niet alleen de datum. Hergebruikt uitsluitend
+ * `amsterdamDepartureIso` (dezelfde helper als de server in
+ * app/api/pricing/quote/route.ts en components/booking/BookingSection.tsx) —
+ * geen tweede tijdzone-implementatie.
+ */
+function isFutureAmsterdamDeparture(date: string, time: string): boolean {
+  const iso = amsterdamDepartureIso(date, time);
+  return iso !== null && new Date(iso).getTime() >= Date.now();
 }
 
 const HERO_LUGGAGE = [
@@ -284,9 +297,10 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     },
     [to, toResolved]
   );
-  const dateValid = Boolean(date) && date >= todayISO();
+  // Zelfde betekenis als de server-side check (volledig vertrekmoment, niet alleen de datum).
+  const departureValid = Boolean(date) && Boolean(time) && isFutureAmsterdamDeparture(date, time);
   const addressesSet = Boolean(pickup && dropoff);
-  const quoteReady = addressesSet && dateValid && Boolean(time) && Boolean(luggage);
+  const quoteReady = addressesSet && departureValid && Boolean(luggage);
   const quote = useRouteQuote(pickup, dropoff, { date, time, luggage, ready: quoteReady });
 
   const href =

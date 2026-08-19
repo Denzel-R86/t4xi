@@ -12,6 +12,7 @@ import { inferAddressMeta, type RitType } from "@/lib/booking-meta";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
+import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 
 type BookableRideType = Extract<RitType, "enkel" | "retour">;
 
@@ -28,11 +29,26 @@ const LUGGAGE = [
   { value: "overleg", labelKey: "bagageOverleg" },
 ] as const;
 
-/** ISO-datum van vandaag (lokale tijd), voor de `min`-grens en de niet-in-het-verleden-check. */
+/** ISO-datum van vandaag (lokale tijd) — uitsluitend voor de `min`-grens van het HTML-datumveld (dat werkt alleen op dagniveau). */
 function todayISO(): string {
   const d = new Date();
   const tzOffsetMs = d.getTimezoneOffset() * 60000;
   return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+}
+
+/**
+ * 2026-08-19 (audit-correctie): toetst het VOLLEDIGE vertrekmoment (datum +
+ * tijd) in Europe/Amsterdam, niet alleen de datum — "vandaag, een uur
+ * geleden" moet net zo geweigerd worden als "gisteren". Hergebruikt
+ * uitsluitend `amsterdamDepartureIso` (dezelfde helper als de server in
+ * app/api/pricing/quote/route.ts) — geen tweede tijdzone-implementatie, dus
+ * front- en backend hanteren gegarandeerd dezelfde betekenis van "in het
+ * verleden". Ongeldige datum/tijd (incl. een niet-bestaande DST-wandkloktijd)
+ * → `false`, fail-closed.
+ */
+function isFutureAmsterdamDeparture(date: string, time: string): boolean {
+  const iso = amsterdamDepartureIso(date, time);
+  return iso !== null && new Date(iso).getTime() >= Date.now();
 }
 
 const inputCls =
@@ -131,7 +147,7 @@ export default function BookingSection({
       setSubmit({ status: "error", message: t("valAdres") });
       return;
     }
-    if (!date || !time || date < todayISO()) {
+    if (!date || !time || !isFutureAmsterdamDeparture(date, time)) {
       setSubmit({ status: "error", message: t("valDatumTijd") });
       return;
     }
@@ -213,11 +229,14 @@ export default function BookingSection({
     [pickup]
   );
   const ready = pickup && dropoff;
-  // 2026-08-19 (hotfix): datum, tijd én bagage zijn verplicht vóórdat er ook maar
-  // een quote-API-call gedaan wordt — geen prijs (vast of dynamisch) zonder deze drie.
-  const dateValid = Boolean(date) && date >= todayISO();
+  // 2026-08-19 (hotfix; datum/tijd-check verscherpt na audit): datum, tijd én
+  // bagage zijn verplicht vóórdat er ook maar een quote-API-call gedaan wordt
+  // — geen prijs (vast of dynamisch) zonder deze drie. `departureValid` toetst
+  // het VOLLEDIGE vertrekmoment (niet alleen de datum) — zelfde betekenis als
+  // de server-side check in app/api/pricing/quote/route.ts.
+  const departureValid = Boolean(date) && Boolean(time) && isFutureAmsterdamDeparture(date, time);
   const returnMomentReady = tab !== "retour" || (Boolean(returnDate) && Boolean(returnTime));
-  const quoteReady = Boolean(ready) && dateValid && Boolean(time) && Boolean(luggage) && returnMomentReady;
+  const quoteReady = Boolean(ready) && departureValid && Boolean(luggage) && returnMomentReady;
 
   // Live richtprijs én luchthavencontext via de GEDEELDE quote-flow
   // (components/shared/useRouteQuote.ts) — dezelfde keten als de homepagehero.

@@ -1013,7 +1013,13 @@ async function tryDistanceTariff(
   // nachtberekening, geen dubbele toeslag, geen aparte retourformule nodig.
   let xCents = xCentsRaw;
   let economicFloor: PickupApproachEconomicFloor | null = null;
-  const floorReference = await resolveEconomicFloorReferenceCents(deps, approach.base, dropoff, vehicleClass);
+  const floorReference = await resolveEconomicFloorReferenceCents(
+    deps,
+    approach.base,
+    approach.breakdown.serviceAreaGemeente,
+    dropoff,
+    vehicleClass
+  );
   if (floorReference) {
     const floorApplied = floorReference.referencePriceCents > xCentsRaw;
     xCents = Math.max(xCentsRaw, floorReference.referencePriceCents);
@@ -1070,30 +1076,46 @@ async function tryDistanceTariff(
 }
 
 /**
- * Economische-prijsbodem-referentie (2026-08-19, hotfix): zoekt de vaste
- * route van "de locatie waarnaar de standplaats-postcode zelf resolveert"
- * naar dezelfde bestemming/voertuigklasse — bv. voor basis Almere (1361BP)
- * is dat de vaste route "almere-poort" → bestemming. Bewust GEEN hardcoded
- * bedrag: uitsluitend de bestaande `fixed_route_prices`-catalogus, via
- * dezelfde `findLocation`/`findFixedRoute`-deps als de rest van deze module.
+ * Officiële PDOK-gemeentenamen waarvoor de economische prijsbodem geldt
+ * (2026-08-19, audit-correctie). Basis "almere" bedient ook Almere zelf en
+ * Lelystad — een rit die AL vanuit Almere/Lelystad vertrekt is geen
+ * "verder-weg-dan-de-standplaats"-geval en mag deze bodem dus nooit krijgen.
+ * Bewust een EXACTE gemeente-set (geen substring-/prefixmatch): dezelfde
+ * normalisatie (`normalizeGemeenteNaam`) als de rest van het aanrijmodel.
+ */
+const GOOI_ECONOMIC_FLOOR_GEMEENTEN = new Set(
+  ["Blaricum", "Eemnes", "Gooise Meren", "Hilversum", "Huizen", "Laren"].map(normalizeGemeenteNaam)
+);
+
+/**
+ * Economische-prijsbodem-referentie (2026-08-19, hotfix; scope gecorrigeerd
+ * 2026-08-19 na audit): zoekt de vaste route van "de locatie waarnaar de
+ * standplaats-postcode zelf resolveert" naar dezelfde bestemming/
+ * voertuigklasse — bv. voor basis Almere (1361BP) is dat de vaste route
+ * "almere-poort" → bestemming. Bewust GEEN hardcoded bedrag: uitsluitend de
+ * bestaande `fixed_route_prices`-catalogus, via dezelfde `findLocation`/
+ * `findFixedRoute`-deps als de rest van deze module.
  *
- * Bewust GESCOPED tot basis "almere" — het enige, vastgestelde en
- * goedgekeurde geval (Het Gooi-regio); dit is geen technische beperking van
- * de lookup zelf (die werkt generiek voor elke standplaats), maar een
- * bewuste scope-grens zodat Rotterdam-/Amsterdam-Zuidoost-prijzen door deze
- * hotfix niet ongezien mee veranderen.
+ * Scope: UITSLUITEND wanneer de al-bepaalde `serviceAreaGemeente` (uit
+ * resolvePickupApproach — GEEN nieuwe PDOK-call) exact één van de zes Gooi-
+ * gemeenten is (GOOI_ECONOMIC_FLOOR_GEMEENTEN). `base.slug === "almere"`
+ * alleen is te breed: die basis bedient ook Almere zelf en Lelystad, die
+ * hier expliciet buiten blijven. `base` wordt uitsluitend nog gebruikt om de
+ * standplaats-referentielocatie (1361BP → almere-poort) op te zoeken.
  *
- * `null` (geen vergelijkbare vaste route, geen bekende bestemming/
- * voertuigklasse, of storing) → de bestaande dynamische formule blijft
- * ongewijzigd gelden, exact zoals vereist.
+ * `null` (verkeerde/ontbrekende gemeente, geen vergelijkbare vaste route,
+ * geen bekende bestemming/voertuigklasse, of storing) → de bestaande
+ * dynamische formule blijft ongewijzigd gelden, exact zoals vereist.
  */
 async function resolveEconomicFloorReferenceCents(
   deps: ResolveQuoteDeps,
   base: OperationalBase,
+  serviceAreaGemeente: string,
   dropoff: LocationRow | null,
   vehicleClass: VehicleClassRow | null
 ): Promise<{ referencePriceCents: number; referenceLocationSlug: string } | null> {
-  if (base.slug !== "almere" || !dropoff || !vehicleClass) return null;
+  if (!GOOI_ECONOMIC_FLOOR_GEMEENTEN.has(normalizeGemeenteNaam(serviceAreaGemeente))) return null;
+  if (!dropoff || !vehicleClass) return null;
 
   let baseLocation: LocationRow | null;
   try {

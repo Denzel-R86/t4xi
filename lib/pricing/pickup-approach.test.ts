@@ -86,6 +86,20 @@ const SERVICE_AREAS = new Map([
   ["lelystad", "almere"],
   ["hilversum", "almere"],
   ["laren", "almere"],
+  // 2026-08-19 (audit-correctie): de resterende Gooi-gemeenten ontbraken nog
+  // in deze fake servicegebied-map — zonder deze rijen kon geen enkele test
+  // "beschikbaar"-gedrag simuleren voor Blaricum/Eemnes/Gooise Meren/Huizen,
+  // terwijl de LIVE productie-data (pricing_service_areas) ze wél allemaal
+  // aan basis "almere" toewijst.
+  ["blaricum", "almere"],
+  ["eemnes", "almere"],
+  ["gooise meren", "almere"],
+  ["huizen", "almere"],
+  // "bussum" bestaat NIET als PDOK-gemeentenaam (het is een plaats binnen
+  // gemeente "Gooise Meren") — uitsluitend hier toegevoegd zodat de
+  // substringmatch-test hieronder de floor-gate zelf test (exacte Set-match),
+  // losstaand van de servicegebied-toewijzingslaag.
+  ["bussum", "almere"],
   ["amsterdam", "amsterdam-zuidoost"],
   ["diemen", "amsterdam-zuidoost"],
   ["amstelveen", "amsterdam-zuidoost"],
@@ -1028,9 +1042,14 @@ const SCHIPHOL_LOCATION = {
 };
 
 function makeFloorDeps(o: MakeDepsOptions & { referencePriceEuro?: number | null } = {}) {
-  const { referencePriceEuro = 102, ...rest } = o;
+  // Default "Laren" — een van de zes Gooi-gemeenten (2026-08-19, audit-
+  // correctie: de floor gaat nu op de EXACTE gemeente, niet meer op
+  // basis.slug === "almere" alleen — Almere/Lelystad delen dezelfde basis
+  // maar vallen bewust buiten de floor, zie de nieuwe scope-tests hieronder).
+  const { referencePriceEuro = 102, gemeente = "Laren", ...rest } = o;
   return makeDeps({
     ...rest,
+    gemeente,
     findLocation: async (raw: string) => {
       if (raw === BASE_ALMERE_ADDRESS) return ALMERE_POORT_LOCATION;
       if (raw === "Schiphol") return SCHIPHOL_LOCATION;
@@ -1141,7 +1160,7 @@ test("Gooi-floor: vaste routes blijven volledig ongewijzigd — economicFloor al
   assert.equal(findFixedRouteCalls, 1, "uitsluitend de ENE, bestaande vaste-routecheck — geen extra bodemlookup voor een vaste route");
 });
 
-test("Gooi-floor: uitsluitend gescoped tot basis Almere — voor Amsterdam-Zuidoost/Spijkenisse blijft economicFloor null, ook als hun eigen referentielocatie toevallig een vaste route heeft", async () => {
+test("Gooi-floor: andere basis (Amsterdam-Zuidoost) + andere gemeente (Utrecht) blijft economicFloor null, ook als hun eigen referentielocatie toevallig een vaste route heeft", async () => {
   const res = await resolveQuoteWith(
     input("Utrecht Centraal", "Schiphol"),
     makeDeps({
@@ -1163,7 +1182,108 @@ test("Gooi-floor: uitsluitend gescoped tot basis Almere — voor Amsterdam-Zuido
   );
   assert.equal(res.available, true);
   if (!res.available) return;
-  assert.equal(res.economicFloor, null, "basis amsterdam-zuidoost mag de Gooi-floor-mechaniek nooit activeren — bewust gescoped tot basis almere");
+  assert.equal(res.economicFloor, null, "basis amsterdam-zuidoost/gemeente utrecht mag de Gooi-floor-mechaniek nooit activeren");
+});
+
+// ── Scope-correctie (2026-08-19, audit): de floor gaat op de EXACTE, al-
+// bepaalde serviceAreaGemeente — geen nieuwe PDOK-call, geen substringmatch,
+// geen brede "basis === almere". Almere zelf en Lelystad delen dezelfde
+// basis als de zes Gooi-gemeenten maar vallen er bewust buiten: een rit die
+// AL vanuit Almere/Lelystad vertrekt is geen "verder-weg-dan-de-standplaats"-
+// geval. ────────────────────────────────────────────────────────────────────
+
+const GOOI_GEMEENTEN = ["Blaricum", "Eemnes", "Gooise Meren", "Hilversum", "Huizen", "Laren"];
+
+for (const gemeente of GOOI_GEMEENTEN) {
+  test(`Gooi-floor: positief — gemeente '${gemeente}' krijgt de bodem toegepast`, async () => {
+    const res = await resolveQuoteWith(
+      input(gemeente, "Schiphol"),
+      makeFloorDeps({ gemeente, passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+    );
+    assert.equal(res.available, true);
+    if (!res.available) return;
+    assert.ok(res.economicFloor, `economicFloor moet gevuld zijn voor gemeente '${gemeente}'`);
+    assert.equal(res.economicFloor!.floorApplied, true);
+    assert.equal(res.economicFloor!.referencePriceCents, 10200);
+  });
+}
+
+for (const gemeente of ["Almere", "Lelystad"]) {
+  test(`Gooi-floor: negatief — gemeente '${gemeente}' (zelfde basis 'almere', GEEN Gooi-gemeente) krijgt NOOIT de bodem`, async () => {
+    const res = await resolveQuoteWith(
+      input(gemeente, "Schiphol"),
+      makeFloorDeps({ gemeente, passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+    );
+    assert.equal(res.available, true);
+    if (!res.available) return;
+    assert.equal(res.economicFloor, null, `'${gemeente}' deelt basis 'almere' met de Gooi-gemeenten maar mag de floor niet activeren`);
+  });
+}
+
+for (const gemeente of ["Amsterdam", "Utrecht"]) {
+  test(`Gooi-floor: negatief — gemeente '${gemeente}' (andere basis, andere regio) krijgt NOOIT de bodem`, async () => {
+    const res = await resolveQuoteWith(
+      input(gemeente, "Schiphol"),
+      makeFloorDeps({ gemeente, passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+    );
+    assert.equal(res.available, true);
+    if (!res.available) return;
+    assert.equal(res.economicFloor, null);
+  });
+}
+
+test("Gooi-floor: negatief — ontbrekende/onbekende gemeente (PDOK levert niets bruikbaars) krijgt NOOIT de bodem", async () => {
+  // gemeente: null → resolvePickupApproach valt terug op "offer_on_request"
+  // (bestaand, ongewijzigd gedrag) — geen prijs, dus ook geen floor mogelijk.
+  const res = await resolveQuoteWith(
+    input("Ergens onbekend", "Schiphol"),
+    makeFloorDeps({ gemeente: null, passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, false);
+});
+
+test("Gooi-floor: normalisatie is EXACT (trim/hoofdletters), geen brede substringmatch — 'Bussum' (plaats binnen gemeente Gooise Meren, geen exacte match) krijgt geen floor", async () => {
+  const res = await resolveQuoteWith(
+    input("Bussum", "Schiphol"),
+    makeFloorDeps({ gemeente: "Bussum", passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(
+    res.economicFloor,
+    null,
+    "PDOK levert voor Bussum de officiële gemeentenaam 'Gooise Meren', nooit 'Bussum' zelf — dit bewijst dat er geen losse substring-/plaatsnaam-heuristiek in de floor zit"
+  );
+});
+
+test("Gooi-floor: hoofdletter-/spatievarianten van een Gooi-gemeente activeren de floor nog steeds (zelfde normalisatie als de rest van het aanrijmodel)", async () => {
+  const res = await resolveQuoteWith(
+    input("Laren", "Schiphol"),
+    makeFloorDeps({ gemeente: "  LAREN  ", passengerKm: 20, passengerMin: 20, approachKm: 10, approachMin: 0, referencePriceEuro: 102 })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.economicFloor?.floorApplied, true);
+});
+
+test("Gooi-floor: vaste routes blijven ongewijzigd, ook al ligt de gemeente binnen Het Gooi (herbevestiging na de scope-correctie)", async () => {
+  let findFixedRouteCalls = 0;
+  const res = await resolveQuoteWith(
+    input("amsterdam-centrum", "schiphol-airport"),
+    makeDeps({
+      gemeente: "Hilversum", // een Gooi-gemeente — bewijst dat de vaste-route-tak de floor-lookup nooit raadpleegt
+      findLocation: async (raw) => ({ id: `${raw}-id`, slug: raw, name: raw, active: true, location_type: "city", city_id: null }),
+      findFixedRoute: async () => {
+        findFixedRouteCalls += 1;
+        return { price: 57, return_price: 103, currency: "EUR", distance_km: 26, estimated_duration_min: 31, vat_rate: 9, source_label: "Amsterdam → Schiphol", valid_from: "2026-01-01T00:00:00.000Z", active: true };
+      },
+    })
+  );
+  assert.equal(res.available, true);
+  if (!res.available) return;
+  assert.equal(res.source, "fixed_route_prices");
+  assert.equal(res.economicFloor, null);
+  assert.equal(findFixedRouteCalls, 1, "uitsluitend de ENE, bestaande vaste-routecheck — geen extra bodemlookup, ook niet voor een Gooi-gemeente");
 });
 
 test("Gooi-floor: retour = 2× de GEFLOORDE X + 1× aanrijcomponent, nooit tweemaal de referentie of de component", async () => {

@@ -56,36 +56,13 @@ test("isNightTariff: leeg/ongeldig → false (fail-open)", () => {
   assert.equal(isNightTariff("niet-een-datum"), false);
 });
 
-// ── amsterdamTodayISO: "vandaag" in Europe/Amsterdam (2026-08-19, audit-fix) ──
-// Grondslag voor de "datum mag niet in het verleden liggen"-server-check in
-// app/api/pricing/quote/route.ts — moet DST-correct zijn en, cruciaal, rond
-// middernacht een ANDERE dag kunnen geven dan de (doorgaans UTC-)serverklok.
-import { amsterdamTodayISO } from "@/lib/pricing/departure-time";
-
-test("amsterdamTodayISO: winter, ver van middernacht — zelfde dag als UTC", () => {
-  assert.equal(amsterdamTodayISO(new Date("2026-01-15T12:00:00.000Z")), "2026-01-15");
-});
-
-test("amsterdamTodayISO: zomertijd (UTC+2) — 22:30 UTC is al de volgende dag in Amsterdam", () => {
-  assert.equal(amsterdamTodayISO(new Date("2026-07-15T22:30:00.000Z")), "2026-07-16");
-});
-
-test("amsterdamTodayISO: wintertijd (UTC+1) — 22:30 UTC is nog dezelfde dag in Amsterdam (23:30 lokaal)", () => {
-  assert.equal(amsterdamTodayISO(new Date("2026-01-15T22:30:00.000Z")), "2026-01-15");
-});
-
-test("amsterdamTodayISO: wintertijd (UTC+1) — 23:30 UTC is al de volgende dag in Amsterdam (00:30 lokaal)", () => {
-  assert.equal(amsterdamTodayISO(new Date("2026-01-15T23:30:00.000Z")), "2026-01-16");
-});
-
-test("amsterdamTodayISO: net vóór middernacht Amsterdamse tijd blijft dezelfde dag (winter, 22:59 UTC = 23:59 Amsterdam)", () => {
-  assert.equal(amsterdamTodayISO(new Date("2026-01-15T22:59:00.000Z")), "2026-01-15");
-});
-
-test("'datum in het verleden'-grens: lexicografische YYYY-MM-DD-vergelijking is exact de grens die route.ts gebruikt", () => {
-  const today = amsterdamTodayISO(new Date("2026-08-19T10:00:00.000Z"));
-  assert.equal(today, "2026-08-19");
-  assert.equal("2026-08-18" < today, true, "gisteren moet als 'in het verleden' herkend worden");
-  assert.equal("2026-08-19" < today, false, "vandaag zelf mag NOOIT als 'in het verleden' worden geweigerd");
-  assert.equal("2026-08-20" < today, false, "morgen is uiteraard geen verleden");
-});
+// 2026-08-19 (audit-correctie): de eerdere `amsterdamTodayISO()`-dag-check is
+// verwijderd — die was zelf een tweede, aparte tijdzone-implementatie naast
+// `amsterdamDepartureIso`, en toetste bovendien alleen de DATUM, niet het
+// volledige vertrekmoment ("vandaag, een uur geleden" zou zijn doorgekomen).
+// De "niet in het verleden"-regel toetst nu rechtstreeks in
+// app/api/pricing/quote/route.ts: `new Date(departureAt).getTime() < Date.now()`
+// — hergebruikt uitsluitend `amsterdamDepartureIso` (hierboven al DST-correct
+// getest), geen tweede implementatie. Zie
+// lib/pricing/quote-route-hardening.test.ts voor de HTTP-niveau-tests van die
+// combinatie (gisteren/vandaag-verstreken/vandaag-toekomstig/morgen).

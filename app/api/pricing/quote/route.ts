@@ -7,7 +7,7 @@ import {
   type UnavailableReason,
 } from "@/lib/pricing/service";
 import { isNightAdjustmentCode, type PriceSnapshot } from "@/lib/pricing/snapshot";
-import { amsterdamDepartureIso, amsterdamTodayISO } from "@/lib/pricing/departure-time";
+import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 import { classifyLuggage } from "@/lib/pricing/luggage";
 
 /**
@@ -143,17 +143,23 @@ export async function POST(request: Request) {
   if (!isExistingCalendarDate(normalizedDate)) {
     return badRequest("'date' moet een bestaande datum in formaat YYYY-MM-DD zijn.");
   }
-  // 2026-08-19 (audit-fix): "niet in het verleden" werd tot nu toe alleen door de
-  // UI afgedwongen (het `min`-attribuut op het datumveld) — rechtstreeks de API
-  // aanroepen met een datum in het verleden gaf gewoon een geldige, bindbare
-  // prijs + snapshot. Vergelijking op DAG-granulariteit in Europe/Amsterdam,
-  // zelfde grens als de client (`date >= todayISO()`).
-  if (normalizedDate < amsterdamTodayISO()) {
-    return badRequest("'date' mag niet in het verleden liggen.");
-  }
   const departureAt = amsterdamDepartureIso(normalizedDate, normalizedTime) ?? undefined;
   if (!departureAt) {
     return badRequest("'time' moet een geldige tijd in formaat HH:MM zijn.");
+  }
+  // 2026-08-19 (audit-correctie): "niet in het verleden" toetst het VOLLEDIGE
+  // vertrekmoment (datum + tijd), niet alleen de datum — anders zou "vandaag,
+  // maar een uur geleden" gewoon een geldige, bindbare prijs opleveren. Eerdere
+  // versie toetste uitsluitend op dag-granulariteit; dat was zelf al een tweede,
+  // aparte tijdzone-implementatie naast `amsterdamDepartureIso` — nu precies
+  // ÉÉN mechanisme: `departureAt` is al het DST-correcte, Amsterdamse
+  // vertrekinstant (fail-closed op een niet-bestaande lokale tijd, zie
+  // amsterdamDepartureIso), simpelweg vergeleken met "nu". Dit dekt automatisch
+  // alle vier de gevraagde gevallen: gisteren (altijd vóór nu), vandaag-met-
+  // verstreken-tijd (vóór nu), vandaag-met-toekomstige-tijd (na nu), morgen
+  // (na nu) — zonder een tweede datumvergelijking nodig te hebben.
+  if (new Date(departureAt).getTime() < Date.now()) {
+    return badRequest("'date'/'time' mogen niet in het verleden liggen.");
   }
 
   // Retour-vertrek (optioneel) → bepaalt het nachttarief van het retour-ritdeel.
