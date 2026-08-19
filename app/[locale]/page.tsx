@@ -287,6 +287,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             voice={t("arrivalVoice")}
             echo={t("arrivalEcho")}
             note={t("arrivalNote")}
+            // 2026-08-19 (hotfix): deze kop staat in de 48%-splitkolom van de
+            // ARRIVAL-sectie, niet in een bijna-volle-breedte Viewport zoals de
+            // overige drie NarrativePattern-koppen — de standaard `7.6vw` overschoot
+            // die smalle kolom vanaf md (bv. "Van voordeur" brak middenin het woord
+            // af op 1280px breed). `md:`-override schaalt tegen de kolombreedte;
+            // onder md (enkele kolom, volle breedte) blijft het standaardgedrag.
+            titleClassName="mt-6 font-display text-[clamp(44px,7.6vw,108px)] md:text-[clamp(40px,5.4vw,112px)] font-extrabold leading-[0.98] tracking-[-0.03em] text-ink"
           />
           <Reveal delay={2}>
             <div className="mt-9">

@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import { classifyLuggage, LUGGAGE_PIECES } from "@/lib/pricing/luggage";
 
 test("bekende bindende categorieën → binding + gedocumenteerde capaciteit", () => {
+  assert.deepEqual(classifyLuggage("geen-bagage"), { kind: "binding", category: "geen-bagage", pieces: 0 });
   assert.deepEqual(classifyLuggage("handbagage"), { kind: "binding", category: "handbagage", pieces: 0 });
   assert.deepEqual(classifyLuggage("1-2-koffers"), { kind: "binding", category: "1-2-koffers", pieces: 2 });
   assert.deepEqual(classifyLuggage("3-koffers"), { kind: "binding", category: "3-koffers", pieces: 3 });
   // Capaciteitskaart is exact en compleet.
-  assert.deepEqual(LUGGAGE_PIECES, { handbagage: 0, "1-2-koffers": 2, "3-koffers": 3 });
+  assert.deepEqual(LUGGAGE_PIECES, { "geen-bagage": 0, handbagage: 0, "1-2-koffers": 2, "3-koffers": 3 });
 });
 
 test("'overleg' → on_request (geen bindende boeking)", () => {

@@ -21,11 +21,19 @@ const TABS: { key: BookableRideType; labelKey: "tabEnkel" | "tabRetour" }[] = [
 ];
 
 const LUGGAGE = [
+  { value: "geen-bagage", labelKey: "bagageGeen" },
   { value: "handbagage", labelKey: "bagageHand" },
   { value: "1-2-koffers", labelKey: "bagage12" },
   { value: "3-koffers", labelKey: "bagage3" },
   { value: "overleg", labelKey: "bagageOverleg" },
 ] as const;
+
+/** ISO-datum van vandaag (lokale tijd), voor de `min`-grens en de niet-in-het-verleden-check. */
+function todayISO(): string {
+  const d = new Date();
+  const tzOffsetMs = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+}
 
 const inputCls =
   "min-h-[52px] w-full rounded-field border border-[rgba(31,39,48,0.14)] bg-field px-4 text-[15px] font-medium text-ink placeholder:font-normal placeholder:text-stone focus:border-accent focus:bg-white focus:shadow-[0_0_0_4px_rgba(40,49,59,0.10)] focus:outline-none";
@@ -45,6 +53,7 @@ export default function BookingSection({
   initialTime,
   initialReturnDate,
   initialReturnTime,
+  initialLuggage,
 }: {
   /** Deep-link (?pickup=…): veld vooraf gevuld, prijs rekent direct. */
   initialPickup?: string;
@@ -59,6 +68,8 @@ export default function BookingSection({
   initialTime?: string;
   initialReturnDate?: string;
   initialReturnTime?: string;
+  /** Deep-link (?luggage=…): vooraf gevuld vanuit de homepagehero, uitsluitend bekende categorieën. */
+  initialLuggage?: string;
 } = {}) {
   const t = useTranslations("booking");
   const locale = useLocale();
@@ -72,7 +83,10 @@ export default function BookingSection({
   const [persons, setPersons] = useState(
     initialPersons && initialPersons >= 1 ? Math.min(4, Math.floor(initialPersons)) : 1
   );
-  const [luggage, setLuggage] = useState("handbagage");
+  // 2026-08-19 (hotfix): leeg (niet vooraf op "handbagage" gezet) zodat bagage
+  // altijd een BEWUSTE keuze is — ook "Geen bagage" moet expliciet aangeklikt worden.
+  // Uitzondering: een reeds bewust in de hero gekozen waarde komt hier vooraf-gevuld binnen.
+  const [luggage, setLuggage] = useState(initialLuggage ?? "");
   // Datum/tijd zijn controlled zodat de live richtprijs ze traffic-aware meestuurt
   // (de submit blijft ze óók via FormData lezen — de name-attributen blijven staan).
   const [date, setDate] = useState(initialDate ?? "");
@@ -115,6 +129,14 @@ export default function BookingSection({
     if (loading) return; // geen dubbele submit
     if (!pickup || !dropoff) {
       setSubmit({ status: "error", message: t("valAdres") });
+      return;
+    }
+    if (!date || !time || date < todayISO()) {
+      setSubmit({ status: "error", message: t("valDatumTijd") });
+      return;
+    }
+    if (!luggage) {
+      setSubmit({ status: "error", message: t("valBagage") });
       return;
     }
     if (flightRequired && flightNumber.trim() === "") {
@@ -191,6 +213,11 @@ export default function BookingSection({
     [pickup]
   );
   const ready = pickup && dropoff;
+  // 2026-08-19 (hotfix): datum, tijd én bagage zijn verplicht vóórdat er ook maar
+  // een quote-API-call gedaan wordt — geen prijs (vast of dynamisch) zonder deze drie.
+  const dateValid = Boolean(date) && date >= todayISO();
+  const returnMomentReady = tab !== "retour" || (Boolean(returnDate) && Boolean(returnTime));
+  const quoteReady = Boolean(ready) && dateValid && Boolean(time) && Boolean(luggage) && returnMomentReady;
 
   // Live richtprijs én luchthavencontext via de GEDEELDE quote-flow
   // (components/shared/useRouteQuote.ts) — dezelfde keten als de homepagehero.
@@ -199,6 +226,8 @@ export default function BookingSection({
     passengers: persons,
     date,
     time,
+    luggage,
+    ready: quoteReady,
     // Retourtijd meesturen zodat het nachttarief per ritdeel wordt berekend.
     ...(tab === "retour" ? { returnDate, returnTime } : {}),
   });
@@ -219,7 +248,9 @@ export default function BookingSection({
 
   const priceNote =
     quote.status === "idle"
-      ? t("prijsIdle")
+      ? ready && !quoteReady
+        ? t("prijsKiesDatumTijdBagage")
+        : t("prijsIdle")
       : quote.status === "loading"
         ? t("prijsLaden")
         : quote.status === "ready"
@@ -334,7 +365,7 @@ export default function BookingSection({
           </div>
           <div>
             <label htmlFor="f-date" className={labelCls}>{t("datum")}</label>
-            <input id="f-date" name="datum" type="date" required className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />
+            <input id="f-date" name="datum" type="date" required min={todayISO()} className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div>
             <label htmlFor="f-time" className={labelCls}>{t("tijd")}</label>
@@ -384,9 +415,11 @@ export default function BookingSection({
             <select
               id="f-luggage"
               value={luggage}
+              required
               onChange={(e) => setLuggage(e.target.value)}
               className={inputCls}
             >
+              <option value="" disabled>{t("bagageKies")}</option>
               {LUGGAGE.map((l) => (
                 <option key={l.value} value={l.value}>{t(l.labelKey)}</option>
               ))}
@@ -534,7 +567,7 @@ export default function BookingSection({
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !quoteReady}
           aria-busy={loading}
           className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-all hover:-translate-y-0.5 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
           aria-label={t("verzenden")}

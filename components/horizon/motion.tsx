@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { formatEuroAmount } from "@/lib/format/currency";
 
 export function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -66,11 +67,24 @@ export function Reveal({
   );
 }
 
-/** CONFIRM — cijfers rollen naar hun waarde (odometer). */
+/**
+ * CONFIRM — cijfers rollen naar hun waarde (odometer).
+ *
+ * 2026-08-19 (hotfix): `value` mag sinds het pickup-aanrijmodel een niet-hele-
+ * euro-bedrag zijn (bv. 95,80 i.p.v. altijd een geheel getal). De oude
+ * implementatie deed `String(value).split("")` en behandelde ELK teken —ook de
+ * "."— als rollende cijferkolom: `Number(".")` is `NaN`, dus die kolom bleef op
+ * stand "0" hangen. Zichtbaar resultaat: "95,8" werd "9508" (de "." verdween
+ * spoorloos, alsof hij een extra cijfer was). Nu via de centrale
+ * `formatEuroAmount()` (twee decimalen, komma) geformatteerd; uitsluitend
+ * 0-9-tekens krijgen nog de rollende behandeling, "," en eventuele spaties
+ * worden als statische tekens getoond.
+ */
 export function Odometer({ value, className = "" }: { value: number | null; className?: string }) {
   const reduced = usePrefersReducedMotion();
   const [live, setLive] = useState(false);
-  const digits = value === null ? [] : String(value).split("");
+  const formatted = value === null ? null : formatEuroAmount(value);
+  const chars = formatted === null ? [] : formatted.split("");
   useEffect(() => {
     // eerst op 0-stand renderen, dan (één frame later) naar de waarde rollen
     setLive(false);
@@ -82,21 +96,27 @@ export function Odometer({ value, className = "" }: { value: number | null; clas
     return () => cancelAnimationFrame(t);
   }, [value, reduced]);
 
-  if (value === null) return <span className={className}>—</span>;
+  if (formatted === null) return <span className={className}>—</span>;
   return (
-    <span className={`hz-confirm-roll${live ? " hz-live" : ""} ${className}`} aria-label={String(value)}>
-      {digits.map((ch, i) => (
-        <span
-          key={`${i}-${digits.length}`}
-          className="hz-col"
-          aria-hidden="true"
-          style={{ transform: live ? `translateY(-${Number(ch) * 1.15}em)` : "translateY(0)" }}
-        >
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-            <span key={d}>{d}</span>
-          ))}
-        </span>
-      ))}
+    <span className={`hz-confirm-roll${live ? " hz-live" : ""} ${className}`} aria-label={formatted}>
+      {chars.map((ch, i) =>
+        /[0-9]/.test(ch) ? (
+          <span
+            key={`${i}-${chars.length}`}
+            className="hz-col"
+            aria-hidden="true"
+            style={{ transform: live ? `translateY(-${Number(ch) * 1.15}em)` : "translateY(0)" }}
+          >
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
+              <span key={d}>{d}</span>
+            ))}
+          </span>
+        ) : (
+          <span key={`${i}-static`} aria-hidden="true">
+            {ch}
+          </span>
+        )
+      )}
     </span>
   );
 }
