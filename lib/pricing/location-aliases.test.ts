@@ -10,7 +10,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { resolveLocationSlug } from "./location-aliases";
+import { resolveLocationSlug, resolvePriorityLocationSlug } from "./location-aliases";
 
 // ── Rotterdam: de acht gevraagde regressieadressen ──────────────────────────
 test("Rotterdamse wijkadressen resolven naar hun eigen wijk, niet naar de stad", () => {
@@ -171,4 +171,85 @@ test("woonplaats-labels (plaats, gemeente, provincie) resolven op het eerste seg
   // straatnamen met stadsnamen erin mogen NOOIT via deze terugval resolven
   assert.equal(resolveLocationSlug("Schipholweg 1, Leiden"), null);
   assert.equal(resolveLocationSlug("Utrechtseweg 10, Arnhem"), null);
+});
+
+// ── Hotfix 2026-08-19: het kale label "Rotterdam centrum" moet de bestaande
+// €39-vasteroute van "Rotterdam" vinden (pickup_slug "rotterdam"), niet de
+// wijk-slug "rotterdam-centrum" (die geen eigen vaste route heeft) ─────────
+
+test("het kale label 'Rotterdam centrum'/'Rotterdam-centrum' resolveert naar de stad, niet naar de wijk", () => {
+  const cases = [
+    "Rotterdam centrum",
+    "Rotterdam Centrum",
+    "ROTTERDAM CENTRUM",
+    "rotterdam centrum",
+    "Rotterdam-centrum",
+    "Rotterdam-Centrum",
+    "  Rotterdam   centrum  ", // extra/dubbele witruimte
+  ];
+  for (const adres of cases) {
+    assert.equal(resolveLocationSlug(adres), "rotterdam", adres);
+  }
+});
+
+test("hoofdletters maken geen verschil voor de Rotterdam-centrum-uitzondering", () => {
+  assert.equal(resolveLocationSlug("rotterdam centrum"), resolveLocationSlug("ROTTERDAM CENTRUM"));
+  assert.equal(resolveLocationSlug("Rotterdam Centrum"), resolveLocationSlug("rOtTeRdAm CeNtRuM"));
+});
+
+test("Rotterdam Centraal (het station) blijft ongewijzigd — bevat 'centrum' niet, wordt niet geraakt door de uitzondering", () => {
+  assert.equal(resolveLocationSlug("Rotterdam Centraal"), "rotterdam");
+});
+
+test("een écht straatadres in het Rotterdamse centrum blijft naar de wijk resolven — de uitzondering is geen generieke substringmatch op 'centrum'", () => {
+  // Met postcode: ongewijzigd, bestaand gedrag (regel 22 hierboven, nogmaals ter bevestiging).
+  assert.equal(resolveLocationSlug("Coolsingel 40, 3011 AD Rotterdam"), "rotterdam-centrum");
+  // Zonder postcode, maar wél met extra adresdelen naast het kale label: dit is
+  // NIET het kale label "Rotterdam centrum" — de bredere KEYWORD_RULES-regel
+  // ("rotterdam" + "centrum" ergens in de tekst) blijft hiervoor gelden.
+  assert.equal(resolveLocationSlug("Coolsingel 1, Rotterdam Centrum"), "rotterdam-centrum");
+  assert.equal(resolveLocationSlug("Hotel X, Rotterdam Centrum"), "rotterdam-centrum");
+});
+
+test("andere steden met 'centrum' blijven volledig onaangetast door de Rotterdam-uitzondering", () => {
+  assert.equal(resolveLocationSlug("Amsterdam Centrum"), "amsterdam-centrum");
+  assert.equal(resolveLocationSlug("amsterdam centrum"), "amsterdam-centrum");
+  assert.equal(resolveLocationSlug("Utrecht Centrum"), "utrecht-centrum");
+  assert.equal(resolveLocationSlug("utrecht centrum"), "utrecht-centrum");
+  assert.equal(resolveLocationSlug("Almere Stad"), "almere-stad-centrum");
+  // Den Haag heeft (pre-existing, ongewijzigd) geen KEYWORD_RULES-regel voor
+  // "centrum" als vrije tekst — alleen via postcode (2511-2517). Vrije tekst
+  // valt dus terug op de stad; dat is bestaand gedrag, niet iets dat deze
+  // hotfix aanraakt.
+  assert.equal(resolveLocationSlug("Den Haag Centrum"), "den-haag");
+});
+
+test("geen generieke substringmatch: bare 'centrum' alleen, of 'centrum' met een andere/onbekende stad, resolveert niet naar Rotterdam", () => {
+  assert.equal(resolveLocationSlug("centrum"), null);
+  assert.equal(resolveLocationSlug("Centrum"), null);
+  assert.equal(resolveLocationSlug("Groningen centrum"), null);
+});
+
+// ── resolvePriorityLocationSlug: de stap-0-uitzondering die zelfs vóór de
+// exacte-slug-lookup in findLocation() moet winnen (2026-08-19) — omdat
+// slugify("Rotterdam centrum") toevallig de ECHTE, bestaande wijk-slug
+// "rotterdam-centrum" oplevert, die anders altijd zou winnen. ──────────────
+
+test("resolvePriorityLocationSlug: uitsluitend het kale Rotterdam-centrum-label levert 'rotterdam' op, verder altijd null", () => {
+  for (const adres of ["Rotterdam centrum", "Rotterdam Centrum", "rotterdam centrum", "Rotterdam-centrum", "  Rotterdam   Centrum  "]) {
+    assert.equal(resolvePriorityLocationSlug(adres), "rotterdam", adres);
+  }
+  for (const adres of [
+    "Rotterdam",
+    "Rotterdam Centraal",
+    "Coolsingel 40, 3011 AD Rotterdam",
+    "Coolsingel 1, Rotterdam Centrum",
+    "Amsterdam Centrum",
+    "Utrecht Centrum",
+    "centrum",
+    "",
+    "rotterdam-kralingen",
+  ]) {
+    assert.equal(resolvePriorityLocationSlug(adres), null, adres);
+  }
 });
