@@ -227,6 +227,46 @@ const LANDMARK_KEYWORD_RULES: { test: (full: string) => boolean; slug: string }[
   },
 ];
 
+/**
+ * Smalle, eenduidige uitzondering (2026-08-19, hotfix): het KALE label
+ * "Rotterdam centrum" / "Rotterdam-centrum" (niets eromheen — geen straat,
+ * geen huisnummer, geen extra adresdelen) moet dezelfde vaste route vinden
+ * als het kale "Rotterdam" (de bestaande €39-route naar Rotterdam Airport,
+ * pickup_slug "rotterdam"). Zonder deze uitzondering matchte dat label de
+ * bredere `KEYWORD_RULES`-regel hieronder ("rotterdam" + "centrum" ⇒ wijk-slug
+ * "rotterdam-centrum"), en die wijk heeft geen eigen vaste route — dus viel de
+ * offerte terug op distance_tariff (€30 i.p.v. €39).
+ *
+ * Bewust GEEN generieke substringmatch op alleen "centrum": een echt
+ * straatadres in het centrum (bv. "Coolsingel 1, Rotterdam Centrum") bevat
+ * meer dan alleen dit kale label en blijft daarom via de bestaande, bredere
+ * KEYWORD_RULES-regel naar de wijk-slug "rotterdam-centrum" resolven —
+ * ongewijzigd gedrag. "Rotterdam Centraal" (het station) bevat het woord
+ * "centrum" niet en wordt door deze regex nooit geraakt.
+ */
+const BARE_ROTTERDAM_CENTRUM_RE = /^rotterdam[\s-]+centrum$/;
+
+/**
+ * Zelfde kale-labelcheck als hierboven, maar als HERBRUIKBARE export
+ * (2026-08-19): `findLocation()` in service.ts roept dit vóór zijn eigen
+ * exacte-slug-stap aan. Reden: `slugify("Rotterdam centrum")` produceert
+ * toevallig "rotterdam-centrum" — een ECHTE, bestaande wijk-slug — dus de
+ * normale exacte-slug-stap zou die wijk altijd vinden vóórdat deze module
+ * (stap 2, alias-resolutie) ooit aan bod komt. Voor dit ene, letterlijke kale
+ * label moet de STAD winnen (dezelfde bestaande vaste route als "Rotterdam"),
+ * dus dat vereist een uitzondering die zelfs vóór de exacte-slug-stap wint.
+ * Retourneert uitsluitend voor deze smalle, eenduidige gevallen — nooit voor
+ * een echt straatadres, en nooit voor een andere plaats. Alle overige exacte-
+ * slug-matches (inclusief de slug "rotterdam-centrum" zelf, als iemand die
+ * letterlijk als slug intypt) blijven via findLocation() ongewijzigd hun
+ * normale, absolute voorrang houden.
+ */
+export function resolvePriorityLocationSlug(address: string): string | null {
+  if (!address) return null;
+  const normalized = address.toLowerCase().trim().replace(/\s+/g, " ");
+  return BARE_ROTTERDAM_CENTRUM_RE.test(normalized) ? "rotterdam" : null;
+}
+
 const POSTCODE_RE = /\b([1-9]\d{3})\s?[A-Za-z]{2}\b/;
 
 function postcode4(address: string): number | null {
@@ -267,6 +307,12 @@ export function resolveLocationSlug(address: string): string | null {
 
   const full = address.toLowerCase();
   const place = placeOf(full);
+
+  // Smalle uitzondering (2026-08-19, hotfix) — vóór alle overige regels: het
+  // KALE label "Rotterdam centrum"/"Rotterdam-centrum" wint van de bredere
+  // wijkregel hieronder. Zie BARE_ROTTERDAM_CENTRUM_RE hierboven.
+  const normalizedFull = full.trim().replace(/\s+/g, " ");
+  if (BARE_ROTTERDAM_CENTRUM_RE.test(normalizedFull)) return "rotterdam";
 
   // Landmark-aliassen — hoge specificiteit, vóór de generieke KEYWORD_RULES.
   for (const rule of LANDMARK_KEYWORD_RULES) {

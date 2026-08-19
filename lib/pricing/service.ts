@@ -7,7 +7,7 @@ import {
   type PricingSupabaseClient,
 } from "@/lib/supabase/server";
 import type { Json, Tables, TablesInsert } from "@/lib/types/database";
-import { resolveLocationSlug } from "@/lib/pricing/location-aliases";
+import { resolveLocationSlug, resolvePriorityLocationSlug } from "@/lib/pricing/location-aliases";
 import { getDrivingRoute, type DrivingRoute } from "@/lib/pricing/routing";
 import { priceFromDistance, DEFAULT_DISTANCE_TARIFF } from "@/lib/pricing/distance-tariff";
 import {
@@ -976,6 +976,20 @@ async function findLocation(
   supabase: PricingSupabaseClient,
   raw: string
 ): Promise<LocationRow | null> {
+  // 0. Smalle uitzondering die zelfs vóór de exacte-slug-stap wint (2026-08-19,
+  //    hotfix): zie resolvePriorityLocationSlug() in location-aliases.ts.
+  //    "Rotterdam centrum" slugify't toevallig naar de bestaande wijk-slug
+  //    "rotterdam-centrum" (die geen eigen vaste route heeft) — dus zonder
+  //    deze stap zou stap 1 hieronder die wijk altijd vinden vóórdat de
+  //    alias-resolutie (stap 2) ooit aan bod komt. Uitsluitend voor dit ene,
+  //    letterlijke kale label; alle andere exacte-slug-matches (ook de slug
+  //    "rotterdam-centrum" zelf) behouden hun normale, absolute voorrang.
+  const priorityAlias = resolvePriorityLocationSlug(raw);
+  if (priorityAlias) {
+    const prioritized = await locationBySlug(supabase, priorityAlias);
+    if (prioritized) return prioritized;
+  }
+
   // 1. exacte slug — heeft altijd voorrang op alias-resolutie
   const exactSlug = slugify(raw);
   if (exactSlug) {
