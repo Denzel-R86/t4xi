@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatEuro, formatEuroAmount } from "@/lib/format/currency";
+import { formatEuro, formatEuroAmount, formatEuroForLocale } from "@/lib/format/currency";
 
 // 2026-08-19 (hotfix): regressietests voor de twee live-geconstateerde bugs.
 // "€9508": Odometer behandelde `String(95.8).split("")` letterlijk — de "."
@@ -16,6 +16,11 @@ test("formatEuroAmount: 95.8 → '95,80' (geen '.'-als-cijfer, geen afgekapt dec
 
 test("formatEuro: 95.8 → '€ 95,80'", () => {
   assert.equal(formatEuro(95.8), "€ 95,80");
+});
+
+test("formatEuroForLocale: landingspagina's ronden centen nooit af naar hele euro's", () => {
+  assert.equal(formatEuroForLocale(95.8, "nl"), "€ 95,80");
+  assert.equal(formatEuroForLocale(95.8, "en"), "€95.80");
 });
 
 test("formatEuroAmount: heel getal krijgt nog steeds twee decimalen", () => {

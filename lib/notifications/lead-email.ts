@@ -1,10 +1,18 @@
 import type { Locale } from "@/i18n/routing";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
+const RESEND_TIMEOUT_MS = 8_000;
 const DEFAULT_FROM = "T4XI <onboarding@resend.dev>";
 const DEFAULT_OPS = "booking@t4xi.nl";
 
-export const LEAD_KINDS = ["membership", "ride-pass", "hotel", "partner"] as const;
+export const LEAD_KINDS = [
+  "membership",
+  "ride-pass",
+  "hotel",
+  "partner",
+  "contact-private",
+  "contact-business",
+] as const;
 export type LeadKind = (typeof LEAD_KINDS)[number];
 
 export type LeadField = { label: string; value: string };
@@ -24,6 +32,8 @@ const SUBJECTS: Record<LeadKind, string> = {
   "ride-pass": "Nieuwe aanvraag zakelijke rittenkaart",
   hotel: "Nieuwe aanvraag hotelpartnerschap",
   partner: "Nieuwe aanmelding chauffeur-partner",
+  "contact-private": "Nieuwe particuliere contactaanvraag",
+  "contact-business": "Nieuwe zakelijke contactaanvraag",
 };
 
 function escapeHtml(value: string): string {
@@ -73,6 +83,7 @@ export async function sendLeadEmail(data: LeadEmailData): Promise<{ sent: boolea
     const response = await fetch(RESEND_ENDPOINT, {
       method: "POST",
       cache: "no-store",
+      signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -93,6 +104,8 @@ export async function sendLeadEmail(data: LeadEmailData): Promise<{ sent: boolea
     return { sent: true };
   } catch (error) {
     console.error("[lead-email] verzenden mislukt:", error instanceof Error ? error.message : error);
-    return { sent: false, error: "network_error" };
+    const timedOut =
+      error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+    return { sent: false, error: timedOut ? "timeout" : "network_error" };
   }
 }

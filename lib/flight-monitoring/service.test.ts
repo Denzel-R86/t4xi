@@ -7,6 +7,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   buildRegistration,
+  buildTripMonitoringRegistration,
   isTerminalFlight,
   backoffSeconds,
   landedTimeoutElapsed,
@@ -58,6 +59,54 @@ test("buildRegistration — geldig levert params zonder is_active", () => {
 test("buildRegistration — ongeldig/ontbrekend → null", () => {
   assert.equal(buildRegistration({ bookingId: "", flightNumber: "KL1234", scheduleDate: null, direction: null }), null);
   assert.equal(buildRegistration({ bookingId: "b1", flightNumber: "XX", scheduleDate: null, direction: null }), null);
+});
+
+test("buildTripMonitoringRegistration — aankomende retourvlucht krijgt prioriteit", () => {
+  assert.deepEqual(
+    buildTripMonitoringRegistration({
+      bookingId: "b1",
+      outbound: {
+        flightNumber: "KL1000",
+        scheduleDate: "2026-09-01",
+        direction: "departure",
+      },
+      returnLeg: {
+        flightNumber: "KL2000",
+        scheduleDate: "2026-09-05",
+        direction: "arrival",
+      },
+    }),
+    {
+      booking_id: "b1",
+      flight_number: "KL2000",
+      schedule_date: "2026-09-05",
+      direction: "arrival",
+    },
+  );
+});
+
+test("buildTripMonitoringRegistration — valt zonder geldige aankomst terug op outbound", () => {
+  assert.deepEqual(
+    buildTripMonitoringRegistration({
+      bookingId: "b1",
+      outbound: {
+        flightNumber: "KL1000",
+        scheduleDate: "2026-09-01",
+        direction: "departure",
+      },
+      returnLeg: {
+        flightNumber: "",
+        scheduleDate: "2026-09-05",
+        direction: "arrival",
+      },
+    }),
+    {
+      booking_id: "b1",
+      flight_number: "KL1000",
+      schedule_date: "2026-09-01",
+      direction: "departure",
+    },
+  );
 });
 
 // ── backoff / lifecycle pure helpers ─────────────────────────────────────────

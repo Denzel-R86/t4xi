@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { calculateBookingPrice } from "@/lib/pricing/engine";
 import { persistPriceSnapshot } from "@/lib/pricing/snapshot-store";
 import {
+  DEFAULT_VEHICLE_CLASS,
   type PricingQuoteInput,
   type PricingQuoteResult,
   type UnavailableReason,
@@ -9,6 +10,7 @@ import {
 import { isNightAdjustmentCode, type PriceSnapshot } from "@/lib/pricing/snapshot";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 import { classifyLuggage } from "@/lib/pricing/luggage";
+import { clientIp, rateLimit } from "@/lib/security/rate-limit";
 
 /**
  * POST /api/pricing/quote
@@ -29,13 +31,30 @@ type RequestBody = Record<string, unknown>;
 const PRIVATE_NO_STORE = "private, no-store, max-age=0";
 
 /**
+ * De klant kiest geen voertuigklasse. Deze waarde is onderdeel van het
+ * server-side prijsbeleid en mag nooit uit de publieke request-body komen.
+ */
+const PUBLIC_QUOTE_VEHICLE_CLASS = DEFAULT_VEHICLE_CLASS;
+
+// Demp dure Google Directions-aanroepen en vervuiling van pricing_quote_logs.
+// IP-only (geen user-agent), zodat een caller de limiet niet met UA-rotatie omzeilt.
+const RATE_MAX = 20;
+const RATE_WINDOW_MS = 60_000;
+const MAX_BODY_BYTES = 8_000;
+const MAX_ADDRESS_CHARS = 300;
+
+/**
  * Quotes kunnen routegegevens en een eenmalige quote-lock bevatten. `force-dynamic`
  * voorkomt Next-caching, maar zet geen expliciet browser- of proxybeleid.
  */
-function json(status: number, payload: Record<string, unknown>) {
+function json(
+  status: number,
+  payload: Record<string, unknown>,
+  extraHeaders?: Record<string, string>
+) {
   return NextResponse.json(payload, {
     status,
-    headers: { "Cache-Control": PRIVATE_NO_STORE },
+    headers: { "Cache-Control": PRIVATE_NO_STORE, ...extraHeaders },
   });
 }
 
@@ -77,10 +96,35 @@ function statusForReason(reason: UnavailableReason): 400 | 404 | 422 | 500 {
 }
 
 export async function POST(request: Request) {
-  // 1. Body parsen
+  // 0. Elke poging telt, ook malformed/ongeldige input: zo kan een caller de
+  // limiter niet omzeilen terwijl die dure aanvragen voorbereidt.
+  const ip = clientIp(request);
+  const limit = rateLimit(`pricing-quote:${ip}`, RATE_MAX, RATE_WINDOW_MS);
+  if (limit.limited) {
+    return json(
+      429,
+      {
+        available: false,
+        error: "rate_limited",
+        message: "Te veel prijsaanvragen. Probeer het over een minuut opnieuw.",
+      },
+      { "Retry-After": String(limit.retryAfterSec) }
+    );
+  }
+
+  // 1. Body begrenzen en parsen. Ook binnen de toegestane 20 verzoeken mag een
+  // caller geen onbeperkte JSON/adresstrings laten verwerken of loggen.
   let body: RequestBody;
   try {
-    const parsed = (await request.json()) as unknown;
+    const rawBody = await request.text();
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
+      return json(413, {
+        available: false,
+        error: "payload_too_large",
+        message: "Prijsaanvraag is te groot.",
+      });
+    }
+    const parsed = JSON.parse(rawBody) as unknown;
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
       return badRequest("Body moet een JSON-object zijn.");
     }
@@ -90,16 +134,19 @@ export async function POST(request: Request) {
   }
 
   // 2. Input valideren (type-veilig)
-  const { pickup, dropoff, vehicleClass, returnTrip, passengers, luggage, luggageCategory, date, time, returnDate, returnTime } = body;
+  const { pickup, dropoff, returnTrip, passengers, luggageCategory, date, time, returnDate, returnTime } = body;
 
   if (typeof pickup !== "string" || pickup.trim() === "") {
     return badRequest("Veld 'pickup' is verplicht en moet een niet-lege string zijn.");
   }
+  if (pickup.trim().length > MAX_ADDRESS_CHARS) {
+    return badRequest(`Veld 'pickup' mag maximaal ${MAX_ADDRESS_CHARS} tekens bevatten.`);
+  }
   if (typeof dropoff !== "string" || dropoff.trim() === "") {
     return badRequest("Veld 'dropoff' is verplicht en moet een niet-lege string zijn.");
   }
-  if (vehicleClass !== undefined && typeof vehicleClass !== "string") {
-    return badRequest("'vehicleClass' moet een string zijn.");
+  if (dropoff.trim().length > MAX_ADDRESS_CHARS) {
+    return badRequest(`Veld 'dropoff' mag maximaal ${MAX_ADDRESS_CHARS} tekens bevatten.`);
   }
   if (returnTrip !== undefined && typeof returnTrip !== "boolean") {
     return badRequest("'returnTrip' moet een boolean zijn.");
@@ -110,12 +157,6 @@ export async function POST(request: Request) {
   ) {
     return badRequest("'passengers' moet een positief geheel getal zijn.");
   }
-  if (
-    luggage !== undefined &&
-    (typeof luggage !== "number" || !Number.isInteger(luggage) || luggage < 0)
-  ) {
-    return badRequest("'luggage' moet een geheel getal van 0 of hoger zijn.");
-  }
   // 2026-08-19 (hotfix): een bewust gekozen bagagecategorie (zelfde catalogus als
   // /api/bookings, zie lib/pricing/luggage.ts) is verplicht vóórdat er een prijs
   // getoond wordt — óók "geen-bagage" moet expliciet gekozen zijn. Dit is de
@@ -123,7 +164,10 @@ export async function POST(request: Request) {
   // BookingSection; bypassen van de UI mag nooit alsnog een prijs opleveren
   // zonder een geldige bagagekeuze. Losstaand van het bestaande numerieke
   // 'luggage'-veld hierboven (capaciteitscontrole tegen vehicle_classes.max_luggage).
-  if (typeof luggageCategory !== "string" || classifyLuggage(luggageCategory).kind === "invalid") {
+  const luggageClass = typeof luggageCategory === "string"
+    ? classifyLuggage(luggageCategory)
+    : { kind: "invalid" as const };
+  if (luggageClass.kind === "invalid") {
     return badRequest("'luggageCategory' is verplicht: kies eerst uw bagage voordat een prijs opgevraagd wordt.");
   }
 
@@ -162,12 +206,19 @@ export async function POST(request: Request) {
     return badRequest("'date'/'time' mogen niet in het verleden liggen.");
   }
 
-  // Retour-vertrek (optioneel) → bepaalt het nachttarief van het retour-ritdeel.
-  // Zodra één deel wordt meegestuurd, moeten retourdatum én -tijd geldig zijn.
+  // Retour-vertrek → bepaalt het nachttarief van het retour-ritdeel en is daarom
+  // onderdeel van de bindende fingerprint. Preview en boeking moeten exact
+  // dezelfde ritstructuur valideren; anders ontstaat pas bij bevestigen een
+  // onvermijdelijke QUOTE_MISMATCH.
   let returnDepartureAt: string | undefined;
-  if (returnDate !== undefined || returnTime !== undefined) {
-    if (typeof returnDate !== "string" || typeof returnTime !== "string") {
-      return badRequest("'returnDate' en 'returnTime' moeten samen als strings worden meegestuurd.");
+  if (returnTrip === true) {
+    if (
+      typeof returnDate !== "string" ||
+      returnDate.trim() === "" ||
+      typeof returnTime !== "string" ||
+      returnTime.trim() === ""
+    ) {
+      return badRequest("'returnDate' en 'returnTime' zijn verplicht voor een retourrit.");
     }
     const normalizedReturnDate = returnDate.trim();
     const normalizedReturnTime = returnTime.trim();
@@ -178,15 +229,24 @@ export async function POST(request: Request) {
     if (!returnDepartureAt) {
       return badRequest("'returnTime' moet een geldige tijd in formaat HH:MM zijn.");
     }
+    if (Date.parse(returnDepartureAt) <= Date.parse(departureAt)) {
+      return badRequest("Het retourmoment moet na het vertrek van de heenrit liggen.");
+    }
+  } else if (returnDate !== undefined || returnTime !== undefined) {
+    return badRequest("Retourgegevens zijn alleen toegestaan bij een retourrit.");
   }
 
   const input: PricingQuoteInput = {
     pickup: pickup.trim(),
     dropoff: dropoff.trim(),
-    ...(vehicleClass !== undefined ? { vehicleClass } : {}),
+    // Autoritatief serverbeleid. Een eventueel binnenkomend `vehicleClass`-veld
+    // wordt genegeerd, ook bij een bestaande interne klasse zoals `business`.
+    vehicleClass: PUBLIC_QUOTE_VEHICLE_CLASS,
     ...(returnTrip !== undefined ? { returnTrip } : {}),
     ...(passengers !== undefined ? { passengers } : {}),
-    ...(luggage !== undefined ? { luggage } : {}),
+    // Capaciteit komt uitsluitend uit de gevalideerde categorie. Een los
+    // publiek numeriek `luggage`-veld kan de gekozen categorie niet omzeilen.
+    ...(luggageClass.kind === "binding" ? { luggage: luggageClass.pieces } : {}),
     ...(departureAt !== undefined ? { departureAt } : {}),
     ...(returnDepartureAt !== undefined ? { returnDepartureAt } : {}),
   };
@@ -205,24 +265,55 @@ export async function POST(request: Request) {
     return json(500, { available: false, message: "Offerte op aanvraag" });
   }
 
+  const needsManualLuggageReview =
+    luggageClass.kind === "on_request" ||
+    (luggageClass.kind === "binding" &&
+      luggageClass.category === "3-koffers" &&
+      (passengers ?? 1) > 3);
+  if (needsManualLuggageReview) {
+    // Geen prijs/quoteId/snapshot voor een combinatie die eerst operationeel
+    // moet worden bevestigd. De al berekende context blijft beschikbaar voor
+    // luchthavenvelden en de vooringevulde offerte-aanvraag.
+    return json(404, {
+      available: false,
+      message: "Offerte op aanvraag",
+      isAirportTransfer: result.airport.isAirportTransfer,
+      pickupIsAirport: result.airport.pickupIsAirport,
+      dropoffIsAirport: result.airport.dropoffIsAirport,
+      isAirportPickup: result.airport.isAirportPickup,
+      isAirportDropoff: result.airport.isAirportDropoff,
+      flightDirection: result.airport.flightDirection,
+    });
+  }
+
   // 4. Resultaat → HTTP
   if (result.available) {
-    // Snapshot ATOMAIR opslaan (best-effort: blokkeert de offerte nooit). Alleen
-    // wanneer de opslag door de DB bevestigd is, geven we quoteId terug — nooit een
-    // niet-opgeslagen id. quoteId is ADDITIEF: bestaande clients negeren het gewoon.
-    let quoteId: string | undefined;
-    if (snapshot) {
-      const stored = await persistPriceSnapshot(snapshot);
-      if (stored) quoteId = snapshot.quoteId;
+    // Een publiek getoonde vaste prijs is alleen geldig als de immutable snapshot
+    // daadwerkelijk is opgeslagen. Zonder bevestigde lock zou de boeking later
+    // opnieuw moeten rekenen en kan de prijs wijzigen of verdwijnen. Daarom
+    // fail-closed: geen prijs lekken en de client laat opnieuw proberen.
+    if (!snapshot) {
+      return json(503, {
+        available: false,
+        error: "quote_lock_unavailable",
+        message: "Prijs tijdelijk niet beschikbaar. Probeer het opnieuw.",
+      });
+    }
+    const stored = await persistPriceSnapshot(snapshot);
+    if (!stored) {
+      return json(503, {
+        available: false,
+        error: "quote_lock_unavailable",
+        message: "Prijs tijdelijk niet beschikbaar. Probeer het opnieuw.",
+      });
     }
     // Getoonde prijs = snapshot-TOTAAL (incl. eventueel nachttarief), zodat wat de
-    // klant ziet exact overeenkomt met wat de boeking (quote-lock) afrekent. Zonder
-    // snapshot (zeldzaam) valt het terug op het basisbedrag.
-    const displayPrice = snapshot ? snapshot.totalCents / 100 : result.price;
+    // klant ziet exact overeenkomt met wat de boeking (quote-lock) afrekent.
+    const displayPrice = snapshot.totalCents / 100;
     // Nachttoeslag expliciet uit de per-ritdeel `night_*`-adjustments sommeren —
     // niet als total−subtotal, zodat toekomstige andere adjustments niet als "nacht"
     // worden gelabeld.
-    const nightCents = (snapshot?.adjustments ?? [])
+    const nightCents = snapshot.adjustments
       .filter((a) => isNightAdjustmentCode(a.code))
       .reduce((sum, a) => sum + a.amountCents, 0);
     const nightSurcharge = nightCents / 100;
@@ -248,8 +339,8 @@ export async function POST(request: Request) {
         isAirportPickup: result.airport.isAirportPickup,
         isAirportDropoff: result.airport.isAirportDropoff,
         flightDirection: result.airport.flightDirection,
-        // ADDITIEF (7.6.3C): quote-lock identifier; alleen aanwezig bij bevestigde opslag.
-        ...(quoteId ? { quoteId } : {}),
+        // Verplicht bij iedere vaste prijs: de opslag is hierboven bevestigd.
+        quoteId: snapshot.quoteId,
       });
   }
 

@@ -53,7 +53,7 @@ export default function Footer() {
             <p className="text-eyebrow font-medium uppercase text-stone">{t("dienstenKop")}</p>
             <ul className="mt-4 space-y-2.5 text-sm">
               <li><Link href="/diensten" className="text-stone-subtle hover:text-white">{t("schiphol")}</Link></li>
-              <li><Link href="/diensten" className="text-stone-subtle hover:text-white">{t("zakelijk")}</Link></li>
+              <li><Link href="/zakelijk-vervoer" className="text-stone-subtle hover:text-white">{t("zakelijk")}</Link></li>
               <li><Link href="/diensten" className="text-stone-subtle hover:text-white">{t("prive")}</Link></li>
               <li><Link href="/diensten" className="text-stone-subtle hover:text-white">{t("evenementen")}</Link></li>
               <li><Link href="/dagtochten" className="text-stone-subtle hover:text-white">{t("dagtochten")}</Link></li>
@@ -65,7 +65,7 @@ export default function Footer() {
             <p className="text-eyebrow font-medium uppercase text-stone">T4XI</p>
             <ul className="mt-4 space-y-2.5 text-sm">
               <li><Link href="/#vloot" className="text-stone-subtle hover:text-white">{t("wagenpark")}</Link></li>
-              <li><Link href="/diensten" className="text-stone-subtle hover:text-white">{t("bedrijven")}</Link></li>
+              <li><Link href="/zakelijk-vervoer" className="text-stone-subtle hover:text-white">{t("bedrijven")}</Link></li>
               <li><Link href="/partner" className="text-stone-subtle hover:text-white">{t("partnerWorden")}</Link></li>
               {/* "Mijn account" verwijderd: /klant is afgesloten tot er echte
                   authenticatie is (Sprint 11, Fase 0 — zie proxy.ts). */}

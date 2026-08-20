@@ -95,7 +95,9 @@ export async function pageMetadata(
 /** Voorkomt dat homepage-metadata vanuit de locale-layout doorlekt naar 404's. */
 export function notFoundMetadata(title = "404 — T4XI"): Metadata {
   return {
-    title,
+    // `absolute` voorkomt dat de locale-layout zijn "— T4XI"-template nogmaals
+    // achter de reeds complete 404-titel zet.
+    title: { absolute: title },
     description: null,
     robots: { index: false, follow: false },
     alternates: null,

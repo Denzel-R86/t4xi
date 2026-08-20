@@ -1,7 +1,9 @@
 import { pageMetadata } from "@/lib/seo-locale";
 import ContactSection from "@/components/sections/ContactSection";
+import ContactLeadForm from "@/components/contact/ContactLeadForm";
 import FaqList from "@/components/sections/FaqList";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import { contactPrefill } from "@/lib/contact/prefill";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -9,13 +11,21 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return pageMetadata(locale, "/contact", "contactTitle", "contactDesc");
 }
 
-export default async function ContactPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function ContactPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ audience?: string | string[]; topic?: string | string[] }>;
+}) {
   const { locale } = await params;
+  const prefill = contactPrefill(await searchParams);
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "contact" });
   return (
     <>
       <ContactSection />
+      <ContactLeadForm initialAudience={prefill.audience} initialTopic={prefill.topic} />
       <section className="py-16 md:py-24" aria-labelledby="faq-title">
         <div className="mx-auto max-w-site px-6">
           <ScrollReveal>

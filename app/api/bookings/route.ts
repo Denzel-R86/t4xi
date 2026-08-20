@@ -7,7 +7,10 @@ import { classifyLuggage } from "@/lib/pricing/luggage";
 import { readPriceSnapshot } from "@/lib/pricing/snapshot-store";
 import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
-import { buildRegistration, registerFlightMonitoring } from "@/lib/flight-monitoring/service";
+import {
+  buildTripMonitoringRegistration,
+  registerFlightMonitoring,
+} from "@/lib/flight-monitoring/service";
 
 /**
  * POST /api/bookings
@@ -16,8 +19,8 @@ import { buildRegistration, registerFlightMonitoring } from "@/lib/flight-monito
  * nooit gecachet). De service-role key blijft op de server; hij wordt nooit in
  * de response of naar de client gelekt.
  *
- * Anti-spam/misbruik (Stap 9f), vóór alles: payload-size guard → rate limiting
- * (max 5 pogingen / 10 min per IP+user-agent, 429) → honeypot (stil accepteren
+ * Anti-spam/misbruik (Stap 9f), vóór alles: rate limiting → payload-size guard
+ * (max 5 pogingen / 10 min per IP, 429) → honeypot (stil accepteren
  * zonder DB-write). Verdachte pogingen worden server-side gelogd.
  *
  * Flow:
@@ -80,15 +83,10 @@ export async function POST(request: Request) {
   const ip = clientIp(request);
   const ua = request.headers.get("user-agent") ?? "unknown";
 
-  // 0a. Payload-size guard — lees de ruwe body één keer, begrens de grootte.
-  const rawBody = await request.text();
-  if (rawBody.length > MAX_BODY_BYTES) {
-    console.warn(`[bookings] payload te groot (${rawBody.length} tekens) ip=${ip}`);
-    return json(413, { ok: false, error: "payload_too_large", message: "Aanvraag te groot." });
-  }
-
-  // 0b. Rate limiting per IP + user-agent (elke poging telt, ook ongeldige).
-  const rl = rateLimit(`bookings:${ip}|${ua}`, RATE_MAX, RATE_WINDOW_MS);
+  // 0a. IP-only rate limiting, vóór het inlezen van de body. Elke poging telt,
+  // inclusief een te grote of ongeldige body; User-Agent-rotatie kan de limiet
+  // niet omzeilen. De UA wordt uitsluitend begrensd in de operationele logregel.
+  const rl = rateLimit(`bookings:${ip}`, RATE_MAX, RATE_WINDOW_MS);
   if (rl.limited) {
     console.warn(`[bookings] rate-limit overschreden ip=${ip} ua="${ua.slice(0, 80)}"`);
     return NextResponse.json(
@@ -102,6 +100,13 @@ export async function POST(request: Request) {
         headers: { ...NO_STORE_HEADERS, "Retry-After": String(rl.retryAfterSec) },
       }
     );
+  }
+
+  // 0b. Payload-size guard — lees de ruwe body één keer, begrens de grootte.
+  const rawBody = await request.text();
+  if (rawBody.length > MAX_BODY_BYTES) {
+    console.warn(`[bookings] payload te groot (${rawBody.length} tekens) ip=${ip}`);
+    return json(413, { ok: false, error: "payload_too_large", message: "Aanvraag te groot." });
   }
 
   // 1. Body parsen (uit de al gelezen tekst).
@@ -166,7 +171,6 @@ export async function POST(request: Request) {
   if (luggageClass.kind === "invalid") {
     return bad("Kies een geldige bagage-optie.");
   }
-  const luggageOnRequest = luggageClass.kind === "on_request";
 
   // Volledig lokaal vertrekmoment valideren, niet alleen de kalenderdag. Zo kan
   // een rit voor eerder vandaag evenmin als toekomstige boeking worden opgeslagen.
@@ -197,6 +201,11 @@ export async function POST(request: Request) {
     if (body.persons > MAX_PERSONS) return bad(`Maximaal ${MAX_PERSONS} passagiers.`);
     persons = body.persons;
   }
+  const luggageNeedsManualReview =
+    luggageClass.kind === "on_request" ||
+    (luggageClass.kind === "binding" &&
+      luggageClass.category === "3-koffers" &&
+      persons > 3);
 
   const coord = (v: unknown): number | null =>
     typeof v === "number" && Number.isFinite(v) ? v : null;
@@ -215,6 +224,7 @@ export async function POST(request: Request) {
       dropoff,
       returnTrip,
       passengers: persons,
+      ...(luggageClass.kind === "binding" ? { luggage: luggageClass.pieces } : {}),
       departureAt,
       ...(returnDepartureAt !== undefined ? { returnDepartureAt } : {}),
       quoteId: str(body.quoteId) || null,
@@ -231,10 +241,9 @@ export async function POST(request: Request) {
   let lockedQuoteId: string | null = null; // te consumeren snapshot (pad a)
   const currency: "EUR" = "EUR";
   const airport: AirportContext = outcome.airport;
-  // 'overleg'-bagage → NOOIT bindend: forceer offerte op aanvraag (handmatige
-  // beoordeling), ongeacht een gelockte prijs. De snapshot wordt dan niet
-  // geconsumeerd en de RPC (die 'overleg' óók fail-closed weigert) wordt overgeslagen.
-  if (outcome.kind === "priced" && !luggageOnRequest) {
+  // Onbekende of gecombineerde capaciteit → NOOIT bindend: forceer offerte op
+  // aanvraag, consumeer geen snapshot en sla de lock-RPC over.
+  if (outcome.kind === "priced" && !luggageNeedsManualReview) {
     priceEuros = outcome.priceEuros;
     returnApplied = outcome.returnApplied;
     lockedQuoteId = outcome.lockedQuoteId;
@@ -242,7 +251,9 @@ export async function POST(request: Request) {
   }
   // outcome.kind === "on_request" (of overleg) → offerte op aanvraag (prijs null).
 
-  // 3b. Vluchtnummer — verplicht zodra één zijde een luchthaven is.
+  // 3b. Vluchtnummer — verplicht bij een luchthavenOPHALING (aankomende vlucht),
+  // optioneel bij wegbrengen naar de luchthaven. Dit is exact dezelfde regel als
+  // in BookingSection; formulier en server mogen elkaar hier nooit tegenspreken.
   //
   // T4XI belooft de vluchtstatus te volgen en het ophaalmoment aan te passen bij
   // vertraging. Die belofte wordt handmatig uitgevoerd en is zonder vluchtnummer
@@ -256,11 +267,13 @@ export async function POST(request: Request) {
   // De richting wordt server-side afgeleid en nooit door de klant gekozen:
   // luchthaven als vertrek → arrival, luchthaven als bestemming → departure.
   // `airport` is hierboven gezet: uit de snapshot (quote-lock) of uit de service.
-  if (airport.isAirportTransfer && flightNumber === "") {
+  const outboundFlightRequired =
+    airport.isAirportTransfer && airport.flightDirection === "arrival";
+  const returnFlightRequired =
+    returnTrip && airport.isAirportTransfer && airport.flightDirection === "departure";
+  if (outboundFlightRequired && flightNumber === "") {
     return bad(
-      airport.isAirportPickup
-        ? "Vul uw aankomende vluchtnummer in — daarmee volgen wij uw vlucht en passen wij het ophaalmoment aan."
-        : "Vul uw vertrekkende vluchtnummer in, zodat wij de rit daarop kunnen plannen."
+      "Vul uw aankomende vluchtnummer in — daarmee volgen wij uw vlucht en passen wij het ophaalmoment aan."
     );
   }
   if (flightNumber !== "" && !/^[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?$/.test(flightNumber)) {
@@ -269,12 +282,8 @@ export async function POST(request: Request) {
   if (returnFlightNumber !== "" && !/^[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?$/.test(returnFlightNumber)) {
     return bad("Retourvluchtnummer lijkt niet te kloppen. Bijvoorbeeld: KL1234.");
   }
-  if (returnTrip && airport.isAirportTransfer && returnFlightNumber === "") {
-    return bad(
-      airport.isAirportPickup
-        ? "Vul het vertrekkende vluchtnummer van uw retourrit in."
-        : "Vul het aankomende vluchtnummer van uw retourrit in."
-    );
+  if (returnFlightRequired && returnFlightNumber === "") {
+    return bad("Vul het aankomende vluchtnummer van uw retourrit in.");
   }
   // Een vluchtnummer zonder luchthaven aan een van beide zijden slaat nergens op;
   // we slaan het dan niet op in plaats van het stilzwijgend te bewaren.
@@ -304,7 +313,17 @@ export async function POST(request: Request) {
     //    boeking, geen tweede betaling, geen tweede Google-call).
     ({ data, error } = await supabase.rpc("create_booking_from_snapshot", {
       p_quote_id: lockedQuoteId,
-      p_expected_fingerprint: quoteFingerprint({ pickup, dropoff, returnTrip }),
+      // Exact dezelfde prijsbepalende invoer als bij de preview. De vertrek-
+      // instants horen bij de fingerprint omdat het nachttarief ervan afhangt.
+      // Zonder deze velden week iedere geldige snapshot met datum/tijd af en
+      // antwoordde de RPC met QUOTE_MISMATCH.
+      p_expected_fingerprint: quoteFingerprint({
+        pickup,
+        dropoff,
+        returnTrip,
+        departureAt,
+        ...(returnDepartureAt !== undefined ? { returnDepartureAt } : {}),
+      }),
       p_ride_type: rideType,
       p_from_address: pickup,
       p_to_address: dropoff,
@@ -466,16 +485,33 @@ export async function POST(request: Request) {
     console.error("[bookings] notificatie-laag fout:", e instanceof Error ? e.message : e);
   }
 
-  // 5b. Vluchtmonitoring (best-effort, Sprint 7.8A): registreer elke luchthavenrit
-  //     met vluchtnummer zodat de poller de status kan volgen. Mag de boeking nooit
-  //     breken; idempotent via UNIQUE booking_id. Geen pricing/Stripe.
+  // 5b. Vluchtmonitoring (best-effort, Sprint 7.8A). De tabel heeft bewust één
+  //     rij per boeking; bij een retour krijgt daarom de aankomende vlucht
+  //     (luchthavenophaling) prioriteit boven een optionele vertrekkende vlucht.
+  //     Mag de boeking nooit breken; idempotent via UNIQUE booking_id.
   await registerFlightMonitoring(
     supabase,
-    buildRegistration({
+    buildTripMonitoringRegistration({
       bookingId,
-      flightNumber: flightNumberToStore,
-      scheduleDate: date,
-      direction: flightDirection,
+      outbound: {
+        flightNumber: flightNumberToStore,
+        scheduleDate: date,
+        direction: flightDirection,
+      },
+      ...(returnTrip
+        ? {
+            returnLeg: {
+              flightNumber: returnFlightNumberToStore,
+              scheduleDate: returnDate,
+              direction:
+                flightDirection === "arrival"
+                  ? "departure"
+                  : flightDirection === "departure"
+                    ? "arrival"
+                    : null,
+            },
+          }
+        : {}),
     })
   );
 

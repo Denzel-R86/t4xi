@@ -8,14 +8,14 @@ import type { CmsServicesPage } from "@/sanity/types";
 
 const DIENSTEN = [
   { icon: "plane", n: 1, href: "/boeken", featured: true },
-  { icon: "briefcase", n: 2, href: "/contact", featured: false },
+  { icon: "briefcase", n: 2, href: "/zakelijk-vervoer", featured: false },
   { icon: "user", n: 3, href: "/boeken", featured: false },
   { icon: "confetti", n: 4, href: "/contact", featured: false },
 ] as const;
 
 const SERVICE_PRESENTATION = {
   airport: { icon: "plane", href: "/boeken", featured: true },
-  business: { icon: "briefcase", href: "/contact", featured: false },
+  business: { icon: "briefcase", href: "/zakelijk-vervoer", featured: false },
   private: { icon: "user", href: "/boeken", featured: false },
   event: { icon: "confetti", href: "/contact", featured: false },
 } as const;
@@ -41,13 +41,19 @@ export default function ServicesSection({
   const services = content
     ? content.services.map((service) => {
         const presentation = servicePresentation(service.serviceType);
+        const serviceType = stegaClean(service.serviceType);
         return {
           _key: service._key,
           title: service.title,
           description: service.summary,
           features: service.benefits,
           ctaLabel: service.action.label,
-          ctaHref: safeCmsInternalHref(service.action.href, presentation.href),
+          // De zakelijke route is onderdeel van de applicatie-architectuur, niet
+          // redactionele copy. Oude Sanity-documenten wijzen nog naar /contact;
+          // houd deze ene bestemming daarom autoritatief in de presentation map.
+          ctaHref: serviceType === "business"
+            ? presentation.href
+            : safeCmsInternalHref(service.action.href, presentation.href),
           ctaAccessibleLabel: cleanCmsOptionalText(service.action.accessibleLabel),
           icon: presentation.icon,
           featured: presentation.featured,

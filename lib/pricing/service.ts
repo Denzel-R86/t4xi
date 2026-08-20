@@ -57,7 +57,8 @@ import { eurosToCents } from "@/lib/payments/create-intent";
  * aanvraag". De afstandsbron is Google Directions (zie routing.ts).
  */
 
-const DEFAULT_VEHICLE_CLASS = "executive-ev";
+/** Enige centrale standaard voor callers die geen interne klasse selecteren. */
+export const DEFAULT_VEHICLE_CLASS = "executive-ev";
 const QUOTE_ON_REQUEST_MESSAGE = "Offerte op aanvraag";
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -846,18 +847,27 @@ export async function resolveQuoteWith(
   // met vluchtnummerplicht.
   const airport = airportContext(pickup, dropoff);
 
-  // Capaciteitscontrole (zacht): alleen hard toetsen als de klasse bekend is.
+  // Een voertuigklasse is prijsbepalend en moet daarom een actieve rij uit de
+  // interne vehicle_classes-catalogus zijn. Zonder deze fail-closed check kon een
+  // onbekende code de vaste-routekeuze overslaan en alsnog via Google Directions
+  // een bindende afstandsprijs krijgen. De publieke route kiest de klasse zelf;
+  // deze check beschermt ook overige/interne callers tegen ongeldige codes.
+  if (!vehicleClass) {
+    return unavailable(
+      classCode === DEFAULT_VEHICLE_CLASS ? "data_unavailable" : "invalid_input",
+      airport
+    );
+  }
+
+  // Capaciteitscontrole tegen de hierboven gevalideerde, actieve klasse.
   const passengers = input.passengers ?? 1;
   const luggage = input.luggage ?? 0;
-  if (
-    vehicleClass &&
-    (passengers > vehicleClass.max_passengers || luggage > vehicleClass.max_luggage)
-  ) {
+  if (passengers > vehicleClass.max_passengers || luggage > vehicleClass.max_luggage) {
     return unavailable("capacity_exceeded", airport);
   }
 
-  // 1. Vaste route = bron van waarheid (alleen als beide locaties én klasse bekend zijn).
-  if (pickup && dropoff && vehicleClass) {
+  // 1. Vaste route = bron van waarheid (klasse is hierboven al gevalideerd).
+  if (pickup && dropoff) {
     let fixed: FixedRouteRow | null;
     try {
       fixed = await deps.findFixedRoute(pickup.id, dropoff.id, vehicleClass.id);
@@ -920,7 +930,6 @@ export async function resolveQuoteWith(
       input,
       pickupRaw,
       dropoffRaw,
-      classCode,
       pickup,
       dropoff,
       vehicleClass,
@@ -930,7 +939,7 @@ export async function resolveQuoteWith(
   }
 
   // 3. Niets bruikbaars → offerte op aanvraag. De reden hangt af van wat ontbrak.
-  if (!pickup || !dropoff || !vehicleClass) return unavailable("unknown_location", airport);
+  if (!pickup || !dropoff) return unavailable("unknown_location", airport);
   return unavailable("route_not_fixed", airport);
 }
 
@@ -950,10 +959,9 @@ async function tryDistanceTariff(
   input: PricingQuoteInput,
   pickupRaw: string,
   dropoffRaw: string,
-  classCode: string,
   pickup: LocationRow | null,
   dropoff: LocationRow | null,
-  vehicleClass: VehicleClassRow | null,
+  vehicleClass: VehicleClassRow,
   airport: AirportContext
 ): Promise<PricingQuoteResult | null> {
   // Pickup-aanrijmodel (2026-08-18) — EERST: servicegebied/routing/config,
@@ -1060,7 +1068,7 @@ async function tryDistanceTariff(
     vatRate: DEFAULT_DISTANCE_TARIFF.vatRate,
     distanceKm: route.distanceKm,
     estimatedDurationMin: route.durationMin,
-    vehicleClass: vehicleClass?.code ?? classCode,
+    vehicleClass: vehicleClass.code,
     route: {
       pickupSlug: pickup?.slug ?? slugify(pickupRaw),
       dropoffSlug: dropoff?.slug ?? slugify(dropoffRaw),

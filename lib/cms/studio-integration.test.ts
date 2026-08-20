@@ -21,6 +21,7 @@ test("Studio gebruikt de officiële Next 16 catch-all integratie", () => {
   assert.match(sanityConfig, /^"use client";/);
   assert.match(studioLayout, /<html lang="nl">/);
   assert.match(studioLayout, /<body style=\{\{ margin: 0 \}\}>/);
+  assert.match(studioLayout, /metadataBase: new URL\(SITE_URL\)/);
 });
 
 test("locale-proxy sluit /studio en alle Studio-subroutes exact uit", () => {

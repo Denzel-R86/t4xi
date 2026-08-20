@@ -109,6 +109,7 @@
     "prijsOpAanvraag": "Offerte op aanvraag",
     "opAanvraag": "Op aanvraag",
     "prijsFout": "Prijs tijdelijk niet beschikbaar",
+    "prijsRateLimited": "Te veel prijsaanvragen — probeer het over een minuut opnieuw",
     "inclusiefKop": "Inclusief:",
     "inclusiefTekst": "vaste prijs en maximaal 4 passagiers, exclusief de chauffeur. Bij 4 passagiers adviseren wij 2 grote koffers en 2 stuks handbagage.",
     "naam": "Naam",
@@ -311,9 +312,11 @@
     "opAanvraagNa": "wij bevestigen de prijs persoonlijk",
     "fout": "Prijs even niet beschikbaar",
     "foutNa": "bel of app ons",
+    "rateLimited": "Even te veel prijsaanvragen",
+    "rateLimitedNa": "probeer het over een minuut opnieuw",
     "leeg": "Vul de zin aan",
     "leegNa": "een vaste prijs, zonder taxameter",
-    "bevestig": "Bevestig de rit"
+    "bevestig": "Bekijk mijn vaste prijs"
   },
   "fair": {
     "kicker": "Onze belofte",
@@ -651,12 +654,62 @@
     "waText": "Hallo T4XI, ik wil graag een rit boeken.",
     "faqKicker": "Veelgestelde vragen",
     "faqKop1": "Heeft u",
-    "faqKop2": "vragen?"
+    "faqKop2": "vragen?",
+    "form": {
+      "kicker": "Persoonlijk advies",
+      "title": "Vertel ons waarmee we u kunnen helpen",
+      "intro": "Van een enkele rit tot structureel zakelijk vervoer: deel uw vraag en wij komen persoonlijk bij u terug met een passend voorstel.",
+      "responseTitle": "Persoonlijke reactie op uw aanvraag",
+      "responseText": "Uw aanvraag komt rechtstreeks bij T4XI terecht. Voor een rit binnen 24 uur adviseren we u te bellen of WhatsAppen.",
+      "requiredNote": "Velden met * zijn verplicht.",
+      "audienceLegend": "Ik neem contact op als",
+      "privateOption": "Particulier",
+      "businessOption": "Zakelijke klant",
+      "nameLabel": "Naam",
+      "phoneLabel": "Telefoonnummer",
+      "emailLabel": "E-mailadres",
+      "companyLabel": "Bedrijfsnaam",
+      "topicLabel": "Onderwerp",
+      "topicPlaceholder": "Kies een onderwerp",
+      "topics": {
+        "privateRide": "Privérit of algemene vraag",
+        "privateAirport": "Luchthaventransfer",
+        "privateEvent": "Evenement of bijzondere gelegenheid",
+        "privateOther": "Anders",
+        "businessTransport": "Zakelijk vervoer",
+        "businessAgreement": "Raamovereenkomst of terugkerende ritten",
+        "businessEvent": "Bedrijfsevenement of groepsvervoer",
+        "businessOther": "Andere zakelijke vraag"
+      },
+      "messageLabel": "Uw vraag",
+      "messagePlaceholder": "Vertel kort wat u nodig heeft, wanneer en voor hoeveel reizigers.",
+      "submit": "Aanvraag versturen",
+      "sending": "Aanvraag veilig verzenden…",
+      "success": "Bedankt. Uw aanvraag is ontvangen; wij nemen zo snel mogelijk persoonlijk contact met u op.",
+      "error": "Verzenden is niet gelukt. Uw gegevens zijn niet als aanvraag bevestigd. Gebruik eventueel een van de alternatieven:",
+      "emailFallback": "Open e-mail",
+      "whatsappFallback": "Open WhatsApp",
+      "privateMailSubject": "Contactaanvraag particulier via t4xi.nl",
+      "businessMailSubject": "Contactaanvraag zakelijk via t4xi.nl",
+      "privacyNote": "Door te verzenden bevestigt u dat u onze",
+      "privacyLink": "privacyverklaring heeft gelezen",
+      "honeypot": "Website"
+    }
   },
   "nietGevonden": {
     "kop": "Deze pagina bestaat niet",
     "tekst": "Het adres klopt niet of de pagina is verplaatst.",
-    "naarHome": "Naar de homepage"
+    "naarHome": "Naar de homepage",
+    "prijsBerekenen": "Bereken uw prijs",
+    "ritBoeken": "Direct een rit boeken",
+    "populaireKop": "Populaire routes naar Schiphol",
+    "populaireTekst": "Ga direct verder met een veelgekozen vertrekpunt. De route staat alvast voor u ingevuld.",
+    "routeBekijken": "Bekijk deze rit",
+    "routes": {
+      "amsterdam": "Amsterdam Centrum → Schiphol",
+      "rotterdam": "Rotterdam → Schiphol",
+      "almere": "Almere Poort → Schiphol"
+    }
   },
   "fout": {
     "label": "Fout",
@@ -730,6 +783,136 @@
     "f6": "Onbeperkte ritten",
     "vertrouwen": "Eén aanspreekpunt, heldere ritafspraken en overzichtelijke maandfacturatie.",
     "aanvragen": "Vraag zakelijk account aan"
+  },
+  "businessPage": {
+    "hero": {
+      "kicker": "Zakelijk vervoer voor bedrijven",
+      "title": "Zakelijk vervoer.",
+      "accent": "Representatief geregeld.",
+      "intro": "Voor directie, medewerkers en gasten verzorgt T4XI zakelijk vervoer met heldere afspraken. Van airporttransfer of bedrijfsevenement tot terugkerende ritten: planning en administratie blijven overzichtelijk.",
+      "primaryCta": "Bespreek uw vervoersvraag",
+      "secondaryCta": "Bekijk alle diensten",
+      "imageAlt": "Zakelijke passagier reist comfortabel op de achterbank van T4XI",
+      "imageCaption": "Rust onderweg · duidelijke afspraken vooraf",
+      "proof": [
+        "Facturatie op rekening",
+        "Vaste chauffeur waar afgesproken",
+        "Overzicht van uitgevoerde ritten"
+      ]
+    },
+    "useCases": {
+      "kicker": "Eén vervoerspartner",
+      "title": "Van losse afspraak",
+      "accent": "tot terugkerende planning.",
+      "intro": "Geen organisatie reist elke dag hetzelfde. Daarom stemmen we het vervoer af op de aanleiding, de reiziger en de afspraken die voor uw bedrijf belangrijk zijn.",
+      "items": [
+        {
+          "title": "Directie en gasten",
+          "text": "Representatief vervoer voor afspraken en ontvangsten, afgestemd op de reiziger en het geplande moment."
+        },
+        {
+          "title": "Airportvervoer",
+          "text": "Brengen naar of ophalen van de luchthaven, met vooraf afgestemde informatie over tijd, vlucht en bagage."
+        },
+        {
+          "title": "Bedrijfsevenementen",
+          "text": "Vervoer rond een zakelijke bijeenkomst of evenement, met de relevante ritafspraken op één plek."
+        },
+        {
+          "title": "Terugkerende ritten",
+          "text": "Een werkbare aanpak voor ritten die vaker terugkomen, zonder iedere aanvraag vanaf nul te organiseren."
+        }
+      ]
+    },
+    "benefits": {
+      "kicker": "Zakelijke afspraken",
+      "title": "Wat uw organisatie nodig heeft.",
+      "accent": "Niet meer dan we kunnen waarmaken.",
+      "items": [
+        {
+          "title": "Facturatie op rekening",
+          "text": "Facturatie op rekening kan onderdeel zijn van de zakelijke afspraken, zodat ritten niet telkens afzonderlijk gedeclareerd hoeven te worden."
+        },
+        {
+          "title": "Chauffeurscontinuïteit",
+          "text": "Wilt u met een vaste chauffeur werken? Waar we dat samen afspreken en kunnen inplannen, houden we de bezetting herkenbaar."
+        },
+        {
+          "title": "Ritoverzicht",
+          "text": "Een overzicht van uitgevoerde ritten geeft uw organisatie een heldere basis voor administratie en interne controle."
+        },
+        {
+          "title": "Airport- en eventvervoer",
+          "text": "We stemmen luchthavenritten en vervoer rond bedrijfsevenementen vooraf af op de reizigers en de benodigde ritinformatie."
+        }
+      ]
+    },
+    "detail": {
+      "kicker": "Ook voor één zakelijke rit",
+      "title": "Direct boeken wanneer het kan.",
+      "accent": "Persoonlijk afstemmen wanneer het nodig is.",
+      "intro": "Een losse rit met een duidelijke route kunt u rechtstreeks boeken. Gaat het om terugkerend vervoer, meerdere reizigers of specifieke zakelijke afspraken, gebruik dan het zakelijke contactformulier.",
+      "imageAlt": "T4XI-chauffeur helpt een reiziger met bagage bij een airporttransfer",
+      "bookCta": "Boek een losse rit",
+      "servicesCta": "Bekijk de dienstverlening"
+    },
+    "process": {
+      "kicker": "Van vraag naar ritafspraak",
+      "title": "Eerst de context.",
+      "accent": "Dan een passende aanpak.",
+      "items": [
+        {
+          "title": "Deel uw vervoersvraag",
+          "text": "Vertel via het zakelijke formulier om welke reizigers, momenten en typen ritten het gaat."
+        },
+        {
+          "title": "Stem de afspraken af",
+          "text": "We bespreken onder meer de aanvraagwijze, chauffeurafspraak, ritinformatie en gewenste facturatie."
+        },
+        {
+          "title": "Plan met overzicht",
+          "text": "Na afstemming kunnen ritten volgens de gemaakte afspraken worden aangevraagd en in een ritoverzicht worden samengebracht."
+        }
+      ]
+    },
+    "faq": {
+      "kicker": "Veelgestelde vragen",
+      "title": "Zakelijk vervoer,",
+      "accent": "helder uitgelegd.",
+      "items": [
+        {
+          "question": "Kan mijn bedrijf op rekening rijden?",
+          "answer": "Facturatie op rekening is mogelijk als onderdeel van de zakelijke afspraken. We stemmen vooraf af hoe ritten worden aangevraagd en gefactureerd."
+        },
+        {
+          "question": "Krijgen wij altijd dezelfde chauffeur?",
+          "answer": "Een vaste chauffeur is mogelijk waar we dit samen afspreken en kunnen inplannen. We presenteren het daarom niet als automatische garantie voor iedere rit."
+        },
+        {
+          "question": "Is een ritoverzicht beschikbaar?",
+          "answer": "Zakelijke afspraken kunnen een overzicht van uitgevoerde ritten omvatten. De gewenste inrichting spreken we vooraf met uw organisatie af."
+        },
+        {
+          "question": "Verzorgt T4XI ook airport- en eventvervoer?",
+          "answer": "Ja. T4XI verzorgt airporttransfers en vervoer rond bedrijfsevenementen. Deel de planning en reizigersinformatie via het zakelijke contactformulier."
+        }
+      ]
+    },
+    "cta": {
+      "kicker": "Uw zakelijke vervoersvraag",
+      "title": "Laten we de ritten eerst goed afstemmen.",
+      "accent": "Dan weet iedereen waar hij aan toe is.",
+      "intro": "Open het contactformulier met de zakelijke keuzes al geselecteerd en vertel kort wat uw organisatie nodig heeft.",
+      "button": "Open het zakelijke formulier"
+    },
+    "structuredData": {
+      "pageName": "Zakelijk vervoer voor bedrijven",
+      "serviceName": "T4XI zakelijk vervoer",
+      "serviceType": "Zakelijk taxivervoer",
+      "description": "Zakelijk vervoer voor directie, medewerkers en gasten, met mogelijkheden voor facturatie op rekening, chauffeurscontinuïteit waar afgesproken en ritoverzicht.",
+      "home": "Home",
+      "areas": ["Amsterdam", "Rotterdam", "Almere", "Den Haag"]
+    }
   },
   "faq": {
     "v1": "Hoe boek ik een taxi?",
@@ -1135,6 +1318,8 @@
     "productenDesc": "Airport Memberships, zakelijke rittenkaarten, hotelcontracten en event shuttles. Vaste mobiliteit met voorspelbare kosten.",
     "contactTitle": "Contact",
     "contactDesc": "Neem contact op met T4XI: bel, mail of WhatsApp. Dag en nacht bereikbaar in Amsterdam, Rotterdam, Almere en Den Haag.",
+    "businessTitle": "Zakelijk vervoer voor bedrijven",
+    "businessDesc": "Representatief zakelijk vervoer met facturatie op rekening, een vaste chauffeur waar afgesproken en overzicht van uitgevoerde ritten.",
     "overOnsTitle": "Over ons",
     "overOnsDesc": "T4XI is een initiatief van Noir Driving Services — premium vervoer met een moderne, emissiebewuste vloot. Eerlijk voor de klant én voor de chauffeur.",
     "homeTitle": "T4XI — Premium taxi & bewuste mobiliteit",
@@ -1210,6 +1395,8 @@
     "actieTussenstop": "Tussenstop",
     "trust": "Vaste prijs inclusief btw · Geen onverwachte prijsstijgingen · Professionele chauffeur · 24/7 beschikbaar",
     "berekenen": "Vaste prijs berekenen…",
+    "quoteError": "De prijs kon tijdelijk niet worden opgehaald. Probeer het opnieuw of neem contact met ons op.",
+    "quoteRateLimited": "Er zijn even te veel prijsaanvragen gedaan. Probeer het over een minuut opnieuw.",
     "kaartKop": "Comfortabel luchthavenvervoer",
     "vastRetour": "vaste retourprijs",
     "vastEnkel": "vaste prijs",
@@ -1261,8 +1448,8 @@
     "breadcrumb": "Tarieven",
     "serviceType": "Taxi & luchthavenvervoer met vaste prijs",
     "heroEyebrow": "Comfortabel luchthavenvervoer",
-    "heroKop1": "Arrive composed.",
-    "heroKop2": "Uw reis begint met zekerheid.",
+    "heroKop1": "Taxitarieven",
+    "heroKop2": "zonder verrassingen.",
     "heroIntro": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. Van uw voordeur tot de vertrekhal, zorgvuldig geregeld.",
     "waaromKop": "Onze tarieven zijn gebaseerd op betrouwbare service, niet op de laagste ritprijs.",
     "eig1": "Vaste prijs vóór vertrek",

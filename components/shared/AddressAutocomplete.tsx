@@ -273,6 +273,7 @@ export default function AddressAutocomplete({
   onSelect,
   onTextChange,
   initialValue,
+  autoCompleteSection,
 }: {
   label: string;
   placeholder: string;
@@ -282,6 +283,8 @@ export default function AddressAutocomplete({
   onTextChange?: (text: string) => void;
   /** Vooraf ingevuld adres (deep-link). Telt direct als selectie ("free"). */
   initialValue?: string;
+  /** Unieke browser-autofillgroep, zonder de `section-` prefix. */
+  autoCompleteSection: string;
 }) {
   const [query, setQuery] = useState(initialValue ?? "");
   const [hasSelection, setHasSelection] = useState(Boolean(initialValue));
@@ -342,6 +345,7 @@ export default function AddressAutocomplete({
         {label}
         <input
           type="text"
+          autoComplete={`section-${autoCompleteSection} street-address`}
           value={query}
           placeholder={placeholder}
           onChange={(e) => {
@@ -405,7 +409,7 @@ export default function AddressAutocomplete({
               onMouseDown={(e) => e.preventDefault()}
               onMouseEnter={() => setActiveIndex(i)}
               onClick={() => choose(s)}
-              className={`cursor-pointer px-4 py-3 text-left text-sm transition-colors ${
+              className={`flex min-h-11 cursor-pointer items-center px-4 py-3 text-left text-sm transition-colors ${
                 i === activeIndex ? "bg-accent text-white" : "text-ink hover:bg-fog"
               }`}
             >

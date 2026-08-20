@@ -44,6 +44,7 @@ test("buildBookingHref voegt retour en passagiers toe wanneer relevant", () => {
     time: "09:30",
     returnDate: "2026-09-20",
     returnTime: "18:45",
+    luggage: "1-2-koffers",
   });
   assert.ok(href.includes("retour=1"));
   assert.ok(href.includes("persons=3"));
@@ -51,11 +52,19 @@ test("buildBookingHref voegt retour en passagiers toe wanneer relevant", () => {
   assert.ok(href.includes("time=09%3A30"));
   assert.ok(href.includes("returnDate=2026-09-20"));
   assert.ok(href.includes("returnTime=18%3A45"));
+  assert.ok(href.includes("luggage=1-2-koffers"));
 });
 
 test("buildBookingHref laat persons weg bij 1 passagier", () => {
   const href = buildBookingHref({ pickup: "A", dropoff: "B", passengers: 1 });
   assert.ok(!href.includes("persons="));
+});
+
+test("buildBookingHref neemt alleen een server-geldige bindende bagagekeuze mee", () => {
+  assert.ok(buildBookingHref({ pickup: "A", dropoff: "B", luggage: "handbagage" }).includes("luggage=handbagage"));
+  assert.ok(buildBookingHref({ pickup: "A", dropoff: "B", luggage: "  HANDBAGAGE " }).includes("luggage=handbagage"));
+  assert.ok(!buildBookingHref({ pickup: "A", dropoff: "B", luggage: "onbekend" }).includes("luggage="));
+  assert.ok(!buildBookingHref({ pickup: "A", dropoff: "B", luggage: "overleg" }).includes("luggage="));
 });
 
 test("routeSummary toont tussenstops in volgorde en negeert lege delen", () => {
@@ -179,7 +188,7 @@ test("resolveRouteFinderView: complete invoer → normale statusafleiding (loadi
   assert.equal(resolveRouteFinderView({ ...base, quoteStatus: "ready", hasStops: false }), "ready");
   assert.equal(resolveRouteFinderView({ ...base, quoteStatus: "ready", hasStops: true }), "onrequest", "tussenstops kennen nog geen automatisch tarief");
   assert.equal(resolveRouteFinderView({ ...base, quoteStatus: "onrequest", hasStops: false }), "onrequest");
-  assert.equal(resolveRouteFinderView({ ...base, quoteStatus: "error", hasStops: false }), "onrequest");
+  assert.equal(resolveRouteFinderView({ ...base, quoteStatus: "error", hasStops: false }), "error");
 });
 
 // ── Structurele controle: alle drie useRouteQuote-consumenten ───────────────
@@ -216,6 +225,14 @@ test("alle drie useRouteQuote-aanroepen geven 'luggage' door — geen enkele op 
     assert.ok(call, `${file}: geen useRouteQuote(pickup, dropoff, {...})-aanroep gevonden`);
     assert.match(call![0], /luggage\s*[,:]/, `${file}: useRouteQuote-aanroep geeft geen 'luggage' door`);
   }
+});
+
+test("RouteFinder geeft de gevalideerde bagagekeuze door aan de boekings-deep-link", () => {
+  const src = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
+  assert.match(
+    src,
+    /bookingHref=\{buildBookingHref\(\{[\s\S]*?\bluggage,\s*[\s\S]*?\}\)\}/,
+  );
 });
 
 // ── 2026-08-19 (hotfix, herzien): bagage werd tweemaal gevraagd (de bewuste ──

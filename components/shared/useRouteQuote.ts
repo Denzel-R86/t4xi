@@ -16,9 +16,11 @@ import { formatEuro } from "@/lib/format/currency";
  */
 
 export type Airport = { isTransfer: boolean; direction: "arrival" | "departure" | null };
+export type QuoteErrorReason = "rate_limited" | "unavailable";
 
 export type Quote =
-  | { status: "idle" | "loading" | "error"; airport?: Airport }
+  | { status: "idle" | "loading"; airport?: Airport }
+  | { status: "error"; reason: QuoteErrorReason; retryAfterSec?: number; airport?: Airport }
   | { status: "onrequest"; airport: Airport }
   | {
       status: "ready";
@@ -33,11 +35,20 @@ export type Quote =
       /**
        * Quote-lock identifier van de opgeslagen prijs-snapshot. Wordt bij het
        * bevestigen meegestuurd zodat de boeking exact dit gelockte bedrag gebruikt.
-       * `null` als de opslag niet is bevestigd (dan valt de boeking terug op vaste
-       * route / offerte-op-aanvraag).
+       * Een `ready` quote bestaat uitsluitend met een backend-bevestigde lock.
        */
-      quoteId: string | null;
+      quoteId: string;
     };
+
+/** Houd een echte offerte-op-aanvraag gescheiden van transport/serverfouten. */
+export function classifyQuoteFailure(
+  httpStatus: number,
+  available: unknown,
+): "onrequest" | QuoteErrorReason {
+  if (httpStatus === 429) return "rate_limited";
+  if (httpStatus === 404 && available === false) return "onrequest";
+  return "unavailable";
+}
 
 export function useRouteQuote(
   pickup: AddressSuggestion | null,
@@ -110,7 +121,7 @@ export function useRouteQuote(
           signal: controller.signal,
         });
         const data = await res.json().catch(() => ({}));
-        if (res.ok && data.available) {
+        if (res.ok && data.available && typeof data.quoteId === "string" && data.quoteId.length > 0) {
           setQuote({
             status: "ready",
             amount: formatEuro(Number(data.price)),
@@ -118,13 +129,25 @@ export function useRouteQuote(
             returnApplied: Boolean(data.returnApplied),
             distanceKm: Number(data.distanceKm) || 0,
             estimatedDurationMin: Number(data.estimatedDurationMin) || 0,
-            quoteId: typeof data.quoteId === "string" ? data.quoteId : null,
+            quoteId: data.quoteId,
             airport: {
               isTransfer: Boolean(data.isAirportTransfer),
               direction: data.flightDirection ?? null,
             },
           });
         } else {
+          const failure = classifyQuoteFailure(res.status, data.available);
+          if (failure !== "onrequest") {
+            const retryAfter = Number(res.headers.get("retry-after"));
+            setQuote({
+              status: "error",
+              reason: failure,
+              ...(failure === "rate_limited" && Number.isFinite(retryAfter) && retryAfter > 0
+                ? { retryAfterSec: retryAfter }
+                : {}),
+            });
+            return;
+          }
           // Ook zonder vaste prijs geeft de API de luchthavencontext mee.
           setQuote({
             status: "onrequest",
@@ -136,7 +159,7 @@ export function useRouteQuote(
         }
       } catch (err) {
         if ((err as Error)?.name === "AbortError") return;
-        setQuote({ status: "error" });
+        setQuote({ status: "error", reason: "unavailable" });
       }
     }, 400);
     return () => {

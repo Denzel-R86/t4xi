@@ -89,7 +89,7 @@ const servicesDocuments = [
         summary:
           "Facturering, vaste chauffeur en maandelijkse contracten. Professioneel van deur tot deur.",
         benefits: ["Factuur op rekening", "Vaste chauffeur", "Maandcontract"],
-        action: action("Meer info", "/contact", "Neem contact op over zakelijk vervoer"),
+        action: action("Meer info", "/zakelijk-vervoer", "Bekijk zakelijk vervoer van T4XI"),
       },
       {
         _key: "private",
@@ -195,10 +195,10 @@ const servicesDocuments = [
         "Volumekorting",
         "Onbeperkte ritten",
       ],
-      primaryAction: action("Neem contact op", "/contact", "Neem contact op over zakelijk vervoer"),
+      primaryAction: action("Neem contact op", "/contact?audience=business&topic=businessTransport#contact-form", "Neem contact op over zakelijk vervoer"),
       accountAction: action(
         "Vraag zakelijk account aan",
-        "/contact",
+        "/contact?audience=business&topic=businessAgreement#contact-form",
         "Vraag een zakelijk T4XI-account aan",
       ),
     },
@@ -236,7 +236,7 @@ const servicesDocuments = [
         summary:
           "Invoiced billing, a dedicated driver and monthly contracts. Professional, door to door.",
         benefits: ["Invoiced billing", "Dedicated driver", "Monthly contract"],
-        action: action("Learn more", "/contact", "Contact T4XI about business travel"),
+        action: action("Learn more", "/zakelijk-vervoer", "Explore T4XI business transport"),
       },
       {
         _key: "private",
@@ -342,10 +342,10 @@ const servicesDocuments = [
         "Volume discount",
         "Unlimited rides",
       ],
-      primaryAction: action("Get in touch", "/contact", "Contact T4XI about business travel"),
+      primaryAction: action("Get in touch", "/contact?audience=business&topic=businessTransport#contact-form", "Contact T4XI about business travel"),
       accountAction: action(
         "Request a business account",
-        "/contact",
+        "/contact?audience=business&topic=businessAgreement#contact-form",
         "Request a T4XI business account",
       ),
     },

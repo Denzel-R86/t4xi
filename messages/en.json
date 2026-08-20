@@ -109,6 +109,7 @@
     "prijsOpAanvraag": "Quote on request",
     "opAanvraag": "On request",
     "prijsFout": "Fare temporarily unavailable",
+    "prijsRateLimited": "Too many fare requests — please try again in one minute",
     "inclusiefKop": "Included:",
     "inclusiefTekst": "fixed fare, up to 4 passengers excluding the driver. With 4 passengers we recommend 2 large suitcases + 2 pieces of hand luggage.",
     "naam": "Name",
@@ -311,9 +312,11 @@
     "opAanvraagNa": "we confirm the fare personally",
     "fout": "Fare temporarily unavailable",
     "foutNa": "call or WhatsApp us",
+    "rateLimited": "Too many fare requests just now",
+    "rateLimitedNa": "please try again in one minute",
     "leeg": "Complete the sentence",
     "leegNa": "fixed fare, no meter",
-    "bevestig": "Confirm the ride"
+    "bevestig": "See my fixed fare"
   },
   "fair": {
     "kicker": "Our promise",
@@ -651,12 +654,62 @@
     "waText": "Hello T4XI, I would like to book a ride.",
     "faqKicker": "Frequently asked questions",
     "faqKop1": "Do you have",
-    "faqKop2": "questions?"
+    "faqKop2": "questions?",
+    "form": {
+      "kicker": "Personal advice",
+      "title": "Tell us how we can help",
+      "intro": "From a single journey to recurring business transport: share your request and we will personally come back to you with a suitable proposal.",
+      "responseTitle": "A personal response to your enquiry",
+      "responseText": "Your request goes directly to T4XI. For a journey within 24 hours, we recommend calling or messaging us on WhatsApp.",
+      "requiredNote": "Fields marked * are required.",
+      "audienceLegend": "I am contacting you as a",
+      "privateOption": "Private customer",
+      "businessOption": "Business customer",
+      "nameLabel": "Name",
+      "phoneLabel": "Phone number",
+      "emailLabel": "Email address",
+      "companyLabel": "Company name",
+      "topicLabel": "Subject",
+      "topicPlaceholder": "Choose a subject",
+      "topics": {
+        "privateRide": "Private journey or general question",
+        "privateAirport": "Airport transfer",
+        "privateEvent": "Event or special occasion",
+        "privateOther": "Other",
+        "businessTransport": "Business transport",
+        "businessAgreement": "Corporate agreement or recurring journeys",
+        "businessEvent": "Corporate event or group transport",
+        "businessOther": "Other business enquiry"
+      },
+      "messageLabel": "Your request",
+      "messagePlaceholder": "Briefly tell us what you need, when you need it and for how many passengers.",
+      "submit": "Send enquiry",
+      "sending": "Sending your enquiry securely…",
+      "success": "Thank you. We have received your enquiry and will contact you personally as soon as possible.",
+      "error": "We could not send your enquiry. Your details have not been confirmed as submitted. You can use one of these alternatives:",
+      "emailFallback": "Open email",
+      "whatsappFallback": "Open WhatsApp",
+      "privateMailSubject": "Private customer enquiry via t4xi.nl",
+      "businessMailSubject": "Business enquiry via t4xi.nl",
+      "privacyNote": "By submitting, you confirm that you have read our",
+      "privacyLink": "privacy statement",
+      "honeypot": "Website"
+    }
   },
   "nietGevonden": {
     "kop": "This page doesn't exist",
     "tekst": "The address is incorrect or the page has moved.",
-    "naarHome": "Back to the homepage"
+    "naarHome": "Back to the homepage",
+    "prijsBerekenen": "Calculate your fare",
+    "ritBoeken": "Book a ride now",
+    "populaireKop": "Popular routes to Schiphol",
+    "populaireTekst": "Continue with a frequently chosen pick-up point. The route is already filled in for you.",
+    "routeBekijken": "View this ride",
+    "routes": {
+      "amsterdam": "Amsterdam City Centre → Schiphol",
+      "rotterdam": "Rotterdam → Schiphol",
+      "almere": "Almere Poort → Schiphol"
+    }
   },
   "fout": {
     "label": "Error",
@@ -730,6 +783,136 @@
     "f6": "Unlimited rides",
     "vertrouwen": "One point of contact, clear journey agreements and straightforward monthly invoicing.",
     "aanvragen": "Request a business account"
+  },
+  "businessPage": {
+    "hero": {
+      "kicker": "Business transport for companies",
+      "title": "Business transport.",
+      "accent": "Arrive composed.",
+      "intro": "T4XI provides business transport for executives, employees and guests, with clear arrangements. From an airport transfer or corporate event to recurring journeys, planning and administration remain easy to follow.",
+      "primaryCta": "Discuss your transport needs",
+      "secondaryCta": "Explore all services",
+      "imageAlt": "Business passenger travelling comfortably in the back of a T4XI car",
+      "imageCaption": "A calm journey · clear arrangements in advance",
+      "proof": [
+        "Invoiced billing",
+        "Dedicated driver where agreed",
+        "Overview of completed journeys"
+      ]
+    },
+    "useCases": {
+      "kicker": "One transport partner",
+      "title": "From a single meeting",
+      "accent": "to recurring travel.",
+      "intro": "No organisation travels in exactly the same way every day. We align transport with the occasion, the passenger and the arrangements that matter to your company.",
+      "items": [
+        {
+          "title": "Executives and guests",
+          "text": "Presentable transport for meetings and guest arrivals, aligned with the passenger and the planned time."
+        },
+        {
+          "title": "Airport transport",
+          "text": "Travel to or from the airport, with timing, flight and luggage information agreed in advance."
+        },
+        {
+          "title": "Corporate events",
+          "text": "Transport around a business meeting or event, with the relevant journey arrangements kept in one place."
+        },
+        {
+          "title": "Recurring journeys",
+          "text": "A practical approach for journeys that recur, without organising every request from the beginning."
+        }
+      ]
+    },
+    "benefits": {
+      "kicker": "Business arrangements",
+      "title": "What your organisation needs.",
+      "accent": "No promises we cannot keep.",
+      "items": [
+        {
+          "title": "Invoiced billing",
+          "text": "Invoiced billing can form part of your business arrangements, so individual journeys do not each require a separate expense claim."
+        },
+        {
+          "title": "Driver continuity",
+          "text": "Prefer a dedicated driver? Where agreed and operationally possible, we keep the assigned driver familiar."
+        },
+        {
+          "title": "Journey overview",
+          "text": "An overview of completed journeys gives your organisation a clear basis for administration and internal checks."
+        },
+        {
+          "title": "Airport and event transport",
+          "text": "We coordinate airport journeys and transport around corporate events around the passengers and required journey information."
+        }
+      ]
+    },
+    "detail": {
+      "kicker": "Also for one business journey",
+      "title": "Book directly when you can.",
+      "accent": "Discuss the details when you need to.",
+      "intro": "You can book a single journey with a straightforward route directly. For recurring transport, multiple passengers or specific business arrangements, use the business contact form.",
+      "imageAlt": "T4XI driver helping a passenger with luggage during an airport transfer",
+      "bookCta": "Book a single journey",
+      "servicesCta": "Explore our services"
+    },
+    "process": {
+      "kicker": "From request to journey arrangement",
+      "title": "Context first.",
+      "accent": "Then the right approach.",
+      "items": [
+        {
+          "title": "Share your transport needs",
+          "text": "Use the business form to tell us about the passengers, timing and types of journey involved."
+        },
+        {
+          "title": "Align the arrangements",
+          "text": "We discuss the request process, driver arrangement, journey information and preferred invoicing setup."
+        },
+        {
+          "title": "Plan with an overview",
+          "text": "Once agreed, journeys can be requested according to those arrangements and brought together in a journey overview."
+        }
+      ]
+    },
+    "faq": {
+      "kicker": "Frequently asked questions",
+      "title": "Business transport,",
+      "accent": "clearly explained.",
+      "items": [
+        {
+          "question": "Can my company travel on account?",
+          "answer": "Invoiced billing is possible as part of your business arrangements. We agree in advance how journeys are requested and invoiced."
+        },
+        {
+          "question": "Will we always have the same driver?",
+          "answer": "A dedicated driver is possible where agreed and operationally possible. We therefore do not present it as an automatic guarantee for every journey."
+        },
+        {
+          "question": "Is a journey overview available?",
+          "answer": "Business arrangements can include an overview of completed journeys. We agree the preferred format with your organisation in advance."
+        },
+        {
+          "question": "Does T4XI provide airport and corporate event transport?",
+          "answer": "Yes. T4XI provides airport transfers and transport around corporate events. Share your schedule and passenger information through the business contact form."
+        }
+      ]
+    },
+    "cta": {
+      "kicker": "Your business transport request",
+      "title": "Let us align the journeys first.",
+      "accent": "So everyone knows what to expect.",
+      "intro": "Open the contact form with the business options already selected and briefly tell us what your organisation needs.",
+      "button": "Open the business form"
+    },
+    "structuredData": {
+      "pageName": "Business transport for companies",
+      "serviceName": "T4XI business transport",
+      "serviceType": "Business taxi transport",
+      "description": "Business transport for executives, employees and guests, with options for invoiced billing, driver continuity where agreed and a journey overview.",
+      "home": "Home",
+      "areas": ["Amsterdam", "Rotterdam", "Almere", "The Hague"]
+    }
   },
   "faq": {
     "v1": "How do I book a taxi?",
@@ -1135,6 +1318,8 @@
     "productenDesc": "Airport memberships, business ride passes, hotel contracts and event shuttles. Fixed mobility with predictable costs.",
     "contactTitle": "Contact",
     "contactDesc": "Get in touch with T4XI: call, email or WhatsApp. Available day and night in Amsterdam, Rotterdam, Almere and The Hague.",
+    "businessTitle": "Business transport for companies",
+    "businessDesc": "Presentable business transport with invoiced billing, a dedicated driver where agreed and an overview of completed journeys.",
     "overOnsTitle": "About us",
     "overOnsDesc": "T4XI is an initiative of Noir Driving Services — premium transport with a modern, emissions-conscious fleet. Fair to the customer and to the driver.",
     "homeTitle": "T4XI — Premium taxi & conscious mobility",
@@ -1210,6 +1395,8 @@
     "actieTussenstop": "Stop",
     "trust": "Fixed price incl. VAT · No surge pricing · Professional driver · Available 24/7",
     "berekenen": "Calculating fixed price…",
+    "quoteError": "The fare could not be retrieved temporarily. Please try again or contact us.",
+    "quoteRateLimited": "There have been too many fare requests. Please try again in one minute.",
     "kaartKop": "Executive airport transfer",
     "vastRetour": "fixed return price",
     "vastEnkel": "fixed price",

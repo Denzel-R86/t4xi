@@ -223,12 +223,14 @@ export default function RouteFinder() {
             placeholder={t("vanPh")}
             onSelect={setPickupSel}
             onTextChange={setPickupText}
+            autoCompleteSection="route-pickup"
           />
           <AddressAutocomplete
             label={t("naar")}
             placeholder={t("naarPh")}
             onSelect={setDropoffSel}
             onTextChange={setDropoffText}
+            autoCompleteSection="route-dropoff"
           />
           {/* 2026-08-19 (hotfix, herzien): datum, tijd én bagage zijn alle drie
               verplicht vóór een prijs (zie detailsComplete hieronder) — daarom
@@ -320,6 +322,7 @@ export default function RouteFinder() {
                         placeholder={t("tussenstopPh")}
                         onSelect={(sel) => updateStop(s.id, { selection: sel })}
                         onTextChange={(text) => updateStop(s.id, { text })}
+                        autoCompleteSection={`route-stop-${i + 1}`}
                       />
                     </div>
                     <button
@@ -331,7 +334,7 @@ export default function RouteFinder() {
                       <Icon name="x" size={16} />
                     </button>
                   </div>
-                  <label className="mt-2 flex items-center gap-2 text-[13px] text-secondary">
+                  <label className="mt-2 flex min-h-11 items-center gap-2 text-[13px] text-secondary">
                     <input
                       type="checkbox"
                       checked={s.waitRequested}
@@ -428,6 +431,15 @@ export default function RouteFinder() {
           </div>
         )}
 
+        {view === "error" && quote.status === "error" && (
+          <div
+            className="rounded-[28px] border border-red-500/25 bg-red-500/5 p-6 text-center text-sm text-red-800 shadow-card"
+            role="alert"
+          >
+            {quote.reason === "rate_limited" ? t("quoteRateLimited") : t("quoteError")}
+          </div>
+        )}
+
         {view === "ready" && quote.status === "ready" && (
           <ResultCard
             summary={summary}
@@ -449,6 +461,7 @@ export default function RouteFinder() {
               time: time || undefined,
               returnDate: returnDate || undefined,
               returnTime: returnTime || undefined,
+              luggage,
             })}
             schipholRoute={schipholRoute}
             onBook={() => track("boeking_geklikt", { airport: needsFlight, stops: resolvedStops.length })}
@@ -601,7 +614,7 @@ function OnRequestCard({
       </div>
       <p className="mt-4 text-center text-[13px] text-secondary">
         {t("ofBel")}{" "}
-        <a href="tel:+31634744522" className="text-accent hover:underline">+31 6 34 74 45 22</a>
+        <a href="tel:+31634744522" className="inline-flex min-h-6 items-center text-accent hover:underline">+31 6 34 74 45 22</a>
       </p>
     </div>
   );

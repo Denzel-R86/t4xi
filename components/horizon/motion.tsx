@@ -35,14 +35,22 @@ export function Reveal({
   children,
   delay = 0,
   className = "",
+  immediate = false,
 }: {
   children: ReactNode;
   /** 0..3 — trapsgewijze vertraging binnen één compositie. */
   delay?: 0 | 1 | 2 | 3;
   className?: string;
+  /**
+   * Laat content direct zichtbaar starten. Bedoeld voor inhoud boven de vouw:
+   * die mag niet op hydratatie of IntersectionObserver wachten voordat de
+   * bezoeker iets ziet.
+   */
+  immediate?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (immediate) return;
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(
@@ -58,8 +66,11 @@ export function Reveal({
     );
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [immediate]);
   const d = delay > 0 ? ` hz-d${delay}` : "";
+  if (immediate) {
+    return <div className={className}>{children}</div>;
+  }
   return (
     <div ref={ref} className={`hz-reveal${d} ${className}`}>
       {children}

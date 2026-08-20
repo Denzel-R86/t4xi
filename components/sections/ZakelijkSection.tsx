@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { cleanCmsOptionalText, safeCmsInternalHref } from "@/lib/cms/safe-content";
+import { cleanCmsOptionalText } from "@/lib/cms/safe-content";
 import { useTranslations } from "next-intl";
 import type { CmsServicesPage } from "@/sanity/types";
 
@@ -13,6 +13,8 @@ const PUNTEN = [
 ] as const;
 
 const FEATURES = ["f1", "f2", "f3", "f4", "f5", "f6"] as const;
+const BUSINESS_CONTACT_HREF = "/contact?audience=business&topic=businessTransport#contact-form";
+const BUSINESS_ACCOUNT_HREF = "/contact?audience=business&topic=businessAgreement#contact-form";
 
 /** Zakelijke klanten-sectie uit het v14-bronbestand. */
 export default function ZakelijkSection({ content }: { content?: CmsServicesPage | null }) {
@@ -41,17 +43,27 @@ export default function ZakelijkSection({ content }: { content?: CmsServicesPage
   const primaryAction = business
     ? {
         label: business.primaryAction.label,
-        href: safeCmsInternalHref(business.primaryAction.href),
+        // Oude CMS-documenten bevatten nog /contact. De formuliercontext is
+        // functioneel en wordt daarom door de app bepaald; tekst blijft CMS-copy.
+        href: BUSINESS_CONTACT_HREF,
         accessibleLabel: cleanCmsOptionalText(business.primaryAction.accessibleLabel),
       }
-    : { label: t("contactCta"), href: "/contact", accessibleLabel: undefined };
+    : {
+        label: t("contactCta"),
+        href: BUSINESS_CONTACT_HREF,
+        accessibleLabel: undefined,
+      };
   const accountAction = business
     ? {
         label: business.accountAction.label,
-        href: safeCmsInternalHref(business.accountAction.href),
+        href: BUSINESS_ACCOUNT_HREF,
         accessibleLabel: cleanCmsOptionalText(business.accountAction.accessibleLabel),
       }
-    : { label: t("aanvragen"), href: "/contact", accessibleLabel: undefined };
+    : {
+        label: t("aanvragen"),
+        href: BUSINESS_ACCOUNT_HREF,
+        accessibleLabel: undefined,
+      };
 
   return (
     <section className="border-t border-line py-16 md:py-24" aria-labelledby="zakelijk-title">

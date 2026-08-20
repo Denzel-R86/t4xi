@@ -111,6 +111,8 @@ export type BookingPriceRequest = {
   vehicleClass?: string;
   returnTrip: boolean;
   passengers: number;
+  /** Server-side afgeleid aantal koffers voor de capaciteitscontrole. */
+  luggage?: number;
   departureAt?: string;
   /** Vertrek van de retourrit (ISO); bepaalt het nachttarief van het retour-ritdeel. */
   returnDepartureAt?: string;
@@ -216,6 +218,7 @@ export async function resolveBookingPrice(
     ...(req.vehicleClass !== undefined ? { vehicleClass: req.vehicleClass } : {}),
     returnTrip: req.returnTrip,
     passengers: req.passengers,
+    ...(req.luggage !== undefined ? { luggage: req.luggage } : {}),
     ...(req.departureAt !== undefined ? { departureAt: req.departureAt } : {}),
     ...(req.returnDepartureAt !== undefined ? { returnDepartureAt: req.returnDepartureAt } : {}),
     allowDistanceTariff: false,

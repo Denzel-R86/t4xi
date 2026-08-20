@@ -73,7 +73,7 @@ export default function Header() {
           <LanguageSwitcher className="hidden lg:flex" />
           <a
             href="tel:+31634744522"
-            className="hidden items-center gap-1.5 text-sm text-secondary transition-colors hover:text-ink sm:flex"
+            className="hidden items-center gap-1.5 text-sm text-secondary transition-colors hover:text-ink lg:flex"
             aria-label={t("bel")}
           >
             <Icon name="phone" size={17} />
@@ -84,13 +84,13 @@ export default function Header() {
             target="_blank"
             rel="noopener"
             aria-label={t("whatsapp")}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-whatsapp/10 text-whatsapp transition-transform hover:scale-110 hover:bg-whatsapp/20"
+            className="hidden h-9 w-9 items-center justify-center rounded-full bg-whatsapp/10 text-whatsapp transition-transform hover:scale-110 hover:bg-whatsapp/20 lg:flex"
           >
             <Icon name="whatsapp" size={18} />
           </a>
           <Link
             href="/boeken"
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-md bg-accent px-4 text-xs font-medium tracking-wide text-white shadow-cta transition-colors hover:bg-accent-hover"
+            className="hidden min-h-9 items-center gap-1.5 rounded-md bg-accent px-4 text-xs font-medium tracking-wide text-white shadow-cta transition-colors hover:bg-accent-hover lg:inline-flex"
           >
             <Icon name="calendar-check" size={15} />
             {t("boekEenRit")}

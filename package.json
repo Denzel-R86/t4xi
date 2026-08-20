@@ -16,6 +16,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"lib/**/*.test.ts\"",
     "pricing:import": "tsx scripts/import-fixed-routes.ts",
     "brain:analyze": "tsx scripts/brain-analyze.ts",
     "brain:simulate": "tsx scripts/brain-simulate.ts",
