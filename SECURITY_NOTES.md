@@ -23,10 +23,11 @@ Migratie `supabase/migrations/20260705_fix_addresses_rls.sql` (rev. 2):
    `source = 'bag_pdok'` mét `bag_id`, of `source` in
    (`google_places`, `reverse_geocode`). De bronnen `manual` en
    `pre_seeded` zijn voorbehouden aan `service_role`.
-3. `increment_address_usage(uuid)` omgezet naar SECURITY DEFINER met
-   vastgezette `search_path` — het enige toegestane "update-pad" voor
-   anon is nu deze gecontroleerde statistiekfunctie. Boekingen zelf lopen
-   via `create_booking` (al SECURITY DEFINER) en zijn niet geraakt.
+3. `increment_address_usage(uuid)` was in juli tijdelijk het gecontroleerde
+   updatepad voor anon. Sinds de hardening van 2026-08-20 gebruikt de website
+   deze legacy-RPC niet meer: de functie is `SECURITY INVOKER`, alleen
+   uitvoerbaar door `service_role` en heeft een vaste `search_path`.
+   Boekingen zelf lopen via de geharde server-side boekings-RPC.
 4. Bonus: index op `popular_locations.address_id` (performance advisor).
 
 Rollback: `supabase/rollback_20260705_addresses_rls.sql` — herstelt de
@@ -37,7 +38,8 @@ oude situatie inclusief het lek; alleen als noodmaatregel.
 | # | Test | Verwacht resultaat |
 |---|---|---|
 | 1 | `SELECT policyname FROM pg_policies WHERE tablename='addresses'` (SQL Editor) | 3 policies; géén `addresses_update_anon` |
-| 2 | `SELECT prosecdef FROM pg_proc WHERE proname='increment_address_usage'` | `true` |
+| 2 | `SELECT prosecdef FROM pg_proc WHERE proname='increment_address_usage'` | `false` |
+| 2a | RPC `increment_address_usage` met anon/authenticated | ❌ permission denied; alleen `service_role` heeft EXECUTE |
 | 3 | RPC `create_booking` met testdata | ✅ SLAAGT (booking_ref terug) |
 | 4 | INSERT op `/rest/v1/addresses` met `source='bag_pdok'` + gevulde `bag_id` | ✅ SLAAGT (201) |
 | 5 | INSERT met `source='manual'` | ❌ MOET FALEN (42501 / RLS violation — dit bewijst de fix) |
@@ -62,3 +64,5 @@ hem NOOIT in chats, screenshots, logs, commits of documentatie:
 
 - 2026-07-05: lek gevonden (audit), migratie rev. 2 opgesteld en
   gereviewd, rollback voorbereid. Toepassing door owner via CLI.
+- 2026-08-20: ongebruikte publieke usage-RPC teruggebracht naar
+  `SECURITY INVOKER`; EXECUTE voor PUBLIC, anon en authenticated ingetrokken.
