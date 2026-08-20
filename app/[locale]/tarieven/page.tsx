@@ -6,7 +6,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import RouteFinder from "@/components/tarieven/RouteFinder";
 import FairFarePromise from "@/components/tarieven/FairFarePromise";
 import Icon from "@/components/ui/Icon";
-import { STEDEN } from "@/lib/seo-steden";
+import { getAirportLandingLocale, getLocalizedStad, STEDEN } from "@/lib/seo-steden";
 
 /**
  * Tarievenpagina — premium, begeleide routezoeker binnen de Horizon Design
@@ -41,10 +41,17 @@ export default async function TarievenPage({ params }: { params: Promise<{ local
   const t = await getTranslations({ locale, namespace: "routezoeker" });
   const cities = await loadRateCard();
 
-  const schipholLinks = STEDEN.map((stad) => {
-    const city = cities.find((c) => c.citySlug === stad.citySlug);
+  const airportLocale = getAirportLandingLocale(locale);
+  const schipholLinks = STEDEN.map((baseStad) => {
+    const stad = getLocalizedStad(baseStad.slug, airportLocale) ?? baseStad;
+    const city = cities.find((c) => c.citySlug === baseStad.citySlug);
     const cheapest = cheapestToSchiphol(city);
-    return { slug: stad.slug, naam: stad.naam, vanaf: cheapest?.single ?? null, km: cheapest?.distanceKm ?? null };
+    return {
+      slug: baseStad.slug,
+      naam: stad.naam,
+      vanaf: cheapest?.single ?? null,
+      km: cheapest?.distanceKm ?? null,
+    };
   });
 
   const canonical = localeUrl(locale === "en" ? "en" : "nl", "/tarieven");

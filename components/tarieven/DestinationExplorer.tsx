@@ -69,7 +69,7 @@ export default function DestinationExplorer({
             role="tab"
             aria-selected={segment === s.key}
             onClick={() => setSegment(s.key)}
-            className={`min-h-10 rounded-full border px-4 text-sm font-medium transition-colors ${
+            className={`min-h-11 rounded-full border px-4 text-sm font-medium transition-colors ${
               segment === s.key
                 ? "border-accent bg-accent text-white"
                 : "border-line bg-white/70 text-secondary hover:text-ink"
@@ -95,7 +95,7 @@ export default function DestinationExplorer({
                 {fixed ? (
                   <Link
                     href={bookingHref(o.searchValue)}
-                    className="text-right font-display text-[15px] font-bold text-ink underline-offset-4 [font-variant-numeric:tabular-nums] hover:underline"
+                    className="inline-flex min-h-11 items-center justify-end text-right font-display text-[15px] font-bold text-ink underline-offset-4 [font-variant-numeric:tabular-nums] hover:underline"
                   >
                     € {fixed.single}
                     {fixed.retour !== null && (
@@ -105,7 +105,7 @@ export default function DestinationExplorer({
                 ) : (
                   <Link
                     href={bookingHref(o.searchValue)}
-                    className="text-right text-sm text-secondary underline-offset-4 hover:text-ink hover:underline"
+                    className="inline-flex min-h-11 items-center justify-end text-right text-sm text-secondary underline-offset-4 hover:text-ink hover:underline"
                   >
                     {t("prijsOpAanvraag")}
                   </Link>
@@ -124,6 +124,7 @@ export default function DestinationExplorer({
             placeholder={t("anderePh")}
             onSelect={setOther}
             onTextChange={setOtherText}
+            autoCompleteSection="destination-other"
           />
           <button
             type="button"

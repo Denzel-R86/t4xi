@@ -45,6 +45,18 @@ export type Stad = {
   metaDescription: string;
 };
 
+export type AirportLandingLocale = "nl" | "en";
+
+/** Locale-specifieke stadstekst; route- en tariefsleutels blijven taalneutraal. */
+export type LocalizedStad = Stad & {
+  /** Meta title zonder de globale T4XI-suffix. */
+  metaTitle: string;
+  /** Waarde die de bestaande boekingsflow als ophaalplaats herkent. */
+  bookingPickupName: string;
+  /** Optionele presentatielaag voor Nederlandse locatienamen uit de live rate-card. */
+  rateLabelTranslations: Readonly<Record<string, string>>;
+};
+
 /** Antwoorden die op elke stadspagina identiek moeten luiden. */
 const VLUCHT_FAQ = {
   q: "Volgt T4XI mijn vlucht bij vertraging?",
@@ -91,15 +103,15 @@ export const STEDEN: Stad[] = [
       {
         q: "Welk voertuig rijdt vanuit Almere?",
         a:
-          "Vanuit Almere rijden wij met een Tesla Model Y — volledig elektrisch, ruim en " +
-          "comfortabel voor maximaal 4 passagiers, exclusief de chauffeur. Bagageadvies: 2 grote " +
+          "Uw rit wordt zorgvuldig toegewezen binnen onze premium voertuigklasse. Die biedt " +
+          "plaats aan maximaal 4 passagiers, exclusief de chauffeur. Bagageadvies: 2 grote " +
           "koffers plus 2 stuks handbagage bij 4 passagiers, of 3 grote koffers bij maximaal 3 " +
-          "passagiers. Uw chauffeur beschikt over een geldige Nederlandse taxichauffeurskaart.",
+          "passagiers. Deel uw bagage vooraf, zodat wij de beschikbare ruimte kunnen bevestigen.",
       },
     ],
     metaDescription:
       "Taxi van Almere naar Schiphol met een vaste prijs vooraf per stadsdeel. T4XI rijdt " +
-      "24/7 met een volledig elektrische Tesla Model Y. Geen taxameter of onverwachte prijsstijgingen.",
+      "24/7 met een premium voertuigklasse. Geen taxameter of onverwachte prijsstijgingen.",
   },
   {
     slug: "taxi-amsterdam-schiphol",
@@ -238,3 +250,290 @@ export const STEDEN: Stad[] = [
       "24/7 vanuit Centrum, Leidsche Rijn en Utrecht Science Park. Geen taxameter.",
   },
 ];
+
+type TranslatedStadContent = Pick<
+  LocalizedStad,
+  "naam" | "intro" | "vertrekpunten" | "faq" | "metaDescription" | "metaTitle"
+> & {
+  rateLabelTranslations?: Readonly<Record<string, string>>;
+};
+
+const ENGLISH_CITY_CONTENT: Readonly<Record<string, TranslatedStadContent>> = {
+  "taxi-almere-schiphol": {
+    naam: "Almere",
+    metaTitle: "Private taxi from Almere to Schiphol — fixed fare",
+    metaDescription:
+      "Book a private taxi from Almere to Schiphol with a fixed fare confirmed in advance. " +
+      "Door-to-door airport travel, available 24/7 across Almere's districts.",
+    intro:
+      "Travel from Almere to Amsterdam Airport Schiphol in quiet, private comfort. We collect " +
+      "you at your door, confirm the fare before you book and plan the journey around your " +
+      "flight — with no meter and no traffic-related fare increases.",
+    vertrekpunten: [
+      "Almere City Centre", "Almere Haven", "Almere Buiten", "Almere Poort",
+      "Almere Muziekwijk", "Almere Hout", "Almere Oostvaarders",
+    ],
+    rateLabelTranslations: {
+      "Almere Stad Centrum": "Almere City Centre",
+    },
+    faq: [
+      {
+        q: "How do I know the fare from Almere to Schiphol?",
+        a:
+          "Enter your collection address and destination to see the fixed fare before booking. " +
+          "The quoted fare includes VAT and remains fixed once confirmed, even when traffic is " +
+          "heavier than expected. The 15% night rate for journeys between 23:00 and 06:00 is " +
+          "included in the price shown to you.",
+      },
+      {
+        q: "When can T4XI collect me in Almere?",
+        a:
+          "T4XI operates day and night, including for early departures and late arrivals. We " +
+          "recommend booking at least two hours ahead so the journey can be planned with care.",
+      },
+      {
+        q: "Does T4XI monitor my flight?",
+        a:
+          "Yes. Add your flight number when booking and we will monitor its status. For airport " +
+          "collections, we adjust the collection time when the flight is delayed; 60 minutes of " +
+          "waiting time after landing is included.",
+      },
+      {
+        q: "What kind of vehicle will collect me?",
+        a:
+          "Your journey is assigned to T4XI's premium vehicle class, with seating for up to four " +
+          "passengers excluding the driver. Please share your luggage requirements when booking " +
+          "so we can confirm that everything fits comfortably.",
+      },
+    ],
+  },
+  "taxi-amsterdam-schiphol": {
+    naam: "Amsterdam",
+    metaTitle: "Private taxi from Amsterdam to Schiphol — fixed fare",
+    metaDescription:
+      "Book a private taxi from Amsterdam to Schiphol with a fixed fare confirmed in advance. " +
+      "Door-to-door airport transfers from the city centre, Zuidas, North and East.",
+    intro:
+      "A composed start to your journey, from any Amsterdam address to Schiphol. Your driver " +
+      "collects you at the door, your fare is confirmed in advance and the route is planned for " +
+      "the traffic conditions on the day.",
+    vertrekpunten: [
+      "Amsterdam City Centre", "Zuidas", "Amsterdam East", "Amsterdam North",
+      "Oud-Zuid / De Pijp", "Amsterdam Southeast / Bijlmer",
+    ],
+    rateLabelTranslations: {
+      "Amsterdam Centrum": "Amsterdam City Centre",
+      "Amsterdam Oost": "Amsterdam East",
+      "Amsterdam Noord": "Amsterdam North",
+      "Amsterdam Zuidoost": "Amsterdam Southeast",
+    },
+    faq: [
+      {
+        q: "How do I know the fare from Amsterdam to Schiphol?",
+        a:
+          "Enter your collection address and destination to see the fixed fare before booking. " +
+          "The quoted fare includes VAT and remains fixed once confirmed, even when traffic is " +
+          "heavier than expected. The 15% night rate for journeys between 23:00 and 06:00 is " +
+          "included in the price shown to you.",
+      },
+      {
+        q: "How long does the journey from Amsterdam to Schiphol take?",
+        a:
+          "Allow roughly twenty to thirty-five minutes, depending on your collection address and " +
+          "traffic around the A10 and A4. We plan the route for the conditions on the day; extra " +
+          "time in traffic does not change a confirmed fixed fare.",
+      },
+      {
+        q: "Can I be collected from a specific Amsterdam address?",
+        a:
+          "Yes. We provide door-to-door collection throughout Amsterdam, including addresses in " +
+          "the historic centre. Enter the full address when booking so we can calculate the " +
+          "correct route and fare.",
+      },
+      {
+        q: "Does T4XI monitor my flight?",
+        a:
+          "Yes. Add your flight number when booking and we will monitor its status. For airport " +
+          "collections, we adjust the collection time when the flight is delayed; 60 minutes of " +
+          "waiting time after landing is included.",
+      },
+      {
+        q: "Which vehicle will be used for my journey?",
+        a:
+          "Your booking is assigned to T4XI's premium vehicle class. The fleet includes a Tesla " +
+          "Model Y and a Lynk & Co 01; the exact vehicle depends on operational availability and " +
+          "does not change your confirmed fare.",
+      },
+    ],
+  },
+  "taxi-rotterdam-schiphol": {
+    naam: "Rotterdam",
+    metaTitle: "Private taxi from Rotterdam to Schiphol — fixed fare",
+    metaDescription:
+      "Book a private taxi from Rotterdam to Schiphol with a fixed fare confirmed in advance. " +
+      "Door-to-door airport transfers, available 24/7 across Rotterdam.",
+    intro:
+      "Settle in for a private, carefully planned journey from Rotterdam to Schiphol. We collect " +
+      "you at your address, confirm the fare before departure and allow for the conditions on " +
+      "the A4 and A13 — whether you travel at dawn or during the evening peak.",
+    vertrekpunten: [
+      "Rotterdam City Centre", "Kralingen", "Hillegersberg", "Blijdorp",
+      "Delfshaven", "Prins Alexander",
+    ],
+    rateLabelTranslations: {
+      "Rotterdam Centrum": "Rotterdam City Centre",
+    },
+    faq: [
+      {
+        q: "How do I know the fare from Rotterdam to Schiphol?",
+        a:
+          "Enter your collection address and destination to see the fixed fare before booking. " +
+          "The quoted fare includes VAT and remains fixed once confirmed, even when traffic is " +
+          "heavier than expected. The 15% night rate for journeys between 23:00 and 06:00 is " +
+          "included in the price shown to you.",
+      },
+      {
+        q: "How long does the journey from Rotterdam to Schiphol take?",
+        a:
+          "Allow approximately one hour, depending on your collection address and traffic on the " +
+          "A4 and A13. For early flights, we help you choose a sensible collection time with an " +
+          "appropriate margin.",
+      },
+      {
+        q: "Does T4XI monitor my flight?",
+        a:
+          "Yes. Add your flight number when booking and we will monitor its status. For airport " +
+          "collections, we adjust the collection time when the flight is delayed; 60 minutes of " +
+          "waiting time after landing is included.",
+      },
+      {
+        q: "Can I also book Rotterdam The Hague Airport?",
+        a:
+          "Yes. T4XI also serves Rotterdam The Hague Airport. Enter your collection address and " +
+          "the airport in the fare calculator to see the current fixed price for your journey.",
+      },
+    ],
+  },
+  "taxi-den-haag-schiphol": {
+    naam: "The Hague",
+    metaTitle: "Private taxi from The Hague to Schiphol — fixed fare",
+    metaDescription:
+      "Book a private taxi from The Hague to Schiphol with a fixed fare confirmed in advance. " +
+      "Door-to-door airport transfers from the city centre, Scheveningen and beyond.",
+    intro:
+      "Travel from The Hague to Schiphol with the details arranged before you leave. We collect " +
+      "you at the door, confirm the fare in advance and plan the A4 journey around your flight " +
+      "and the traffic conditions on the day.",
+    vertrekpunten: [
+      "The Hague City Centre", "Scheveningen", "Benoordenhout",
+      "Statenkwartier", "Ypenburg", "Loosduinen",
+    ],
+    rateLabelTranslations: {
+      "Den Haag": "The Hague",
+      "Den Haag Centrum": "The Hague City Centre",
+    },
+    faq: [
+      {
+        q: "How do I know the fare from The Hague to Schiphol?",
+        a:
+          "Enter your collection address and destination to see the fixed fare before booking. " +
+          "The quoted fare includes VAT and remains fixed once confirmed, even when traffic is " +
+          "heavier than expected. The 15% night rate for journeys between 23:00 and 06:00 is " +
+          "included in the price shown to you.",
+      },
+      {
+        q: "Which parts of The Hague does T4XI serve?",
+        a:
+          "We collect throughout The Hague, including the city centre, Scheveningen, " +
+          "Benoordenhout, Statenkwartier, Ypenburg and Loosduinen. Enter your exact address to " +
+          "see the fare available for your route.",
+      },
+      {
+        q: "Does T4XI monitor my flight?",
+        a:
+          "Yes. Add your flight number when booking and we will monitor its status. For airport " +
+          "collections, we adjust the collection time when the flight is delayed; 60 minutes of " +
+          "waiting time after landing is included.",
+      },
+      {
+        q: "Is there a surcharge for an early-morning journey?",
+        a:
+          "Journeys between 23:00 and 06:00 use a 15% night rate. It is already included in the " +
+          "fare shown before you book, so there is no unexpected charge afterwards.",
+      },
+    ],
+  },
+  "taxi-utrecht-schiphol": {
+    naam: "Utrecht",
+    metaTitle: "Private taxi from Utrecht to Schiphol — fixed fare",
+    metaDescription:
+      "Book a private taxi from Utrecht to Schiphol with a fixed fare confirmed in advance. " +
+      "Door-to-door airport transfers from the city centre, Leidsche Rijn and Science Park.",
+    intro:
+      "A calm, direct airport journey from Utrecht to Schiphol, planned around your departure. " +
+      "We collect you at your address and confirm the fare before you book, from the historic " +
+      "centre to Leidsche Rijn and Utrecht Science Park.",
+    vertrekpunten: ["Utrecht City Centre", "Leidsche Rijn", "De Uithof / Utrecht Science Park"],
+    rateLabelTranslations: {
+      "Utrecht Centrum": "Utrecht City Centre",
+    },
+    faq: [
+      {
+        q: "How do I know the fare from Utrecht to Schiphol?",
+        a:
+          "Enter your collection address and destination to see the fixed fare before booking. " +
+          "The quoted fare includes VAT and remains fixed once confirmed, even when traffic is " +
+          "heavier than expected. The 15% night rate for journeys between 23:00 and 06:00 is " +
+          "included in the price shown to you.",
+      },
+      {
+        q: "Which parts of Utrecht does T4XI serve?",
+        a:
+          "Current fixed routes include Utrecht City Centre, Leidsche Rijn and Utrecht Science " +
+          "Park. Enter your exact collection address to see the current fare available for your " +
+          "journey.",
+      },
+      {
+        q: "Does T4XI monitor my flight?",
+        a:
+          "Yes. Add your flight number when booking and we will monitor its status. For airport " +
+          "collections, we adjust the collection time when the flight is delayed; 60 minutes of " +
+          "waiting time after landing is included.",
+      },
+      {
+        q: "Can I book other intercity journeys from Utrecht?",
+        a:
+          "Yes. In addition to airport transfers, T4XI provides selected intercity journeys. " +
+          "Use the fare calculator or contact us with your itinerary for the current options.",
+      },
+    ],
+  },
+};
+
+/** Eén bron voor de route-identiteit, met locale-specifieke presentatietekst. */
+export function getLocalizedStad(slug: string, locale: AirportLandingLocale): LocalizedStad | undefined {
+  const base = STEDEN.find((stad) => stad.slug === slug);
+  if (!base) return undefined;
+
+  if (locale === "nl") {
+    return {
+      ...base,
+      metaTitle: `Taxi ${base.naam} naar Schiphol — vaste prijs vooraf`,
+      bookingPickupName: base.naam,
+      rateLabelTranslations: {},
+    };
+  }
+
+  const translated = ENGLISH_CITY_CONTENT[slug];
+  if (!translated) return undefined;
+  return {
+    ...base,
+    ...translated,
+    bookingPickupName: base.naam,
+    rateLabelTranslations: translated.rateLabelTranslations ?? {},
+  };
+}
+
+export function getAirportLandingLocale(locale: string): AirportLandingLocale {
+  return locale === "en" ? "en" : "nl";
+}

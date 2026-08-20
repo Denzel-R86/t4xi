@@ -77,6 +77,35 @@ export function buildRegistration(input: {
   };
 }
 
+/**
+ * Kiest bij een retourboeking het operationeel belangrijkste ritdeel voor de
+ * ene monitoringrij per booking_id: een aankomende vlucht (luchthavenophaling)
+ * gaat altijd vóór een optionele vertrekkende vlucht. Zo wordt bij
+ * city→airport→city de verplichte retourvlucht gevolgd in plaats van een
+ * eventueel ingevulde outbound-vlucht.
+ */
+export function buildTripMonitoringRegistration(input: {
+  bookingId: string | null | undefined;
+  outbound: {
+    flightNumber: string;
+    scheduleDate: string | null;
+    direction: MonitoringRegistration["direction"];
+  };
+  returnLeg?: {
+    flightNumber: string;
+    scheduleDate: string | null;
+    direction: MonitoringRegistration["direction"];
+  };
+}): MonitoringRegistration | null {
+  const registrations = [input.outbound, input.returnLeg]
+    .filter((leg): leg is NonNullable<typeof leg> => Boolean(leg))
+    .map((leg) => buildRegistration({ bookingId: input.bookingId, ...leg }))
+    .filter((registration): registration is MonitoringRegistration => registration !== null);
+  return registrations.find((registration) => registration.direction === "arrival")
+    ?? registrations[0]
+    ?? null;
+}
+
 /** Een vlucht is terminaal (niet meer te volgen) bij geland/vertrokken/geannuleerd. */
 export function isTerminalFlight(flight: NormalizedFlight): boolean {
   return flight.isLanded || flight.isDeparted || flight.isCancelled;

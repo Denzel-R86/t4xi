@@ -20,22 +20,17 @@ export const routing = defineRouting({
   // Een NEXT_LOCALE-cookie voegt daarom geen gedrag toe, maar fragmenteert wel
   // publieke caches en plaatst onnodig browserstate.
   localeCookie: false,
-  // Metadata en sitemap beheren hreflang bewust per paginatype. Zo worden
-  // Nederlandstalige routepagina's niet automatisch als Engels geadverteerd.
+  // Metadata en sitemap beheren hreflang bewust per paginatype.
   alternateLinks: false,
 });
 
-export const NL_ONLY_ROUTE_PATHS = [
+/** De vijf lokale Schiphol-landingspagina's, beschikbaar in beide talen. */
+export const AIRPORT_ROUTE_PATHS = [
   "/taxi-almere-schiphol",
   "/taxi-amsterdam-schiphol",
   "/taxi-rotterdam-schiphol",
   "/taxi-den-haag-schiphol",
   "/taxi-utrecht-schiphol",
 ] as const;
-
-export function isNlOnlyRoutePath(pathname: string): boolean {
-  const normalized = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
-  return (NL_ONLY_ROUTE_PATHS as readonly string[]).includes(normalized);
-}
 
 export type Locale = (typeof routing.locales)[number];

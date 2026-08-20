@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { NL_ONLY_ROUTE_PATHS, routing } from "@/i18n/routing";
+import { AIRPORT_ROUTE_PATHS, routing } from "@/i18n/routing";
 import { localeUrl } from "@/lib/seo-locale";
 
 /**
@@ -9,10 +9,9 @@ import { localeUrl } from "@/lib/seo-locale";
  * entry krijgt daarom `alternates.languages` met nl-NL, en en x-default, zodat
  * Google beide taalversies koppelt en niet als duplicaat behandelt.
  *
- * De juridische pagina's (privacy, voorwaarden) zijn sinds stap 6 tweetalig en
- * krijgen daarom hreflang-alternates. De Nederlandstalige SEO-landingspagina's
- * (taxi-<stad>-schiphol) hebben alleen Nederlandse inhoud en verschijnen zonder
- * alternates — hun /en-variant consolideert via een canonical naar de NL-URL.
+ * Ook de lokale Schiphol-landingspagina's hebben volwaardige Nederlandse en
+ * Engelse inhoud. Beide URL's staan daarom in de sitemap en verwijzen met
+ * hreflang naar elkaar.
  */
 
 /** Tweetalige inhoudspagina's — krijgen hreflang-alternates. */
@@ -22,12 +21,14 @@ const TRANSLATABLE = [
   "/tarieven",
   "/over-ons",
   "/boeken",
+  "/zakelijk-vervoer",
   "/dagtochten",
   "/producten",
   "/contact",
   "/partner",
   "/privacy",
   "/voorwaarden",
+  ...AIRPORT_ROUTE_PATHS,
 ] as const;
 
 function priorityFor(path: string): number {
@@ -52,11 +53,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   );
 
-  const nlOnly = NL_ONLY_ROUTE_PATHS.map<MetadataRoute.Sitemap[number]>((path) => ({
-    url: localeUrl("nl", path),
-    changeFrequency: "monthly",
-    priority: 0.7,
-  }));
-
-  return [...translatable, ...nlOnly];
+  return translatable;
 }

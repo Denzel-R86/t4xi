@@ -10,6 +10,13 @@ const sql = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20260808111336_booking_quote_lock.sql"),
   "utf8"
 );
+const luggageFixSql = readFileSync(
+  resolve(
+    process.cwd(),
+    "supabase/migrations/20260820100000_fix_quote_lock_luggage_capacity.sql",
+  ),
+  "utf8",
+);
 
 test("RPC gebruikt een LEGE search_path (geen brede/muteerbare)", () => {
   assert.match(sql, /set\s+search_path\s*=\s*''/i, "verwacht: set search_path = ''");
@@ -88,4 +95,22 @@ test("execute is gelockt: revoke van public/anon/authenticated, grant alleen ser
   assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.create_booking_from_snapshot[\s\S]*?to\s+service_role/i);
   // Nooit execute aan anon/authenticated/public GRANTen.
   assert.doesNotMatch(sql, /grant\s+execute\s+on\s+function\s+public\.create_booking_from_snapshot[\s\S]*?to\s+(anon|authenticated|public)\b/i);
+});
+
+test("append-only bagagefix accepteert geen-bagage en bewaakt de gecombineerde capaciteit", () => {
+  assert.match(luggageFixSql, /create\s+or\s+replace\s+function\s+public\.create_booking_from_snapshot/i);
+  assert.match(luggageFixSql, /when\s+'geen-bagage'\s+then\s+0/i);
+  assert.match(
+    luggageFixSql,
+    /v_luggage_count\s*=\s*3\s+and\s+v_persons\s*>\s*3\s+then\s+raise\s+exception\s+'CAPACITY_EXCEEDED'/i,
+  );
+  assert.match(luggageFixSql, /set\s+search_path\s*=\s*''/i);
+  assert.match(
+    luggageFixSql,
+    /revoke\s+all\s+on\s+function\s+public\.create_booking_from_snapshot[\s\S]*?from\s+public,\s*anon,\s*authenticated/i,
+  );
+  assert.match(
+    luggageFixSql,
+    /grant\s+execute\s+on\s+function\s+public\.create_booking_from_snapshot[\s\S]*?to\s+service_role/i,
+  );
 });

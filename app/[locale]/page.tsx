@@ -262,7 +262,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const PATHS = [
     { label: t("padDiensten"), href: "/diensten" },
     { label: t("padDagtochten"), href: "/dagtochten" },
-    { label: t("padZakelijk"), href: "/diensten" },
+    { label: t("padZakelijk"), href: "/zakelijk-vervoer" },
     { label: t("padMemberships"), href: "/producten" },
     { label: t("padTarieven"), href: "/tarieven" },
     { label: t("padPartner"), href: "/partner" },
@@ -280,13 +280,15 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         aria-label={t("arrivalLabel")}
         className="grid min-h-[calc(100svh-68px)] md:grid-cols-[48%_52%]"
       >
-        <div className="flex min-w-0 flex-col justify-center px-[5vw] pb-10 pt-20 md:py-14 md:pr-[4vw]">
+        <div className="order-last flex min-w-0 flex-col justify-center px-[5vw] pb-12 pt-10 md:order-none md:col-start-1 md:row-start-1 md:py-14 md:pr-[4vw]">
           <NarrativePattern
             as="h1"
             kicker={t("arrivalKicker")}
             voice={t("arrivalVoice")}
             echo={t("arrivalEcho")}
             note={t("arrivalNote")}
+            immediate
+            echoClassName="font-light text-secondary"
             // 2026-08-19 (hotfix): deze kop staat in de 48%-splitkolom van de
             // ARRIVAL-sectie, niet in een bijna-volle-breedte Viewport zoals de
             // overige drie NarrativePattern-koppen — de standaard `7.6vw` overschoot
@@ -295,19 +297,19 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             // onder md (enkele kolom, volle breedte) blijft het standaardgedrag.
             titleClassName="mt-6 font-display text-[clamp(44px,7.6vw,108px)] md:text-[clamp(40px,5.4vw,112px)] font-extrabold leading-[0.98] tracking-[-0.03em] text-ink"
           />
-          <Reveal delay={2}>
+          <Reveal immediate>
             <div className="mt-9">
               <SentencePattern />
             </div>
           </Reveal>
-          <Reveal delay={3}>
+          <Reveal immediate>
             <Stamp className="mt-7 leading-relaxed">
               {t("arrivalStamp1")}<Dash />{t("arrivalStamp2")}<Dash />{t("arrivalStamp3")}<Dash />
               <b className="font-semibold text-ink">{t("arrivalStamp4")}</b>
             </Stamp>
           </Reveal>
         </div>
-        <figure className="relative min-h-[42svh] overflow-hidden bg-ink md:min-h-full">
+        <figure className="relative order-first h-[32svh] min-h-[220px] max-h-[320px] overflow-hidden bg-ink md:order-none md:col-start-2 md:row-start-1 md:h-auto md:max-h-none md:min-h-full">
           <Image
             src={passagierRust}
             alt={t("recogFiguurAlt")}
@@ -315,7 +317,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             priority
             sizes="(min-width: 768px) 52vw, 100vw"
             placeholder="blur"
-            className="object-cover object-[57%_center] saturate-[0.9] contrast-[0.96]"
+            className="object-cover object-[62%_center] saturate-[0.9] contrast-[0.96] md:object-[57%_center]"
           />
         </figure>
       </section>
@@ -360,7 +362,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 actionLabel={t("ledgerBook")}
                 closing={
                   <Stamp>
-                    <Link href="/tarieven" className="hz-guide-line text-ink no-underline">
+                    <Link
+                      href="/tarieven"
+                      className="hz-guide-line inline-flex min-h-11 items-center text-ink no-underline"
+                    >
                       {t("ledgerAlle")}
                     </Link>
                     <Dash />

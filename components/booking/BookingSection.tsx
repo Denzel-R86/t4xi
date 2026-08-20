@@ -143,6 +143,10 @@ export default function BookingSection({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (loading) return; // geen dubbele submit
+    if (!quoteAllowsBooking) {
+      setSubmit({ status: "error", message: t("prijsFout") });
+      return;
+    }
     if (!pickup || !dropoff) {
       setSubmit({ status: "error", message: t("valAdres") });
       return;
@@ -250,6 +254,11 @@ export default function BookingSection({
     // Retourtijd meesturen zodat het nachttarief per ritdeel wordt berekend.
     ...(tab === "retour" ? { returnDate, returnTime } : {}),
   });
+  // Verzenden mag pas nadat de prijsflow een bindbare, opgeslagen quote-lock
+  // oplevert, of expliciet heeft vastgesteld dat dit een offerte-op-aanvraag is.
+  // Idle/loading/error mogen nooit stil via het no-lock-pad worden geboekt.
+  const quoteAllowsBooking =
+    (quote.status === "ready" && quote.quoteId.length > 0) || quote.status === "onrequest";
   // Het vluchtnummerveld verschijnt zodra de engine zegt dat één zijde een
   // luchthaven is — ook bij "offerte op aanvraag". Ritten vanaf Schiphol hebben nog
   // geen vaste route, maar de aankomst moet wél gevolgd kunnen worden.
@@ -276,7 +285,9 @@ export default function BookingSection({
           ? t(quote.returnApplied ? "prijsRetour" : "prijsVast")
           : quote.status === "onrequest"
             ? t("prijsOpAanvraag")
-            : t("prijsFout");
+            : quote.status === "error" && quote.reason === "rate_limited"
+              ? t("prijsRateLimited")
+              : t("prijsFout");
   const priceAmount =
     quote.status === "ready"
       ? quote.amount
@@ -345,7 +356,7 @@ export default function BookingSection({
               role="radio"
               aria-checked={tab === x.key}
               onClick={() => setTab(x.key)}
-              className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+              className={`min-h-11 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
                 tab === x.key
                   ? "border-accent bg-accent text-white"
                   : "border-line bg-[#F4F1EB] text-[#4E565E] hover:text-ink"
@@ -357,7 +368,7 @@ export default function BookingSection({
         </div>
         <p className="mt-2.5 text-xs leading-relaxed text-secondary">
           {t("airportHint")} {" "}
-          <Link href="/dagtochten#aanvragen" className="font-medium text-accent underline underline-offset-2">
+          <Link href="/dagtochten#aanvragen" className="inline-flex min-h-6 items-center font-medium text-accent underline underline-offset-2">
             {t("dayTripLink")}
           </Link>
         </p>
@@ -379,8 +390,8 @@ export default function BookingSection({
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 grid gap-1 sm:grid-cols-2 sm:gap-4">
-            <AddressAutocomplete label={t("van")} placeholder={t("vertrekadresPh")} onSelect={setPickup} initialValue={initialPickup} />
-            <AddressAutocomplete label={t("naar")} placeholder={t("bestemmingPh")} onSelect={setDropoff} initialValue={initialDropoff} />
+            <AddressAutocomplete label={t("van")} placeholder={t("vertrekadresPh")} onSelect={setPickup} initialValue={initialPickup} autoCompleteSection="booking-pickup" />
+            <AddressAutocomplete label={t("naar")} placeholder={t("bestemmingPh")} onSelect={setDropoff} initialValue={initialDropoff} autoCompleteSection="booking-dropoff" />
           </div>
           <div>
             <label htmlFor="f-date" className={labelCls}>{t("datum")}</label>
@@ -448,8 +459,8 @@ export default function BookingSection({
           {/*
             Vluchtnummer — verschijnt uitsluitend bij luchthavenritten, zodra de
             prijsengine heeft bevestigd dat herkomst of bestemming een luchthaven is.
-            Zonder dit nummer kan T4XI de belofte "wij volgen uw vluchtstatus" niet
-            waarmaken, daarom is het veld daar verplicht.
+            Bij ophalen na een aankomende vlucht is het nummer verplicht om de
+            vluchtstatus te volgen; bij wegbrengen naar de luchthaven is het optioneel.
           */}
           {needsFlight && (
             <div className="sm:col-span-2">
@@ -586,7 +597,7 @@ export default function BookingSection({
 
         <button
           type="submit"
-          disabled={loading || !quoteReady}
+          disabled={loading || !quoteReady || !quoteAllowsBooking}
           aria-busy={loading}
           className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-all hover:-translate-y-0.5 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
           aria-label={t("verzenden")}

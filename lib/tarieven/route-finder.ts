@@ -8,6 +8,8 @@
  * apart getest (route-finder.test.ts).
  */
 
+import { classifyLuggage } from "@/lib/pricing/luggage";
+
 /** Eén ingevoerde tussenstop. `waitRequested` = extra wachttijd aangevraagd. */
 export type StopInput = {
   label: string;
@@ -65,7 +67,8 @@ export function matchSchipholRoute(pickup: string): { slug: string; naam: string
  * Deep-link naar /boeken met de reeds ingevulde ritgegevens. De server
  * herberekent de prijs altijd opnieuw — deze parameters zijn prefill, geen
  * prijsbron. Alleen zonder tussenstops te gebruiken: /boeken kent geen
- * tussenstops, dus die route loopt via een offerteaanvraag.
+ * tussenstops, dus die route loopt via een offerteaanvraag. Een bagagekeuze
+ * gaat alleen mee als dezelfde serverclassificatie haar als bindend herkent.
  */
 export function buildBookingHref(trip: {
   pickup: string;
@@ -76,6 +79,7 @@ export function buildBookingHref(trip: {
   time?: string;
   returnDate?: string;
   returnTime?: string;
+  luggage?: string;
 }): string {
   const q = new URLSearchParams();
   q.set("pickup", trip.pickup);
@@ -86,6 +90,8 @@ export function buildBookingHref(trip: {
   if (trip.time) q.set("time", trip.time);
   if (trip.returnTrip && trip.returnDate) q.set("returnDate", trip.returnDate);
   if (trip.returnTrip && trip.returnTime) q.set("returnTime", trip.returnTime);
+  const luggage = classifyLuggage(trip.luggage);
+  if (luggage.kind === "binding") q.set("luggage", luggage.category);
   return `/boeken?${q.toString()}`;
 }
 
@@ -161,7 +167,7 @@ export function isRouteFinderDetailsComplete(
   return true;
 }
 
-export type RouteFinderView = "hidden" | "incomplete" | "loading" | "ready" | "onrequest";
+export type RouteFinderView = "hidden" | "incomplete" | "loading" | "ready" | "onrequest" | "error";
 
 /**
  * Leidt de resultaatweergave af. Vóór een compleet, geldig datum/tijd/bagage-
@@ -181,6 +187,7 @@ export function resolveRouteFinderView(input: {
   if (!input.submitted || !input.hasPickup || !input.hasDropoff) return "hidden";
   if (!input.detailsComplete) return "incomplete";
   if (input.quoteStatus === "loading") return "loading";
+  if (input.quoteStatus === "error") return "error";
   if (input.quoteStatus === "ready" && !input.hasStops) return "ready";
   return "onrequest";
 }

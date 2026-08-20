@@ -13,10 +13,24 @@
 
 const EUR_FORMATTER = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
 const EUR_AMOUNT_FORMATTER = new Intl.NumberFormat("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const EUR_LOCALE_FORMATTERS = {
+  nl: EUR_FORMATTER,
+  en: new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }),
+} as const;
 
 /** "€ 95,80" — met valutasymbool, voor losstaand gebruik. */
 export function formatEuro(amountEuros: number): string {
   return EUR_FORMATTER.format(amountEuros);
+}
+
+/** Cent-precieze euro-weergave voor publieke NL/EN-content. */
+export function formatEuroForLocale(amountEuros: number, locale: "nl" | "en"): string {
+  return EUR_LOCALE_FORMATTERS[locale].format(amountEuros);
 }
 
 /** "95,80" — uitsluitend het getal (twee decimalen, komma), voor gebruik náást een al aanwezig "€"-teken. */

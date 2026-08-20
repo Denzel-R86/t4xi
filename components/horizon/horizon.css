@@ -116,6 +116,20 @@ input.hz-blank::placeholder { color: #999694; font-weight: 300; }
 select.hz-blank { appearance: none; -webkit-appearance: none; cursor: pointer; }
 select.hz-blank:invalid { color: #999694; font-weight: 300; }
 
+/* De boekingszin blijft visueel licht, maar de native invoervelden moeten op
+   mobiel wel een volwaardig aanraakdoel zijn. De ruimere minimum-breedte
+   voorkomt bovendien dat de tijdwaarde door de browserknop wordt afgekapt. */
+@media (max-width: 767px) {
+  input.hz-blank,
+  select.hz-blank {
+    min-height: 44px;
+  }
+
+  input[type="time"].hz-blank {
+    min-width: 7.5ch;
+  }
+}
+
 /* ── Confirm: odometer ── */
 .hz-confirm-roll {
   display: inline-flex;

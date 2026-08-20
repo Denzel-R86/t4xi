@@ -162,6 +162,8 @@ export function NarrativePattern({
   note,
   as: Tag = "h2",
   titleClassName,
+  echoClassName,
+  immediate = false,
 }: {
   kicker: string;
   voice: string;
@@ -178,28 +180,32 @@ export function NarrativePattern({
    * afbreekt. Ongebruikt blijft het bestaande gedrag exact ongewijzigd.
    */
   titleClassName?: string;
+  /** Optionele contrastrijkere echostem voor plaatsing boven de vouw. */
+  echoClassName?: string;
+  /** Sla de reveal-startstaat over voor direct zichtbare inhoud boven de vouw. */
+  immediate?: boolean;
 }) {
   return (
     <div>
-      <Reveal>
+      <Reveal immediate={immediate}>
         <p className="flex items-center gap-3.5 text-[11px] font-medium uppercase tracking-[0.16em] text-secondary">
           <span aria-hidden="true" className="h-px w-8 bg-ink" />
           {kicker}
         </p>
       </Reveal>
-      <Reveal delay={1}>
+      <Reveal delay={1} immediate={immediate}>
         <Tag className={titleClassName ?? "mt-6 font-display text-[clamp(44px,7.6vw,108px)] font-extrabold leading-[0.98] tracking-[-0.03em] text-ink"}>
           {voice}
           {echo && (
             <>
               <br />
-              <span className="font-light text-stone">{echo}</span>
+              <span className={echoClassName ?? "font-light text-stone"}>{echo}</span>
             </>
           )}
         </Tag>
       </Reveal>
       {note && (
-        <Reveal delay={2}>
+        <Reveal delay={2} immediate={immediate}>
           <p className="mt-6 max-w-md text-[15px] leading-relaxed text-secondary">{note}</p>
         </Reveal>
       )}
@@ -394,7 +400,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => choose(s)}
-                className={`block w-full px-4 py-3 text-left text-sm font-normal transition-colors ${
+                className={`block min-h-11 w-full px-4 py-3 text-left text-sm font-normal transition-colors ${
                   i === activeIndex ? "bg-accent text-white" : "text-ink hover:bg-fog"
                 }`}
               >
@@ -480,7 +486,11 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
               {t("opAanvraag")}<Dash />{t("opAanvraagNa")}
             </>
           ) : quote.status === "error" ? (
-            <>{t("fout")}<Dash />{t("foutNa")}</>
+            quote.reason === "rate_limited" ? (
+              <>{t("rateLimited")}<Dash />{t("rateLimitedNa")}</>
+            ) : (
+              <>{t("fout")}<Dash />{t("foutNa")}</>
+            )
           ) : (
             <>
               {t("leeg")}<Dash />{t("leegNa")}
@@ -491,7 +501,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
           href={href}
           onClick={onConfirmClick}
           aria-disabled={addressesSet && !quoteReady}
-          className={`hz-confirm-btn px-7 py-3 text-[12px] font-medium uppercase tracking-[0.14em] text-ink no-underline ${
+          className={`hz-confirm-btn inline-flex min-h-11 items-center px-7 py-3 text-[12px] font-medium uppercase tracking-[0.14em] text-ink no-underline ${
             addressesSet && !quoteReady ? "cursor-not-allowed opacity-40" : ""
           }`}
         >
@@ -541,7 +551,7 @@ export function LedgerPattern({
                 <span className="font-display text-[clamp(19px,2.3vw,26px)] font-bold text-ink [font-variant-numeric:tabular-nums]">
                   {typeof e.fact === "number" ? <>€&nbsp;{e.fact}</> : e.fact}
                 </span>
-                {e.factNote && <span className="text-xs uppercase tracking-[0.1em] text-stone">{e.factNote}</span>}
+                {e.factNote && <span className="text-xs uppercase tracking-[0.1em] text-secondary">{e.factNote}</span>}
               </span>
             </span>
           );
