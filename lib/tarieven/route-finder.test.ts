@@ -73,8 +73,7 @@ test("buildQuoteRequestText bevat route, type, passagiers en bagage", () => {
     stops: [{ label: "Haarlem", waitRequested: true }],
     returnTrip: true,
     passengers: 2,
-    bigLuggage: 2,
-    handLuggage: 2,
+    luggage: "Handbagage",
     date: "2026-08-10",
     time: "08:00",
     returnDate: "2026-08-14",
@@ -85,9 +84,24 @@ test("buildQuoteRequestText bevat route, type, passagiers en bagage", () => {
   assert.ok(text.includes("Amsterdam → Haarlem → Schiphol"));
   assert.ok(text.includes("retour"));
   assert.ok(text.includes("Passagiers: 2"));
-  assert.ok(text.includes("2 grote koffers"));
+  assert.ok(text.includes("Bagage: Handbagage"));
   assert.ok(text.includes("KL1234"));
   assert.ok(text.includes("extra wachttijd"));
+});
+
+// 2026-08-19 (hotfix): bagage wordt nooit tweemaal gevraagd — één categorie,
+// nooit ook nog een aparte koffer-/handbagage-aantal-vraag ernaast.
+test("buildQuoteRequestText: bagage-regel ontbreekt zonder gekozen categorie (geen stille default)", () => {
+  const trip: RouteFinderTrip = {
+    pickup: "Amsterdam",
+    dropoff: "Schiphol",
+    stops: [],
+    returnTrip: false,
+    passengers: 1,
+    luggage: "",
+  };
+  const text = buildQuoteRequestText(trip);
+  assert.ok(!text.includes("Bagage:"));
 });
 
 test("buildWhatsappHref codeert de tekst in de URL", () => {
@@ -119,6 +133,28 @@ test("isRouteFinderDetailsComplete: alle drie verplicht, geen enkele stille defa
 
 test("isRouteFinderDetailsComplete: 'geen-bagage' is een geldige, bewuste keuze — telt als compleet", () => {
   assert.equal(isRouteFinderDetailsComplete("2026-09-01", "10:00", "geen-bagage"), true);
+});
+
+test("isRouteFinderDetailsComplete: bij RETOUR zijn retourdatum én -tijd óók verplicht", () => {
+  const d = "2026-09-01", t = "10:00", l = "handbagage";
+  // Enkele reis: retourvelden doen niet mee.
+  assert.equal(isRouteFinderDetailsComplete(d, t, l, false, "", ""), true, "enkele reis is compleet zonder retourmoment");
+  // Retour: zonder retourdatum en/of -tijd nog niet compleet.
+  assert.equal(isRouteFinderDetailsComplete(d, t, l, true, "", ""), false, "retour zonder retourdatum én -tijd");
+  assert.equal(isRouteFinderDetailsComplete(d, t, l, true, "2026-09-05", ""), false, "retour zonder retourtijd");
+  assert.equal(isRouteFinderDetailsComplete(d, t, l, true, "", "18:00"), false, "retour zonder retourdatum");
+  assert.equal(isRouteFinderDetailsComplete(d, t, l, true, "2026-09-05", "18:00"), true, "retour volledig ingevuld");
+  // De heenreis-eisen blijven onverkort gelden bij retour.
+  assert.equal(isRouteFinderDetailsComplete(d, t, "", true, "2026-09-05", "18:00"), false, "retour compleet maar geen bagage");
+});
+
+test("RouteFinder geeft returnTrip/returnDate/returnTime door aan de volledigheidscheck", () => {
+  const src = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
+  assert.match(
+    src,
+    /isRouteFinderDetailsComplete\(date,\s*time,\s*luggage,\s*returnTrip,\s*returnDate,\s*returnTime\)/,
+    "de retourvelden worden niet meegegeven — retour zou dan zonder retourmoment een prijs kunnen opleveren"
+  );
 });
 
 test("resolveRouteFinderView: niet ingediend of onvolledige adressen → hidden", () => {
@@ -180,4 +216,45 @@ test("alle drie useRouteQuote-aanroepen geven 'luggage' door — geen enkele op 
     assert.ok(call, `${file}: geen useRouteQuote(pickup, dropoff, {...})-aanroep gevonden`);
     assert.match(call![0], /luggage\s*[,:]/, `${file}: useRouteQuote-aanroep geeft geen 'luggage' door`);
   }
+});
+
+// ── 2026-08-19 (hotfix, herzien): bagage werd tweemaal gevraagd (de bewuste ──
+// categorie ÉN aparte, losstaande koffer-/handbagage-aantallen, plus een
+// hardcoded "2 grote koffers en 2 stuks handbagage"-vermelding in de
+// resultaatkaart die niets met de echte keuze te maken had) — en datum, tijd,
+// ritsoort en passagiers stonden nog achter een "+"-toggle. Alles staat nu
+// direct zichtbaar; de ENIGE resterende "+"-stap is tussenstops.
+
+test("RouteFinder: datum, tijd, ritsoort en passagiers staan alle in de ALTIJD-zichtbare zoekmodule", () => {
+  const src = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
+  const primaryModuleEnd = src.indexOf("Tussenstops — subtiel uitklapbaar");
+  assert.ok(primaryModuleEnd > 0, "kon de zoekmodule niet afbakenen");
+  const primaryModule = src.slice(0, primaryModuleEnd);
+  assert.match(primaryModule, /\$\{ids\}-date`/, "datumveld ontbreekt in de altijd-zichtbare zoekmodule");
+  assert.match(primaryModule, /\$\{ids\}-time`/, "tijdveld ontbreekt in de altijd-zichtbare zoekmodule");
+  assert.match(primaryModule, /\$\{ids\}-luggage-primary`/, "bagageveld ontbreekt in de altijd-zichtbare zoekmodule");
+  assert.match(primaryModule, /t\("ritType"\)/, "ritsoort (enkel/retour) ontbreekt in de altijd-zichtbare zoekmodule");
+  assert.match(primaryModule, /\$\{ids\}-pax`/, "passagiersveld ontbreekt in de altijd-zichtbare zoekmodule");
+});
+
+test("RouteFinder: de ENIGE resterende '+'-stap is tussenstops — geen showDetails-toggle meer", () => {
+  const src = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
+  assert.doesNotMatch(src, /showDetails/, "de showDetails-toggle bestaat nog");
+  assert.doesNotMatch(src, /actieDetails/, "de 'Retour & passagiers'-toggleknop bestaat nog");
+  // Exact één progressieve toggle-knop in de zoekmodule: tussenstops.
+  assert.match(src, /t\("actieTussenstop"\)/, "de tussenstop-toggle ontbreekt");
+});
+
+test("RouteFinder: bagage wordt nergens meer een tweede keer gevraagd (geen losse koffer-/handbagage-aantallen, geen hardcoded capaciteitstekst)", () => {
+  const src = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
+  assert.doesNotMatch(src, /bigLuggage|handLuggage/, "de oude, losstaande koffer-/handbagage-AANTAL-velden bestaan nog");
+  assert.doesNotMatch(src, /bagageCapaciteit/, "de hardcoded '2 grote koffers en 2 stuks handbagage'-vermelding bestaat nog");
+  // Precies één plek die de bagagecategorie-select rendert.
+  const selectMatches = [...src.matchAll(/LUGGAGE_CATEGORIES\.map/g)];
+  assert.equal(selectMatches.length, 1, "de bagagecategorieën worden op meer dan één plek gerenderd");
+});
+
+test("ResultCard's bagage-fact toont het daadwerkelijk gekozen label, geen generieke placeholder-tekst", () => {
+  const src = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
+  assert.match(src, /value:\s*luggageLabel\s*\|\|\s*"—"/, "de bagage-fact leest niet uit de daadwerkelijke keuze (luggageLabel)");
 });

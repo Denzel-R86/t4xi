@@ -82,18 +82,18 @@ export default function RouteFinder() {
   const [dropoffText, setDropoffText] = useState("");
 
   const [showStops, setShowStops] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
   const [stops, setStops] = useState<StopState[]>([]);
 
   const [returnTrip, setReturnTrip] = useState(false);
   const [passengers, setPassengers] = useState(1);
-  const [bigLuggage, setBigLuggage] = useState(1);
-  const [handLuggage, setHandLuggage] = useState(1);
-  // 2026-08-19 (hotfix): bewuste bagagecategorie voor de Pricing Engine (los van
-  // bigLuggage/handLuggage hierboven, die uitsluitend de capaciteitsvermelding in
-  // de resultaatkaart/offerteaanvraag voeden). Leeg — GEEN stille default zoals
-  // "handbagage" — zodat de keuze net als in de hero/boekingsformulier altijd
-  // bewust gemaakt wordt.
+  // 2026-08-19 (hotfix, herzien): ÉÉN bewuste bagagekeuze voor de hele flow —
+  // zowel voor de Pricing Engine als voor de offerteaanvraagtekst hieronder.
+  // Eerder vroeg dit formulier tweemaal naar bagage (deze categorie ÉN aparte
+  // "grote koffers"/"handbagage"-AANTALLEN, plus een hardcoded "2 grote
+  // koffers en 2 stuks handbagage"-vermelding in de resultaatkaart die niets
+  // met de echte keuze te maken had) — dat is verwarrend en soms
+  // tegenstrijdig. Leeg — GEEN stille default zoals "handbagage" — zodat de
+  // keuze net als in de hero/boekingsformulier altijd bewust gemaakt wordt.
   const [luggage, setLuggage] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("08:00");
@@ -130,7 +130,7 @@ export default function RouteFinder() {
   // components/shared/useRouteQuote.ts). Vóór complete invoer blijft de hook op
   // "idle" staan: geen prijs, geen offerte-op-aanvraag, geen quote-API-call.
   // Puur/apart getest — zie lib/tarieven/route-finder.test.ts.
-  const detailsComplete = isRouteFinderDetailsComplete(date, time, luggage);
+  const detailsComplete = isRouteFinderDetailsComplete(date, time, luggage, returnTrip, returnDate, returnTime);
 
   // Live, autoritatieve richtprijs + luchthavencontext — exact dezelfde keten als
   // de homepagehero en /boeken. Het resultaat wordt pas getóónd na "Bereken".
@@ -193,14 +193,16 @@ export default function RouteFinder() {
     resultRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [view, quote.status, hasStops, needsFlight, resolvedStops.length]);
 
+  // 2026-08-19 (hotfix): dezelfde, ÉNE bewuste bagagekeuze — vertaald naar een
+  // leesbaar label — voor zowel de resultaatkaart als de offerteaanvraagtekst.
+  const luggageLabel = LUGGAGE_CATEGORIES.find((l) => l.value === luggage)?.labelKey;
   const tripForRequest = {
     pickup: pickup?.label ?? "",
     dropoff: dropoff?.label ?? "",
     stops: resolvedStops,
     returnTrip,
     passengers,
-    bigLuggage,
-    handLuggage,
+    luggage: luggageLabel ? t(luggageLabel) : "",
     date: date || undefined,
     time: time || undefined,
     returnDate: returnTrip ? returnDate || undefined : undefined,
@@ -210,8 +212,6 @@ export default function RouteFinder() {
   const requestText = buildQuoteRequestText(tripForRequest);
   const summary = routeSummary(pickup?.label ?? "", resolvedStops, dropoff?.label ?? "");
   const schipholRoute = airport?.direction === "departure" ? matchSchipholRoute(pickup?.label ?? "") : null;
-
-  const stepNum = "min-h-11 w-full rounded-field border border-[rgba(31,39,48,0.14)] bg-field px-4 text-[15px] font-medium text-ink focus:border-accent focus:bg-white focus:shadow-[0_0_0_4px_rgba(40,49,59,0.10)] focus:outline-none";
 
   return (
     <div>
@@ -230,11 +230,21 @@ export default function RouteFinder() {
             onSelect={setDropoffSel}
             onTextChange={setDropoffText}
           />
-          {/* 2026-08-19 (hotfix): direct zichtbaar, niet achter "+ Datum, tijd &
-              bagage" verstopt — bewust dezelfde toegankelijkheid als Van/Naar
-              hierboven, zodat de vereiste bewuste bagagekeuze niet per ongeluk
-              overgeslagen wordt. */}
-          <div className="sm:col-span-2 sm:max-w-xs">
+          {/* 2026-08-19 (hotfix, herzien): datum, tijd én bagage zijn alle drie
+              verplicht vóór een prijs (zie detailsComplete hieronder) — daarom
+              nu alle drie direct zichtbaar, niet meer achter "+ Datum, tijd &
+              bagage" verstopt. Dezelfde toegankelijkheid als Van/Naar. */}
+          <div>
+            <label htmlFor={`${ids}-date`} className={labelCls}>{t("datum")}</label>
+            <input id={`${ids}-date`} type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor={`${ids}-time`} className={labelCls}>{t("tijd")}</label>
+            <input id={`${ids}-time`} type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputCls} />
+          </div>
+          {/* Bagage en passagiers naast elkaar — vult de rij volledig, geen
+              losse halve rij met een gat ernaast. */}
+          <div>
             <label htmlFor={`${ids}-luggage-primary`} className={labelCls}>{t("bagageKopLabel")}</label>
             <select
               id={`${ids}-luggage-primary`}
@@ -249,6 +259,49 @@ export default function RouteFinder() {
               ))}
             </select>
           </div>
+          <div>
+            <label htmlFor={`${ids}-pax`} className={labelCls}>{t("passagiers")}</label>
+            <input id={`${ids}-pax`} type="number" min={1} max={MAX_PASSENGERS} value={passengers}
+              onChange={(e) => setPassengers(Math.min(MAX_PASSENGERS, Math.max(1, Number(e.target.value) || 1)))} className={inputCls} />
+          </div>
+
+          {/* 2026-08-19 (hotfix, herzien): ritsoort en passagiers direct
+              zichtbaar — geen "+"-toggle meer nodig om ze te bereiken. De
+              enige resterende progressieve stap is tussenstops (hieronder). */}
+          <fieldset className="sm:col-span-2">
+            <legend className={labelCls}>{t("ritType")}</legend>
+            <div className="flex gap-2" role="radiogroup" aria-label={t("ritType")}>
+              {([["enkel", false], ["retour", true]] as const).map(([key, val]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="radio"
+                  aria-checked={returnTrip === val}
+                  onClick={() => setReturnTrip(val)}
+                  className={`min-h-[52px] flex-1 rounded-field border px-4 text-sm font-medium transition-colors ${
+                    returnTrip === val
+                      ? "border-accent bg-accent text-white"
+                      : "border-line bg-fog text-secondary hover:text-ink"
+                  }`}
+                >
+                  {t(key === "enkel" ? "enkeleReis" : "retour")}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          {returnTrip && (
+            <>
+              <div>
+                <label htmlFor={`${ids}-rdate`} className={labelCls}>{t("retourDatum")}</label>
+                <input id={`${ids}-rdate`} type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label htmlFor={`${ids}-rtime`} className={labelCls}>{t("retourTijd")}</label>
+                <input id={`${ids}-rtime`} type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className={inputCls} />
+              </div>
+            </>
+          )}
         </div>
 
         {/* Tussenstops — subtiel uitklapbaar */}
@@ -303,75 +356,6 @@ export default function RouteFinder() {
           </div>
         )}
 
-        {/* Progressieve ritgegevens */}
-        {showDetails && (
-          <div className="mt-4 border-t border-line pt-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor={`${ids}-date`} className={labelCls}>{t("datum")}</label>
-                <input id={`${ids}-date`} type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label htmlFor={`${ids}-time`} className={labelCls}>{t("tijd")}</label>
-                <input id={`${ids}-time`} type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputCls} />
-              </div>
-
-              <fieldset className="sm:col-span-2">
-                <legend className={labelCls}>{t("ritType")}</legend>
-                <div className="flex gap-2" role="radiogroup" aria-label={t("ritType")}>
-                  {([["enkel", false], ["retour", true]] as const).map(([key, val]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      role="radio"
-                      aria-checked={returnTrip === val}
-                      onClick={() => setReturnTrip(val)}
-                      className={`min-h-11 flex-1 rounded-field border px-4 text-sm font-medium transition-colors ${
-                        returnTrip === val
-                          ? "border-accent bg-accent text-white"
-                          : "border-line bg-fog text-secondary hover:text-ink"
-                      }`}
-                    >
-                      {t(key === "enkel" ? "enkeleReis" : "retour")}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
-              {returnTrip && (
-                <>
-                  <div>
-                    <label htmlFor={`${ids}-rdate`} className={labelCls}>{t("retourDatum")}</label>
-                    <input id={`${ids}-rdate`} type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className={inputCls} />
-                  </div>
-                  <div>
-                    <label htmlFor={`${ids}-rtime`} className={labelCls}>{t("retourTijd")}</label>
-                    <input id={`${ids}-rtime`} type="time" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} className={inputCls} />
-                  </div>
-                </>
-              )}
-
-              <div>
-                <label htmlFor={`${ids}-pax`} className={labelCls}>{t("passagiers")}</label>
-                <input id={`${ids}-pax`} type="number" min={1} max={MAX_PASSENGERS} value={passengers}
-                  onChange={(e) => setPassengers(Math.min(MAX_PASSENGERS, Math.max(1, Number(e.target.value) || 1)))} className={stepNum} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor={`${ids}-big`} className={labelCls}>{t("groteKoffers")}</label>
-                  <input id={`${ids}-big`} type="number" min={0} max={4} value={bigLuggage}
-                    onChange={(e) => setBigLuggage(Math.min(4, Math.max(0, Number(e.target.value) || 0)))} className={stepNum} />
-                </div>
-                <div>
-                  <label htmlFor={`${ids}-hand`} className={labelCls}>{t("handbagage")}</label>
-                  <input id={`${ids}-hand`} type="number" min={0} max={4} value={handLuggage}
-                    onChange={(e) => setHandLuggage(Math.min(4, Math.max(0, Number(e.target.value) || 0)))} className={stepNum} />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Vluchtnummer — alleen bij een luchthavenrit (engine bevestigt dit) */}
         {needsFlight && (
           <div className="mt-4 border-t border-line pt-4">
@@ -411,8 +395,11 @@ export default function RouteFinder() {
           </p>
         )}
 
-        {/* Compacte progressieve acties */}
-        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+        {/* Compacte progressieve actie — 2026-08-19 (hotfix, herzien): de enige
+            resterende "+"-stap is tussenstops; alle overige velden (datum,
+            tijd, bagage, ritsoort, passagiers) staan al direct zichtbaar
+            hierboven. */}
+        <div className="mt-4">
           <button
             type="button"
             onClick={() => { setShowStops(true); if (stops.length === 0) addStop(); }}
@@ -420,14 +407,6 @@ export default function RouteFinder() {
             className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-secondary transition-colors hover:text-ink"
           >
             <span aria-hidden="true">＋</span> {t("actieTussenstop")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowDetails((v) => !v)}
-            aria-expanded={showDetails}
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-secondary transition-colors hover:text-ink"
-          >
-            <span aria-hidden="true">＋</span> {t("actieDetails")}
           </button>
         </div>
       </div>
@@ -457,6 +436,7 @@ export default function RouteFinder() {
             distanceKm={quote.distanceKm}
             durationMin={quote.estimatedDurationMin}
             passengers={passengers}
+            luggageLabel={tripForRequest.luggage}
             stopsCount={resolvedStops.length}
             needsFlight={needsFlight}
             isArrival={isArrival}
@@ -491,7 +471,7 @@ export default function RouteFinder() {
 
 /* ── Prijsresultaat: premium ritkaart ── */
 function ResultCard({
-  summary, price, returnApplied, distanceKm, durationMin, passengers, stopsCount,
+  summary, price, returnApplied, distanceKm, durationMin, passengers, luggageLabel, stopsCount,
   needsFlight, isArrival, bookingHref, schipholRoute, onBook,
 }: {
   summary: string;
@@ -500,6 +480,8 @@ function ResultCard({
   distanceKm: number;
   durationMin: number;
   passengers: number;
+  /** 2026-08-19 (hotfix): de al-vertaalde, daadwerkelijk gekozen bagagecategorie — nooit een generieke, losstaande capaciteitsvermelding. */
+  luggageLabel: string;
   stopsCount: number;
   needsFlight: boolean;
   isArrival: boolean;
@@ -513,7 +495,7 @@ function ResultCard({
     { label: t("factAfstand"), value: distanceKm > 0 ? `${distanceKm} km` : "—" },
     { label: t("factVoertuig"), value: t("voertuigKlasse") },
     { label: t("factPassagiers"), value: t("passagiersMax", { max: 4, gekozen: passengers }) },
-    { label: t("factBagage"), value: t("bagageCapaciteit") },
+    { label: t("factBagage"), value: luggageLabel || "—" },
     { label: t("factWachttijd"), value: isArrival ? t("wachttijdLucht") : t("wachttijdStandaard") },
   ];
   if (stopsCount > 0) facts.push({ label: t("factTussenstops"), value: String(stopsCount) });

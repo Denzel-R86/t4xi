@@ -20,8 +20,15 @@ export type RouteFinderTrip = {
   stops: StopInput[];
   returnTrip: boolean;
   passengers: number;
-  bigLuggage: number;
-  handLuggage: number;
+  /**
+   * 2026-08-19 (hotfix): de reeds vertaalde bagagecategorie-LABEL (bv.
+   * "Handbagage", "Geen bagage") — dezelfde bewuste keuze als het bagageveld
+   * in de zoekmodule, nooit een aparte koffer-/handbagage-AANTAL-vraag. Vóór
+   * deze hotfix vroeg het formulier tweemaal naar bagage (categorie + losse
+   * aantallen grote koffers/handbagage); dat leverde een verwarrende,
+   * potentieel tegenstrijdige weergave op.
+   */
+  luggage: string;
   date?: string;
   time?: string;
   returnDate?: string;
@@ -104,7 +111,7 @@ export function buildQuoteRequestText(trip: RouteFinderTrip): string {
     lines.push(`Retour: ${trip.returnDate}${trip.returnTime ? ` ${trip.returnTime}` : ""}`);
   }
   lines.push(`Passagiers: ${trip.passengers}`);
-  lines.push(`Bagage: ${trip.bigLuggage} grote koffers, ${trip.handLuggage} handbagage`);
+  if (trip.luggage) lines.push(`Bagage: ${trip.luggage}`);
   if (trip.flightNumber) lines.push(`Vluchtnummer: ${trip.flightNumber}`);
   if (trip.stops.some((s) => s.waitRequested)) lines.push("Graag extra wachttijd bij een tussenstop.");
   return lines.join("\n");
@@ -135,9 +142,23 @@ export function formatDuration(minutes: number): string {
  * zowel `useRouteQuote`'s `ready`-optie als de resultaatweergave hieronder.
  * Geen enkele waarde krijgt een stille default hier — een lege string is
  * altijd "nog niet compleet".
+ *
+ * 2026-08-19 (herzien): zodra RETOUR gekozen is, zijn retourdatum én
+ * -tijd óók verplicht — een retourprijs zonder retourmoment zou het
+ * nachttarief van het terug-ritdeel niet kunnen bepalen. Zelfde regel als
+ * het boekingsformulier (`returnMomentReady` in BookingSection.tsx).
  */
-export function isRouteFinderDetailsComplete(date: string, time: string, luggage: string): boolean {
-  return Boolean(date) && Boolean(time) && Boolean(luggage);
+export function isRouteFinderDetailsComplete(
+  date: string,
+  time: string,
+  luggage: string,
+  returnTrip: boolean = false,
+  returnDate: string = "",
+  returnTime: string = ""
+): boolean {
+  if (!date || !time || !luggage) return false;
+  if (returnTrip && (!returnDate || !returnTime)) return false;
+  return true;
 }
 
 export type RouteFinderView = "hidden" | "incomplete" | "loading" | "ready" | "onrequest";
