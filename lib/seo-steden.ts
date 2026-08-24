@@ -249,6 +249,47 @@ export const STEDEN: Stad[] = [
       "Taxi van Utrecht naar Schiphol met een vaste prijs vooraf per stadsdeel. T4XI rijdt " +
       "24/7 vanuit Centrum, Leidsche Rijn en Utrecht Science Park. Geen taxameter.",
   },
+  {
+    slug: "taxi-spijkenisse-schiphol",
+    naam: "Spijkenisse",
+    citySlug: "spijkenisse",
+    // Spijkenisse is onze tweede vaste standplaats (naast Almere). Er staan nog geen
+    // vaste wijktarieven Spijkenisse→Schiphol in de engine; de RateTable toont daarom
+    // de eerlijke lege staat ("vul uw adres in"). De intro belooft dus GEEN per-wijk
+    // prijs, maar een prijs die op het ophaaladres wordt berekend — precies wat de
+    // pagina kan waarmaken.
+    intro:
+      "Spijkenisse ligt op Voorne-Putten en is via de A15 en A4 in ongeveer een uur verbonden " +
+      "met Schiphol. T4XI rijdt er 24/7 met een vaste prijs die vooraf op uw ophaaladres wordt " +
+      "berekend — u weet wat de rit kost voordat u boekt, zonder taxameter of onverwachte " +
+      "prijsstijgingen.",
+    vertrekpunten: [
+      "Spijkenisse Centrum", "Sterrenkwartier", "De Akkers", "Maaswijk",
+      "Groenewoud", "Hoogwerf", "Vriesland",
+    ],
+    faq: [
+      PRIJS_FAQ,
+      {
+        q: "Hoe lang duurt de rit van Spijkenisse naar Schiphol?",
+        a:
+          "Reken op ongeveer een uur, afhankelijk van uw wijk en de drukte op de A15 en A4. " +
+          "Voor een vroege vlucht adviseren wij ruim op tijd te vertrekken; bij de planning " +
+          "denken wij met u mee.",
+      },
+      VLUCHT_FAQ,
+      {
+        q: "Is Spijkenisse een vaste standplaats van T4XI?",
+        a:
+          "Ja. Spijkenisse is een van onze vaste uitvalsbases, naast Almere. Daardoor kunnen wij " +
+          "ook vroege ochtendritten en last-minute boekingen op Voorne-Putten betrouwbaar " +
+          "inplannen. Uw chauffeur beschikt over een geldige Nederlandse taxichauffeurskaart.",
+      },
+    ],
+    metaDescription:
+      "Taxi van Spijkenisse naar Schiphol met een vaste prijs vooraf, berekend op uw " +
+      "ophaaladres. T4XI rijdt 24/7 op Voorne-Putten. Geen taxameter of onverwachte " +
+      "prijsstijgingen.",
+  },
 ];
 
 type TranslatedStadContent = Pick<
@@ -505,6 +546,55 @@ const ENGLISH_CITY_CONTENT: Readonly<Record<string, TranslatedStadContent>> = {
         a:
           "Yes. In addition to airport transfers, T4XI provides selected intercity journeys. " +
           "Use the fare calculator or contact us with your itinerary for the current options.",
+      },
+    ],
+  },
+  "taxi-spijkenisse-schiphol": {
+    naam: "Spijkenisse",
+    metaTitle: "Private taxi from Spijkenisse to Schiphol — fixed fare",
+    metaDescription:
+      "Book a private taxi from Spijkenisse to Schiphol with a fixed fare confirmed in advance. " +
+      "Door-to-door airport travel across Voorne-Putten, available 24/7.",
+    intro:
+      "Travel from Spijkenisse to Amsterdam Airport Schiphol in quiet, private comfort. We collect " +
+      "you at your door on Voorne-Putten, confirm the fare before you book and plan the journey " +
+      "around your flight — with no meter and no traffic-related fare increases.",
+    vertrekpunten: [
+      "Spijkenisse Centre", "Sterrenkwartier", "De Akkers", "Maaswijk",
+      "Groenewoud", "Hoogwerf", "Vriesland",
+    ],
+    rateLabelTranslations: {
+      "Spijkenisse Centrum": "Spijkenisse Centre",
+    },
+    faq: [
+      {
+        q: "How do I know the fare from Spijkenisse to Schiphol?",
+        a:
+          "Enter your collection address and destination to see the fixed fare before booking. " +
+          "The quoted fare includes VAT and remains fixed once confirmed, even when traffic is " +
+          "heavier than expected. The 15% night rate for journeys between 23:00 and 06:00 is " +
+          "included in the price shown to you.",
+      },
+      {
+        q: "How long does the journey from Spijkenisse to Schiphol take?",
+        a:
+          "Allow roughly one hour, depending on your district and traffic on the A15 and A4. For " +
+          "an early flight we recommend leaving in good time; we are glad to help plan the " +
+          "departure with you.",
+      },
+      {
+        q: "Does T4XI monitor my flight?",
+        a:
+          "Yes. Add your flight number when booking and we will monitor its status. For airport " +
+          "collections, we adjust the collection time when the flight is delayed; 60 minutes of " +
+          "waiting time after landing is included.",
+      },
+      {
+        q: "Is Spijkenisse a permanent T4XI base?",
+        a:
+          "Yes. Spijkenisse is one of our permanent operating bases alongside Almere, which means " +
+          "early-morning departures and last-minute bookings across Voorne-Putten can be planned " +
+          "reliably. Your driver holds a valid Dutch taxi driver's card.",
       },
     ],
   },

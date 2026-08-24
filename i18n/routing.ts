@@ -24,13 +24,14 @@ export const routing = defineRouting({
   alternateLinks: false,
 });
 
-/** De vijf lokale Schiphol-landingspagina's, beschikbaar in beide talen. */
+/** De zes lokale Schiphol-landingspagina's, beschikbaar in beide talen. */
 export const AIRPORT_ROUTE_PATHS = [
   "/taxi-almere-schiphol",
   "/taxi-amsterdam-schiphol",
   "/taxi-rotterdam-schiphol",
   "/taxi-den-haag-schiphol",
   "/taxi-utrecht-schiphol",
+  "/taxi-spijkenisse-schiphol",
 ] as const;
 
 export type Locale = (typeof routing.locales)[number];
