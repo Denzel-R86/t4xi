@@ -9,8 +9,9 @@
 -- luchthavenprijs.
 --
 -- Prijs: €135 enkel / €243 retour (retour = enkel × 1,8, conform de bestaande
--- stad-kopregels). Vastgesteld als afstandspremie boven de Rotterdam-kop (€119 @
--- 61 km) voor de ~80 km / ~65 min vanaf Voorne-Putten. Eigenaarsbesluit 2026-08-24.
+-- stad-kopregels). Bewuste premie boven de Rotterdam-kop (€119 @ 61 km) voor de
+-- ~70 km / ~58 min vanaf Voorne-Putten (tweede standplaats, perifeer, aanrij vanaf
+-- basis). Afstand + prijs zijn eigenaarsbesluit 2026-08-24.
 --
 -- Afwijking van de normale werkwijze: vaste prijzen komen doorgaans via de
 -- CSV-import (scripts/import-fixed-routes.ts). data/pricing/fixed-routes.master.csv
@@ -47,7 +48,7 @@ on conflict (slug) do update set
 insert into public.fixed_route_prices
   (pickup_location_id, dropoff_location_id, vehicle_class_id, service_type,
    price, return_price, distance_km, estimated_duration_min, source_label, active)
-select p.id, d.id, v.id, 'airport', 135, 243, 80, 65, 'Spijkenisse → Schiphol', true
+select p.id, d.id, v.id, 'airport', 135, 243, 70, 58, 'Spijkenisse → Schiphol', true
 from public.locations p, public.locations d, public.vehicle_classes v
 where p.slug = 'spijkenisse' and d.slug = 'schiphol-airport' and v.code = 'executive-ev'
 on conflict (pickup_location_id, dropoff_location_id, vehicle_class_id) do update set
