@@ -18,8 +18,8 @@ type MetadataAlternates = {
   languages?: Record<string, string | URL>;
 };
 
-test("alle vijf Schiphol-routes hebben zelfstandige, volledige Engelse content", () => {
-  assert.equal(AIRPORT_ROUTE_PATHS.length, 5);
+test("alle zes Schiphol-routes hebben zelfstandige, volledige Engelse content", () => {
+  assert.equal(AIRPORT_ROUTE_PATHS.length, 6);
 
   for (const path of AIRPORT_ROUTE_PATHS) {
     const slug = path.slice(1);
