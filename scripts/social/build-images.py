@@ -384,7 +384,12 @@ def main():
     for p in posts:
         i = int(p["idx"])
         stam = keuze[i]
-        naam = f"{p['datum']}-{i:02d}-{'foto' if stam else 'kaart'}.jpg"
+        # STABIELE naam: datum + idx, verder niets. Eerder stond er -foto/-kaart
+        # in, maar of een post een foto krijgt verschuift bij elke herbouw
+        # (MAX_HERHALING, nieuwe bronfoto's). Daardoor veranderde de URL en
+        # braken alle concepten die al in de planner stonden. Deze naam blijft
+        # gelijk zolang datum en idx gelijk blijven.
+        naam = f"{p['datum']}-{i:02d}.jpg"
         # regelval bij voorkeur geschreven (regel 7); anders berekend en gemeld
         geschreven = [r.strip() for r in (p.get("regels") or "").split("|") if r.strip()]
         if not geschreven:
