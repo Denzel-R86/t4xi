@@ -5,6 +5,8 @@
  *   node --import tsx scripts/event-shadow-report.ts             # staging
  *   node --import tsx scripts/event-shadow-report.ts --matches   # + reviewlijst
  *   node --import tsx scripts/event-shadow-report.ts --calibrate # + capvergelijking
+ *   node --import tsx scripts/event-shadow-report.ts --all       # cohorten samen
+ *   node --import tsx scripts/event-shadow-report.ts --since=none # zonder startgrens
  *
  * Leest `.env.staging.local`, valideert de omgeving en weigert te draaien tegen
  * een ander project dan staging. Schrijft niets: geen insert, geen update, geen
@@ -20,6 +22,8 @@ import { resolve } from "node:path";
 import {
   aggregateShadowObservations,
   cappedFeeCents,
+  MEASUREMENT_START_ISO,
+  selectDecisionPopulation,
   compareCapPolicies,
   NO_EXTERNAL_EVIDENCE,
   type ExternalEvidence,
@@ -78,6 +82,7 @@ async function main(): Promise<void> {
     potentialFeeCents: Number(r.amount_cents),
     configuredFeeCents: r.configured_fee_cents === null || r.configured_fee_cents === undefined ? null : Number(r.configured_fee_cents),
     maxUpliftPct: r.max_uplift_pct === null || r.max_uplift_pct === undefined ? null : Number(r.max_uplift_pct),
+    isSynthetic: r.is_synthetic === true,
     baselineSubtotalCents: r.base_subtotal_cents === null ? null : Number(r.base_subtotal_cents),
     eventSlugs: r.event_slugs ?? [],
     windowIds: r.window_ids ?? [],
@@ -129,10 +134,50 @@ async function main(): Promise<void> {
     prohibitedPiiColumns: offending.length,
   };
 
-  // 4. Rapport.
-  const metrics = aggregateShadowObservations(observations);
+  // 4. Policy-cohorten gescheiden houden. Observaties van vóór de uplift-cap
+  //    (Phase 6.3.2) zijn onder een ander tariefmodel ontstaan; ze bij elkaar
+  //    optellen zou een go/no-go-besluit baseren op beleid dat niet meer geldt.
+  //    De poorten worden daarom beoordeeld op de HUIDIGE cohort zodra die
+  //    bestaat; de oude cohort blijft zichtbaar als historie.
+  // Formele startgrens van de meetperiode. Observaties van vóór dit moment —
+  // testquotes, verificatieruns, alles wat niet uit echt klantverkeer komt —
+  // tellen niet mee voor de bewijsdrempels. Zonder deze grens zou een enkele
+  // diagnostische run de teller vervuilen.
+  // De formele startgrens is de DEFAULT, niet een vlag die je moet onthouden.
+  // `--since=` overschrijft hem; `--since=none` zet hem uit voor ad-hocanalyse.
+  const sinceArg = process.argv.find((a) => a.startsWith("--since="))?.slice("--since=".length);
+  const sinceValue = sinceArg === "none" ? null : (sinceArg ?? MEASUREMENT_START_ISO);
+  const selection = selectDecisionPopulation(observations, {
+    since: sinceValue,
+    includeAll: process.argv.includes("--all"),
+  });
+  const { population, legacy: legacyPolicy, excludedByPeriod, excludedAsSynthetic, usingCurrentPolicy: usingCurrent } = selection;
+  const since = sinceValue ? Date.parse(sinceValue) : null;
+
+  console.log(
+    (since === null
+      ? "MEETPERIODE: geen startgrens opgegeven — alle observaties tellen mee (--since=<ISO> om te begrenzen).\n"
+      : `MEETPERIODE: vanaf ${new Date(since).toISOString()}; ${excludedByPeriod} observatie(s) daarvóór buiten beschouwing.\n`) +
+    `SYNTHETISCH: ${excludedAsSynthetic} test-/diagnostische observatie(s) uitgesloten.\n` +
+    `POLICY-COHORTEN: ${observations.filter((o) => o.configuredFeeCents === null).length} onder het vlakke model, ` +
+    `${observations.filter((o) => o.configuredFeeCents !== null).length} onder de uplift-cap ` +
+    `(waarvan ${population.length} in de beslispopulatie).\n` +
+    (usingCurrent
+      ? "De poorten hieronder gelden UITSLUITEND voor de cap-cohort (--all om alles samen te nemen).\n"
+      : "Er zijn nog geen cap-observaties; de poorten gelden voor de volledige set.\n")
+  );
+
+  const metrics = aggregateShadowObservations(population);
   const gates = evaluateGates(metrics, externalFinal);
   console.log(formatShadowReport(metrics, gates, externalFinal));
+
+  if (usingCurrent && legacyPolicy.length > 0) {
+    const legacy = aggregateShadowObservations(legacyPolicy);
+    console.log(
+      `\nHISTORIE (vlak model, niet meegewogen): ${legacy.evaluatedLegs} ritdelen, ${legacy.matchedLegs} matches, ` +
+      `max opslag ${legacy.upliftVsSubtotal.maxPct.toFixed(1)}%, totaal €${(legacy.fee.totalCents / 100).toFixed(2)}`
+    );
+  }
 
   if (offending.length > 0) {
     console.log(`\nLET OP — verdachte kolomnamen: ${offending.join(", ")}`);

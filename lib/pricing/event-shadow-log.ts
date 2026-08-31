@@ -31,6 +31,13 @@ export type EventShadowObservation = {
   readonly pricingSource: string | null;
   /** De normale ritprijs waarop de toeslag zou zijn gekomen, in hele centen. */
   readonly baseSubtotalCents: number | null;
+  /**
+   * True voor test-, verificatie- en diagnostische flows. Zulke observaties
+   * tellen NOOIT mee voor de bewijsdrempels van de meetperiode. Normaal
+   * klantverkeer laat dit op false — de default, zodat je synthetisch verkeer
+   * expliciet moet aanzetten en nooit per ongeluk als echt telt.
+   */
+  readonly synthetic?: boolean;
   readonly result: EventFeeResult;
 };
 
@@ -60,6 +67,7 @@ export function observationRow(entry: EventShadowObservation): EventShadowObserv
     configured_fee_cents: result.configuredFeeCents,
     max_uplift_pct: result.maxUpliftPct,
     base_subtotal_cents: entry.baseSubtotalCents,
+    is_synthetic: entry.synthetic === true,
     concurrent_event_count: result.concurrentEventCount,
     upgrade_applied: result.upgradeApplied,
     capped_by_max_level: result.cappedByMaxLevel,

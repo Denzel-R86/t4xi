@@ -40,6 +40,11 @@ export type ShadowObservation = {
   /** De toegepaste cap, of null. */
   readonly maxUpliftPct: number | null;
   /**
+   * True voor test-, verificatie- en diagnostische observaties. Die tellen
+   * NOOIT mee voor de bewijsdrempels; ze blijven wel zichtbaar voor debugging.
+   */
+  readonly isSynthetic: boolean;
+  /**
    * Ritprijs vóór snapshot-adjustments (quote.priceCents). LET OP: dit is het
    * SUBTOTAAL, niet het uiteindelijke klanttotaal — nachttarief zit er niet in.
    * Elk opslagpercentage hieronder is dus relatief aan het subtotaal en wordt
@@ -73,6 +78,18 @@ export type EvidenceThresholds = {
   readonly minDistinctImpactLevels: number;
   readonly minObservationDays: number;
 };
+
+/**
+ * Formele start van de 6.4-meetperiode: middernacht Europe/Amsterdam op
+ * 1 september 2026. September valt in de zomertijd (UTC+2), dus de UTC-grens
+ * ligt op 31 augustus 22:00 — NIET op middernacht UTC, want dat zou 02:00
+ * lokale tijd zijn en de eerste twee uur van de dag stilzwijgend uitsluiten.
+ *
+ * Alles van vóór dit moment is technisch of historisch bewijs: de 13
+ * observaties onder het vlakke tarief en de verificatiequotes uit Phase 6.3.2.
+ * Die tellen niet mee voor de bewijsdrempels.
+ */
+export const MEASUREMENT_START_ISO = "2026-08-31T22:00:00Z";
 
 export const DEFAULT_EVIDENCE: EvidenceThresholds = {
   minEvaluatedLegs: 200,
@@ -485,4 +502,67 @@ export function compareCapPolicies(
   caps: readonly number[] = [30, 35, 40, 45, 50]
 ): readonly CapPolicySimulation[] {
   return [null, ...caps].map((c) => simulateCapPolicy(observations, c));
+}
+
+// ── Beslispopulatie (Phase 6.4) ──────────────────────────────────────────────
+
+export type PopulationOptions = {
+  /** Startgrens van de formele meetperiode (ISO-8601), of null voor geen grens. */
+  readonly since?: string | null;
+  /** true = cohorten samennemen, uitsluitend voor historische analyse. */
+  readonly includeAll?: boolean;
+};
+
+export type DecisionPopulation = {
+  /** De observaties waarop de poorten worden beoordeeld. */
+  readonly population: readonly ShadowObservation[];
+  /** Aantal synthetische observaties dat is uitgesloten. */
+  readonly excludedAsSynthetic: number;
+  /** Observaties onder het oude vlakke model — historie, niet meegewogen. */
+  readonly legacy: readonly ShadowObservation[];
+  /** Aantal observaties dat vóór de startgrens viel. */
+  readonly excludedByPeriod: number;
+  /** True als de poorten uitsluitend de cap-cohort beoordelen. */
+  readonly usingCurrentPolicy: boolean;
+};
+
+/**
+ * Kiest waarop het go/no-go-besluit wordt gebaseerd.
+ *
+ * Twee regels, allebei bewust streng:
+ *
+ *   1. Met een startgrens is de cap-cohort BINNEN die periode altijd de
+ *      beslispopulatie — ook als die nog leeg is. Terugvallen op oudere data
+ *      zou precies de vermenging opleveren die de grens moet voorkomen.
+ *   2. Observaties onder het vlakke model blijven zichtbaar als historie, maar
+ *      tellen nooit mee: ze zijn onder ander beleid ontstaan.
+ *   3. Synthetische observaties tellen NOOIT mee, ook niet zonder startgrens.
+ *      Alleen `includeAll` toont ze — uitsluitend voor debugging, nooit als
+ *      basis voor een go/no-go.
+ */
+export function selectDecisionPopulation(
+  observations: readonly ShadowObservation[],
+  opts: PopulationOptions = {}
+): DecisionPopulation {
+  const since = opts.since ? Date.parse(opts.since) : null;
+  if (opts.since && (since === null || Number.isNaN(since))) {
+    throw new Error(`ongeldige startgrens: '${opts.since}'`);
+  }
+  const inPeriod = (o: ShadowObservation) =>
+    since === null || (!Number.isNaN(Date.parse(o.observedAt)) && Date.parse(o.observedAt) >= since);
+
+  const includeAll = opts.includeAll === true;
+  const real = includeAll ? observations : observations.filter((o) => !o.isSynthetic);
+  const inPeriodAll = real.filter(inPeriod);
+  const currentPolicy = inPeriodAll.filter((o) => o.configuredFeeCents !== null);
+  const legacy = real.filter((o) => o.configuredFeeCents === null);
+  const usingCurrentPolicy = (since !== null || currentPolicy.length > 0) && !includeAll;
+
+  return {
+    population: usingCurrentPolicy ? currentPolicy : inPeriodAll,
+    legacy,
+    excludedByPeriod: real.length - inPeriodAll.length,
+    excludedAsSynthetic: includeAll ? 0 : observations.length - real.length,
+    usingCurrentPolicy,
+  };
 }

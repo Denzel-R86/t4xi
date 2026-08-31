@@ -10,8 +10,10 @@ import {
   aggregateShadowObservations,
   cappedFeeCents,
   compareCapPolicies,
+  selectDecisionPopulation,
   simulateCapPolicy,
   DEFAULT_EVIDENCE,
+  MEASUREMENT_START_ISO,
   NO_EXTERNAL_EVIDENCE,
   type ExternalEvidence,
   type ShadowObservation,
@@ -33,6 +35,7 @@ function obs(o: Partial<ShadowObservation> = {}): ShadowObservation {
     potentialFeeCents: 0,
     configuredFeeCents: null,
     maxUpliftPct: null,
+    isSynthetic: false,
     baselineSubtotalCents: 10000,
     eventSlugs: [],
     windowIds: [],
@@ -376,4 +379,142 @@ test("de simulatie raakt de observaties niet en dus ook de prijsengine niet", ()
   simulateCapPolicy(rows, 30);
   compareCapPolicies(rows);
   assert.equal(JSON.stringify(rows), before);
+});
+
+// ── Beslispopulatie (Phase 6.4) ──────────────────────────────────────────────
+
+const CAP = { configuredFeeCents: 4000, maxUpliftPct: 40 } as const;
+
+test("zonder startgrens en zonder cap-observaties telt alles mee", () => {
+  const rows = [match(), obs()];
+  const sel = selectDecisionPopulation(rows);
+  assert.equal(sel.population.length, 2);
+  assert.equal(sel.usingCurrentPolicy, false);
+  assert.equal(sel.excludedByPeriod, 0);
+});
+
+test("zodra er cap-observaties zijn, beslissen alleen die mee", () => {
+  const rows = [match(), obs(), match({ ...CAP, potentialFeeCents: 2280 })];
+  const sel = selectDecisionPopulation(rows);
+  assert.equal(sel.population.length, 1);
+  assert.equal(sel.usingCurrentPolicy, true);
+  assert.equal(sel.legacy.length, 2);
+});
+
+test("een startgrens sluit alles daarvóór uit — ook cap-observaties", () => {
+  const rows = [
+    match({ ...CAP, observedAt: "2026-08-28T20:00:00.000Z" }),
+    match({ ...CAP, observedAt: "2026-09-02T10:00:00.000Z" }),
+  ];
+  const sel = selectDecisionPopulation(rows, { since: "2026-09-01T00:00:00Z" });
+  assert.equal(sel.population.length, 1);
+  assert.equal(sel.excludedByPeriod, 1);
+  assert.equal(sel.population[0]!.observedAt, "2026-09-02T10:00:00.000Z");
+});
+
+test("met een startgrens en nog geen echte observaties is de populatie leeg — geen terugval", () => {
+  // Dit is de kern van de 6.4-regel: testquotes van vóór de periode mogen de
+  // teller niet vullen, en er wordt niet stiekem teruggevallen op oude data.
+  const rows = [match(), obs(), match({ ...CAP, observedAt: "2026-08-28T20:00:00.000Z" })];
+  const sel = selectDecisionPopulation(rows, { since: "2026-09-01T00:00:00Z" });
+  assert.deepEqual(sel.population, []);
+  assert.equal(sel.usingCurrentPolicy, true);
+  // Eén rij valt vóór de grens; de twee andere vallen erbinnen maar zijn legacy
+  // en tellen dus om een andere reden niet mee. Beide uitsluitingsgronden werken.
+  assert.equal(sel.excludedByPeriod, 1);
+  assert.equal(sel.legacy.length, 2);
+
+  const gates = evaluateGates(aggregateShadowObservations(sel.population), FULL_EVIDENCE);
+  assert.equal(verdictOf(gates), "INSUFFICIENT EVIDENCE");
+});
+
+test("--all neemt de cohorten samen, uitsluitend voor historische analyse", () => {
+  const rows = [match(), obs(), match({ ...CAP, potentialFeeCents: 2280 })];
+  const sel = selectDecisionPopulation(rows, { includeAll: true });
+  assert.equal(sel.population.length, 3);
+  assert.equal(sel.usingCurrentPolicy, false);
+});
+
+test("een onleesbare startgrens wordt geweigerd in plaats van genegeerd", () => {
+  assert.throws(() => selectDecisionPopulation([], { since: "gisteren" }), /ongeldige startgrens/);
+});
+
+// ── Synthetische observaties (Phase 6.4, meetintegriteit) ────────────────────
+
+test("synthetische observaties tellen nooit mee, ook niet zonder startgrens", () => {
+  const rows = [
+    match({ ...CAP, potentialFeeCents: 2280 }),
+    match({ ...CAP, potentialFeeCents: 2280, isSynthetic: true }),
+  ];
+  const sel = selectDecisionPopulation(rows);
+  assert.equal(sel.population.length, 1);
+  assert.equal(sel.excludedAsSynthetic, 1);
+  assert.equal(sel.population[0]!.isSynthetic, false);
+});
+
+test("een testquote tijdens de meetperiode vult de teller niet", () => {
+  // Dit is precies het governanceprobleem dat de markering oplost: een
+  // diagnostische run binnen de periode mag de 200/30-drempel niet raken.
+  const rows = [match({ ...CAP, observedAt: "2026-09-05T12:00:00.000Z", isSynthetic: true })];
+  const sel = selectDecisionPopulation(rows, { since: "2026-08-31T22:00:00Z" });
+  assert.deepEqual(sel.population, []);
+  assert.equal(sel.excludedAsSynthetic, 1);
+  const gates = evaluateGates(aggregateShadowObservations(sel.population), FULL_EVIDENCE);
+  assert.equal(verdictOf(gates), "INSUFFICIENT EVIDENCE");
+  assert.equal(gates.find((g) => g.id === 10)!.detail.includes("0/200"), true);
+});
+
+test("--all toont synthetische rijen wel, voor debugging", () => {
+  const rows = [match({ ...CAP }), match({ ...CAP, isSynthetic: true })];
+  const sel = selectDecisionPopulation(rows, { includeAll: true });
+  assert.equal(sel.population.length, 2);
+  assert.equal(sel.excludedAsSynthetic, 0);
+});
+
+test("de startgrens middernacht Amsterdam is 22:00Z de dag ervóór (CEST)", () => {
+  // 1 september 2026 valt in de zomertijd, dus UTC+2.
+  const grens = "2026-08-31T22:00:00Z";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Amsterdam",
+    hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+  }).formatToParts(new Date(grens));
+  const lokaal = (t: string) => parts.find((p) => p.type === t)?.value;
+  assert.deepEqual(
+    { y: lokaal("year"), m: lokaal("month"), d: lokaal("day"), h: lokaal("hour"), min: lokaal("minute") },
+    { y: "2026", m: "09", d: "01", h: "00", min: "00" }
+  );
+  const rows = [
+    match({ ...CAP, observedAt: "2026-08-31T21:59:00.000Z" }), // 31 aug 23:59 lokaal
+    match({ ...CAP, observedAt: "2026-08-31T22:00:00.000Z" }), // 1 sep 00:00 lokaal
+  ];
+  const sel = selectDecisionPopulation(rows, { since: grens });
+  assert.equal(sel.population.length, 1);
+  assert.equal(sel.excludedByPeriod, 1);
+});
+
+test("de vastgelegde startgrens is middernacht Amsterdam op 1 september 2026", () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Amsterdam",
+    hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).formatToParts(new Date(MEASUREMENT_START_ISO));
+  const v = (t: string) => parts.find((p) => p.type === t)?.value;
+  assert.deepEqual(
+    { y: v("year"), m: v("month"), d: v("day"), h: v("hour"), min: v("minute") },
+    { y: "2026", m: "09", d: "01", h: "00", min: "00" }
+  );
+  // En niet middernacht UTC — dat zou 02:00 lokaal zijn.
+  assert.notEqual(MEASUREMENT_START_ISO, "2026-09-01T00:00:00Z");
+});
+
+test("alle observaties van vóór de startgrens vallen buiten de beslispopulatie", () => {
+  const rows = [
+    match({ ...CAP, observedAt: "2026-08-28T20:58:00.000Z" }), // Phase 6.3.2-verificatie
+    match({ observedAt: "2026-08-28T05:58:00.000Z" }), // vlakke cohort
+  ];
+  const sel = selectDecisionPopulation(rows, { since: MEASUREMENT_START_ISO });
+  assert.deepEqual(sel.population, []);
+  assert.equal(sel.excludedByPeriod, 2);
 });

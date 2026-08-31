@@ -87,6 +87,12 @@ export type CalculateBookingPriceDeps = {
   loadEventPricing?: () => Promise<EventPricingData | null>;
   /** Injecteerbaar voor tests; default schrijft naar pricing_event_shadow_logs. */
   recordShadowLog?: (entries: readonly EventShadowObservation[]) => Promise<void>;
+  /**
+   * Markeert de observaties van deze aanroep als synthetisch, zodat ze buiten de
+   * bewijsdrempels van de meetperiode blijven. Uitsluitend voor test- en
+   * diagnostische scripts; productiepaden zetten dit nooit.
+   */
+  markObservationsSynthetic?: boolean;
 };
 
 /**
@@ -177,7 +183,12 @@ async function eventFeesForQuote(
  */
 async function observeEventFees(
   fees: LegEventFees,
-  context: { quoteId: string | null; pricingSource: string | null; baseSubtotalCents: number | null },
+  context: {
+    quoteId: string | null;
+    pricingSource: string | null;
+    baseSubtotalCents: number | null;
+    synthetic?: boolean;
+  },
   record: (entries: readonly EventShadowObservation[]) => Promise<void>
 ): Promise<void> {
   if (fees.mode === "off") return;
@@ -185,7 +196,15 @@ async function observeEventFees(
   const entries: EventShadowObservation[] = [];
   const push = (leg: "outbound" | "return", result: EventFeeResult | null) => {
     if (!result) return;
-    entries.push({ mode, quoteId: context.quoteId, leg, pricingSource: context.pricingSource, baseSubtotalCents: context.baseSubtotalCents, result });
+    entries.push({
+      mode,
+      quoteId: context.quoteId,
+      leg,
+      pricingSource: context.pricingSource,
+      baseSubtotalCents: context.baseSubtotalCents,
+      synthetic: context.synthetic === true,
+      result,
+    });
   };
   push("outbound", fees.outbound);
   push("return", fees.returnLeg);
@@ -237,6 +256,7 @@ export async function calculateBookingPrice(
       quoteId,
       pricingSource: quote.available ? quote.source : null,
       baseSubtotalCents: quote.available ? quote.priceCents : null,
+      synthetic: deps.markObservationsSynthetic === true,
     },
     deps.recordShadowLog ?? recordEventShadowLog
   );
@@ -279,6 +299,12 @@ export type BookingPriceDeps = {
   loadEventPricing?: () => Promise<EventPricingData | null>;
   /** Injecteerbaar voor tests; default schrijft naar pricing_event_shadow_logs. */
   recordShadowLog?: (entries: readonly EventShadowObservation[]) => Promise<void>;
+  /**
+   * Markeert de observaties van deze aanroep als synthetisch, zodat ze buiten de
+   * bewijsdrempels van de meetperiode blijven. Uitsluitend voor test- en
+   * diagnostische scripts; productiepaden zetten dit nooit.
+   */
+  markObservationsSynthetic?: boolean;
 };
 
 /**
@@ -406,7 +432,12 @@ export async function resolveBookingPrice(
         : 0;
     await observeEventFees(
       eventFees,
-      { quoteId: null, pricingSource: quote.source, baseSubtotalCents: quote.priceCents },
+      {
+        quoteId: null,
+        pricingSource: quote.source,
+        baseSubtotalCents: quote.priceCents,
+        synthetic: deps.markObservationsSynthetic === true,
+      },
       deps.recordShadowLog ?? recordEventShadowLog
     );
     return {

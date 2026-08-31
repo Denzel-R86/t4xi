@@ -784,6 +784,7 @@ export type Database = {
           event_slugs: string[]
           id: string
           impact_level: string
+          is_synthetic: boolean
           leg: string
           match_sides: string[]
           matched: boolean
@@ -805,6 +806,7 @@ export type Database = {
           event_slugs?: string[]
           id?: string
           impact_level: string
+          is_synthetic?: boolean
           leg: string
           match_sides?: string[]
           matched: boolean
@@ -826,6 +828,7 @@ export type Database = {
           event_slugs?: string[]
           id?: string
           impact_level?: string
+          is_synthetic?: boolean
           leg?: string
           match_sides?: string[]
           matched?: boolean
