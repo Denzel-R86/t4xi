@@ -20,6 +20,14 @@ import {
   type StoredSnapshot,
 } from "@/lib/pricing/snapshot";
 import { isNightTariff } from "@/lib/pricing/departure-time";
+import { buildEventLegs, resolveEventFee, type EventFeeResult } from "@/lib/pricing/event-fee";
+import { buildLocationContext } from "@/lib/pricing/location-context";
+import { loadCachedEventPricingData, type EventPricingData } from "@/lib/pricing/event-store";
+import type { EventPricingMode } from "@/lib/pricing/event-pricing";
+import {
+  recordEventShadowLog,
+  type EventShadowObservation,
+} from "@/lib/pricing/event-shadow-log";
 
 /**
  * DE centrale, server-side entrypoint voor een klantprijs (Sprint 7.6 — PR 7.6.2).
@@ -72,7 +80,117 @@ export type CalculateBookingPriceDeps = {
   now?: () => Date;
   /** Injecteerbaar voor deterministische tests; default = server-side UUID v7. */
   generateQuoteId?: () => string;
+  /**
+   * Injecteerbaar voor deterministische tests; default = de gecachete
+   * server-side loader. `null` (of een fout) betekent: geen evenemententarief.
+   */
+  loadEventPricing?: () => Promise<EventPricingData | null>;
+  /** Injecteerbaar voor tests; default schrijft naar pricing_event_shadow_logs. */
+  recordShadowLog?: (entries: readonly EventShadowObservation[]) => Promise<void>;
 };
+
+/**
+ * Ritdeel-uitkomsten van het evenemententarief; `null` = dat ritdeel is niet
+ * geëvalueerd (geen ophaaltijd bekend). `mode` bepaalt wat de caller ermee doet:
+ * bij 'shadow' wordt het resultaat uitsluitend geobserveerd, bij 'live' wordt
+ * het een adjustment. De BEREKENING is in beide gevallen identiek.
+ */
+type LegEventFees = {
+  outbound: EventFeeResult | null;
+  returnLeg: EventFeeResult | null;
+  mode: EventPricingMode;
+};
+
+const NO_EVENT_FEES: LegEventFees = { outbound: null, returnLeg: null, mode: "off" };
+
+/**
+ * DE ENIGE plek waar het evenemententarief aan een berekende quote wordt
+ * gekoppeld. Beide prijspaden (quote → snapshot → boeking, én de directe
+ * boeking zonder quoteId) gebruiken deze functie, zodat dezelfde invoer bij
+ * dezelfde configuratie gegarandeerd hetzelfde bedrag oplevert — er is geen
+ * tweede implementatie van het algoritme.
+ *
+ * Fail-open op de PRIJS: kan de configuratie niet geladen worden, dan is er
+ * geen toeslag. Liever niets in rekening brengen dan een bedrag baseren op
+ * gegevens die we niet hebben kunnen bevestigen.
+ */
+async function eventFeesForQuote(
+  quote: Extract<PricingQuoteResult, { available: true }>,
+  input: { pickup: string; dropoff: string; departureAt?: string; returnDepartureAt?: string },
+  load: () => Promise<EventPricingData | null>
+): Promise<LegEventFees> {
+  let data: EventPricingData | null;
+  try {
+    data = await load();
+  } catch {
+    return NO_EVENT_FEES;
+  }
+  // Alleen 'off' slaat alles over. In 'shadow' wordt hieronder normaal gerekend;
+  // het verschil zit uitsluitend in wat de caller met het resultaat doet.
+  if (!data || data.config.mode === "off") return NO_EVENT_FEES;
+
+  // Genormaliseerde locatiecontext, SERVER-SIDE afgeleid uit gegevens die de
+  // pijplijn al heeft: het adres dat de klant koos (postcode + woonplaats), de
+  // opgeloste route-slug, en — uitsluitend wanneer die toch al is opgezocht voor
+  // de aanrijcomponent — de officiële PDOK-gemeente. Nul extra externe calls,
+  // en identiek voor een vaste route en een afstandstarief.
+  const { outbound, returnLeg } = buildEventLegs({
+    pickup: buildLocationContext(input.pickup, {
+      locationSlug: quote.route.pickupSlug,
+      gemeente: quote.pickupApproach?.serviceAreaGemeente ?? null,
+    }),
+    dropoff: buildLocationContext(input.dropoff, {
+      locationSlug: quote.route.dropoffSlug,
+    }),
+    departureAt: input.departureAt,
+    returnDepartureAt: input.returnDepartureAt,
+    returnApplied: quote.returnApplied,
+  });
+
+  // Dezelfde noemer als de meetlaag voor proportionaliteit gebruikt, zodat de
+  // uplift-cap en poort 9 niet uiteen kunnen lopen.
+  const baselineSubtotalCents = quote.priceCents;
+  const resolve = (leg: NonNullable<typeof outbound>) =>
+    resolveEventFee({
+      leg,
+      events: data.events,
+      windows: data.windows,
+      zones: data.zones,
+      rules: data.rules,
+      config: data.config,
+      baselineSubtotalCents,
+    });
+
+  return {
+    outbound: outbound ? resolve(outbound) : null,
+    returnLeg: returnLeg ? resolve(returnLeg) : null,
+    mode: data.config.mode,
+  };
+}
+
+/**
+ * Legt vast wat er is berekend — in shadow én in live, met exact dezelfde
+ * velden, zodat beide met dezelfde meetlat te vergelijken zijn. Best-effort:
+ * een mislukte observatie mag een offerte nooit breken.
+ *
+ * Bevat geen adresgegevens; zie lib/pricing/event-shadow-log.ts.
+ */
+async function observeEventFees(
+  fees: LegEventFees,
+  context: { quoteId: string | null; pricingSource: string | null; baseSubtotalCents: number | null },
+  record: (entries: readonly EventShadowObservation[]) => Promise<void>
+): Promise<void> {
+  if (fees.mode === "off") return;
+  const mode = fees.mode;
+  const entries: EventShadowObservation[] = [];
+  const push = (leg: "outbound" | "return", result: EventFeeResult | null) => {
+    if (!result) return;
+    entries.push({ mode, quoteId: context.quoteId, leg, pricingSource: context.pricingSource, baseSubtotalCents: context.baseSubtotalCents, result });
+  };
+  push("outbound", fees.outbound);
+  push("return", fees.returnLeg);
+  await record(entries);
+}
 
 /**
  * De centrale prijsfunctie. De `quote` blijft een PURE PASS-THROUGH om
@@ -89,16 +207,39 @@ export async function calculateBookingPrice(
 ): Promise<BookingPriceResult> {
   const getQuote = deps.getQuote ?? getPricingQuote;
   const quote = await getQuote(input);
-  const snapshot = quote.available
-    ? buildPriceSnapshot(quote, {
-        quoteId: (deps.generateQuoteId ?? uuidv7)(),
-        now: (deps.now ?? (() => new Date()))(),
-        // Ophaaltijden meegeven zodat het nachttarief (+15% 23:00–06:00) PER RITDEEL
-        // als adjustment in de snapshot komt. Afwezig → geen toeslag (basisprijs).
-        ...(input.departureAt !== undefined ? { departureAt: input.departureAt } : {}),
-        ...(input.returnDepartureAt !== undefined ? { returnDepartureAt: input.returnDepartureAt } : {}),
-      })
-    : null;
+  // Evenemententarief PER RITDEEL, bepaald vóór de snapshot wordt gebouwd zodat
+  // het als gewone adjustment in `total` landt en de invariant
+  // `total = subtotal + Σ adjustments` blijft gelden.
+  const eventFees = quote.available
+    ? await eventFeesForQuote(quote, input, deps.loadEventPricing ?? loadCachedEventPricingData)
+    : NO_EVENT_FEES;
+  // SHADOW versus LIVE — de enige plek waar het verschil bestaat. In shadow is
+  // het resultaat wél berekend maar wordt het NIET aan de snapshot gegeven, dus
+  // blijft `total` cent-identiek aan een offerte zonder deze module.
+  const chargeable = eventFees.mode === "live";
+  const quoteId = quote.available ? (deps.generateQuoteId ?? uuidv7)() : null;
+  const snapshot =
+    quote.available && quoteId
+      ? buildPriceSnapshot(quote, {
+          quoteId,
+          now: (deps.now ?? (() => new Date()))(),
+          // Ophaaltijden meegeven zodat het nachttarief (+15% 23:00–06:00) PER RITDEEL
+          // als adjustment in de snapshot komt. Afwezig → geen toeslag (basisprijs).
+          ...(input.departureAt !== undefined ? { departureAt: input.departureAt } : {}),
+          ...(input.returnDepartureAt !== undefined ? { returnDepartureAt: input.returnDepartureAt } : {}),
+          eventFeeOutbound: chargeable ? eventFees.outbound : null,
+          eventFeeReturn: chargeable ? eventFees.returnLeg : null,
+        })
+      : null;
+  await observeEventFees(
+    eventFees,
+    {
+      quoteId,
+      pricingSource: quote.available ? quote.source : null,
+      baseSubtotalCents: quote.available ? quote.priceCents : null,
+    },
+    deps.recordShadowLog ?? recordEventShadowLog
+  );
   return { quote, contractVersion: "legacy-passthrough", snapshot };
 }
 
@@ -129,6 +270,15 @@ export type BookingPriceDeps = {
    * no-quoteId-pad. Injecteerbaar voor tests; default = calculateBookingPrice.
    */
   computeQuote?: (input: BookingPriceInput) => Promise<PricingQuoteResult>;
+  /**
+   * Zelfde loader als het quote-pad. Injecteerbaar voor tests; default = de
+   * gecachete server-side loader. Bewust DEZELFDE bron en DEZELFDE
+   * resolveEventFee(), zodat een directe boeking nooit een ander
+   * evenemententarief oplevert dan de offerte voor dezelfde rit.
+   */
+  loadEventPricing?: () => Promise<EventPricingData | null>;
+  /** Injecteerbaar voor tests; default schrijft naar pricing_event_shadow_logs. */
+  recordShadowLog?: (entries: readonly EventShadowObservation[]) => Promise<void>;
 };
 
 /**
@@ -233,9 +383,35 @@ export async function resolveBookingPrice(
     let nightCents = 0;
     if (isNightTariff(req.departureAt)) nightCents += legSurcharge;
     if (quote.returnApplied && isNightTariff(req.returnDepartureAt)) nightCents += legSurcharge;
+    // Evenemententarief ook hier — via exact dezelfde loader en dezelfde
+    // resolveEventFee() als het snapshot-pad. Zou dit ontbreken, dan zou een
+    // directe boeking goedkoper uitvallen dan de getoonde offerte voor
+    // dezelfde rit.
+    const eventFees = await eventFeesForQuote(
+      quote,
+      {
+        pickup: req.pickup,
+        dropoff: req.dropoff,
+        ...(req.departureAt !== undefined ? { departureAt: req.departureAt } : {}),
+        ...(req.returnDepartureAt !== undefined ? { returnDepartureAt: req.returnDepartureAt } : {}),
+      },
+      deps.loadEventPricing ?? loadCachedEventPricingData
+    );
+    // Ook hier geldt: in shadow wordt alles berekend en geobserveerd, maar telt
+    // er niets mee in de bindende prijs.
+    const eventCents =
+      eventFees.mode === "live"
+        ? (eventFees.outbound?.amountCents ?? 0) +
+          (quote.returnApplied ? eventFees.returnLeg?.amountCents ?? 0 : 0)
+        : 0;
+    await observeEventFees(
+      eventFees,
+      { quoteId: null, pricingSource: quote.source, baseSubtotalCents: quote.priceCents },
+      deps.recordShadowLog ?? recordEventShadowLog
+    );
     return {
       kind: "priced",
-      priceEuros: (baseCents + nightCents) / 100,
+      priceEuros: (baseCents + nightCents + eventCents) / 100,
       currency: quote.currency,
       returnApplied: quote.returnApplied,
       airport: quote.airport,

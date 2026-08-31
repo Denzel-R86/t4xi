@@ -8,6 +8,7 @@ import {
   type UnavailableReason,
 } from "@/lib/pricing/service";
 import { isNightAdjustmentCode, type PriceSnapshot } from "@/lib/pricing/snapshot";
+import { isEventAdjustmentCode } from "@/lib/pricing/event-pricing";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 import { classifyLuggage } from "@/lib/pricing/luggage";
 import { clientIp, rateLimit } from "@/lib/security/rate-limit";
@@ -317,6 +318,26 @@ export async function POST(request: Request) {
       .filter((a) => isNightAdjustmentCode(a.code))
       .reduce((sum, a) => sum + a.amountCents, 0);
     const nightSurcharge = nightCents / 100;
+    // Evenemententarief — PUUR INFORMATIEF. `price` hierboven is en blijft de
+    // bindende prijs (snapshot-totaal); dit veld splitst alleen uit waar een
+    // deel van dat totaal vandaan komt, zodat de UI het kan benoemen. De
+    // frontend rekent hier NOOIT mee: laat de UI dit veld weg, dan verandert er
+    // niets aan wat de klant betaalt. Interne event-/zone-ids, verificatie-
+    // status en het volledige matches-spoor blijven bewust binnen de snapshot.
+    const eventCentsFor = (code: string) =>
+      snapshot.adjustments.filter((a) => a.code === code).reduce((sum, a) => sum + a.amountCents, 0);
+    const eventTotalCents = snapshot.adjustments
+      .filter((a) => isEventAdjustmentCode(a.code))
+      .reduce((sum, a) => sum + a.amountCents, 0);
+    const eventFee =
+      eventTotalCents > 0
+        ? {
+            active: true,
+            totalAmountCents: eventTotalCents,
+            outboundAmountCents: eventCentsFor("event_outbound"),
+            returnAmountCents: eventCentsFor("event_return"),
+          }
+        : undefined;
     return json(200, {
         available: true,
         price: displayPrice,
@@ -341,6 +362,9 @@ export async function POST(request: Request) {
         flightDirection: result.airport.flightDirection,
         // Verplicht bij iedere vaste prijs: de opslag is hierboven bevestigd.
         quoteId: snapshot.quoteId,
+        // Alleen aanwezig wanneer er daadwerkelijk een evenemententarief geldt;
+        // afwezigheid betekent simpelweg "geen evenemententarief".
+        ...(eventFee ? { eventFee } : {}),
       });
   }
 
