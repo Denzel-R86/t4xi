@@ -209,5 +209,5 @@ test("booking: voertuigkeuze is verborgen en de server dwingt een neutrale stand
   assert.match(bookingSource, /const vehicle = DEFAULT_BOOKING_VEHICLE/);
   assert.doesNotMatch(bookingSource, /const vehicle = str\(body\.vehicle\)/);
   assert.equal(bookingSource.match(/p_vehicle: vehicle \|\| null/g)?.length, 2);
-  assert.match(bookingSource, /sendBookingEmails\(\{[\s\S]*?vehicle: vehicle \|\| null/);
+  assert.match(bookingSource, /dispatch\(\{[\s\S]*?booking: \{[\s\S]*?vehicle: vehicle \|\| null/);
 });

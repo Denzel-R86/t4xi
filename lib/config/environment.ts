@@ -178,6 +178,26 @@ export function assertProductionRequirements(env: EnvLike = process.env): void {
 }
 
 /**
+ * Is het communicatieschema (lifecycle + `communication_deliveries`) aantoonbaar
+ * uitgerold?
+ *
+ * Zolang dit `false` is, geldt een ontbrekende RPC als het overgangsmoment: er
+ * valt niets te dedupliceren wat nog niet bestaat, dus communicatie loopt door.
+ * Zodra de migratie is toegepast MOET deze vlag aan: vanaf dat moment is een
+ * ontbrekende RPC geen migratiemoment meer maar een schema-regressie, en die
+ * hoort hard te falen in plaats van opnieuw als "migratie ontbreekt" te worden
+ * gelezen.
+ *
+ * Bewust een expliciete deploy-vlag en geen runtime-detectie: een capability-
+ * check zou tijdens een schemacache-hapering hetzelfde verkeerde antwoord geven
+ * als de storing die hij moet opmerken.
+ */
+export function communicationSchemaReady(env: EnvLike = process.env): boolean {
+  const value = (env.COMMUNICATION_SCHEMA_READY ?? "").trim().toLowerCase();
+  return value === "true" || value === "1";
+}
+
+/**
  * Boot-guard: leest process.env en past alle invarianten toe. Bedoeld voor een
  * server-boot-pad (Next.js `instrumentation.ts` en de dev:staging-runner), zodat
  * een fout-geconfigureerde omgeving meteen faalt in plaats van stil naar

@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Icon from "@/components/ui/Icon";
+import {
+  STATUS_LABELS,
+  allowedTransitions,
+  isBookingStatus,
+  type BookingStatus,
+} from "@/lib/bookings/lifecycle";
 
 type InvoiceDetails = {
   billing_name: string;
@@ -18,6 +24,7 @@ type InvoiceDetails = {
 type Booking = {
   id: string;
   booking_ref: string;
+  status: string;
   customer_name: string;
   customer_email: string;
   from_address: string;
@@ -283,11 +290,15 @@ function BookingInvoiceCard({ booking, carriers, onSaved }: { booking: Booking; 
           <p className="text-sm text-secondary">{booking.customer_name} - {booking.customer_email}</p>
         </div>
         <div className="ml-auto text-right text-sm">
+          <span className="mr-2 rounded-full bg-fog px-3 py-1 font-semibold text-secondary">
+            {isBookingStatus(booking.status) ? STATUS_LABELS[booking.status] : booking.status}
+          </span>
           <span className={`rounded-full px-3 py-1 font-semibold ${booking.payment_status === "paid" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>{booking.payment_status}</span>
           <p className="mt-2 text-secondary">{booking.price_euros === null ? "Offerte" : `EUR ${Number(booking.price_euros).toFixed(2)}`}</p>
         </div>
       </div>
       <p className="mt-4 rounded-xl bg-fog px-4 py-3 text-sm"><strong>{booking.ride_date} {booking.ride_time}</strong><br />{booking.from_address} → {booking.to_address}</p>
+      <LifecycleActions booking={booking} onChanged={onSaved} />
       {locked ? (
         <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
           <strong>{booking.invoice?.invoice_number}</strong><br />
@@ -333,4 +344,60 @@ function Field({ name, label, value, type = "text", autoComplete }: { name: stri
 
 function shortId(id: string): string {
   return id.slice(0, 8).toUpperCase();
+}
+
+/**
+ * Toegestane statusovergangen als knoppen. De lijst komt uit dezelfde
+ * lifecycle-module die de database spiegelt, dus er staat nooit een knop die de
+ * RPC daarna alsnog weigert. De transitie zelf wordt in de database gevalideerd.
+ */
+function LifecycleActions({ booking, onChanged }: { booking: Booking; onChanged: () => Promise<void> }) {
+  const [busy, setBusy] = useState<BookingStatus | null>(null);
+  const [message, setMessage] = useState("");
+  const current = isBookingStatus(booking.status) ? booking.status : null;
+  const options = current ? allowedTransitions(current) : [];
+
+  async function move(to: BookingStatus) {
+    setBusy(to);
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: booking.id, to }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(json.error ?? "Overgang mislukt");
+      await onChanged();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Overgang mislukt");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (!current) {
+    return <p className="mt-3 text-sm text-amber-700">Onbekende status: {booking.status}</p>;
+  }
+  if (options.length === 0) {
+    return <p className="mt-3 text-sm text-secondary">{STATUS_LABELS[current]} — geen vervolgstappen.</p>;
+  }
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <span className="text-xs font-bold uppercase tracking-[0.16em] text-stone">Volgende stap</span>
+      {options.map((option) => (
+        <button
+          key={option}
+          type="button"
+          disabled={busy !== null}
+          onClick={() => void move(option)}
+          className="min-h-9 rounded-full border border-line bg-white px-3 text-sm font-semibold text-ink hover:bg-fog disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy === option ? "Bezig..." : STATUS_LABELS[option]}
+        </button>
+      ))}
+      {message && <span className="text-sm text-red-700">{message}</span>}
+    </div>
+  );
 }

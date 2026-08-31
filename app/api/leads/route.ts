@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { clientIp, rateLimit } from "@/lib/security/rate-limit";
 import {
   LEAD_KINDS,
-  sendLeadEmail,
   type LeadField,
   type LeadKind,
 } from "@/lib/notifications/lead-email";
+import { dispatch } from "@/lib/communication/orchestrator";
+import { supabaseDeliveryLog, unloggedDeliveryLog } from "@/lib/communication/delivery-log";
+import { createClient } from "@supabase/supabase-js";
 import { normalizeLocale } from "@/lib/i18n/locale";
 import {
   BUSINESS_CONTACT_TOPICS,
@@ -147,18 +149,38 @@ export async function POST(request: Request) {
   }
 
   const leadId = crypto.randomUUID();
-  const result = await sendLeadEmail({
-    leadId,
-    kind,
-    locale: normalizeLocale(body.locale),
-    name,
-    email,
-    phone,
-    fields,
-  });
-  if (!result.sent) {
+  const locale = normalizeLocale(body.locale);
+  // De route publiceert het domeinevent; welke berichten daaruit volgen — de
+  // interne aanvraagmail en de ontvangstbevestiging — bepaalt de orchestrator.
+  //
+  // Het log dient hier de meetbaarheid (bounces op de ontvangstbevestiging),
+  // niet de deduplicatie: `leadId` is een verse UUID per request, dus twee
+  // inzendingen botsen nooit op dezelfde sleutel. Valt de database weg, dan
+  // gaat de aanvraag daarom gewoon door — zie `duplicatesArePossible`.
+  const result = await dispatch({
+    type: "lead.received",
+    subjectType: "lead",
+    subjectId: leadId,
+    bookingId: null,
+    locale,
+    lead: { leadId, kind, locale, name, email, phone, fields },
+  }, { log: leadDeliveryLog() });
+  // De interne aanvraagmail is bepalend: komt die niet aan, dan is de aanvraag
+  // niet geregistreerd en mag de bezoeker geen bevestiging op het scherm zien.
+  const internal = result.outcomes.find((outcome) => outcome.audience === "operations");
+  if (!internal || internal.status === "failed") {
     return json(503, { ok: false, error: "delivery_unavailable" });
   }
 
   return json(201, { ok: true, leadId });
+}
+
+/** Service-role client uitsluitend voor het communicatielog; ontbreekt die, dan meet het niet mee. */
+function leadDeliveryLog() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return unloggedDeliveryLog;
+  return supabaseDeliveryLog(
+    createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
+  );
 }

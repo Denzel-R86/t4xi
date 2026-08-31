@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { dispatch } from "@/lib/communication/orchestrator";
 import {
   renderBookingEmails,
-  sendBookingEmails,
   type BookingEmailData,
 } from "@/lib/notifications/booking-email";
 
@@ -108,6 +108,17 @@ async function main(): Promise<void> {
     const previewHtml = rendered.customerHtml.replaceAll(productionMonogramUrl, localMonogramUrl);
     await writeFile(path, previewHtml, "utf8");
     console.log(path);
+
+    // De interne mail draagt de taakoverdracht; die moet net zo goed
+    // controleerbaar zijn als de klantmail. Ook de platte-tekstdelen worden
+    // weggeschreven, want die gaan echt mee in elke verzending.
+    const opsPath = resolve(outputDir, preview.filename.replace(/\.html$/, "-ops.html"));
+    await writeFile(opsPath, rendered.opsHtml.replaceAll(productionMonogramUrl, localMonogramUrl), "utf8");
+    console.log(opsPath);
+
+    const textPath = resolve(outputDir, preview.filename.replace(/\.html$/, ".txt"));
+    await writeFile(textPath, `${rendered.customerText}\n\n---\n\n${rendered.opsText}`, "utf8");
+    console.log(textPath);
   }
 
   const to = parseSendAddress(process.argv.slice(2));
@@ -116,8 +127,21 @@ async function main(): Promise<void> {
   // Veiligheidsrail voor handmatige verificatie: beide bestaande dispatches gaan
   // uitsluitend naar het expliciete testadres binnen dit proces.
   process.env.OPS_EMAIL = to;
-  const result = await sendBookingEmails({ ...cases[1].data, customerEmail: to });
-  if (!result.sent) throw new Error(`Testmail niet verzonden: ${result.error ?? "onbekende fout"}`);
+  const booking = { ...cases[1].data, customerEmail: to };
+  // Bewust via de orchestrator: dit is de enige verzendweg die in productie
+  // gebruikt wordt, dus de handmatige test moet er precies zo doorheen lopen.
+  const result = await dispatch({
+    type: "booking.created",
+    subjectType: "booking",
+    subjectId: booking.bookingRef,
+    bookingId: null,
+    locale: booking.locale,
+    booking,
+  });
+  if (!result.delivered) {
+    const failed = result.outcomes.filter((outcome) => outcome.status !== "sent");
+    throw new Error(`Testmail niet verzonden: ${JSON.stringify(failed)}`);
+  }
   console.log(`Klant- en ops-testmail zijn beide verzonden naar ${to}.`);
 }
 

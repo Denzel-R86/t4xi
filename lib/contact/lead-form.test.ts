@@ -85,14 +85,29 @@ test("contact-API accepteert beide expliciete leadsoorten en escaped klantinvoer
     assert.equal(payload.ok, true);
     assert.match(payload.leadId, /^[0-9a-f-]{36}$/);
 
-    assert.equal(requests.length, 1);
+    // Twee dispatches: de interne aanvraagmail en de ontvangstbevestiging.
+    assert.equal(requests.length, 2);
     assert.equal(requests[0].input, "https://api.resend.com/emails");
     assert.equal(requests[0].body.subject, "Nieuwe zakelijke contactaanvraag");
     assert.equal(requests[0].body.reply_to, "sam@example.com");
     const html = String(requests[0].body.html);
     assert.doesNotMatch(html, /<img src=x/);
     assert.match(html, /&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt; &amp; vraag/);
-    assert.match(requests[0].headers.get("idempotency-key") ?? "", /^lead\/[0-9a-f-]{36}$/);
+    // De provider-idempotency-sleutel is sinds de orchestrator de dedup-sleutel.
+    assert.match(
+      requests[0].headers.get("idempotency-key") ?? "",
+      /^lead\.received:[0-9a-f-]{36}:operations:internal$/
+    );
+
+    // De aanvrager krijgt een bevestiging op het eigen adres, met de toezegging
+    // die ook als deadline in de interne taakoverdracht staat.
+    assert.equal(requests[1].body.to, "sam@example.com");
+    assert.equal(requests[1].body.subject, "We hebben je aanvraag ontvangen — T4XI");
+    assert.match(
+      requests[1].headers.get("idempotency-key") ?? "",
+      /^lead\.received:[0-9a-f-]{36}:customer:email$/
+    );
+    assert.doesNotMatch(String(requests[1].body.html), /<img src=x/);
   });
 
   assert.equal(
