@@ -79,6 +79,15 @@ export async function proxy(request: NextRequest) {
   const rawPathname = request.nextUrl.pathname;
   const pathname = rawPathname.replace(/^\/(nl|en)(?=\/|$)/, "") || "/";
 
+  // T4XI Control is intentionally non-localized and owns its individual
+  // Supabase Auth + MFA + permission boundary in the server-rendered route.
+  if (rawPathname === "/admin" || rawPathname.startsWith("/admin/")) {
+    const response = NextResponse.next();
+    response.headers.set("x-robots-tag", "noindex, nofollow");
+    response.headers.set("cache-control", "no-store");
+    return response;
+  }
+
   const isProtected =
     pathname === "/dashboard" || pathname.startsWith("/dashboard/") ||
     pathname === "/klant" || pathname.startsWith("/klant/");
