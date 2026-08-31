@@ -86,6 +86,12 @@ test("Resend ontvangt HTML, platte tekst en precies één factuur-PDF", async ()
   const supabase = {
     rpc: async (name: string, args: Record<string, unknown>) => {
       if (name === "claim_booking_invoice") return { data: claim, error: null };
+      // Het communicatielog claimt vóór verzending; de echte garantie is de
+      // unieke dedup_key in de database.
+      if (name === "claim_communication_delivery") {
+        return { data: { claimed: true, id: String(args.p_dedup_key) }, error: null };
+      }
+      if (name === "settle_communication_delivery") return { data: null, error: null };
       completions.push(args);
       return { data: null, error: null };
     },
@@ -115,7 +121,11 @@ test("Resend ontvangt HTML, platte tekst en precies één factuur-PDF", async ()
 
   assert.equal(requests.length, 1);
   const request = requests[0];
-  assert.equal(request.headers.get("Idempotency-Key"), `invoice/${invoice.invoiceNumber}`);
+  // De provider-idempotency-sleutel is sinds de orchestrator de dedup-sleutel.
+  assert.equal(
+    request.headers.get("Idempotency-Key"),
+    `invoice.issued:${invoice.invoiceNumber}:customer:email`
+  );
   assert.equal(request.body.reply_to, "booking@t4xi.nl");
   assert.ok(!("replyTo" in request.body));
   assert.match(String(request.body.html), /Bedankt voor uw rit\./);

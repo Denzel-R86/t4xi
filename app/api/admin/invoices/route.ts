@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     { data: details, error: detailError },
     { data: carriers, error: carrierError },
   ] = await Promise.all([
-    supabase.from("bookings").select("id, booking_ref, customer_name, customer_email, from_address, to_address, ride_date, ride_time, price_euros, payment_status, paid_at").order("created_at", { ascending: false }).limit(100),
+    supabase.from("bookings").select("id, booking_ref, status, customer_name, customer_email, from_address, to_address, ride_date, ride_time, price_euros, payment_status, paid_at").order("created_at", { ascending: false }).limit(100),
     supabase.from("booking_invoice_details").select("booking_id, billing_name, billing_address, billing_postal_code, billing_city, billing_country, executing_carrier_id, executing_carrier_name, invoice_number, invoice_email_sent_at"),
     supabase.from("executing_carriers").select("id, name, active, onboarding_completed_at").eq("active", true).order("name"),
   ]);

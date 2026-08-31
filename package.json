@@ -27,7 +27,9 @@
     "test:invoices": "tsx --test lib/invoices/*.test.ts",
     "test:admin": "tsx --test lib/admin/*.test.ts",
     "test:cms": "tsx --test lib/cms/*.test.ts",
-    "preview:invoice-email": "tsx scripts/verify-invoice-email.ts"
+    "preview:invoice-email": "tsx scripts/verify-invoice-email.ts",
+    "test:communication": "tsx --test lib/communication/*.test.ts lib/bookings/*.test.ts",
+    "verify:communication": "tsx scripts/verify-communication.ts"
   },
   "dependencies": {
     "@sanity/icons": "5.2.1",

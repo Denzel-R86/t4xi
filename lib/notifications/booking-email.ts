@@ -1,7 +1,8 @@
 /**
- * Booking-notificaties via Resend (Stap 9c) — VOLLEDIG SERVER-ONLY.
+ * Booking-templates — puur renderend, geen netwerk, geen env.
  *
- * Verstuurt na een succesvolle boeking twee mails:
+ * Verzenden gebeurt sinds de Communication Orchestrator niet meer hier: deze
+ * module levert alleen de twee berichten die bij een nieuwe boeking horen:
  *   1. bevestiging naar de klant — tweetalig (stap 6): NL of EN, afhankelijk van
  *      de locale die met de boeking is meegestuurd en server-side gevalideerd;
  *   2. notificatie naar operations (booking@t4xi.nl) — bewust Nederlands, want
@@ -22,25 +23,23 @@
 // `import "server-only"` kan later, zodra dat pakket als dependency is opgenomen.)
 
 import type { Locale } from "@/i18n/routing";
+import { BRAND, PALETTE, escapeHtml } from "@/lib/communication/templates/brand";
 import { normalizeLocale } from "@/lib/i18n/locale";
 import { renderBookingConfirmationPdf } from "@/lib/documents/booking-confirmation-pdf";
+import {
+  buildBookingHandover,
+  handoverHtml,
+  urgencyPrefix,
+} from "@/lib/notifications/ops-handover";
+import { renderCustomerText, renderOpsText } from "@/lib/notifications/booking-email-text";
 
 // Behoudt het bestaande export-oppervlak: de booking-route importeert
 // `normalizeLocale` uit deze module. De implementatie staat sinds stap 7.2
 // centraal in lib/i18n/locale, gedeeld met de betaal-endpoints.
 export { normalizeLocale };
 
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
-const DEFAULT_FROM = "T4XI <onboarding@resend.dev>";
-const DEFAULT_OPS = "booking@t4xi.nl";
-const MONOGRAM_URL = "https://www.t4xi.nl/t4xi-monogram-navy.png";
-
-const T4XI = {
-  phoneDisplay: "+31 6 34 74 45 22",
-  phoneHref: "+31634744522",
-  whatsapp: "https://wa.me/31634744522",
-  email: "booking@t4xi.nl",
-};
+const MONOGRAM_URL = BRAND.monogramUrl;
+const T4XI = BRAND;
 
 /** Ritsoort-labels. NL voor de ops-mail; EN voor de klantmail bij locale "en". */
 const RIDE_TYPE_LABELS: Record<Locale, Record<string, string>> = {
@@ -160,18 +159,8 @@ export type BookingEmailData = {
   locale: Locale;
 };
 
-export type SendResult = { sent: boolean; error?: string };
-
 // ── formatters ───────────────────────────────────────────────────────────────
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 /** Ritsoort-label in de gevraagde taal (fallback op de "direct"-waarde). */
 function rideTypeLabel(rideType: string, locale: Locale): string {
@@ -204,13 +193,9 @@ function formatPrice(
 
 // ── HTML-templates ───────────────────────────────────────────────────────────
 
-const INK = "#1F2730";
-const ACCENT = "#28313B";
-const FOG = "#F5F3F1";
-const OVERLAY = "#EEEAE5";
-const STONE = "#999694";
-const MUTED = "#5F666D";
-const BORDER = "#E6E2DC";
+// Palet en contactgegevens komen uit de gedeelde merkbasis, zodat boekingsmail,
+// leadmail en factuurmail niet uit elkaar kunnen lopen.
+const { ink: INK, accent: ACCENT, fog: FOG, overlay: OVERLAY, stone: STONE, muted: MUTED, border: BORDER } = PALETTE;
 
 function shell(opts: {
   title: string;
@@ -392,7 +377,7 @@ function customerHtml(data: BookingEmailData): string {
 }
 
 /** Interne ops-mail — bewust Nederlands; taalonafhankelijk van de klantkeuze. */
-function opsHtml(data: BookingEmailData): string {
+function opsHtml(data: BookingEmailData, now: Date): string {
   const nlDate = formatDate(data.date, "nl-NL");
   const nlPrice = formatPrice(data, "nl-NL", "Offerte op aanvraag", "retour");
   const inner = `
@@ -428,26 +413,17 @@ function opsHtml(data: BookingEmailData): string {
           : ""
       }
       ${data.returnFlightNumber ? detailRow("Retourvlucht", `<b>${escapeHtml(data.returnFlightNumber)}</b>`) : ""}
-      ${
-        // Operationele instructie, uitsluitend bij een ophaling. Er staat bewust GEEN
-        // live vluchtstatus in: er is nog geen koppeling met een vluchtdata-API, dus
-        // elke "status" hier zou verzonnen zijn. Dispatch controleert handmatig.
-        data.flightDirection === "arrival"
-          ? detailRow(
-              "Actie dispatch",
-              "<b>Controleer de aankomststatus van deze vlucht.</b> Wachttijd van 60 minuten " +
-                "start bij de geregistreerde landing. Stem de ophaallocatie persoonlijk af " +
-                "met de klant via WhatsApp of telefoon."
-            )
-          : ""
-      }
     </table>
     <h2 style="font-size:14px;margin:22px 0 4px;color:${INK};">Klantgegevens</h2>
     <table style="width:100%;border-collapse:collapse;border-top:1px solid rgba(31,39,48,0.10);">
       ${detailRow("Naam", escapeHtml(data.customerName))}
       ${detailRow("Telefoon", `<a href="tel:${escapeHtml(data.customerPhone)}" style="color:${ACCENT};text-decoration:none;">${escapeHtml(data.customerPhone)}</a>`)}
       ${detailRow("E-mail", `<a href="mailto:${escapeHtml(data.customerEmail)}" style="color:${ACCENT};text-decoration:none;">${escapeHtml(data.customerEmail)}</a>`)}
-    </table>`;
+    </table>
+    ${handoverHtml(buildBookingHandover(data, now), {
+      phone: data.customerPhone,
+      email: data.customerEmail,
+    })}`;
   return shell({
     title: `Nieuwe boeking ${data.bookingRef}`,
     inner,
@@ -457,86 +433,31 @@ function opsHtml(data: BookingEmailData): string {
   });
 }
 
-/** Rendert beide mails (subjects + HTML). Puur — handig voor test/preview. */
-export function renderBookingEmails(data: BookingEmailData): {
+/**
+ * Rendert beide mails (subjects, HTML en platte tekst). Puur — handig voor
+ * test/preview. `now` bepaalt uitsluitend de urgentie van de taakoverdracht en
+ * is injecteerbaar zodat de uitkomst deterministisch testbaar blijft.
+ */
+export function renderBookingEmails(
+  data: BookingEmailData,
+  now: Date = new Date()
+): {
   opsSubject: string;
   opsHtml: string;
+  opsText: string;
   customerSubject: string;
   customerHtml: string;
+  customerText: string;
 } {
   const c = CUSTOMER_COPY[data.locale];
+  const { urgency } = buildBookingHandover(data, now);
   return {
-    opsSubject: `Nieuwe boeking ${data.bookingRef} — ${data.pickup} → ${data.dropoff}`,
-    opsHtml: opsHtml(data),
+    opsSubject:
+      `${urgencyPrefix(urgency)}Nieuwe boeking ${data.bookingRef} — ${data.pickup} → ${data.dropoff}`,
+    opsHtml: opsHtml(data, now),
+    opsText: renderOpsText(data, now),
     customerSubject: c.subject(data.bookingRef),
     customerHtml: customerHtml(data),
+    customerText: renderCustomerText(data),
   };
-}
-
-// ── verzenden ────────────────────────────────────────────────────────────────
-
-async function sendOne(
-  apiKey: string,
-  from: string,
-  to: string,
-  subject: string,
-  html: string,
-  options?: { attachment?: { filename: string; content: string }; idempotencyKey?: string }
-): Promise<void> {
-  const res = await fetch(RESEND_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      ...(options?.idempotencyKey ? { "Idempotency-Key": options.idempotencyKey } : {}),
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      subject,
-      html,
-      reply_to: DEFAULT_OPS,
-      ...(options?.attachment ? { attachments: [options.attachment] } : {}),
-    }),
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Resend ${res.status}: ${body.slice(0, 300)}`);
-  }
-}
-
-/**
- * Verstuurt de klant- én ops-mail. Retourneert sent:true alleen als BEIDE
- * mails slagen. Gooit nooit — geschikt om best-effort aan te roepen.
- */
-export async function sendBookingEmails(data: BookingEmailData): Promise<SendResult> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("[booking-email] RESEND_API_KEY ontbreekt — mails overgeslagen, boeking blijft bestaan.");
-    return { sent: false, error: "not_configured" };
-  }
-  const from = process.env.RESEND_FROM || DEFAULT_FROM;
-  const ops = process.env.OPS_EMAIL || DEFAULT_OPS;
-  const mail = renderBookingEmails(data);
-
-  try {
-    const confirmationPdf = Buffer.from(renderBookingConfirmationPdf(data)).toString("base64");
-    await Promise.all([
-      sendOne(apiKey, from, ops, mail.opsSubject, mail.opsHtml, {
-        idempotencyKey: `booking-ops/${data.bookingRef}`,
-      }),
-      sendOne(apiKey, from, data.customerEmail, mail.customerSubject, mail.customerHtml, {
-        idempotencyKey: `booking-customer/${data.bookingRef}`,
-        attachment: {
-          filename: `boekingsbevestiging-${data.bookingRef}.pdf`,
-          content: confirmationPdf,
-        },
-      }),
-    ]);
-    return { sent: true };
-  } catch (e) {
-    console.error("[booking-email] verzenden mislukt:", e instanceof Error ? e.message : e);
-    return { sent: false, error: e instanceof Error ? e.message : "send_failed" };
-  }
 }

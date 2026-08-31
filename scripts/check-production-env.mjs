@@ -104,6 +104,9 @@ console.log("\n  ── e-mail/ops (informatief, geen invloed op resultaat) ─�
 console.log(`  ${present("RESEND_API_KEY") ? "✓" : "⚠"} RESEND_API_KEY ${present("RESEND_API_KEY") ? "present" : "missing → mails worden overgeslagen"}`);
 console.log(`  ${present("RESEND_FROM") ? "✓" : "•"} RESEND_FROM    ${present("RESEND_FROM") ? "present" : "(unset → default onboarding@resend.dev)"}`);
 console.log(`  ${present("OPS_EMAIL") ? "✓" : "•"} OPS_EMAIL      ${present("OPS_EMAIL") ? "present" : "(unset → default booking@t4xi.nl)"}`);
+console.log(`  ${present("RESEND_WEBHOOK_SECRET") ? "✓" : "⚠"} RESEND_WEBHOOK_SECRET ${present("RESEND_WEBHOOK_SECRET") ? "present" : "missing → geen delivered/bounced/complained"}`);
+const schemaReady = ["true", "1"].includes((env.COMMUNICATION_SCHEMA_READY ?? "").trim().toLowerCase());
+console.log(`  ${schemaReady ? "✓" : "⚠"} COMMUNICATION_SCHEMA_READY ${schemaReady ? "true → ontbrekende RPC blokkeert (correct na migratie)" : "unset → ontbrekende RPC geldt als migratiemoment; zet aan NA de migratie"}`);
 
 console.log(`\n  RESULTAAT: ${result}`);
 if (result === "UNVERIFIABLE") {

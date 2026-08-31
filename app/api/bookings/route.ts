@@ -5,7 +5,9 @@ import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 import { quoteFingerprint, type AirportContext } from "@/lib/pricing/service";
 import { classifyLuggage } from "@/lib/pricing/luggage";
 import { readPriceSnapshot } from "@/lib/pricing/snapshot-store";
-import { sendBookingEmails, normalizeLocale } from "@/lib/notifications/booking-email";
+import { normalizeLocale } from "@/lib/notifications/booking-email";
+import { dispatch } from "@/lib/communication/orchestrator";
+import { supabaseDeliveryLog } from "@/lib/communication/delivery-log";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
 import {
   buildTripMonitoringRegistration,
@@ -444,37 +446,46 @@ export async function POST(request: Request) {
     }
   }
 
-  // 5. Notificaties (best-effort): mag de boeking nooit breken of de response
-  //    veranderen. email_sent wordt alleen true als BEIDE mails slagen.
+  // 5. Communicatie (best-effort): mag de boeking nooit breken of de response
+  //    veranderen. De route kiest geen kanaal en roept geen template aan — hij
+  //    publiceert het domeinevent en de orchestrator bepaalt de rest.
+  //    email_sent blijft alleen true als er niets faalde.
   try {
-    const emails = await sendBookingEmails({
-      bookingRef,
-      rideType,
-      pickup,
-      dropoff,
-      date,
-      time,
-      returnDate: returnTrip ? returnDate : null,
-      returnTime: returnTrip ? returnTime : null,
-      returnFlightNumber: returnFlightNumberToStore || null,
-      vehicle: vehicle || null,
-      persons,
-      luggage: luggage || null,
-      flightNumber: flightNumberToStore || null,
-      flightDirection,
-      price: priceEuros,
-      currency,
-      quoteOnRequest,
-      returnApplied,
-      customerName: name,
-      customerPhone: phone,
-      customerEmail: email,
+    const communication = await dispatch({
+      type: "booking.created",
+      subjectType: "booking",
+      subjectId: bookingRef,
+      bookingId: bookingId ?? null,
       // Taal van de klantmail: uit de boeking, server-side gevalideerd. De URL
       // is niet betrouwbaar zodra de request server-side wordt verwerkt; een
       // ongeldige of ontbrekende waarde valt veilig terug op "nl".
       locale: normalizeLocale(body.locale),
-    });
-    if (emails.sent) {
+      booking: {
+        bookingRef,
+        rideType,
+        pickup,
+        dropoff,
+        date,
+        time,
+        returnDate: returnTrip ? returnDate : null,
+        returnTime: returnTrip ? returnTime : null,
+        returnFlightNumber: returnFlightNumberToStore || null,
+        vehicle: vehicle || null,
+        persons,
+        luggage: luggage || null,
+        flightNumber: flightNumberToStore || null,
+        flightDirection,
+        price: priceEuros,
+        currency,
+        quoteOnRequest,
+        returnApplied,
+        customerName: name,
+        customerPhone: phone,
+        customerEmail: email,
+        locale: normalizeLocale(body.locale),
+      },
+    }, { log: supabaseDeliveryLog(supabase) });
+    if (communication.delivered) {
       const { error: updErr } = await supabase
         .from("bookings")
         .update({ email_sent: true })
@@ -482,7 +493,7 @@ export async function POST(request: Request) {
       if (updErr) console.error("[bookings] email_sent-update faalde:", updErr.message);
     }
   } catch (e) {
-    console.error("[bookings] notificatie-laag fout:", e instanceof Error ? e.message : e);
+    console.error("[bookings] communicatielaag fout:", e instanceof Error ? e.message : e);
   }
 
   // 5b. Vluchtmonitoring (best-effort, Sprint 7.8A). De tabel heeft bewust één

@@ -1,21 +1,13 @@
 import type { InvoiceData } from "@/lib/invoices/invoice-pdf";
+import { BRAND, PALETTE, escapeHtml } from "@/lib/communication/templates/brand";
 
-export const INVOICE_MONOGRAM_URL = "https://www.t4xi.nl/t4xi-monogram-navy.png";
+export const INVOICE_MONOGRAM_URL = BRAND.monogramUrl;
 
-const INK = "#1F2730";
-const ACCENT = "#28313B";
-const FOG = "#F5F3F1";
-const OVERLAY = "#EEEAE5";
-const STONE = "#999694";
-const MUTED = "#5F666D";
-const BORDER = "#E6E2DC";
+// Palet en contactgegevens komen uit de gedeelde merkbasis, zodat boekingsmail,
+// leadmail en factuurmail niet uit elkaar kunnen lopen.
+const { ink: INK, accent: ACCENT, fog: FOG, overlay: OVERLAY, stone: STONE, muted: MUTED, border: BORDER } = PALETTE;
 
-const T4XI = {
-  phoneDisplay: "+31 6 34 74 45 22",
-  phoneHref: "+31634744522",
-  whatsapp: "https://wa.me/31634744522",
-  email: "booking@t4xi.nl",
-};
+const T4XI = BRAND;
 
 export type RenderedInvoiceEmail = {
   subject: string;
@@ -23,14 +15,6 @@ export type RenderedInvoiceEmail = {
   text: string;
 };
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 function currencyCode(value: string): string {
   const code = value.trim().toUpperCase();

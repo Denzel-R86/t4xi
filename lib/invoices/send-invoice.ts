@@ -1,12 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
-import { renderInvoiceEmail } from "@/lib/invoices/invoice-email";
 import { renderInvoicePdf, type InvoiceData } from "@/lib/invoices/invoice-pdf";
+import { dispatch } from "@/lib/communication/orchestrator";
+import { supabaseDeliveryLog } from "@/lib/communication/delivery-log";
 import { getStripeServer } from "@/lib/payments/stripe";
-
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
-const DEFAULT_FROM = "T4XI <onboarding@resend.dev>";
-const DEFAULT_REPLY_TO = "booking@t4xi.nl";
 
 type Claim = InvoiceData & {
   status: "claimed";
@@ -84,33 +81,38 @@ export async function trySendInvoice(
 
   let sent = false;
   try {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) return { sent: false, status: "not_configured", invoiceNumber: claim.invoiceNumber };
+    if (!process.env.RESEND_API_KEY) {
+      return { sent: false, status: "not_configured", invoiceNumber: claim.invoiceNumber };
+    }
     const stripePaymentIntentId = claim.stripePaymentIntentId ?? lookup.paymentIntentId ?? null;
     const paymentMethod = await dependencies.resolvePaymentMethod(stripePaymentIntentId);
     const invoiceData = { ...claim, paymentMethod: paymentMethod ?? "Online betaling" };
-    const pdf = Buffer.from(renderInvoicePdf(invoiceData)).toString("base64");
-    const mail = renderInvoiceEmail(invoiceData);
-    const response = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": `invoice/${claim.invoiceNumber}`,
+
+    // Twee lagen die verschillende dingen bewaken: `claim_booking_invoice`
+    // beschermt de uitgifte van het factuurNUMMER, de orchestrator beschermt de
+    // VERZENDING. Een duplicaat op de tweede laag betekent dat de factuurmail al
+    // eerder de deur uit is — dat telt hier dus als geslaagd, anders zou de
+    // claim worden teruggedraaid en de mail eindeloos opnieuw geprobeerd.
+    const communication = await dispatch(
+      {
+        type: "invoice.issued",
+        subjectType: "invoice",
+        subjectId: claim.invoiceNumber,
+        bookingId: claim.bookingId,
+        locale: "nl",
+        invoice: invoiceData,
+        pdfBase64: Buffer.from(renderInvoicePdf(invoiceData)).toString("base64"),
       },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM || DEFAULT_FROM,
-        to: claim.customerEmail,
-        reply_to: DEFAULT_REPLY_TO,
-        subject: mail.subject,
-        html: mail.html,
-        text: mail.text,
-        attachments: [{ filename: `factuur-${claim.invoiceNumber}.pdf`, content: pdf }],
-      }),
-      cache: "no-store",
-    });
-    sent = response.ok;
-    return { sent, status: sent ? "sent" : `resend_${response.status}`, invoiceNumber: claim.invoiceNumber };
+      { log: supabaseDeliveryLog(supabase) }
+    );
+
+    sent = communication.delivered;
+    const failure = communication.outcomes.find((outcome) => outcome.status === "failed");
+    return {
+      sent,
+      status: sent ? "sent" : (failure?.error ?? "send_failed"),
+      invoiceNumber: claim.invoiceNumber,
+    };
   } catch {
     return { sent: false, status: "send_error", invoiceNumber: claim.invoiceNumber };
   } finally {
