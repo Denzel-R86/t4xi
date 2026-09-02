@@ -7,15 +7,24 @@ import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import FaqList from "@/components/sections/FaqList";
 import RateTable from "@/components/seo/RateTable";
+import StadHubPage from "@/components/seo/StadHubPage";
 import { getAirportLandingCopy } from "@/lib/airport-landing-copy";
 import { getAirportLandingLocale, getLocalizedStad } from "@/lib/seo-steden";
+import { getStadHub } from "@/lib/seo-stad-hubs";
 import { localeMetadata, localeUrl, notFoundMetadata, SITE_URL } from "@/lib/seo-locale";
 import { loadRateCard } from "@/lib/pricing/rate-card";
 
 /**
- * Tweetalige SEO-landingspagina's voor taxi-<stad>-schiphol.
+ * Twee paginatypen op één dynamische route, bewust gescheiden gehouden:
  *
- * PRIJZEN KOMEN UIT DE ENGINE, NOOIT UIT DE CONTENT. De pagina leest
+ *   /taxi-<stad>-schiphol  → routepagina (deze module, hieronder)
+ *   /taxi-<stad>           → lokale stadshub (components/seo/StadHubPage)
+ *
+ * De hub wordt EERST gematcht. Beide beantwoorden een andere zoekintentie —
+ * route versus stad — en verwijzen naar elkaar zonder inhoud te herhalen; zie
+ * lib/seo-stad-hubs.ts voor het waarom.
+ *
+ * PRIJZEN KOMEN UIT DE ENGINE, NOOIT UIT DE CONTENT. De routepagina leest
  * `loadRateCard()` — dezelfde live bron als /tarieven en /api/pricing/quote.
  * Daarom is de route bewust dynamisch: een tariefwijziging mag niet op een oude
  * build blijven hangen.
@@ -29,6 +38,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale: localeInput, slug } = await params;
   const locale = getAirportLandingLocale(localeInput);
+
+  const hub = getStadHub(slug, locale);
+  if (hub) {
+    return localeMetadata({
+      locale,
+      path: `/${hub.slug}`,
+      title: hub.metaTitle,
+      description: hub.metaDescription,
+    });
+  }
+
   const stad = getLocalizedStad(slug, locale);
   if (!stad) return notFoundMetadata();
 
@@ -47,6 +67,11 @@ export default async function SeoLandingPage({
 }) {
   const { locale: localeInput, slug } = await params;
   const locale = getAirportLandingLocale(localeInput);
+
+  // Stadshub eerst: /taxi-almere is een andere pagina dan /taxi-almere-schiphol.
+  const hub = getStadHub(slug, locale);
+  if (hub) return <StadHubPage hub={hub} locale={locale} />;
+
   const stad = getLocalizedStad(slug, locale);
   if (!stad) notFound();
 

@@ -24,6 +24,16 @@ export const routing = defineRouting({
   alternateLinks: false,
 });
 
+/**
+ * De lokale stadshubs — brede stadsintentie, beschikbaar in beide talen.
+ *
+ * Bewust gescheiden van AIRPORT_ROUTE_PATHS: /taxi-almere bedient `taxi almere`
+ * en varianten, /taxi-almere-schiphol uitsluitend de luchthavenroute. Zie
+ * lib/seo-stad-hubs.ts. Voeg hier alleen een stad toe wanneer T4XI er
+ * daadwerkelijk rijdt én er een bijbehorende routepagina bestaat.
+ */
+export const LOCAL_HUB_PATHS = ["/taxi-almere", "/taxi-spijkenisse"] as const;
+
 /** De zes lokale Schiphol-landingspagina's, beschikbaar in beide talen. */
 export const AIRPORT_ROUTE_PATHS = [
   "/taxi-almere-schiphol",

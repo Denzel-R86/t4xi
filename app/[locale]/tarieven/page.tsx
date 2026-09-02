@@ -33,7 +33,21 @@ function cheapestToSchiphol(city: CityRates | undefined): RateEntry | null {
 }
 
 const WHY_FEATURES = ["eig1", "eig2", "eig3", "eig4", "eig5", "eig6"] as const;
-const FAQ_ITEMS = ["1", "2", "3"] as const;
+
+/**
+ * De FAQ is op 2026-09-02 uitgebreid van 3 naar 8 vragen, elk afgeleid van een
+ * query die deze pagina volgens Search Console al vertoningen oplevert
+ * ("taxi prijs per km", "officiële taxi tarieven", "taxi lange afstanden",
+ * "taxi achteraf betalen", taxameter-vergelijking). Geen bedachte vragen en
+ * geen bedragen in de antwoorden — de prijs komt uit de engine.
+ */
+const FAQ_ITEMS = ["1", "2", "3", "4", "5", "6", "7", "8"] as const;
+
+/** De twee vaste standplaatsen met een eigen stadshub. */
+const LOCAL_HUBS = [
+  { slug: "taxi-almere", naam: "Almere" },
+  { slug: "taxi-spijkenisse", naam: "Spijkenisse" },
+] as const;
 
 export default async function TarievenPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -123,6 +137,61 @@ export default async function TarievenPage({ params }: { params: Promise<{ local
               <li key={k} className="flex items-start gap-3 border-t border-line pt-4 text-ink">
                 <Icon name="circle-check" size={18} className="mt-0.5 shrink-0 text-accent" />
                 <span className="text-[15px]">{t(k)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ═══ PRIJSOPBOUW + LANGE AFSTANDEN ═══
+          Toegevoegd 2026-09-02. Deze pagina had 552 vertoningen op queries als
+          "taxi prijs berekenen" en "wat kost een taxi", maar slechts ~478
+          woorden inhoud en positie 58. Dit blok beantwoordt die vraag in tekst,
+          zonder één bedrag te noemen — prijzen blijven uit de engine komen. */}
+      <section aria-labelledby="uitleg-title" className="border-b border-line bg-fog">
+        <div className="mx-auto max-w-site px-[5vw] py-16 md:py-24">
+          <div className="max-w-[760px]">
+            <p className="flex items-center gap-3.5 text-[11px] font-medium uppercase tracking-[0.18em] text-secondary">
+              <span aria-hidden="true" className="h-px w-8 bg-ink" />
+              {t("uitlegKicker")}
+            </p>
+            <h2 id="uitleg-title" className="mt-4 font-display text-display-md font-bold text-ink">
+              {t("uitlegKop")}
+            </h2>
+            <p className="mt-5 text-secondary">{t("uitlegP1")}</p>
+            <p className="mt-4 text-secondary">{t("uitlegP2")}</p>
+            <p className="mt-4 text-secondary">{t("uitlegP3")}</p>
+
+            <h3 className="mt-10 font-display text-xl font-bold text-ink">{t("langeKop")}</h3>
+            <p className="mt-3 text-secondary">{t("langeP1")}</p>
+            <p className="mt-4 text-secondary">{t("langeP2")}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ LOKALE STADSHUBS (interne linkarchitectuur) ═══ */}
+      <section aria-labelledby="lokaal-title" className="border-b border-line bg-card">
+        <div className="mx-auto max-w-site px-[5vw] py-16 md:py-24">
+          <p className="flex items-center gap-3.5 text-[11px] font-medium uppercase tracking-[0.18em] text-secondary">
+            <span aria-hidden="true" className="h-px w-8 bg-ink" />
+            {t("lokaalKicker")}
+          </p>
+          <h2 id="lokaal-title" className="mt-4 max-w-2xl font-display text-display-md font-bold text-ink">
+            {t("lokaalKop")}
+          </h2>
+          <p className="mt-4 max-w-xl text-secondary">{t("lokaalIntro")}</p>
+          <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+            {LOCAL_HUBS.map((hub) => (
+              <li key={hub.slug}>
+                <Link
+                  href={`/${hub.slug}`}
+                  className="group flex items-center justify-between rounded-card border border-line bg-fog p-5 transition-colors hover:border-line-strong"
+                >
+                  <span className="font-display text-base font-semibold text-ink">
+                    Taxi {hub.naam}
+                  </span>
+                  <span aria-hidden="true" className="text-ink transition-transform group-hover:translate-x-0.5">→</span>
+                </Link>
               </li>
             ))}
           </ul>
