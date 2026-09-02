@@ -51,7 +51,9 @@
     "privacy": "Privacy statement",
     "voorwaarden": "Terms of transport",
     "email": "Email T4XI",
-    "instagram": "T4XI on Instagram"
+    "instagram": "T4XI on Instagram",
+    "regioKop": "Regions",
+    "routeLabel": "{stad} → Schiphol"
   },
   "sticky": {
     "label": "Quick actions",
@@ -911,7 +913,12 @@
       "serviceType": "Business taxi transport",
       "description": "Business transport for executives, employees and guests, with options for invoiced billing, driver continuity where agreed and a journey overview.",
       "home": "Home",
-      "areas": ["Amsterdam", "Rotterdam", "Almere", "The Hague"]
+      "areas": [
+        "Amsterdam",
+        "Rotterdam",
+        "Almere",
+        "The Hague"
+      ]
     }
   },
   "faq": {
@@ -1306,8 +1313,8 @@
   "seo": {
     "dienstenTitle": "Services",
     "dienstenDesc": "Schiphol transfers, business travel, private rides and events — premium transport with a modern, emissions-conscious fleet.",
-    "tarievenTitle": "Taxi rates & fixed fare calculator",
-    "tarievenDesc": "Calculate your fixed T4XI taxi fare. Premium transport with a professional driver, clear luggage terms and no surge pricing.",
+    "tarievenTitle": "Calculate taxi fare — get your fixed price instantly",
+    "tarievenDesc": "Work out what your taxi ride costs in advance. Enter pickup and destination to see the fixed fare including VAT — no taximeter, no surge pricing.",
     "boekenTitle": "Book a ride",
     "boekenDesc": "Book your premium taxi. Enter your pick-up and destination and see your fixed price instantly.",
     "dagtochtenTitle": "Day trips",
@@ -1469,7 +1476,28 @@
     "faqV2": "Do you charge surge pricing or a night rate?",
     "faqA2": "We do not use surge pricing. A 15% night rate applies between 23:00 and 06:00 and is included in the price shown before you book.",
     "faqV3": "What if there's no automatic price?",
-    "faqA3": "For routes or stops without a fixed price we'll gladly make a proposal. Request it via WhatsApp or email and we'll include your entered details automatically."
+    "faqA3": "For routes or stops without a fixed price we'll gladly make a proposal. Request it via WhatsApp or email and we'll include your entered details automatically.",
+    "uitlegKicker": "How the fare is built up",
+    "uitlegKop": "How we calculate your taxi fare",
+    "uitlegP1": "A classic taxi runs a meter: a starting rate, an amount per kilometre and an amount per minute. Stuck in traffic, that meter keeps running. You only learn the cost afterwards.",
+    "uitlegP2": "T4XI reverses that. We calculate the fare in advance from the actual pickup address, the destination, the distance and the expected travel time. You see that fare before you book and it is locked on confirmation. Traffic, detours or longer waiting times do not change it.",
+    "uitlegP3": "The fare includes VAT. Ride segments between 23:00 and 06:00 carry a 15% night tariff, already included in the amount shown. There is no surge pricing at busy times.",
+    "langeKop": "Taxi over long distances",
+    "langeP1": "On longer rides a taximeter climbs quickly and the final price becomes unpredictable. For rides throughout the Netherlands and abroad we therefore agree a single fixed amount, calculated on your route.",
+    "langeP2": "Enter your departure point and destination above — even for a ride of tens of kilometres or a day trip with several stops you will see the cost immediately, or hear from us shortly if the route calls for a tailored quote.",
+    "lokaalKicker": "Permanent bases",
+    "lokaalKop": "Taxi in Almere and Spijkenisse",
+    "lokaalIntro": "T4XI has two permanent bases. Those pages explain what we drive locally and how the fare is calculated in your district.",
+    "faqV4": "What does a taxi cost per kilometre?",
+    "faqA4": "We do not bill a separate per-kilometre rate the way a taximeter does. Distance is one of the factors your fixed fare is calculated from, together with expected travel time and the time of day. You see the final amount in advance, so there is nothing to work out per kilometre yourself.",
+    "faqV5": "What are the official maximum taxi rates?",
+    "faqA5": "The Dutch government sets maximum rates for street taxis each year: a starting rate plus an amount per kilometre and per minute. Those are ceilings, not fixed prices. Our fixed fare is calculated in advance and stays within that legal framework; the comparison above shows how the two relate.",
+    "faqV6": "How expensive is a taxi for a longer ride?",
+    "faqA6": "That depends on distance, expected travel time and the time of day. Because we agree one fixed amount in advance, you know the exact figure before booking — including rides of tens of kilometres. Enter your departure point and destination to see it.",
+    "faqV7": "Can I pay for a taxi ride afterwards?",
+    "faqA7": "Private rides are settled at booking, which is what locks the fare. For companies we work with invoicing afterwards; contact us via business travel for that.",
+    "faqV8": "Does T4XI use a taximeter?",
+    "faqA8": "No. You receive a fixed fare in advance that is locked on confirmation. No meter runs during the ride, so delays en route do not change your amount."
   },
   "fairFare": {
     "kicker": "Our promise",
