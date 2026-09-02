@@ -24,6 +24,40 @@ dat is hij.
 
 ---
 
+## Vóór de write — pin de live functiebody (Gate 3)
+
+**Eerste handeling van de deployment, vóór alles hieronder.** Bij een incident moet je
+bewezen productiegedrag kunnen herstellen, niet wat je dénkt dat actief was.
+
+```sql
+select
+  p.oid::regprocedure::text                                            as signature,
+  pg_get_function_identity_arguments(p.oid)                            as identity_arguments,
+  encode(sha256(convert_to(pg_get_functiondef(p.oid), 'UTF8')), 'hex') as definition_sha256,
+  length(pg_get_functiondef(p.oid))                                    as definition_length,
+  pg_get_functiondef(p.oid)                                            as definition
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.proname = 'create_price_snapshot';
+```
+
+Bewaar alle vijf kolommen, met timestamp, buiten de database. Dit bewijs is pas geldig
+als het **vlak vóór de write** is gemaakt — een pin van gisteren bewijst niets over
+vandaag.
+
+> **Waarom `pg_get_functiondef` en niet alleen de body.** De eerder gepinde md5 dekt
+> `pg_proc.prosrc`: de body tussen `$function$ … $function$`, 974 tekens. De volledige
+> definitie is 1422 tekens. Het verschil is precies wat je bij een herstel niet mag
+> kwijtraken: `security definer`, `set search_path`, het returntype en de volatiliteit.
+> Herstellen uit alleen de body kan die attributen stil laten verdwijnen. Pin daarom de
+> definitie, niet de body.
+
+Ter referentie, gemeten 2026-09-02 (**niet** als geldige pin gebruiken):
+`prosrc` md5 `9f5585841cc245741f90f84d7fdcbcb4`, 974 tekens — onveranderd sinds het
+opstellen van dit runbook.
+
+---
+
 ## Uitvoeringsvoorwaarden bij de productiepush
 
 **1. Uitsluitend in een rustig verkeersvenster.**
@@ -64,6 +98,65 @@ later gecontroleerd opruimen      ← DEEL 2, aparte sessie
 
 Herstel eerst **functionaliteit**. Breng de database niet cosmetisch terug tijdens een
 incident.
+
+---
+
+## Failure states — welke rollback hoort bij welke toestand
+
+Alle zes migraties zijn transactioneel (`begin;` … `commit;`) en `supabase db push` stopt
+bij de eerste fout. Een migratie laat dus nooit iets half achter: hij commit volledig of
+rolt volledig terug. De enige vraag na een afgebroken push is daarom: **wat is de laatst
+succesvol gecommitte migratie?**
+
+Stel dat vast vóór je iets doet:
+
+```sql
+select version, name
+from supabase_migrations.schema_migrations
+where version >= '20260827120000'
+order by version desc limit 1;
+```
+
+| Laatst succesvol gecommit | Vereiste rollback |
+|---|---|
+| *niets* | Geen actie. Productie is onaangeroerd. |
+| `20260827120000` | Alleen objecten van migratie 1 neutraliseren — DEEL 2.1 |
+| `20260827130000` | **Eerst gepinde `create_price_snapshot()` herstellen** (1.2), daarna metadata-kolom (2.2) en objecten (2.1) |
+| `20260828120000` | Functie eerst (1.2) → seed- en Event Pricing-objecten neutraliseren |
+| `20260828130000` | Functie eerst (1.2) → shadow-objecten + voorgaande footprint |
+| `20260831120000` | Functie eerst (1.2) → cap-footprint + voorgaande footprint |
+| `20260831140000` | Volledige rollback, eveneens functie eerst (1.2) |
+
+### De scheidslijn ligt bij `20260827130000`
+
+Vijf van de zes migraties zijn zuiver additief: ze maken nieuwe objecten en raken niets
+aan dat productie vandaag gebruikt. `20260827130000` is de uitzondering — die doet
+`add column metadata` op `price_snapshot_adjustments` én `create or replace function
+public.create_price_snapshot(...)`. Die functie zit in het live quotepad.
+
+> **Harde rollbackregel.** Na commit van
+> `20260827130000_price_snapshot_adjustment_metadata` wordt bij iedere rollback eerst de
+> gepinde pre-deployment versie van `public.create_price_snapshot(...)` hersteld en
+> geverifieerd. Pas daarna mogen Event Pricing-objecten of de metadata-kolom worden
+> verwijderd.
+
+De omgekeerde volgorde is de valkuil: objecten opruimen terwijl de nieuwe
+`create_price_snapshot` nog live is, is het enige scenario dat iets kan breken.
+
+### Wat in geen enkele toestand actie vraagt
+
+- **Klantprijzen en boekingsdata.** Geen van de zes muteert bestaande rijen.
+- **Bestaande snapshots.** `metadata` is nullable en additief; bestaande rijen krijgen
+  `NULL`.
+- **Quote-lock.** Ongewijzigd in elke toestand.
+- **Event Pricing zelf.** De migraties landen met `mode = 'off'`. Zonder de aparte
+  shadow-gate rekent er niets, ook niet als alle zes zijn toegepast.
+
+### Wat dit niet dekt
+
+Dit gaat uitsluitend over migratiefalen. Onverwachte datamutatie door een andere oorzaak
+valt onder de pre-deployment `pg_dump`: er is geen PITR en geen backup op het huidige
+plan, dus die dump is het enige herstelpunt dat bestaat.
 
 ---
 
