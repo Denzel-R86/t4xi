@@ -1,10 +1,19 @@
 # T4XI Control — Sprint 1 Security & Privacy Foundation
 
-Status: implemented from clean base `5c10a54`; not applied to staging or production.
+Status: rebased onto `024bdcf`; not applied to staging or production.
+Historical reference only: `ac2063f`, preserved as `backup/control-security-foundation-ac2063f`. All current Sprint-1 evidence points at the rebased line.
 
 ## Boundary
 
 The shared HMAC operations session and Basic Auth brain dashboard remain temporary legacy fallbacks. New Control code may not extend them. `/admin` verifies an individual Supabase Auth user server-side, requires AAL2 by default, and checks an exact database permission. This migration creates only `control_*` objects and does not redefine `create_booking` or alter booking, pricing, event, communication or Sanity objects.
+
+### Edge default-deny
+
+`proxy.ts` closes `/admin` by default. A path under `/admin` that is not registered in `CONTROL_ROUTES` (`lib/control/routes.ts`) returns 404, exactly like the closed `/dashboard` routes, so a new subroute cannot become reachable by forgetting `authorizeControl()`. Registering a route is a deliberate act and is the moment to add the page's own check. Locale-prefixed Control paths (`/nl/admin`, `/en/admin`) are never valid and are closed before locale rewriting.
+
+Cookie presence at the edge is a pre-filter, not authentication: it stops an unauthenticated visitor from confirming that a Control subroute exists. The server component remains the authoritative check, and RLS remains the final layer.
+
+**Known gap, deliberately out of Sprint-1 scope:** the middleware matcher excludes `/api`, so a future Control API route gets no edge default-deny and must carry its own server-side authorization. Closing that gap changes the middleware surface for every existing API route and needs its own review.
 
 ## RLS matrix
 
@@ -15,21 +24,59 @@ The shared HMAC operations session and Basic Auth brain dashboard remain tempora
 | audit events | `audit.read` | denied | authorized server + service role |
 | privacy catalog/retention | `privacy.read` | denied | later audited server command |
 
-`control_authorize` is `SECURITY INVOKER`: it does not bypass RLS. The service role remains server-only and is never an authorization substitute. Audit writes resolve the already authenticated individual identity and reject metadata keys likely to contain credentials, payloads or direct contact/address data.
+`control_authorize` is `SECURITY INVOKER`: it does not bypass RLS. The service role remains server-only and is never an authorization substitute.
 
-## Identity and MFA rollout
+## Access decisions and audit
 
-1. Apply the migration to an isolated non-production Supabase project.
-2. Create named Auth users with verified individual email addresses; no shared identity.
-3. Bootstrap the matching normalized `control_identities` row and least-privilege role as an explicit staging operator action.
-4. Enrol TOTP and prove AAL1, suspended identity, expired role and missing permission are denied.
-5. Keep `CONTROL_REQUIRE_AAL2=true` or unset. `false` is local-development-only.
-6. Prove two named break-glass administrators can authenticate and produce attributable audit events.
-7. Migrate legacy capabilities one permission at a time. Remove shared auth only in a later, separately approved migration after rollback evidence.
+`authorizeControl()` is the single choke point and produces one audit event per decision about an identified principal:
+
+| Decision | Event | Outcome | Reason |
+| --- | --- | --- | --- |
+| granted | `control.access` | `success` | `granted` |
+| AAL1 while AAL2 required | `control.access` | `denied` | `mfa_required` |
+| no matching permission | `control.access` | `denied` | `forbidden` |
+
+Deliberately **not** audited: `unauthenticated` and `unconfigured`. There is no principal to attribute them to, and auditing anonymous hits on a public URL would let any visitor write unbounded rows into the trail. Edge default-deny and Supabase Auth cover that surface.
+
+### Audit failure policy
+
+- **advisory** — a failed audit write is reported but never changes the outcome. Used for access decisions: a denial stays a denial, and a logging outage must not become a lockout or a silent grant.
+- **required** — the caller must treat a failed write as a denial and abort. The default for `recordControlAuditEvent`, reserved for security-sensitive mutations (identity and permission grants, privacy configuration). No such mutation exists in Sprint 1; the mechanism exists so the first one cannot be written without choosing.
+
+Both policies report the failure to server logs without echoing the event's content. `ip_hash` stays null: deriving it is a new personal-data processing that needs its own catalog entry, lawful basis and salt handling.
 
 ## Privacy foundation
 
-The catalog records classification, personal-data presence, purpose, lawful basis, owner and retention. Audit metadata is allow-listed, scalar, bounded and must never contain secrets, credentials, raw payloads or unnecessary personal data. Retention execution and legal-hold handling require a later reviewed job; Sprint 1 stores policy but performs no automatic deletion.
+`control_data_catalog` holds **one row per Control table** — all eight. A table without a catalog entry cannot have a retention rule, because the rules reference the register, and that would mean implicit unlimited storage. Every table therefore carries an explicit decision, including a keep decision:
+
+| Resource | Class | Personal data | Retention | Decision |
+| --- | --- | --- | --- | --- |
+| `control_identities` | restricted | yes | 730 d | `retain_while_active`; `disabled` → 365 d `anonymize` |
+| `control_identity_roles` | restricted | yes | 730 d | `retain_while_active`; `revoked` → 365 d `delete` |
+| `control_roles` | confidential | no | 3650 d | `retain_while_active` |
+| `control_permissions` | confidential | no | 3650 d | `retain_while_active` |
+| `control_role_permissions` | confidential | no | 3650 d | `retain_while_active` |
+| `control_audit_events` | restricted | yes | 730 d | `legal_hold_review` |
+| `control_data_catalog` | internal | no | 3650 d | `retain_while_active` |
+| `control_retention_rules` | internal | no | 3650 d | `retain_while_active` |
+
+Audit metadata is allow-listed, scalar and bounded. Retention execution and legal-hold handling require a later reviewed job; Sprint 1 stores policy and performs no automatic deletion.
+
+## Evidence model
+
+The checks in `lib/control/security-foundation.test.ts` are of two kinds and must not be weighed as one:
+
+- **Anti-regression assertions** read the migration, `auth.ts`, `audit.ts` and `proxy.ts` and assert that the agreed guarantees are still written there. They prove the text has not silently changed. They are **not** proof of authorization behaviour.
+- **Behavioural unit tests** exercise the real edge decision (`controlEdgeDecision`, `hasSessionCookie`, `isControlPath`) and the catalog/retention completeness of the migration.
+
+The exit gate takes its authorization proof from staging probes — RLS denial, AAL, audit — not from either group above.
+
+## Accepted residual risks (Sprint 1)
+
+- **Audit metadata filters keys, not values.** A forbidden key (`email`, `token`, …) is rejected; a value under a permitted key is only length-bounded. Mitigation is procedural for now: producers pass enumerated scalars, not free text.
+- **`identity.read` and `identity.manage` have no RLS path.** Both permissions exist and are granted to `control_admin`, but `control_identities` carries only a self-read policy, so no one can read or manage another identity yet. The permission catalog therefore describes more than the current RLS model delivers. Identity management arrives with its own audited server command, and this line must be removed when it does.
+
+No claim beyond the implementation is made anywhere in this document.
 
 ## Existing Supabase advisory classification
 
@@ -39,19 +86,29 @@ The catalog records classification, personal-data presence, purpose, lawful basi
 - Performance-only unused/duplicate index findings: **non-security**, classify separately.
 - Live advisor list: **unverified** until an authenticated staging advisor run is attached.
 
+## Identity and MFA rollout
+
+1. Apply the migration to an isolated non-production Supabase project.
+2. Create named Auth users with verified individual email addresses; no shared identity.
+3. Bootstrap the matching normalized `control_identities` row and least-privilege role as an explicit staging operator action.
+4. Enrol TOTP and prove AAL1, suspended identity, expired role and missing permission are denied — and that each denial produced an attributable `control.access` event.
+5. Keep `CONTROL_REQUIRE_AAL2=true` or unset. `false` is local-development-only and must not exist in any environment that points at production data.
+6. Prove two named break-glass administrators can authenticate and produce attributable audit events.
+7. Migrate legacy capabilities one permission at a time. Remove shared auth only in a later, separately approved migration after rollback evidence.
+
 ## Sprint-1 exit gate
 
-GO requires: clean lint/typecheck/full tests; migration applying on clean and current staging schemas; before/after advisors classified; denial tests for unauthenticated/AAL1/suspended/expired/unpermitted users; positive AAL2 least-privilege test; audit insert plus update/delete denial proof; privacy register approval; booking/pricing/event/communication smoke tests; rollback/forward-fix rehearsal; and attached query logs, migration hash and screenshots.
+GO requires: clean lint/typecheck/full tests; migration applying on clean and current staging schemas; before/after advisors classified; denial tests for unauthenticated/AAL1/suspended/expired/unpermitted users; positive AAL2 least-privilege test; audit insert plus update/delete denial proof; an audited denial and an audited grant observed end-to-end; privacy register approval; booking/pricing/event/communication smoke tests; rollback/forward-fix rehearsal; and attached query logs, migration hash and screenshots.
 
 Current decision: **NO-GO for production**. No production write is authorized.
 
-## Local evidence — 2026-08-31
+## Local evidence — 2026-09-07
 
-- immutable base: `5c10a54ed18ad7cfbd72c2d54fc912bd10b8d16f`;
-- Sprint-1 commit: the commit containing this evidence block;
-- migration SHA-256: `f62db2a5cfa604c80406bd094865f8a2e3f8cab55e7bfa5a4840fdbd5384c96f`;
-- clean baseline: lint passed; full suite 798/798 passed;
-- post-change: lint passed; Control boundaries 6/6 passed; full suite 804/804 passed;
-- typecheck before and after: blocked by the same eleven pre-existing missing image imports under `public/`; after correction there are no Control-specific TypeScript errors;
-- staging migration, RLS probes, Auth/MFA exercise and database advisors: not run because this isolated worktree has no linked staging project or authenticated advisor connection;
+- rebased base: `024bdcf` (main, including communication `3309f14` and the SEO city hubs);
+- Sprint-1 branch: `feat/control-security-foundation`; historical pre-rebase commit `ac2063f` kept as a remote backup ref;
+- migration SHA-256: `f0b6e57f4c5efae26015a471413a774929dbe99173bcabc04ff31d7cae677825`;
+- lint: passed;
+- typecheck: **0 errors**. The earlier "pre-existing missing image imports" reading was a misdiagnosis: the images are tracked and present; a fresh worktree simply lacks the gitignored, build-generated `next-env.d.ts`, without which TypeScript has no module declarations for `.jpg`/`.png`. Generate or copy that file before running the gate in a new worktree;
+- full suite: **868/868 passed**, of which 14 Control checks (6 anti-regression, 8 added for the B/A/D remediation, 4 of those behavioural);
+- staging migration, RLS probes, Auth/MFA exercise and database advisors: not run; this worktree has no linked staging project or authenticated advisor connection;
 - production writes: none.

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
+import { controlEdgeDecision, isControlPath } from "@/lib/control/routes";
 
 /**
  * Twee taken, in vaste volgorde:
@@ -79,14 +80,25 @@ export async function proxy(request: NextRequest) {
   const rawPathname = request.nextUrl.pathname;
   const pathname = rawPathname.replace(/^\/(nl|en)(?=\/|$)/, "") || "/";
 
-  // T4XI Control is intentionally non-localized and owns its individual
-  // Supabase Auth + MFA + permission boundary in the server-rendered route.
-  if (rawPathname === "/admin" || rawPathname.startsWith("/admin/")) {
+  // ── T4XI Control (/admin) — DEFAULT DENY ────────────────────────────────
+  // Control is non-localized and owns its individual Supabase Auth + MFA +
+  // permission boundary in the server-rendered route. The edge is the FIRST
+  // barrier, not the only one: a path under /admin that is not registered in
+  // CONTROL_ROUTES gets a 404, so a new subroute cannot become reachable by
+  // forgetting authorizeControl(). Registering a route is a deliberate act.
+  //
+  // A locale-prefixed Control path (/nl/admin, /en/admin) is never valid and
+  // is closed here, before intlMiddleware could rewrite it.
+  if (isControlPath(rawPathname)) {
+    if (controlEdgeDecision(rawPathname, request.cookies.getAll().map((c) => c.name)) === "not_found") {
+      return notFound();
+    }
     const response = NextResponse.next();
     response.headers.set("x-robots-tag", "noindex, nofollow");
     response.headers.set("cache-control", "no-store");
     return response;
   }
+  if (isControlPath(pathname)) return notFound();
 
   const isProtected =
     pathname === "/dashboard" || pathname.startsWith("/dashboard/") ||
