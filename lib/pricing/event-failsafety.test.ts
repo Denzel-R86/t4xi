@@ -8,6 +8,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { calculateBookingPrice } from "@/lib/pricing/engine";
+import {
+  recordEventShadowLog,
+  SHADOW_LOG_TIMEOUT_MS,
+  type EventShadowObservation,
+} from "@/lib/pricing/event-shadow-log";
 import { NO_AIRPORT, withRetryOnce, type PricingQuoteResult } from "@/lib/pricing/service";
 import { eurosToCents } from "@/lib/payments/create-intent";
 import type { EventPricingData } from "@/lib/pricing/event-store";
@@ -80,6 +85,19 @@ async function baseline(quote: AvailableQuote) {
 
 function eventAdjustments(snapshot: { adjustments: readonly { code: string }[] } | null): readonly { code: string }[] {
   return (snapshot?.adjustments ?? []).filter((a) => a.code.startsWith("event_"));
+}
+
+/** Minimale observatie; de inhoud doet er hier niet toe, alleen het schrijfpad. */
+function observation(): EventShadowObservation {
+  return {
+    mode: "shadow", quoteId: null, leg: "outbound", pricingSource: "fixed_route_prices",
+    baseSubtotalCents: 10000, synthetic: true,
+    result: {
+      level: "none", amountCents: 0, configuredFeeCents: 0, maxUpliftPct: null,
+      capApplied: false, concurrentEventCount: 0, upgradeApplied: false,
+      cappedByMaxLevel: false, matches: [],
+    },
+  };
 }
 
 // ── Config-load faalt ────────────────────────────────────────────────────────
@@ -209,4 +227,60 @@ test("een hangende load wordt begrensd door withRetryOnce en gaat niet oneindig 
   const verstreken = Date.now() - start;
   assert.ok(verstreken >= 80, `verwacht twee pogingen van 40ms, kreeg ${verstreken}ms`);
   assert.ok(verstreken < 1000, `mag niet blijven hangen, kreeg ${verstreken}ms`);
+});
+
+// ── Shadow-insert: begrensde wachttijd ───────────────────────────────────────
+
+test("een shadow-insert die NOOIT resolvet wordt afgekapt en breekt de offerte niet", async () => {
+  // Het scenario waar een try/catch alleen niet tegen beschermt: geen fout,
+  // maar een verbinding die blijft hangen. Zonder deadline zou de offerte
+  // hierop blijven wachten.
+  const start = Date.now();
+  await recordEventShadowLog([observation()], {
+    write: () => new Promise<never>(() => {}),
+    timeoutMs: 40,
+  });
+  const verstreken = Date.now() - start;
+  assert.ok(verstreken >= 40, `moet de deadline afwachten, kreeg ${verstreken}ms`);
+  assert.ok(verstreken < 1000, `mag niet blijven hangen, kreeg ${verstreken}ms`);
+});
+
+test("een shadow-insert die verwerpt wordt ingeslikt", async () => {
+  await assert.doesNotReject(
+    recordEventShadowLog([observation()], {
+      write: async () => {
+        throw new Error("23505 duplicate key");
+      },
+    })
+  );
+});
+
+test("de deadline dekt ook het opbouwen van de client, niet alleen de insert", async () => {
+  // De timeout staat om het HELE blok, dus een trage clientconstructie telt mee.
+  await assert.doesNotReject(
+    recordEventShadowLog([observation()], {
+      write: () => new Promise((r) => setTimeout(r, 5_000)),
+      timeoutMs: 30,
+    })
+  );
+});
+
+test("een hangende shadow-insert laat de quoteprijs volledig ongemoeid", async () => {
+  const q = quoteFixed(100);
+  const ref = await baseline(q);
+  const start = Date.now();
+  const res = await price(
+    q,
+    async () => ({ ...dataOffButMatching(), config: { ...dataOffButMatching().config, mode: "shadow" } }),
+    () => new Promise<void>(() => {})
+  );
+  assert.equal(res.quote.available, true);
+  assert.equal(res.snapshot?.totalCents, ref.snapshot?.totalCents);
+  assert.deepEqual(eventAdjustments(res.snapshot), []);
+  // De engine-seam begrenst zelf, met SHADOW_LOG_TIMEOUT_MS. Een recorder die
+  // NOOIT terugkeert houdt de offerte dus hooguit dat budget op. Zonder die
+  // grens zou deze test oneindig blijven hangen.
+  const verstreken = Date.now() - start;
+  assert.ok(verstreken >= SHADOW_LOG_TIMEOUT_MS, `moet de deadline afwachten, kreeg ${verstreken}ms`);
+  assert.ok(verstreken < SHADOW_LOG_TIMEOUT_MS + 2_000, `moet begrensd zijn, kreeg ${verstreken}ms`);
 });
