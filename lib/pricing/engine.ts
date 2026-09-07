@@ -208,7 +208,15 @@ async function observeEventFees(
   };
   push("outbound", fees.outbound);
   push("return", fees.returnLeg);
-  await record(entries);
+  // De standaardimplementatie vangt zijn eigen fouten al af, maar dat is een
+  // eigenschap van die implementatie — niet van deze aanroep. Zonder deze
+  // vangnet zou een geïnjecteerde of later gewijzigde recorder een offerte
+  // kunnen breken. Een observatie is nooit belangrijker dan de offerte.
+  try {
+    await record(entries);
+  } catch {
+    // bewust stil: observabiliteitsverlies, geen prijsimpact
+  }
 }
 
 /**
