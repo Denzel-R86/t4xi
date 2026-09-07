@@ -97,8 +97,12 @@ create table public.control_retention_rules (
   resource_key text not null references public.control_data_catalog(resource_key) on delete restrict,
   record_state text not null default 'default',
   retention_days integer not null check (retention_days between 1 and 3650),
+  -- Every table gets an explicit decision. 'retain_while_active' is a decision,
+  -- not the absence of one: the record is kept for as long as it is operationally
+  -- required, and the follow-up state carries its own rule.
   deletion_mode text not null
-    check (deletion_mode in ('delete', 'anonymize', 'legal_hold_review')),
+    check (deletion_mode in
+      ('delete', 'anonymize', 'legal_hold_review', 'retain_while_active', 'manual_review')),
   processing_purpose text not null,
   enabled boolean not null default true,
   created_at timestamptz not null default now(),
@@ -133,6 +137,9 @@ join public.control_permissions permission
 where role.role_key = 'control_auditor'
 on conflict do nothing;
 
+-- Data classification — one row per Control table. A table without a catalog
+-- entry has no retention rule (the rules FK to this register), which would mean
+-- implicit unlimited storage. That is why all eight are listed explicitly.
 insert into public.control_data_catalog
   (resource_key, classification, contains_personal_data, processing_purpose,
    lawful_basis, data_owner, default_retention_days, notes)
@@ -140,19 +147,58 @@ values
   ('control_identities', 'restricted', true, 'Access control and accountability',
    'legitimate_interest', 'Security', 730,
    'Minimise profile data; authentication secrets remain in Supabase Auth.'),
-  ('control_audit_events', 'restricted', true, 'Security, fraud prevention and accountability',
+  ('control_identity_roles', 'restricted', true,
+   'Least-privilege access control and accountability',
+   'legitimate_interest', 'Security', 730,
+   'Links a named person to a role; personal by association.'),
+  ('control_roles', 'confidential', false, 'Least-privilege access control',
+   'legitimate_interest', 'Security', 3650,
+   'Authorization configuration; migration-controlled, no personal data.'),
+  ('control_permissions', 'confidential', false, 'Least-privilege access control',
+   'legitimate_interest', 'Security', 3650,
+   'Authorization configuration; migration-controlled, no personal data.'),
+  ('control_role_permissions', 'confidential', false, 'Least-privilege access control',
+   'legitimate_interest', 'Security', 3650,
+   'Authorization configuration; migration-controlled, no personal data.'),
+  ('control_audit_events', 'restricted', true,
+   'Security, fraud prevention and accountability',
    'legitimate_interest', 'Security', 730,
    'Metadata must not contain raw payloads, secrets or unnecessary personal data.'),
-  ('control_authorization', 'confidential', false, 'Least-privilege access control',
-   'legitimate_interest', 'Security', 730, 'Roles, permissions and grants.')
+  ('control_data_catalog', 'internal', false,
+   'Privacy governance and demonstrable compliance',
+   'legal_obligation', 'Privacy', 3650,
+   'The register itself; retained as compliance evidence.'),
+  ('control_retention_rules', 'internal', false,
+   'Privacy governance and demonstrable compliance',
+   'legal_obligation', 'Privacy', 3650,
+   'Retention policy as evidence. Sprint 1 stores policy and executes none.')
 on conflict (resource_key) do nothing;
 
+-- Retention decisions. Sprint 1 records policy only; execution and legal-hold
+-- handling require a separately reviewed job.
 insert into public.control_retention_rules
   (resource_key, record_state, retention_days, deletion_mode, processing_purpose)
-select resource_key, 'default', default_retention_days,
-  case when resource_key = 'control_audit_events' then 'legal_hold_review' else 'anonymize' end,
-  processing_purpose
-from public.control_data_catalog
+values
+  ('control_identities', 'default', 730, 'retain_while_active',
+   'Access control and accountability'),
+  ('control_identities', 'disabled', 365, 'anonymize',
+   'Accountability after deactivation'),
+  ('control_identity_roles', 'default', 730, 'retain_while_active',
+   'Least-privilege access control and accountability'),
+  ('control_identity_roles', 'revoked', 365, 'delete',
+   'Accountability after revocation'),
+  ('control_roles', 'default', 3650, 'retain_while_active',
+   'Least-privilege access control'),
+  ('control_permissions', 'default', 3650, 'retain_while_active',
+   'Least-privilege access control'),
+  ('control_role_permissions', 'default', 3650, 'retain_while_active',
+   'Least-privilege access control'),
+  ('control_audit_events', 'default', 730, 'legal_hold_review',
+   'Security, fraud prevention and accountability'),
+  ('control_data_catalog', 'default', 3650, 'retain_while_active',
+   'Privacy governance and demonstrable compliance'),
+  ('control_retention_rules', 'default', 3650, 'retain_while_active',
+   'Privacy governance and demonstrable compliance')
 on conflict (resource_key, record_state) do nothing;
 
 alter table public.control_identities enable row level security;
