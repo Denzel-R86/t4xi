@@ -298,13 +298,23 @@ export function resolvePriorityLocationSlug(address: string): string | null {
 
 const POSTCODE_RE = /\b([1-9]\d{3})\s?[A-Za-z]{2}\b/;
 
-function postcode4(address: string): number | null {
+/**
+ * Vier cijfers van een Nederlandse postcode uit vrije adrestekst. Vereist
+ * BEWUST de twee letters, zodat een huisnummer nooit voor een postcode wordt
+ * aangezien. Geëxporteerd (2026-08-27, Phase 5.5) zodat de genormaliseerde
+ * locatiecontext dezelfde definitie gebruikt — geen tweede regex.
+ */
+export function postcode4(address: string): number | null {
   const m = address.match(POSTCODE_RE);
   return m ? Number(m[1]) : null;
 }
 
-/** Het plaats-deel (laatste komma-segment, zonder postcode) — voor keyword-match. */
-function placeOf(lowerAddress: string): string {
+/**
+ * Het plaats-deel (laatste komma-segment, zonder postcode) — voor keyword-match.
+ * Geëxporteerd (2026-08-27, Phase 5.5) zodat de genormaliseerde locatiecontext
+ * exact dezelfde plaatsextractie gebruikt als de slug-resolutie.
+ */
+export function placeOf(lowerAddress: string): string {
   const seg = lowerAddress.split(",").pop() ?? lowerAddress;
   return seg.replace(POSTCODE_RE, " ").replace(/\s+/g, " ").trim();
 }
