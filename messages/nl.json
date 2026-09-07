@@ -51,7 +51,9 @@
     "privacy": "Privacyverklaring",
     "voorwaarden": "Algemene voorwaarden",
     "email": "E-mail T4XI",
-    "instagram": "T4XI op Instagram"
+    "instagram": "T4XI op Instagram",
+    "regioKop": "Regio",
+    "routeLabel": "{stad} → Schiphol"
   },
   "sticky": {
     "label": "Snelle acties",
@@ -520,14 +522,14 @@
         "name": "VIP & Gala",
         "desc": "Galabals, award ceremonies, VIP-ontvangsten. Stijlvol vervoer dat past bij de gelegenheid — chauffeur in formeel pak op aanvraag.",
         "details": [
-        "Formeel kledingvoorschrift op aanvraag",
+          "Formeel kledingvoorschrift op aanvraag",
           "Discrete, stille service",
           "Wachten inbegrepen"
         ],
         "price": "Op aanvraag"
       },
       {
-      "name": "Toeristische dagtocht",
+        "name": "Toeristische dagtocht",
         "desc": "Brugge, Brussel, Antwerpen, Keulen — T4XI rijdt u naar de mooiste bestemmingen in de Benelux en Duitsland. Alles in één dag, vaste prijs.",
         "details": [
           "Deur-tot-deur, geen tussenstops",
@@ -911,7 +913,12 @@
       "serviceType": "Zakelijk taxivervoer",
       "description": "Zakelijk vervoer voor directie, medewerkers en gasten, met mogelijkheden voor facturatie op rekening, chauffeurscontinuïteit waar afgesproken en ritoverzicht.",
       "home": "Home",
-      "areas": ["Amsterdam", "Rotterdam", "Almere", "Den Haag"]
+      "areas": [
+        "Amsterdam",
+        "Rotterdam",
+        "Almere",
+        "Den Haag"
+      ]
     }
   },
   "faq": {
@@ -1306,8 +1313,8 @@
   "seo": {
     "dienstenTitle": "Diensten",
     "dienstenDesc": "Schipholtransfers, zakelijk vervoer, privéritten en evenementen — comfortabel taxivervoer voor uiteenlopende gelegenheden.",
-    "tarievenTitle": "Taxitarieven en vaste ritprijs berekenen",
-    "tarievenDesc": "Bereken uw vaste T4XI-taxitarief. Comfortabel vervoer met een professionele chauffeur, duidelijke bagageafspraken en geen onverwachte prijsstijgingen.",
+    "tarievenTitle": "Taxi prijs berekenen — bereken direct uw taxirit",
+    "tarievenDesc": "Bereken vooraf wat uw taxirit kost. Vul vertrek en bestemming in en zie direct de vaste prijs inclusief btw — geen taxameter, geen prijsverhogingen.",
     "boekenTitle": "Boek een rit",
     "boekenDesc": "Boek uw premium taxi. Vul ophaal- en bestemmingsadres in en zie direct uw vaste prijs.",
     "dagtochtenTitle": "Dagtochten",
@@ -1469,7 +1476,28 @@
     "faqV2": "Gelden er dynamische prijzen of een nachttarief?",
     "faqA2": "We gebruiken geen dynamische prijsverhogingen. Voor ritten tussen 23.00 en 06.00 uur geldt een nachttarief van 15%. Dit is vooraf in uw prijs verwerkt.",
     "faqV3": "Wat als er geen automatische prijs is?",
-    "faqA3": "Voor routes of tussenstops zonder vaste prijs maken we graag een voorstel. Vraag dit aan via WhatsApp of e-mail; de ingevulde ritgegevens worden automatisch toegevoegd."
+    "faqA3": "Voor routes of tussenstops zonder vaste prijs maken we graag een voorstel. Vraag dit aan via WhatsApp of e-mail; de ingevulde ritgegevens worden automatisch toegevoegd.",
+    "uitlegKicker": "Hoe de prijs tot stand komt",
+    "uitlegKop": "Zo berekenen wij uw taxiprijs",
+    "uitlegP1": "Een klassieke taxi rekent met een taxameter: een starttarief, een bedrag per kilometer en een bedrag per minuut. Staat u stil in de file, dan loopt die meter door. U weet daardoor pas achteraf wat de rit kost.",
+    "uitlegP2": "T4XI draait dat om. Wij berekenen de prijs vooraf op basis van het werkelijke ophaaladres, de bestemming, de afstand en de verwachte reistijd. Die prijs krijgt u te zien vóórdat u boekt en staat vast bij bevestiging. Files, omrijden of een langere wachttijd veranderen daar niets aan.",
+    "uitlegP3": "De prijs is inclusief btw. Voor ritdelen tussen 23.00 en 06.00 uur geldt een nachttarief van 15%, dat vooraf in het bedrag is verwerkt. Er zijn geen dynamische prijsverhogingen bij drukte.",
+    "langeKop": "Taxi over lange afstand",
+    "langeP1": "Juist bij langere ritten loopt een taxameter hard op en wordt de eindprijs onvoorspelbaar. Voor ritten door heel Nederland en naar het buitenland spreken wij daarom één vast bedrag af, berekend op uw route.",
+    "langeP2": "Vul uw vertrekpunt en bestemming hierboven in — ook voor een rit van tientallen kilometers of een dagtocht met meerdere bestemmingen ziet u direct wat het kost, of hoort u binnen korte tijd van ons als de route maatwerk vraagt.",
+    "lokaalKicker": "Vaste standplaatsen",
+    "lokaalKop": "Taxi in Almere en Spijkenisse",
+    "lokaalIntro": "T4XI heeft twee vaste standplaatsen. Op die pagina's leest u wat wij lokaal rijden en hoe de prijs in uw wijk wordt berekend.",
+    "faqV4": "Wat kost een taxi per kilometer?",
+    "faqA4": "Wij rekenen geen los kilometertarief af zoals een taxameter dat doet. De afstand is wel een van de factoren waarop uw vaste prijs wordt berekend, samen met de verwachte reistijd en het tijdstip. U ziet het eindbedrag vooraf, dus u hoeft zelf niets per kilometer uit te rekenen.",
+    "faqV5": "Wat zijn de officiële maximumtarieven voor een taxi?",
+    "faqA5": "De overheid stelt jaarlijks maximumtarieven vast voor straattaxi's: een starttarief plus een bedrag per kilometer en per minuut. Dat zijn maxima, geen vaste prijzen. Onze vaste ritprijs wordt vooraf berekend en blijft binnen die wettelijke kaders; in de vergelijking hierboven ziet u hoe beide zich tot elkaar verhouden.",
+    "faqV6": "Hoe duur is een taxi voor een langere rit?",
+    "faqA6": "Dat hangt af van de afstand, de verwachte reistijd en het tijdstip. Omdat wij vooraf één vast bedrag afspreken, weet u het exacte bedrag voordat u boekt — ook bij ritten van tientallen kilometers. Vul uw vertrekpunt en bestemming in om het te zien.",
+    "faqV7": "Kan ik een taxirit achteraf betalen?",
+    "faqA7": "Particuliere ritten rekent u bij de boeking af, zodat de prijs vaststaat. Voor bedrijven werken wij met facturatie achteraf; neem daarvoor contact met ons op via zakelijk vervoer.",
+    "faqV8": "Werkt T4XI met een taxameter?",
+    "faqA8": "Nee. U krijgt vooraf een vaste prijs die bij bevestiging vastligt. Er draait geen meter mee tijdens de rit, dus vertraging onderweg verandert uw bedrag niet."
   },
   "fairFare": {
     "kicker": "Onze belofte",
