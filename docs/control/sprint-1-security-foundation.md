@@ -1,6 +1,6 @@
 # T4XI Control — Sprint 1 Security & Privacy Foundation
 
-Status: rebased onto `024bdcf`; not applied to staging or production.
+Status: rebased onto `024bdcf`. Canonical migration `20260908120000`; not currently applied to staging or production. An earlier, pre-remediation form of this migration did run on staging under the retired id `20260831075015` — see Migration identity.
 Historical reference only: `ac2063f`, preserved as `backup/control-security-foundation-ac2063f`. All current Sprint-1 evidence points at the rebased line.
 
 ## Boundary
@@ -14,6 +14,19 @@ The shared HMAC operations session and Basic Auth brain dashboard remain tempora
 Cookie presence at the edge is a pre-filter, not authentication: it stops an unauthenticated visitor from confirming that a Control subroute exists. The server component remains the authoritative check, and RLS remains the final layer.
 
 **Known gap, deliberately out of Sprint-1 scope:** the middleware matcher excludes `/api`, so a future Control API route gets no edge default-deny and must carry its own server-side authorization. Closing that gap changes the middleware surface for every existing API route and needs its own review.
+
+## Migration identity
+
+The canonical Control migration is **`20260908120000_control_security_foundation.sql`**.
+
+`20260831075015_control_security_foundation.sql` is **retired and must never be reused**. Its history is part of the record:
+
+- **2026-08-31** — applied to the staging project `ztlhydagjqfzkyfiqgio` and manually probed (`control.probe` on `security_gate`), together with a bootstrap identity that never held a role grant. Production `ajdsiklxfmmgisdvarhv` never received it.
+- **2026-09-07** — the file was corrected in place for findings B, A and D, on the mistaken assumption that it had not been applied anywhere. Supabase had already recorded the version as applied, so `db push` would never have delivered the corrected content to staging.
+- **2026-09-08** — the Control foundation was removed from staging under an explicit reverse scope (no `CASCADE`), and that one history row — and only that one — was reverted. The pre-reset state is preserved in `docs/control/evidence/2026-09-08-staging-pre-reset.md`.
+- **2026-09-08** — renumbered to `20260908120000`, above the highest applied version on both staging and production (`20260831140000`), so that a plain `db push` applies it in order. `--include-all` was deliberately rejected: an exception must not become part of the normal deploy path.
+
+The rename changed the migration's identity only. The SQL is byte-for-byte identical, which the unchanged SHA-256 proves.
 
 ## RLS matrix
 
@@ -106,7 +119,8 @@ Current decision: **NO-GO for production**. No production write is authorized.
 
 - rebased base: `024bdcf` (main, including communication `3309f14` and the SEO city hubs);
 - Sprint-1 branch: `feat/control-security-foundation`; historical pre-rebase commit `ac2063f` kept as a remote backup ref;
-- migration SHA-256: `f0b6e57f4c5efae26015a471413a774929dbe99173bcabc04ff31d7cae677825`;
+- canonical migration: `20260908120000_control_security_foundation.sql`, SHA-256 `f0b6e57f4c5efae26015a471413a774929dbe99173bcabc04ff31d7cae677825` — unchanged by the renumbering, because only the filename changed;
+- retired id `20260831075015`: applied to staging 2026-08-31, controlled removal 2026-09-08, never applied to production, never to be reused;
 - lint: passed;
 - typecheck: **0 errors**. The earlier "pre-existing missing image imports" reading was a misdiagnosis: the images are tracked and present; a fresh worktree simply lacks the gitignored, build-generated `next-env.d.ts`, without which TypeScript has no module declarations for `.jpg`/`.png`. Generate or copy that file before running the gate in a new worktree;
 - full suite: **868/868 passed**, of which 14 Control checks (6 anti-regression, 8 added for the B/A/D remediation, 4 of those behavioural);

@@ -4,7 +4,7 @@ import test from "node:test";
 
 import { CONTROL_ROUTES, controlEdgeDecision, hasSessionCookie, isControlPath } from "@/lib/control/routes";
 
-const migrationPath = "supabase/migrations/20260831075015_control_security_foundation.sql";
+const migrationPath = "supabase/migrations/20260908120000_control_security_foundation.sql";
 const migration = readFileSync(migrationPath, "utf8");
 const auth = readFileSync("lib/control/auth.ts", "utf8");
 const audit = readFileSync("lib/control/audit.ts", "utf8");
