@@ -5,6 +5,7 @@
 // Contract: docs/architecture/price-snapshot-contract.md.
 // ─────────────────────────────────────────────────────────────────────────────
 import { isNightTariff } from "@/lib/pricing/departure-time";
+import { eventFeeMetadata, type EventFeeAdjustmentMetadata, type EventFeeResult } from "@/lib/pricing/event-fee";
 import type { AirportContext, PricingQuoteResult } from "@/lib/pricing/service";
 
 /** Nachttoeslag: +15% wanneer de ophaaltijd tussen 23:00 en 06:00 valt. */
@@ -68,6 +69,14 @@ export type PriceSnapshotAdjustment = {
   taxable: boolean;
   vatRate: number | null;
   sortOrder: number;
+  /**
+   * Onveranderlijke verklaring van DEZE regel — vandaag uitsluitend gevuld voor
+   * de evenement-adjustments (welk evenement/venster/zone/niveau). Uitsluitend
+   * interne identifiers, NOOIT adres- of persoonsgegevens. Afwezig/`null` voor
+   * regels die geen verklaring dragen (bv. het nachttarief, dat volledig uit
+   * code en ophaaltijd volgt). Zie migratie 20260827130000.
+   */
+  metadata?: EventFeeAdjustmentMetadata | null;
 };
 
 export type RouteSnapshot = {
@@ -138,6 +147,18 @@ export function mapPricingSource(source: string): PricingSource | null {
 const isIntGte0 = (n: number) => Number.isInteger(n) && n >= 0;
 
 /**
+ * Klantzichtbaar label voor een evenement-adjustment. Noemt het evenement bij
+ * naam zodra er precies ÉÉN evenement aan ten grondslag ligt — bij meerdere
+ * gelijktijdige evenementen zou één naam misleidend zijn, dus dan blijft het
+ * label generiek. De volledige verklaring staat hoe dan ook in `metadata`.
+ */
+function eventLabel(result: EventFeeResult, fallback: string): string {
+  const names = new Set(result.matches.map((m) => m.eventName));
+  const only = names.size === 1 ? [...names][0] : null;
+  return only ? `${fallback} ${only}` : fallback;
+}
+
+/**
  * Bouwt een immutable PriceSnapshot uit een BESCHIKBARE quote. Puur en
  * deterministisch: `quoteId` en `now` worden geïnjecteerd. Alle tijdvelden komen
  * uit hetzelfde `now`-moment (geen aparte klok-aanroepen). Retourneert `null` als
@@ -148,7 +169,19 @@ const isIntGte0 = (n: number) => Number.isInteger(n) && n >= 0;
  */
 export function buildPriceSnapshot(
   quote: AvailableQuote,
-  opts: { quoteId: string; now: Date; departureAt?: string; returnDepartureAt?: string }
+  opts: {
+    quoteId: string;
+    now: Date;
+    departureAt?: string;
+    returnDepartureAt?: string;
+    /**
+     * Al bepaald evenemententarief per ritdeel (Phase 4). BEWUST vooraf
+     * berekend en ingegeven: het bepalen ervan vereist databasegegevens, en
+     * deze functie blijft puur en synchroon. Afwezig/`null` → geen toeslag.
+     */
+    eventFeeOutbound?: EventFeeResult | null;
+    eventFeeReturn?: EventFeeResult | null;
+  }
 ): PriceSnapshot | null {
   const pricingSource = mapPricingSource(quote.source);
   if (pricingSource === null) return null;
@@ -210,6 +243,35 @@ export function buildPriceSnapshot(
       sortOrder: 3,
     });
   }
+  // Evenemententarief PER RITDEEL, na de nachtregels zodat de volgorde in de
+  // opgeslagen breakdown stabiel is (nacht 1–3, evenement 4–5). Het bedrag is
+  // ADDITIEF en al vastgesteld door resolveEventFee(); hier wordt niets
+  // herberekend, geschaald of afgerond — alleen bijgeschreven.
+  const outboundEvent = opts.eventFeeOutbound;
+  if (outboundEvent && outboundEvent.amountCents > 0) {
+    adjustments.push({
+      code: "event_outbound",
+      label: eventLabel(outboundEvent, quote.returnApplied ? "Evenemententarief heenrit" : "Evenemententarief"),
+      amountCents: outboundEvent.amountCents,
+      taxable: true,
+      vatRate: quote.vatRate,
+      sortOrder: 4,
+      metadata: eventFeeMetadata(outboundEvent),
+    });
+  }
+  const returnEvent = opts.eventFeeReturn;
+  if (quote.returnApplied && returnEvent && returnEvent.amountCents > 0) {
+    adjustments.push({
+      code: "event_return",
+      label: eventLabel(returnEvent, "Evenemententarief retour"),
+      amountCents: returnEvent.amountCents,
+      taxable: true,
+      vatRate: quote.vatRate,
+      sortOrder: 5,
+      metadata: eventFeeMetadata(returnEvent),
+    });
+  }
+
   const totalCents = cents + adjustments.reduce((s, a) => s + a.amountCents, 0);
 
   return {

@@ -708,6 +708,348 @@ export type Database = {
           },
         ]
       }
+      pricing_event_config: {
+        Row: {
+          active: boolean
+          concurrent_upgrade_enabled: boolean
+          concurrent_upgrade_min_events: number
+          concurrent_upgrade_min_level: string
+          created_at: string
+          id: string
+          max_impact_level: string
+          mode: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          concurrent_upgrade_enabled?: boolean
+          concurrent_upgrade_min_events?: number
+          concurrent_upgrade_min_level?: string
+          created_at?: string
+          id?: string
+          max_impact_level?: string
+          mode?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          concurrent_upgrade_enabled?: boolean
+          concurrent_upgrade_min_events?: number
+          concurrent_upgrade_min_level?: string
+          created_at?: string
+          id?: string
+          max_impact_level?: string
+          mode?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pricing_event_fee_rules: {
+        Row: {
+          active: boolean
+          amount_cents: number
+          created_at: string
+          id: string
+          impact_level: string
+          max_uplift_pct: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount_cents: number
+          created_at?: string
+          id?: string
+          impact_level: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          impact_level?: string
+          max_uplift_pct?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pricing_event_shadow_logs: {
+        Row: {
+          amount_cents: number
+          base_subtotal_cents: number | null
+          capped_by_max_level: boolean
+          concurrent_event_count: number
+          configured_fee_cents: number | null
+          created_at: string
+          event_slugs: string[]
+          id: string
+          impact_level: string
+          is_synthetic: boolean
+          leg: string
+          match_sides: string[]
+          matched: boolean
+          max_uplift_pct: number | null
+          mode: string
+          pricing_source: string | null
+          quote_id: string | null
+          upgrade_applied: boolean
+          window_ids: string[]
+          zone_types: string[]
+        }
+        Insert: {
+          amount_cents: number
+          base_subtotal_cents?: number | null
+          capped_by_max_level?: boolean
+          concurrent_event_count?: number
+          configured_fee_cents?: number | null
+          created_at?: string
+          event_slugs?: string[]
+          id?: string
+          impact_level: string
+          is_synthetic?: boolean
+          leg: string
+          match_sides?: string[]
+          matched: boolean
+          max_uplift_pct?: number | null
+          mode: string
+          pricing_source?: string | null
+          quote_id?: string | null
+          upgrade_applied?: boolean
+          window_ids?: string[]
+          zone_types?: string[]
+        }
+        Update: {
+          amount_cents?: number
+          base_subtotal_cents?: number | null
+          capped_by_max_level?: boolean
+          concurrent_event_count?: number
+          configured_fee_cents?: number | null
+          created_at?: string
+          event_slugs?: string[]
+          id?: string
+          impact_level?: string
+          is_synthetic?: boolean
+          leg?: string
+          match_sides?: string[]
+          matched?: boolean
+          max_uplift_pct?: number | null
+          mode?: string
+          pricing_source?: string | null
+          quote_id?: string | null
+          upgrade_applied?: boolean
+          window_ids?: string[]
+          zone_types?: string[]
+        }
+        Relationships: []
+      }
+      pricing_event_sync_log: {
+        Row: {
+          checked_at: string
+          duration_ms: number
+          error_count: number
+          error_summary: string | null
+          events_added: number
+          events_cancelled: number
+          events_changed: number
+          events_needing_review: number
+          events_seen: number
+          id: string
+          source: string
+        }
+        Insert: {
+          checked_at?: string
+          duration_ms?: number
+          error_count?: number
+          error_summary?: string | null
+          events_added?: number
+          events_cancelled?: number
+          events_changed?: number
+          events_needing_review?: number
+          events_seen?: number
+          id?: string
+          source: string
+        }
+        Update: {
+          checked_at?: string
+          duration_ms?: number
+          error_count?: number
+          error_summary?: string | null
+          events_added?: number
+          events_cancelled?: number
+          events_changed?: number
+          events_needing_review?: number
+          events_seen?: number
+          id?: string
+          source?: string
+        }
+        Relationships: []
+      }
+      pricing_event_windows: {
+        Row: {
+          active: boolean
+          created_at: string
+          dropoff_impact_level: string
+          ends_at: string
+          event_id: string
+          event_phase: string
+          id: string
+          pickup_impact_level: string
+          starts_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          dropoff_impact_level?: string
+          ends_at: string
+          event_id: string
+          event_phase?: string
+          id?: string
+          pickup_impact_level?: string
+          starts_at: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          dropoff_impact_level?: string
+          ends_at?: string
+          event_id?: string
+          event_phase?: string
+          id?: string
+          pickup_impact_level?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_event_windows_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_event_zones: {
+        Row: {
+          active: boolean
+          created_at: string
+          direction: string
+          event_id: string
+          gemeente_naam: string | null
+          id: string
+          impact_override: string | null
+          locality: string | null
+          location_slug: string | null
+          postcode4: number | null
+          zone_type: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          direction?: string
+          event_id: string
+          gemeente_naam?: string | null
+          id?: string
+          impact_override?: string | null
+          locality?: string | null
+          location_slug?: string | null
+          postcode4?: number | null
+          zone_type: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          direction?: string
+          event_id?: string
+          gemeente_naam?: string | null
+          id?: string
+          impact_override?: string | null
+          locality?: string | null
+          location_slug?: string | null
+          postcode4?: number | null
+          zone_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_event_zones_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_events: {
+        Row: {
+          category: string
+          city: string
+          created_at: string
+          ends_at: string
+          expected_attendance: number | null
+          id: string
+          last_changed_at: string | null
+          last_verified_at: string | null
+          name: string
+          pricing_enabled: boolean
+          requires_annual_confirmation: boolean
+          slug: string
+          source_name: string | null
+          source_priority: number
+          source_type: string
+          source_url: string | null
+          starts_at: string
+          status: string
+          updated_at: string
+          venue: string | null
+          verification_status: string
+        }
+        Insert: {
+          category: string
+          city: string
+          created_at?: string
+          ends_at: string
+          expected_attendance?: number | null
+          id?: string
+          last_changed_at?: string | null
+          last_verified_at?: string | null
+          name: string
+          pricing_enabled?: boolean
+          requires_annual_confirmation?: boolean
+          slug: string
+          source_name?: string | null
+          source_priority?: number
+          source_type?: string
+          source_url?: string | null
+          starts_at: string
+          status?: string
+          updated_at?: string
+          venue?: string | null
+          verification_status?: string
+        }
+        Update: {
+          category?: string
+          city?: string
+          created_at?: string
+          ends_at?: string
+          expected_attendance?: number | null
+          id?: string
+          last_changed_at?: string | null
+          last_verified_at?: string | null
+          name?: string
+          pricing_enabled?: boolean
+          requires_annual_confirmation?: boolean
+          slug?: string
+          source_name?: string | null
+          source_priority?: number
+          source_type?: string
+          source_url?: string | null
+          starts_at?: string
+          status?: string
+          updated_at?: string
+          venue?: string | null
+          verification_status?: string
+        }
+        Relationships: []
+      }
       pricing_high_demand_zones: {
         Row: {
           active: boolean
