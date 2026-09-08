@@ -1,6 +1,6 @@
 # T4XI Control — Sprint 1 Security & Privacy Foundation
 
-Status: rebased onto `024bdcf`. Canonical migration `20260908120000`; not currently applied to staging or production. An earlier, pre-remediation form of this migration did run on staging under the retired id `20260831075015` — see Migration identity.
+Status: rebased onto `a850ba5` (current main, which carries the Event Pricing line via #35). Canonical migration `20260908120000`; not currently applied to staging or production. An earlier, pre-remediation form of this migration did run on staging under the retired id `20260831075015` — see Migration identity.
 Historical reference only: `ac2063f`, preserved as `backup/control-security-foundation-ac2063f`. All current Sprint-1 evidence points at the rebased line.
 
 ## Boundary
@@ -117,12 +117,12 @@ Current decision: **NO-GO for production**. No production write is authorized.
 
 ## Local evidence — 2026-09-07
 
-- rebased base: `024bdcf` (main, including communication `3309f14` and the SEO city hubs);
+- rebased base: `a850ba5` (current main: communication `3309f14`, the SEO city hubs and the Event Pricing line merged via #35);
 - Sprint-1 branch: `feat/control-security-foundation`; historical pre-rebase commit `ac2063f` kept as a remote backup ref;
 - canonical migration: `20260908120000_control_security_foundation.sql`, SHA-256 `f0b6e57f4c5efae26015a471413a774929dbe99173bcabc04ff31d7cae677825` — unchanged by the renumbering, because only the filename changed;
 - retired id `20260831075015`: applied to staging 2026-08-31, controlled removal 2026-09-08, never applied to production, never to be reused;
-- lint: passed;
+- lint: passed; Control tests 17/17;
 - typecheck: **0 errors**. The earlier "pre-existing missing image imports" reading was a misdiagnosis: the images are tracked and present; a fresh worktree simply lacks the gitignored, build-generated `next-env.d.ts`, without which TypeScript has no module declarations for `.jpg`/`.png`. Generate or copy that file before running the gate in a new worktree;
-- full suite: **868/868 passed**, of which 14 Control checks (6 anti-regression, 8 added for the B/A/D remediation, 4 of those behavioural);
+- full suite: **1078/1078 passed**, of which 17 Control checks (6 anti-regression, 8 added for the B/A/D remediation with 4 behavioural, 3 for the MFA flow);
 - staging migration, RLS probes, Auth/MFA exercise and database advisors: not run; this worktree has no linked staging project or authenticated advisor connection;
 - production writes: none.
