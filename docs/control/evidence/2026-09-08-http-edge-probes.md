@@ -17,19 +17,24 @@
 
 Default-deny is therefore enforced by the real routing stack, not only by the unit test: an unregistered `/admin` subroute is refused at the edge, and a locale-prefixed Control path never reaches the locale middleware.
 
-## Finding: `/admin` does not actually send `no-store`
+## Corrected: `/admin` does send `no-store` — the earlier finding was a dev artifact
 
-`proxy.ts` sets `cache-control: no-store` on the Control response, but the response observed over HTTP is:
+A first probe against `next dev` observed `Cache-Control: no-cache, must-revalidate` on `/admin` and this file recorded it as a defect. Re-probed against a real production build (`next build` + `next start`, staging env injected):
 
 ```
-HTTP/1.1 200 OK
-Cache-Control: no-cache, must-revalidate
-x-robots-tag: noindex, nofollow
+/admin           200   cache=no-store                                          robots=noindex, nofollow
+/admin/whatever  404   robots=noindex, nofollow
+/en/admin        404   robots=noindex, nofollow
+/nl/admin        404   robots=noindex, nofollow
+/dashboard       404   robots=noindex, nofollow
+/                200   cache=private, no-cache, no-store, max-age=0, must-revalidate
 ```
 
-`x-robots-tag` survives; the cache header does not — Next replaces it for the dynamically rendered route. `no-cache, must-revalidate` forces revalidation but still permits the response to be written to disk, which `no-store` exists to prevent on an authenticated admin surface. The unit test could not catch this because it asserts the string in `proxy.ts`, not the header on the wire — a concrete example of why the regex assertions are not evidence.
+`/admin` carries exactly the `no-store` that `proxy.ts` sets. The dev server rewrites that header; a production build does not. **No code change was needed**, and none was made — adding a redundant header rule would have been change for its own sake.
 
-Not yet fixed: changing a security header is its own change, kept separate from this proof.
+The edge behaviour is identical in the production build: unregistered `/admin` subroutes and locale-prefixed Control paths are refused, the public site is unaffected. That doubles as the no-routing-regression proof.
+
+The general lesson stands: header and routing claims must be probed against a production build, because the dev server is not representative.
 
 ## Note on the trailing-slash unit test
 
