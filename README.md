@@ -46,6 +46,25 @@ supabase db push                  # past 20260705_fix_addresses_rls.sql toe
 Zie `SECURITY_NOTES.md` voor het waarom, de testqueries na deploy en de
 rollback-procedure (`supabase/rollback_20260705_addresses_rls.sql`).
 
+**Migratiebeleid.** Een migratie die nog nergens is toegepast — niet op staging,
+niet op productie — mag rechtstreeks worden gecorrigeerd; dat houdt de
+migratiegeschiedenis leesbaar. Controleer dat vóór elke wijziging, bijvoorbeeld
+door op beide projecten te kijken of de betreffende tabellen of kolommen al
+bestaan. Zodra een migratie éénmaal ergens is toegepast, wordt ze nooit meer
+achteraf gewijzigd: elke volgende schemawijziging krijgt dan een nieuwe,
+forward-only migratie.
+
+Canonieke repo-migraties worden uitsluitend toegepast via `supabase db push` of de
+daarvoor ingerichte CI-pipeline. `apply_migration` is geen route voor normale
+repo-migraties; het stempelt een eigen versienummer en laat de migratiehistorie
+divergeren van de repository. `migration repair` blijft voorbehouden aan expliciete
+history-reconciliatie ná bewijs.
+
+Git is de duurzame bron van waarheid voor migratie-SQL. De tabel
+`supabase_migrations.schema_migrations` bewijst dát een migratie is toegepast, maar
+geldt niet als herstelbare bron van de inhoud: rijen kunnen een lege `statements`
+bevatten, waarmee de oorspronkelijke SQL niet meer uit de database te halen is.
+
 ### .env.local
 
 | Variabele | Waar te vinden | Client/server |

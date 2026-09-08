@@ -2,11 +2,35 @@ import { Link } from "@/i18n/navigation";
 import Icon from "@/components/ui/Icon";
 import Monogram from "@/components/ui/Monogram";
 import { BEDRIJF } from "@/lib/legal";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+
+/**
+ * Crawlbare regio-hub.
+ *
+ * De footer noemde de steden eerder alleen als platte tekst ("Amsterdam ·
+ * Rotterdam · Almere · Den Haag"), waardoor Google geen interne links naar de
+ * lokale pagina's kreeg. Sinds de GSC-nulmeting van 2026-09-02 staan hier echte
+ * links: eerst de twee stadshubs (vaste standplaatsen), daarna de
+ * Schiphol-routes. Zie docs/seo/gsc-nulmeting-2026-09-02.md.
+ */
+const HUB_LINKS = [
+  { href: "/taxi-almere", label: "Taxi Almere" },
+  { href: "/taxi-spijkenisse", label: "Taxi Spijkenisse" },
+] as const;
+
+const ROUTE_LINKS = [
+  { href: "/taxi-almere-schiphol", city: { nl: "Almere", en: "Almere" } },
+  { href: "/taxi-amsterdam-schiphol", city: { nl: "Amsterdam", en: "Amsterdam" } },
+  { href: "/taxi-rotterdam-schiphol", city: { nl: "Rotterdam", en: "Rotterdam" } },
+  { href: "/taxi-den-haag-schiphol", city: { nl: "Den Haag", en: "The Hague" } },
+  { href: "/taxi-utrecht-schiphol", city: { nl: "Utrecht", en: "Utrecht" } },
+  { href: "/taxi-spijkenisse-schiphol", city: { nl: "Spijkenisse", en: "Spijkenisse" } },
+] as const;
 
 export default function Footer() {
   const t = useTranslations("footer");
   const tn = useTranslations("nav");
+  const locale = useLocale() === "en" ? "en" : "nl";
   const socials = [
     { href: "https://wa.me/31634744522", label: tn("whatsapp"), icon: "whatsapp", external: true },
     { href: "https://www.instagram.com/t4xi.nl/", label: t("instagram"), icon: "instagram", external: true },
@@ -105,6 +129,26 @@ export default function Footer() {
             </ul>
           </div>
         </div>
+
+        <nav aria-label={t("regioKop")} className="mt-12 border-t border-white/10 pt-8">
+          <p className="text-eyebrow font-medium uppercase text-stone">{t("regioKop")}</p>
+          <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2.5 text-sm">
+            {HUB_LINKS.map((l) => (
+              <li key={l.href}>
+                <Link href={l.href} className="text-stone-subtle hover:text-white">
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+            {ROUTE_LINKS.map((l) => (
+              <li key={l.href}>
+                <Link href={l.href} className="text-stone-subtle hover:text-white">
+                  {t("routeLabel", { stad: l.city[locale] })}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         <div className="mt-14 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-stone sm:flex-row sm:items-center sm:justify-between">
           <p>
