@@ -1,6 +1,6 @@
 # T4XI Control — Sprint 1 Security & Privacy Foundation
 
-Status: rebased onto `a850ba5` (current main, which carries the Event Pricing line via #35). Canonical migration `20260908120000`; not currently applied to staging or production. An earlier, pre-remediation form of this migration did run on staging under the retired id `20260831075015` — see Migration identity.
+Status: rebased onto `a850ba5` (current main, which carries the Event Pricing line via #35). Canonical migration `20260908120000`: **applied to staging on 2026-09-08** and proven there (see `docs/control/evidence/`); **not applied to production**. An earlier, pre-remediation form of this migration did run on staging under the retired id `20260831075015` — see Migration identity.
 Historical reference only: `ac2063f`, preserved as `backup/control-security-foundation-ac2063f`. All current Sprint-1 evidence points at the rebased line.
 
 ## Boundary
