@@ -81,3 +81,55 @@ lint clean · typecheck 0 errors · full suite **1043/1043**.
 These three need a named staging operator: create the individual Auth users, enrol TOTP, bootstrap `control_identities` with a least-privilege grant, then exercise `/admin`. Creating accounts and handling credentials is deliberately outside what was automated here.
 
 Current decision: **NO-GO for production.** No production write is authorized.
+
+---
+
+# Addendum — 2026-09-08, later: MFA build, header correction, grant revoke
+
+## `rls_auto_enable` grant revoke — applied and proven
+
+Migration `20260908140000_revoke_rls_auto_enable_client_execute.sql`, on its own branch
+`chore/revoke-rls-auto-enable-client-execute` so the workstream stays separate from Control.
+Dry-run offered exactly that one migration; applied with a plain `db push`.
+
+| Probe | Expected | Actual |
+| --- | --- | --- |
+| `anon` direct call | denied | denied (insufficient_privilege) |
+| `authenticated` direct call | denied | denied (insufficient_privilege) |
+| `ensure_rls` event trigger still enabled | 1 | 1 |
+| new `public` table still auto-gets RLS | true | true |
+| test table removed again | 0 | 0 |
+| remaining EXECUTE grants | `postgres` only | `postgres` only |
+
+Advisors re-run afterwards: `rls_auto_enable` has **disappeared** from both SECURITY DEFINER
+lints, which drop from 4 findings to 3. The three that remain are the PostGIS
+`st_estimatedextent` overloads. No Control object appears in any finding.
+
+The safety net is intact: a newly created `public` table still receives RLS automatically,
+so revoking direct execution did not disable the event trigger.
+
+## Reclassification
+
+The advisor described `rls_auto_enable` as an exploitable public SECURITY DEFINER RPC.
+Measured before the revoke, both `anon` and `authenticated` could indeed invoke it, but the
+body iterates `pg_event_trigger_ddl_commands()`, which yields nothing outside a DDL event,
+and the function takes no arguments — so a direct call had no effect and no injection
+surface. Classified as **hygiene beside a privileged Control layer**, not as an exploit.
+
+Governance note: the function is not repo-managed and not owned by an extension. This
+migration manages only its grants. If the platform restores the grant, that is platform
+governance and the migration should be reconsidered rather than re-applied in a loop.
+
+## Staging state after this round
+
+49 migrations applied, 8 Control tables, no probe residue, no client grants on
+`rls_auto_enable`. Repository gates on the refreshed base
+(main `a850ba5` + Control `62f042c` + revoke `99cac5b`): lint clean, typecheck 0,
+**1078/1078**.
+
+## Still open before a production decision
+
+- **MFA runtime proof.** The shell can now enrol and verify a TOTP factor, but no operator
+  has walked it. `mfa_required` / `forbidden` / `granted` and their audit rows remain unproven.
+- **Leaked password protection** is still disabled (Authentication → Password security).
+- Production remains untouched and NO-GO.
