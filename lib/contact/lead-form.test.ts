@@ -54,8 +54,12 @@ async function withFakeMailProvider(
 ) {
   const previousFetch = globalThis.fetch;
   const previousKey = process.env.RESEND_API_KEY;
+  const previousAppEnv = process.env.APP_ENV;
   const requests: Array<{ input: string; headers: Headers; body: Record<string, unknown> }> = [];
   process.env.RESEND_API_KEY = "re_contact_test_only";
+  // Deze test toetst het contract zoals het in productie geldt; de ontvangers-
+  // vangrail is een non-productieregel met eigen tests.
+  process.env.APP_ENV = "production";
   globalThis.fetch = async (input, init) => {
     requests.push({
       input: String(input),
@@ -70,6 +74,8 @@ async function withFakeMailProvider(
     globalThis.fetch = previousFetch;
     if (previousKey === undefined) delete process.env.RESEND_API_KEY;
     else process.env.RESEND_API_KEY = previousKey;
+    if (previousAppEnv === undefined) delete process.env.APP_ENV;
+    else process.env.APP_ENV = previousAppEnv;
   }
 }
 

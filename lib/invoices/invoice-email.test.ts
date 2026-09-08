@@ -98,6 +98,8 @@ test("Resend ontvangt HTML, platte tekst en precies één factuur-PDF", async ()
   };
 
   process.env.RESEND_API_KEY = "re_test_only";
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "production";
   globalThis.fetch = async (_input, init) => {
     requests.push({ headers: new Headers(init?.headers), body: JSON.parse(String(init?.body)) });
     return new Response("{}", { status: 200 });
@@ -117,6 +119,8 @@ test("Resend ontvangt HTML, platte tekst en precies één factuur-PDF", async ()
     globalThis.fetch = previousFetch;
     if (previousKey === undefined) delete process.env.RESEND_API_KEY;
     else process.env.RESEND_API_KEY = previousKey;
+    if (previousAppEnv === undefined) delete process.env.APP_ENV;
+    else process.env.APP_ENV = previousAppEnv;
   }
 
   assert.equal(requests.length, 1);
