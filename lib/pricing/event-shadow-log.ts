@@ -15,7 +15,10 @@
 //
 // NOOIT BLOKKEREND
 //   Een mislukte observatie mag een offerte nooit breken. Alle fouten worden
-//   ingeslikt; de prijs is en blijft leidend.
+//   ingeslikt; de prijs is en blijft leidend. Een try/catch dekt alleen fouten,
+//   niet een insert die blíjft hangen — daarom staat er ook een harde timeout
+//   omheen. Zonder die grens zou een trage of vastgelopen databaseverbinding de
+//   offerte alsnog laten wachten.
 // ─────────────────────────────────────────────────────────────────────────────
 import { createPricingLogClient } from "@/lib/supabase/server";
 import type { TablesInsert } from "@/lib/types/database";
@@ -46,6 +49,8 @@ export type EventShadowObservationRow = TablesInsert<"pricing_event_shadow_logs"
 /** Injecteerbaar voor tests; default schrijft naar Supabase met de service-role. */
 export type EventShadowObservationDeps = {
   write?: (row: EventShadowObservationRow) => Promise<void>;
+  /** Injecteerbaar voor tests; default SHADOW_LOG_TIMEOUT_MS. */
+  timeoutMs?: number;
 };
 
 /** Pure projectie van een observatie naar de databaserij. Bevat geen adresdata. */
@@ -79,8 +84,37 @@ export function observationRow(entry: EventShadowObservation): EventShadowObserv
 }
 
 /**
+ * Timeoutbudget voor het wegschrijven van observaties.
+ *
+ * Krapper dan het laadbudget (800ms): dit is één insert zonder retry, en hij
+ * gebeurt NA de prijsberekening. Alles wat hier wordt gewacht is pure extra
+ * latency voor de klant zonder enige invloed op de prijs. Wordt het budget
+ * overschreden, dan verliezen we één observatie — dat is de goedkoopste van de
+ * twee kosten.
+ */
+export const SHADOW_LOG_TIMEOUT_MS = 400;
+
+/** Verwerpt na `ms`; breekt de onderliggende insert niet af, laat hem los. */
+export function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`shadow log exceeded ${ms}ms`)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e as Error);
+      }
+    );
+  });
+}
+
+/**
  * Legt één of meer observaties vast. Best-effort en niet-blokkerend: zonder
- * service-role client of bij een databasefout gebeurt er simpelweg niets.
+ * service-role client, bij een databasefout én bij een hangende verbinding
+ * gebeurt er simpelweg niets.
  */
 export async function recordEventShadowLog(
   entries: readonly EventShadowObservation[],
@@ -89,14 +123,23 @@ export async function recordEventShadowLog(
   if (entries.length === 0) return;
   const rows = entries.map(observationRow);
   try {
-    if (deps.write) {
-      for (const row of rows) await deps.write(row);
-      return;
-    }
-    const client = createPricingLogClient();
-    if (!client) return;
-    await client.from("pricing_event_shadow_logs").insert(rows);
+    // De timeout omvat bewust ook `createPricingLogClient()` en het opbouwen
+    // van de query: elke stap hier zit in het live quotepad en mag daar geen
+    // onbegrensde wachttijd introduceren.
+    await withDeadline(
+      (async () => {
+        if (deps.write) {
+          for (const row of rows) await deps.write(row);
+          return;
+        }
+        const client = createPricingLogClient();
+        if (!client) return;
+        await client.from("pricing_event_shadow_logs").insert(rows);
+      })(),
+      deps.timeoutMs ?? SHADOW_LOG_TIMEOUT_MS
+    );
   } catch {
-    // Observatie is nooit belangrijker dan de offerte.
+    // Observatie is nooit belangrijker dan de offerte. Geldt voor een
+    // databasefout, een ontbrekende client én een overschreden deadline.
   }
 }

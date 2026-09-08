@@ -2,15 +2,24 @@
  * Event Pricing shadow-rapport (Phase 6.3) — VOLLEDIG READ-ONLY.
  *
  * Draaien:
- *   node --import tsx scripts/event-shadow-report.ts             # staging
+ *   node --import tsx scripts/event-shadow-report.ts             # staging (standaard)
  *   node --import tsx scripts/event-shadow-report.ts --matches   # + reviewlijst
  *   node --import tsx scripts/event-shadow-report.ts --calibrate # + capvergelijking
  *   node --import tsx scripts/event-shadow-report.ts --all       # cohorten samen
  *   node --import tsx scripts/event-shadow-report.ts --since=none # zonder startgrens
+ *   node --import tsx scripts/event-shadow-report.ts --target=production  # productie
  *
- * Leest `.env.staging.local`, valideert de omgeving en weigert te draaien tegen
- * een ander project dan staging. Schrijft niets: geen insert, geen update, geen
- * configwijziging. Het rapport bevat uitsluitend niet-herleidbare gegevens.
+ * Doel: staging tenzij `--target=production` letterlijk is meegegeven. Elk doel
+ * heeft een eigen env-bestand en wordt hard tegen zijn project-ref gevalideerd;
+ * er is geen fallback en geen env-variabele die het doel kan verschuiven. Zie
+ * `lib/pricing/event-report-target.ts` voor het veiligheidsmodel.
+ *
+ * Zolang `PRODUCTION_SHADOW_START_ISO` niet is vastgelegd, is productie wél
+ * leesbaar maar telt niets als formeel 6.4-bewijs — het rapport zegt dat dan
+ * expliciet en toont geen poortoordeel.
+ *
+ * Schrijft niets: geen insert, geen update, geen configwijziging. Het rapport
+ * bevat uitsluitend niet-herleidbare gegevens.
  *
  * De handmatige beoordeling (poort 8) en het aantal runtime-fouten (poort 1)
  * zijn niet uit de shadow-tabel af te leiden. Die blijven `null` en leiden tot
@@ -30,8 +39,13 @@ import {
   type ShadowObservation,
 } from "@/lib/pricing/event-shadow-report";
 import { evaluateGates, formatShadowReport } from "@/lib/pricing/event-shadow-gates";
-
-const STAGING_REF = "ztlhydagjqfzkyfiqgio";
+import {
+  assertProjectRef,
+  countsAsFormalEvidence,
+  envFileFor,
+  evidenceWindowFor,
+  resolveReportTarget,
+} from "@/lib/pricing/event-report-target";
 
 /** Kolomnamen die nooit in de observatietabel mogen voorkomen. */
 const PROHIBITED_COLUMNS = [
@@ -40,9 +54,18 @@ const PROHIBITED_COLUMNS = [
   "name", "naam", "email", "phone", "telefoon",
 ];
 
-function loadStagingEnv(): void {
-  const file = resolve(process.cwd(), ".env.staging.local");
-  for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
+function loadEnvFor(target: Parameters<typeof envFileFor>[0]): void {
+  const naam = envFileFor(target);
+  const file = resolve(process.cwd(), naam);
+  let inhoud: string;
+  try {
+    inhoud = readFileSync(file, "utf8");
+  } catch {
+    // Bewust geen fallback naar een ander env-bestand: liever stoppen dan het
+    // verkeerde project lezen.
+    throw new Error(`VEILIGHEIDSSTOP: '${naam}' ontbreekt — vereist voor doel '${target}'.`);
+  }
+  for (const line of inhoud.split(/\r?\n/)) {
     if (line.trim() === "" || line.trim().startsWith("#")) continue;
     const m = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*?)\s*$/);
     if (!m) continue;
@@ -53,11 +76,13 @@ function loadStagingEnv(): void {
 }
 
 async function main(): Promise<void> {
-  loadStagingEnv();
+  const target = resolveReportTarget(process.argv);
+  loadEnvFor(target);
   const { assertSafeEnvironment } = await import("@/lib/config/environment");
   assertSafeEnvironment(process.env);
   const ref = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/^https:\/\/([a-z0-9]+)\..*$/, "$1");
-  if (ref !== STAGING_REF) throw new Error(`VEILIGHEIDSSTOP: verwacht staging, kreeg project-ref '${ref}'`);
+  assertProjectRef(target, ref);
+  console.log(`DOEL: ${target} (project-ref ${ref})\n`);
 
   const { createPricingLogClient } = await import("@/lib/supabase/server");
   const db = createPricingLogClient();
@@ -145,8 +170,14 @@ async function main(): Promise<void> {
   // diagnostische run de teller vervuilen.
   // De formele startgrens is de DEFAULT, niet een vlag die je moet onthouden.
   // `--since=` overschrijft hem; `--since=none` zet hem uit voor ad-hocanalyse.
+  // Het bewijsvenster hangt af van het DOEL, niet van een gedeelde constante:
+  // staging gebruikt MEASUREMENT_START_ISO, productie uitsluitend zijn eigen
+  // PRODUCTION_SHADOW_START_ISO. Zolang die laatste niet is vastgelegd, is
+  // productie diagnostisch leesbaar maar levert het geen formeel bewijs.
+  const window = evidenceWindowFor(target, MEASUREMENT_START_ISO);
+  const formeel = countsAsFormalEvidence(window);
   const sinceArg = process.argv.find((a) => a.startsWith("--since="))?.slice("--since=".length);
-  const sinceValue = sinceArg === "none" ? null : (sinceArg ?? MEASUREMENT_START_ISO);
+  const sinceValue = sinceArg === "none" ? null : (sinceArg ?? window.since);
   const selection = selectDecisionPopulation(observations, {
     since: sinceValue,
     includeAll: process.argv.includes("--all"),
@@ -168,6 +199,25 @@ async function main(): Promise<void> {
   );
 
   const metrics = aggregateShadowObservations(population);
+  if (!formeel) {
+    // Geen poortoordeel zonder geldige bewijsstart. Cijfers tonen mag — ze als
+    // 6.4-bewijs presenteren niet, want er is geen bewezen moment vanaf wanneer
+    // ze zouden tellen.
+    console.log(
+      "╔═══ DIAGNOSTISCH — GEEN FORMEEL BEWIJS ═══\n" +
+      `║ ${window.reason}.\n` +
+      "║ De cijfers hieronder zijn ter oriëntatie. Poort 10 en de 6.4-tellers\n" +
+      "║ blijven ongeldig tot het activatiemoment is vastgelegd.\n" +
+      "╚══════════════════════════════════════════\n"
+    );
+    console.log(
+      `Waargenomen ritdelen : ${metrics.evaluatedLegs}\n` +
+      `Waargenomen matches  : ${metrics.matchedLegs}\n` +
+      `Synthetisch uitgesloten: ${excludedAsSynthetic}\n\n` +
+      "EINDOORDEEL: NIET VAN TOEPASSING — diagnostische run."
+    );
+    return;
+  }
   const gates = evaluateGates(metrics, externalFinal);
   console.log(formatShadowReport(metrics, gates, externalFinal));
 

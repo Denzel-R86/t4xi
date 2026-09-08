@@ -26,6 +26,8 @@ import { loadCachedEventPricingData, type EventPricingData } from "@/lib/pricing
 import type { EventPricingMode } from "@/lib/pricing/event-pricing";
 import {
   recordEventShadowLog,
+  withDeadline,
+  SHADOW_LOG_TIMEOUT_MS,
   type EventShadowObservation,
 } from "@/lib/pricing/event-shadow-log";
 
@@ -208,7 +210,16 @@ async function observeEventFees(
   };
   push("outbound", fees.outbound);
   push("return", fees.returnLeg);
-  await record(entries);
+  // De standaardimplementatie vangt zijn eigen fouten af én heeft een eigen
+  // deadline, maar dat zijn eigenschappen van díé implementatie — niet van deze
+  // aanroep. Deze seam zit in het live quotepad, dus hij begrenst zelf: een
+  // geïnjecteerde of later gewijzigde recorder kan een offerte niet breken en
+  // niet laten hangen. Een observatie is nooit belangrijker dan de offerte.
+  try {
+    await withDeadline(record(entries), SHADOW_LOG_TIMEOUT_MS);
+  } catch {
+    // bewust stil: observabiliteitsverlies, geen prijsimpact
+  }
 }
 
 /**

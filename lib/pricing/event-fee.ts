@@ -214,6 +214,12 @@ export function resolveEventFee(input: EventFeeInput): EventFeeResult {
   const at = leg.departureAt.getTime();
   if (Number.isNaN(at)) return NO_FEE;
 
+  // Fail-closed op vorm. De loader levert normaal altijd arrays, maar deze
+  // functie zit in het live quotepad: een onverwachte vorm — een schemawijziging,
+  // een halve rij, een null waar een array werd verwacht — mag hooguit "geen
+  // toeslag" betekenen, nooit een exception die de offerte breekt.
+  if (!Array.isArray(events) || !Array.isArray(windows) || !Array.isArray(zones)) return NO_FEE;
+
   const priceableEventById = new Map<string, PricingEvent>();
   for (const event of events) {
     if (event.pricingEnabled && PRICEABLE_STATUSES.has(event.status)) {
