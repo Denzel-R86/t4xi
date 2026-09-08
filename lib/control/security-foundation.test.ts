@@ -10,6 +10,7 @@ const auth = readFileSync("lib/control/auth.ts", "utf8");
 const audit = readFileSync("lib/control/audit.ts", "utf8");
 const legacy = readFileSync("lib/admin/session.ts", "utf8");
 const proxy = readFileSync("proxy.ts", "utf8");
+const login = readFileSync("components/control/ControlLogin.tsx", "utf8");
 
 test("Control is append-only and leaves existing operational domains untouched", () => {
   assert.doesNotMatch(migration, /create\s+or\s+replace\s+function\s+public\.create_booking/i);
@@ -127,4 +128,37 @@ test("retention decisions are explicit, including the keep decision", () => {
   assert.match(migration, /'retain_while_active', 'manual_review'/);
   assert.doesNotMatch(migration, /'control_authorization'/);
   assert.match(migration, /\('control_identities', 'disabled', 365, 'anonymize'/);
+});
+
+// ── MFA flow — anti-regression assertions, not runtime proof ──────────────
+// The AAL2 gate is only reachable if the shell can enrol and verify a factor.
+// Runtime proof comes from the staging operator flow, not from these.
+test("the Control shell can enrol, challenge and verify a TOTP factor", () => {
+  assert.match(login, /auth\.mfa\.enroll\(/);
+  assert.match(login, /auth\.mfa\.challenge\(/);
+  assert.match(login, /auth\.mfa\.verify\(/);
+  assert.match(login, /factorType: "totp"/);
+  assert.match(login, /auth\.mfa\.listFactors\(/);
+});
+
+test("MFA edge states are handled: existing factor, stale enrolment, expiry, failure", () => {
+  // an already verified factor goes to a challenge instead of a second enrolment
+  assert.match(login, /factor\.status === "verified"/);
+  // an abandoned enrolment is cleared so it cannot block a new one
+  assert.match(login, /auth\.mfa\.unenroll\(/);
+  // an expired challenge is recognised and can be re-requested
+  assert.match(login, /\/expire\/i\.test\(error\.message\)/);
+  assert.match(login, /Nieuwe verificatie aanvragen/);
+  // a failed verification clears the code and keeps the user on the step
+  assert.match(login, /Verificatie mislukt/);
+});
+
+test("the client never decides access itself", () => {
+  // no client-side AAL bypass: the shell reloads and lets the server re-check
+  assert.match(login, /window\.location\.reload\(\)/);
+  // the shell reads no environment at all, so no flag can loosen it client-side
+  assert.doesNotMatch(login, /process\.env/);
+  // a signed-in user without a Control permission gets a dead end, not a retry loop
+  assert.match(login, /reason === "forbidden"/);
+  assert.match(login, /auth\.signOut\(\)/);
 });
