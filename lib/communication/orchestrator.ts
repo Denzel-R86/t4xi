@@ -26,6 +26,7 @@ import {
   type SettleInput,
 } from "@/lib/communication/delivery-log";
 import { operationalAlert } from "@/lib/communication/alerting";
+import { checkRecipients } from "@/lib/communication/policies/recipients";
 
 export type OutcomeStatus = "sent" | "duplicate" | "skipped" | "failed" | "blocked";
 
@@ -80,6 +81,26 @@ async function dispatchOne(
 
   const locale = resolveLocale(audience, event.locale);
   const key = dedupKey({ eventType: event.type, subjectId: event.subjectId, audience, channel });
+
+  // Vangrail vóór alles: buiten productie mag alleen naar een expliciete
+  // allowlist worden verstuurd. Deze check staat bewust vóór de claim, zodat een
+  // geweigerd bericht geen dedup-sleutel verbruikt en een latere legitieme
+  // verzending met dezelfde sleutel gewoon door kan.
+  const recipients = checkRecipients(rendered.to);
+  if (!recipients.allowed) {
+    operationalAlert(
+      "recipient_blocked",
+      `${key}: verzending geweigerd (${recipients.reason}) — ${recipients.blocked.length} ontvanger(s) buiten de allowlist.`
+    );
+    return {
+      audience,
+      channel,
+      templateId: rendered.templateId,
+      status: "blocked",
+      reason: `recipient_${recipients.reason}`,
+    };
+  }
+
   const claim = await log.claim({
     dedupKey: key,
     eventType: event.type,

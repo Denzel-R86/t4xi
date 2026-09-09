@@ -99,9 +99,14 @@ async function withProvider(
   const previousFetch = globalThis.fetch;
   const previousKey = process.env.RESEND_API_KEY;
   const previousOps = process.env.OPS_EMAIL;
+  const previousAppEnv = process.env.APP_ENV;
   const calls: Captured[] = [];
   process.env.RESEND_API_KEY = "re_test_only";
   process.env.OPS_EMAIL = "booking@t4xi.nl";
+  // Deze tests toetsen het dispatchgedrag zoals het in productie geldt. De
+  // ontvangers-vangrail is een non-productieregel met eigen tests; hier zou hij
+  // alles blokkeren en het onderwerp van de test verbergen.
+  process.env.APP_ENV = "production";
   globalThis.fetch = async (_input, init) => {
     calls.push({ headers: new Headers(init?.headers), body: JSON.parse(String(init?.body)) });
     return respond(calls.length);
@@ -114,6 +119,8 @@ async function withProvider(
     else process.env.RESEND_API_KEY = previousKey;
     if (previousOps === undefined) delete process.env.OPS_EMAIL;
     else process.env.OPS_EMAIL = previousOps;
+    if (previousAppEnv === undefined) delete process.env.APP_ENV;
+    else process.env.APP_ENV = previousAppEnv;
   }
 }
 
@@ -348,4 +355,80 @@ test("zolang de migratie niet is toegepast blijft communicatie doorlopen", async
     assert.ok(result.outcomes.every((outcome) => outcome.logged === false));
   });
   assert.equal(rows.length, 0, "zonder store valt er niets te loggen");
+});
+
+test("buiten productie blokkeert een niet-toegestane ontvanger vóór het versturen", async () => {
+  const { log, rows } = fakeLog();
+  const previousFetch = globalThis.fetch;
+  const previousKey = process.env.RESEND_API_KEY;
+  const previousAppEnv = process.env.APP_ENV;
+  const previousAllow = process.env.COMMUNICATION_RECIPIENT_ALLOWLIST;
+  let calls = 0;
+  process.env.RESEND_API_KEY = "re_test_only";
+  process.env.APP_ENV = "staging";
+  delete process.env.COMMUNICATION_RECIPIENT_ALLOWLIST;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return ok();
+  };
+
+  try {
+    const result = await dispatch(bookingEvent, { log, now: ruimVooraf });
+
+    // De provider mag niet eens aangeroepen zijn.
+    assert.equal(calls, 0, "er is verstuurd terwijl de ontvanger niet was toegestaan");
+    assert.equal(result.delivered, false);
+
+    // Nadrukkelijk `blocked` en niet `skipped`: `skipped` is de stand voor een
+    // bewust inactief kanaal en zou dit als "in orde" laten lezen.
+    assert.ok(result.outcomes.every((outcome) => outcome.status === "blocked"));
+    assert.ok(result.outcomes.every((outcome) => outcome.reason === "recipient_allowlist_empty"));
+
+    // De dedup-sleutel mag niet verbruikt zijn: een latere legitieme verzending
+    // met dezelfde sleutel moet gewoon door kunnen.
+    assert.equal(rows.length, 0);
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousKey === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = previousKey;
+    if (previousAppEnv === undefined) delete process.env.APP_ENV;
+    else process.env.APP_ENV = previousAppEnv;
+    if (previousAllow === undefined) delete process.env.COMMUNICATION_RECIPIENT_ALLOWLIST;
+    else process.env.COMMUNICATION_RECIPIENT_ALLOWLIST = previousAllow;
+  }
+});
+
+test("buiten productie mag een toegestane ontvanger gewoon door", async () => {
+  const { log } = fakeLog();
+  const previousFetch = globalThis.fetch;
+  const previousKey = process.env.RESEND_API_KEY;
+  const previousAppEnv = process.env.APP_ENV;
+  const previousOps = process.env.OPS_EMAIL;
+  const previousAllow = process.env.COMMUNICATION_RECIPIENT_ALLOWLIST;
+  let calls = 0;
+  process.env.RESEND_API_KEY = "re_test_only";
+  process.env.APP_ENV = "staging";
+  process.env.OPS_EMAIL = "delivered@resend.dev";
+  process.env.COMMUNICATION_RECIPIENT_ALLOWLIST = "SAM@example.com";
+  globalThis.fetch = async () => {
+    calls += 1;
+    return ok();
+  };
+
+  try {
+    // Klant staat (hoofdletterongevoelig) op de lijst, ops gaat naar de simulator.
+    const result = await dispatch(bookingEvent, { log, now: ruimVooraf });
+    assert.equal(calls, 2);
+    assert.equal(result.delivered, true);
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousKey === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = previousKey;
+    if (previousAppEnv === undefined) delete process.env.APP_ENV;
+    else process.env.APP_ENV = previousAppEnv;
+    if (previousOps === undefined) delete process.env.OPS_EMAIL;
+    else process.env.OPS_EMAIL = previousOps;
+    if (previousAllow === undefined) delete process.env.COMMUNICATION_RECIPIENT_ALLOWLIST;
+    else process.env.COMMUNICATION_RECIPIENT_ALLOWLIST = previousAllow;
+  }
 });

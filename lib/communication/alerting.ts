@@ -17,6 +17,7 @@ export type AlertCode =
   | "idempotency_store_missing"
   | "schema_regression"
   | "delivery_blocked"
+  | "recipient_blocked"
   | "delivery_unlogged"
   | "settle_failed";
 

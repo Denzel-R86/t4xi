@@ -247,3 +247,28 @@ npm run test:communication && npm run test:notifications && npm run test:invoice
 ```
 
 Dekt: toegestane én verboden statusovergangen, dubbele events, idempotency, de volgorde-eis bij aanvragen, inactieve kanalen, ontbrekende templates, en de handtekening- en replay-controle op de webhook.
+
+## Ontvangers-vangrail buiten productie
+
+Tot 2026-09-07 stond `RESEND_FROM` lokaal op de Resend-sandboxafzender. Die werkte als onbedoelde beveiliging: Resend levert daarmee uitsluitend aan het adres van de accounteigenaar, dus een test kon geen echte klant bereiken. Toen die afzender werd gelijkgetrokken met productie — nodig om lokaal hetzelfde deliverability-profiel te hebben — verdween die bescherming. Eén verkeerd testadres verstuurt sindsdien een geloofwaardige T4XI-mail naar een echte ontvanger.
+
+`lib/communication/policies/recipients.ts` vervangt dat toeval door een expliciete regel.
+
+| Omgeving | Gedrag |
+| --- | --- |
+| productie (`getAppEnv() === "production"`) | **nooit blokkeren**; gedrag volledig ongewijzigd |
+| alle overige, inclusief onbekend | **default-deny**: alleen adressen op `COMMUNICATION_RECIPIENT_ALLOWLIST` mogen door |
+
+De omgeving komt uit `getAppEnv()`, nooit rechtstreeks uit `NODE_ENV`. Een onbekende of ontbrekende `APP_ENV` valt terug op non-productie en dus op weigeren — de veilige kant.
+
+**Wat de vangrail hard maakt:**
+
+- Ontbreekt de allowlist of is hij leeg, dan gaat er niets uit. Geen stille uitzondering.
+- Adressen worden genormaliseerd: weergavenaam eraf, hoofdletters en witruimte irrelevant. `T4XI <SAM@Example.com >` matcht dus op `sam@example.com`.
+- **Alle** ontvangers worden beoordeeld vóór verzending; één niet-toegestaan adres blokkeert het hele bericht. Deels versturen zou betekenen dat een onbedoelde ontvanger hem alsnog krijgt.
+- De Resend-simulatoradressen (`delivered@`, `bounced@`, `complained@resend.dev`) mogen altijd — die bereiken per definitie geen mens en zijn nodig voor de delivery- en bouncetests.
+- De check staat vóór de dedup-claim én vóór `channel.send()`. Een geweigerd bericht verbruikt dus geen dedup-sleutel; een latere legitieme verzending met dezelfde sleutel kan gewoon door.
+
+**Een blokkade is nadrukkelijk geen `skipped`.** Die stand is gereserveerd voor een bewust inactief kanaal en leest als "in orde". Een geweigerde ontvanger is een incident: de uitkomst is `blocked` met reden `recipient_allowlist_empty` of `recipient_not_allowlisted`, en er volgt een `[ALERT][communication] recipient_blocked`-regel. Omdat er niets is afgeleverd, komt er ook geen regel in `communication_deliveries` — dat is een delivery-log, geen weigeringslog.
+
+Tests staan in `lib/communication/policies/recipients.test.ts` en dekken development, staging, productie, lege configuratie, een gemengde ontvangersset, hoofdletterongevoeligheid en de garantie dat `NODE_ENV` de vangrail niet kan openzetten.
