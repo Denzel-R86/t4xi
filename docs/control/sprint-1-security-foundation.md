@@ -89,6 +89,8 @@ The exit gate takes its authorization proof from staging probes — RLS denial, 
 - **Audit metadata filters keys, not values.** A forbidden key (`email`, `token`, …) is rejected; a value under a permitted key is only length-bounded. Mitigation is procedural for now: producers pass enumerated scalars, not free text.
 - **`identity.read` and `identity.manage` have no RLS path.** Both permissions exist and are granted to `control_admin`, but `control_identities` carries only a self-read policy, so no one can read or manage another identity yet. The permission catalog therefore describes more than the current RLS model delivers. Identity management arrives with its own audited server command, and this line must be removed when it does.
 
+- **Leaked-password screening is not enabled.** Supabase checks passwords against HaveIBeenPwned only on Pro and above; the organisation is on the free plan, so this is a paid-plan decision rather than a setting. Accepted as an explicit, documented exception on 2026-09-10, with **mandatory AAL2/TOTP as the compensating control**: a leaked password alone does not grant Control access, because a second factor is always required. **Re-assess as soon as T4XI moves to a plan that supports it** — this exception expires with the plan, not with the sprint. The same limitation applies to production, which sits in the same organisation.
+
 No claim beyond the implementation is made anywhere in this document.
 
 ## Existing Supabase advisory classification
