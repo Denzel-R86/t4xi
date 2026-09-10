@@ -1,0 +1,517 @@
+{
+  "lints": [
+    {
+      "name": "rls_enabled_no_policy",
+      "title": "RLS Enabled No Policy",
+      "level": "INFO",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+      "count": 30,
+      "findings": [
+        {
+          "detail": "Table \\`public.booking_invoice_details\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "booking_invoice_details",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.booking_status_transitions\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "booking_status_transitions",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.brain_experiments\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "brain_experiments",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.brain_factor_config\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "brain_factor_config",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.brain_market_observations\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "brain_market_observations",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.brain_recommendations\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "brain_recommendations",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.brain_route_metrics\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "brain_route_metrics",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.brain_signal_demand\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "brain_signal_demand",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.brain_signal_external\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "brain_signal_external",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.brain_signal_supply\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "brain_signal_supply",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.brain_simulations\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "brain_simulations",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.communication_deliveries\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "communication_deliveries",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.executing_carriers\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "executing_carriers",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.flight_monitoring\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "flight_monitoring",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.price_snapshot_adjustments\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "price_snapshot_adjustments",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.price_snapshots\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "price_snapshots",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_approach_fee_config\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_approach_fee_config",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_deadhead_config\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_deadhead_config",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_deadhead_eligible_zones\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_deadhead_eligible_zones",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_event_config\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_event_config",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_event_fee_rules\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_event_fee_rules",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_event_shadow_logs\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_event_shadow_logs",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_event_sync_log\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_event_sync_log",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_event_windows\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_event_windows",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_event_zones\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_event_zones",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_events\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_events",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_high_demand_zones\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_high_demand_zones",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_operational_bases\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_operational_bases",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_quote_logs\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_quote_logs",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Table \\`public.pricing_service_areas\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "pricing_service_areas",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        }
+      ]
+    },
+    {
+      "name": "function_search_path_mutable",
+      "title": "Function Search Path Mutable",
+      "level": "WARN",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects functions where the search_path parameter is not set.",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable",
+      "count": 4,
+      "findings": [
+        {
+          "detail": "Function \\`public.find_nearest_addresses\\` has a role mutable search_path",
+          "metadata": {
+            "name": "find_nearest_addresses",
+            "type": "function",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Function \\`public.update_address_location\\` has a role mutable search_path",
+          "metadata": {
+            "name": "update_address_location",
+            "type": "function",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Function \\`public.update_address_search_vector\\` has a role mutable search_path",
+          "metadata": {
+            "name": "update_address_search_vector",
+            "type": "function",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Function \\`public.update_updated_at\\` has a role mutable search_path",
+          "metadata": {
+            "name": "update_updated_at",
+            "type": "function",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        }
+      ]
+    },
+    {
+      "name": "rls_disabled_in_public",
+      "title": "RLS Disabled in Public",
+      "level": "ERROR",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects cases where row level security (RLS) has not been enabled on tables in schemas exposed to PostgREST",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public",
+      "count": 1,
+      "findings": [
+        {
+          "detail": "Table \\`public.spatial_ref_sys\\` is public, but RLS has not been enabled.",
+          "metadata": {
+            "name": "spatial_ref_sys",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        }
+      ]
+    },
+    {
+      "name": "extension_in_public",
+      "title": "Extension in Public",
+      "level": "WARN",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects extensions installed in the \\`public\\` schema.",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public",
+      "count": 3,
+      "findings": [
+        {
+          "detail": "Extension \\`postgis\\` is installed in the public schema. Move it to another schema.",
+          "metadata": {
+            "name": "postgis",
+            "type": "extension",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Extension \\`pg_trgm\\` is installed in the public schema. Move it to another schema.",
+          "metadata": {
+            "name": "pg_trgm",
+            "type": "extension",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Extension \\`unaccent\\` is installed in the public schema. Move it to another schema.",
+          "metadata": {
+            "name": "unaccent",
+            "type": "extension",
+            "schema": "public"
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        }
+      ]
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "title": "Public Can Execute SECURITY DEFINER Function",
+      "level": "WARN",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects `SECURITY DEFINER` functions that are callable without signing in. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if it is not meant to be public.",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable",
+      "count": 3,
+      "findings": [
+        {
+          "detail": "Function `public.st_estimatedextent(text, text)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/st_estimatedextent`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "st_estimatedextent",
+            "schema": "public",
+            "language": "c",
+            "arguments": "text, text",
+            "security_definer": true
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Function `public.st_estimatedextent(text, text, text)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/st_estimatedextent`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "st_estimatedextent",
+            "schema": "public",
+            "language": "c",
+            "arguments": "text, text, text",
+            "security_definer": true
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Function `public.st_estimatedextent(text, text, text, boolean)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/st_estimatedextent`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "st_estimatedextent",
+            "schema": "public",
+            "language": "c",
+            "arguments": "text, text, text, boolean",
+            "security_definer": true
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        }
+      ]
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "title": "Signed-In Users Can Execute SECURITY DEFINER Function",
+      "level": "WARN",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+      "count": 3,
+      "findings": [
+        {
+          "detail": "Function `public.st_estimatedextent(text, text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/st_estimatedextent`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "st_estimatedextent",
+            "schema": "public",
+            "language": "c",
+            "arguments": "text, text",
+            "security_definer": true
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Function `public.st_estimatedextent(text, text, text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/st_estimatedextent`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "st_estimatedextent",
+            "schema": "public",
+            "language": "c",
+            "arguments": "text, text, text",
+            "security_definer": true
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        },
+        {
+          "detail": "Function `public.st_estimatedextent(text, text, text, boolean)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/st_estimatedextent`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "st_estimatedextent",
+            "schema": "public",
+            "language": "c",
+            "arguments": "text, text, text, boolean",
+            "security_definer": true
+          },
+          "observed_at": "2026-09-10T06:04:40.102Z"
+        }
+      ]
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "title": "Leaked Password Protection Disabled",
+      "level": "WARN",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Leaked password protection is currently disabled.",
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+      "count": 1,
+      "findings": [
+        {
+          "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+          "metadata": {
+            "type": "auth",
+            "entity": "Auth"
+          }
+        }
+      ]
+    }
+  ]
+}
