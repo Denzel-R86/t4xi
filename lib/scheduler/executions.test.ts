@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { test } from "node:test";
 import {
   EXECUTION_STATUSES,
@@ -14,6 +14,10 @@ import {
 
 const MIGRATION = readFileSync(
   "supabase/migrations/20260910120000_scheduler_executions.sql",
+  "utf8"
+);
+const REPAIR = readFileSync(
+  "supabase/migrations/20260910140000_scheduler_executions_rpc_only_mutation.sql",
   "utf8"
 );
 
@@ -203,4 +207,44 @@ test("het endpoint weigert te pollen zonder geldige trace_id", () => {
   assert.ok(poll > start, "er wordt pas gepolld nadat de execution is gestart");
   assert.match(route, /missing_trace_id/);
   assert.ok(JOB_FLIGHT_MONITOR.length > 0);
+});
+
+// ── regressiebescherming op de rechtenreparatie ─────────────────────────────
+// De eerste migratie deed alleen `grant select` en liet daarmee de default
+// privileges van Supabase staan: service_role hield INSERT/UPDATE/DELETE/
+// TRUNCATE en kon de statusmachine omzeilen. Aanvullend op de live
+// privilegeproef op staging, GEEN vervanging daarvan.
+
+test("de reparatiemigratie trekt elke muteervorm in bij service_role", () => {
+  assert.match(
+    REPAIR,
+    /revoke insert, update, delete, truncate, references, trigger\s*\n?\s*on public\.scheduler_executions from service_role;/
+  );
+  assert.match(REPAIR, /grant select on public\.scheduler_executions to service_role;/);
+  assert.match(REPAIR, /revoke all on public\.scheduler_executions from public, anon, authenticated;/);
+});
+
+test("geen enkele migratie geeft service_role schrijfrechten op scheduler_executions", () => {
+  // Vangt zowel een terugval in deze migraties als een latere die het per
+  // ongeluk opnieuw openzet.
+  const dir = "supabase/migrations";
+  const verdacht: string[] = [];
+  for (const file of readdirSync(dir).filter((f) => f.endsWith(".sql"))) {
+    const sql = readFileSync(`${dir}/${file}`, "utf8");
+    for (const regel of sql.split("\n")) {
+      const schoon = regel.trim().toLowerCase();
+      if (schoon.startsWith("--")) continue;
+      if (!schoon.startsWith("grant")) continue;
+      if (!schoon.includes("scheduler_executions")) continue;
+      if (/\b(insert|update|delete|truncate|all)\b/.test(schoon)) verdacht.push(`${file}: ${schoon}`);
+    }
+  }
+  assert.deepEqual(verdacht, [], "schrijfrechten op scheduler_executions horen nergens gegund te worden");
+});
+
+test("de oorspronkelijke migratie is niet in-place gerepareerd", () => {
+  // 20260910120000 is al remote toegepast en hoort onveranderlijk te zijn; de
+  // reparatie staat daarom in een eigen, additieve migratie.
+  assert.doesNotMatch(MIGRATION, /revoke insert, update, delete, truncate/);
+  assert.match(REPAIR, /reparatie op 20260910120000/i);
 });
