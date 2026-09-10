@@ -113,7 +113,8 @@ export default function ControlLogin({ reason }: { reason?: string }) {
         return;
       }
       setPassword("");
-      await routeByAssurance();
+      // Let the server authorize and audit the password session before MFA enrolment.
+      window.location.reload();
     } catch {
       setMessage("Control-authenticatie is nog niet geconfigureerd.");
     } finally {

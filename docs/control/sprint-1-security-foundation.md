@@ -1,6 +1,6 @@
 # T4XI Control — Sprint 1 Security & Privacy Foundation
 
-Status: rebased onto `024bdcf`. Canonical migration `20260908120000`; not currently applied to staging or production. An earlier, pre-remediation form of this migration did run on staging under the retired id `20260831075015` — see Migration identity.
+Status: rebased onto `a850ba5` (current main, which carries the Event Pricing line via #35). Canonical migration `20260908120000`: **applied to staging on 2026-09-08** and proven there (see `docs/control/evidence/`); **not applied to production**. An earlier, pre-remediation form of this migration did run on staging under the retired id `20260831075015` — see Migration identity.
 Historical reference only: `ac2063f`, preserved as `backup/control-security-foundation-ac2063f`. All current Sprint-1 evidence points at the rebased line.
 
 ## Boundary
@@ -89,6 +89,8 @@ The exit gate takes its authorization proof from staging probes — RLS denial, 
 - **Audit metadata filters keys, not values.** A forbidden key (`email`, `token`, …) is rejected; a value under a permitted key is only length-bounded. Mitigation is procedural for now: producers pass enumerated scalars, not free text.
 - **`identity.read` and `identity.manage` have no RLS path.** Both permissions exist and are granted to `control_admin`, but `control_identities` carries only a self-read policy, so no one can read or manage another identity yet. The permission catalog therefore describes more than the current RLS model delivers. Identity management arrives with its own audited server command, and this line must be removed when it does.
 
+- **Leaked-password screening is not enabled.** Supabase checks passwords against HaveIBeenPwned only on Pro and above; the organisation is on the free plan, so this is a paid-plan decision rather than a setting. Accepted as an explicit, documented exception on 2026-09-10, with **mandatory AAL2/TOTP as the compensating control**: a leaked password alone does not grant Control access, because a second factor is always required. **Re-assess as soon as T4XI moves to a plan that supports it** — this exception expires with the plan, not with the sprint. The same limitation applies to production, which sits in the same organisation.
+
 No claim beyond the implementation is made anywhere in this document.
 
 ## Existing Supabase advisory classification
@@ -117,12 +119,12 @@ Current decision: **NO-GO for production**. No production write is authorized.
 
 ## Local evidence — 2026-09-07
 
-- rebased base: `024bdcf` (main, including communication `3309f14` and the SEO city hubs);
+- rebased base: `a850ba5` (current main: communication `3309f14`, the SEO city hubs and the Event Pricing line merged via #35);
 - Sprint-1 branch: `feat/control-security-foundation`; historical pre-rebase commit `ac2063f` kept as a remote backup ref;
 - canonical migration: `20260908120000_control_security_foundation.sql`, SHA-256 `f0b6e57f4c5efae26015a471413a774929dbe99173bcabc04ff31d7cae677825` — unchanged by the renumbering, because only the filename changed;
 - retired id `20260831075015`: applied to staging 2026-08-31, controlled removal 2026-09-08, never applied to production, never to be reused;
-- lint: passed;
+- lint: passed; Control tests 17/17;
 - typecheck: **0 errors**. The earlier "pre-existing missing image imports" reading was a misdiagnosis: the images are tracked and present; a fresh worktree simply lacks the gitignored, build-generated `next-env.d.ts`, without which TypeScript has no module declarations for `.jpg`/`.png`. Generate or copy that file before running the gate in a new worktree;
-- full suite: **868/868 passed**, of which 14 Control checks (6 anti-regression, 8 added for the B/A/D remediation, 4 of those behavioural);
+- full suite: **1078/1078 passed**, of which 17 Control checks (6 anti-regression, 8 added for the B/A/D remediation with 4 behavioural, 3 for the MFA flow);
 - staging migration, RLS probes, Auth/MFA exercise and database advisors: not run; this worktree has no linked staging project or authenticated advisor connection;
 - production writes: none.
