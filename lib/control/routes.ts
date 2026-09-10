@@ -20,6 +20,9 @@ export type ControlRoute = {
 
 export const CONTROL_ROUTES: readonly ControlRoute[] = [
   { path: "/admin", allowsAnonymous: true },
+  // Identity management. Detail is a query parameter on the same route, so the
+  // registry stays an exact-match list and no path pattern matching is needed.
+  { path: "/admin/identities", allowsAnonymous: false },
 ] as const;
 
 /** A Supabase SSR session cookie, possibly chunked as `.0`, `.1`, … */

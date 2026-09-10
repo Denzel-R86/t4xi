@@ -64,8 +64,12 @@ test("the /admin shell bypasses locale rewriting but remains no-store/noindex", 
 
 // ── B · edge default-deny — behavioural, not textual ──────────────────────
 test("an unregistered /admin subroute is denied at the edge", () => {
+  // Deliberately paths that are NOT in CONTROL_ROUTES. /admin/identities was
+  // used here until Sprint 2A registered it; a registered route belongs in the
+  // allow assertions instead, never here.
   assert.equal(controlEdgeDecision("/admin/dispatch", []), "not_found");
-  assert.equal(controlEdgeDecision("/admin/identities", ["sb-abc123-auth-token"]), "not_found");
+  assert.equal(controlEdgeDecision("/admin/reservations", ["sb-abc123-auth-token"]), "not_found");
+  assert.equal(controlEdgeDecision("/admin/finance", ["sb-abc123-auth-token"]), "not_found");
   assert.equal(controlEdgeDecision("/admin/", []), "not_found");
 });
 
