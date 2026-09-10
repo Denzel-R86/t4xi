@@ -11,6 +11,7 @@ const audit = readFileSync("lib/control/audit.ts", "utf8");
 const legacy = readFileSync("lib/admin/session.ts", "utf8");
 const proxy = readFileSync("proxy.ts", "utf8");
 const login = readFileSync("components/control/ControlLogin.tsx", "utf8");
+const adminLayout = readFileSync("app/admin/layout.tsx", "utf8");
 
 test("Control is append-only and leaves existing operational domains untouched", () => {
   assert.doesNotMatch(migration, /create\s+or\s+replace\s+function\s+public\.create_booking/i);
@@ -161,4 +162,32 @@ test("the client never decides access itself", () => {
   // a signed-in user without a Control permission gets a dead end, not a retry loop
   assert.match(login, /reason === "forbidden"/);
   assert.match(login, /auth\.signOut\(\)/);
+});
+
+// ── The password step must hand control back to the server ────────────────
+// Regression guard for a real defect: signIn once routed by assurance level
+// client-side, so no server render happened between the password and MFA
+// enrolment. authorizeControl() therefore never ran for the AAL1 decision and
+// no control.access / denied / mfa_required event was ever produced. The
+// reload is what makes that decision — and its audit row — exist.
+test("a successful password login goes through a server reload, not client routing", () => {
+  const match = login.match(/async function signIn\([\s\S]*?\n  \}/);
+  assert.ok(match, "signIn could not be located");
+  const body = match[0];
+  assert.match(body, /window\.location\.reload\(\)/);
+  assert.doesNotMatch(
+    body,
+    /routeByAssurance\(/,
+    "signIn must not decide the assurance step client-side; the server has to re-decide and audit first",
+  );
+  // routeByAssurance still exists, but only behind the deliberate continue click
+  assert.match(login, /onClick=\{\(\) => void routeByAssurance\(\)\}/);
+});
+
+test("the non-localized Control route carries its own root layout", () => {
+  // /admin sits outside app/[locale], and the app has no app/layout.tsx, so
+  // without this the route renders without html/body and global styles.
+  assert.match(adminLayout, /<html/);
+  assert.match(adminLayout, /<body>/);
+  assert.match(adminLayout, /globals\.css/);
 });
