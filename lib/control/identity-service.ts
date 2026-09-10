@@ -5,6 +5,9 @@ import { recordControlAuditEvent } from "@/lib/control/audit";
 import {
   COMMAND_ACTION,
   isKnownStatus,
+  isUsableDisplayName,
+  looksLikeEmail,
+  normaliseEmail,
   reasonForCondition,
   type CommandName,
   type CommandOutcome,
@@ -103,6 +106,30 @@ export async function setIdentityStatus(identityId: string, status: string): Pro
     "set_status",
     { target_identity_id: identityId, new_status: status, correlation_id: crypto.randomUUID() },
     { requested_status: status },
+  );
+}
+
+/**
+ * Onboards an existing Supabase Auth account. The email never reaches an audit
+ * row: PostgreSQL resolves it, stores it on the identity where it is
+ * classified and retained, and audits the identity id instead.
+ */
+export async function createIdentity(
+  email: string,
+  displayName: string,
+  initialRoleKey?: string,
+): Promise<CommandOutcome> {
+  if (!looksLikeEmail(email)) return { ok: false, reason: "auth_user_not_found" };
+  if (!isUsableDisplayName(displayName)) return { ok: false, reason: "invalid_display_name" };
+  return runCommand(
+    "create_identity",
+    {
+      target_email: normaliseEmail(email),
+      target_display_name: displayName.trim(),
+      initial_role_key: initialRoleKey && initialRoleKey.length > 0 ? initialRoleKey : null,
+      correlation_id: crypto.randomUUID(),
+    },
+    { initial_role: initialRoleKey ?? "none" },
   );
 }
 

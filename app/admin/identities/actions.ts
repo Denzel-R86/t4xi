@@ -1,7 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { grantRole, revokeRole, setIdentityStatus } from "@/lib/control/identity-service";
+import {
+  createIdentity,
+  grantRole,
+  revokeRole,
+  setIdentityStatus,
+} from "@/lib/control/identity-service";
 
 /**
  * Server actions are a thin transport. They read the form, call the
@@ -30,4 +35,14 @@ export async function revokeRoleAction(form: FormData): Promise<void> {
   const outcome = await revokeRole(field(form, "identityId"), field(form, "roleKey"));
   revalidatePath("/admin/identities");
   if (!outcome.ok) console.warn(`[control-identity] revoke refused: ${outcome.reason}`);
+}
+
+export async function createIdentityAction(form: FormData): Promise<void> {
+  const outcome = await createIdentity(
+    field(form, "email"),
+    field(form, "displayName"),
+    field(form, "initialRoleKey"),
+  );
+  revalidatePath("/admin/identities");
+  if (!outcome.ok) console.warn(`[control-identity] create refused: ${outcome.reason}`);
 }

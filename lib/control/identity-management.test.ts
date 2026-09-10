@@ -3,7 +3,14 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { controlEdgeDecision } from "@/lib/control/routes";
-import { isKnownStatus, mayChangeRole, reasonForCondition } from "@/lib/control/identity-commands";
+import {
+  isKnownStatus,
+  isUsableDisplayName,
+  looksLikeEmail,
+  mayChangeRole,
+  normaliseEmail,
+  reasonForCondition,
+} from "@/lib/control/identity-commands";
 
 const migration = readFileSync(
   "supabase/migrations/20260910120000_control_identity_management.sql",
@@ -153,8 +160,103 @@ test("capability probes do not write audit events", () => {
 });
 
 test("the UI and server boundary stay thin and hold no authorization logic", () => {
-  assert.doesNotMatch(page, /supabase|service_role|from\(/i);
-  assert.doesNotMatch(actions, /supabase|service_role/i);
+  // No direct data access from the view or the transport: no client import,
+  // no query builder, no service role. Mentioning Supabase in explanatory copy
+  // is not a boundary violation, so the assertion targets code, not prose.
+  for (const [name, source] of [["page", page], ["actions", actions]] as const) {
+    assert.doesNotMatch(source, /from "@\/lib\/supabase/, `${name} must not import a client`);
+    assert.doesNotMatch(source, /createClient|controlServerClient/, `${name} must not build a client`);
+    assert.doesNotMatch(source, /\.from\(|\.rpc\(/, `${name} must not query directly`);
+    assert.doesNotMatch(source, /SERVICE_ROLE/i, `${name} must never touch the service role`);
+  }
   assert.match(actions, /^"use server";/);
   assert.match(page, /loadIdentityOverview/);
+});
+
+// ── Blocker 1: the invariant must be serialised, not merely checked ───────
+// Structural only. Concurrency is claimed proven by scripts/control-admin-
+// invariant-race.sh against staging, never by these assertions.
+test("only count-decreasing commands take the invariant lock, and take it before mutating", () => {
+  const status = command("control_set_identity_status");
+  const revoke = command("control_revoke_role");
+  const grant = command("control_grant_role");
+
+  for (const [name, body] of [["status", status], ["revoke", revoke]] as const) {
+    const lock = body.indexOf("control_admin_invariant_lock()");
+    const mutation = Math.max(
+      body.indexOf("update public.control_identities"),
+      body.indexOf("update public.control_identity_roles"),
+    );
+    assert.ok(lock > -1, `${name} must take the invariant lock`);
+    assert.ok(lock < mutation, `${name} must lock before it mutates, not after`);
+  }
+  // granting only ever raises the count, so it is deliberately not serialised
+  assert.doesNotMatch(grant, /control_admin_invariant_lock/);
+});
+
+test("the lock is transaction scoped and unreachable from a client", () => {
+  assert.match(migration, /pg_advisory_xact_lock/);
+  // a session-scoped lock would leak on an error path
+  assert.doesNotMatch(migration, /pg_advisory_lock\(/);
+  assert.match(migration, /revoke all on function public\.control_admin_invariant_lock\(\) from public, anon, authenticated/);
+});
+
+test("the status command locks only for an identity that carries the invariant", () => {
+  const status = command("control_set_identity_status");
+  // the lock sits behind a check for an active control_admin grant
+  assert.match(status, /if exists \([\s\S]*?'control_admin'[\s\S]*?revoked_at is null[\s\S]*?\) then\s*\n\s*perform public\.control_admin_invariant_lock\(\)/);
+});
+
+// ── Blocker 2: onboarding an existing Auth account ───────────────────────
+test("onboarding resolves auth.users inside the function, never through a grant", () => {
+  const create = command("control_create_identity");
+  assert.match(create, /security definer/);
+  assert.match(create, /set search_path = pg_catalog, public/);
+  assert.match(create, /from auth\.users where lower\(email\) = normalised_email/);
+  // no client role may read auth.users
+  assert.doesNotMatch(migration, /grant select on (table )?auth\.users/i);
+});
+
+test("onboarding cannot be used to onboard or escalate yourself", () => {
+  const create = command("control_create_identity");
+  assert.match(create, /target_auth = actor_auth/);
+  assert.match(create, /control_self_onboarding_denied/);
+  assert.match(create, /control_permission_check\('identity\.manage'\)/);
+  // an admin starting role still needs the second permission
+  assert.match(create, /initial_role_key = 'control_admin'[\s\S]*?identity\.grant_admin/);
+});
+
+test("a new identity starts without access and cannot silently duplicate", () => {
+  const create = command("control_create_identity");
+  assert.match(create, /values \(target_auth, trimmed_name, normalised_email, 'invited'\)/);
+  assert.match(create, /control_identity_exists/);
+  assert.match(create, /control_auth_user_not_found/);
+  assert.match(create, /control_auth_user_ambiguous/);
+});
+
+test("creation is audited in its own transaction and never logs the address", () => {
+  const create = command("control_create_identity");
+  assert.match(create, /insert into public\.control_audit_events/);
+  assert.match(create, /'identity\.created'/);
+  const audit = create.slice(create.indexOf("insert into public.control_audit_events"));
+  assert.doesNotMatch(audit, /normalised_email|target_email/);
+});
+
+// ── Pure guards for the onboarding form ──────────────────────────────────
+test("onboarding input is normalised and validated before the round trip", () => {
+  assert.equal(normaliseEmail("  Operator@T4XI.NL "), "operator@t4xi.nl");
+  assert.equal(looksLikeEmail("operator@t4xi.nl"), true);
+  assert.equal(looksLikeEmail("operator"), false);
+  assert.equal(looksLikeEmail(""), false);
+  assert.equal(isUsableDisplayName("Jo"), true);
+  assert.equal(isUsableDisplayName(" a "), false);
+  assert.equal(isUsableDisplayName("x".repeat(121)), false);
+});
+
+test("the new refusal conditions map to distinct reasons", () => {
+  assert.equal(reasonForCondition("control_auth_user_not_found"), "auth_user_not_found");
+  assert.equal(reasonForCondition("control_auth_user_ambiguous"), "auth_user_ambiguous");
+  assert.equal(reasonForCondition("control_identity_exists"), "identity_exists");
+  assert.equal(reasonForCondition("control_self_onboarding_denied"), "self_onboarding_denied");
+  assert.equal(reasonForCondition("control_invalid_display_name"), "invalid_display_name");
 });

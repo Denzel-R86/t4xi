@@ -1,6 +1,7 @@
 import "server-only";
 
 import { controlServerClient } from "@/lib/control/auth";
+import { COMMAND_RPC, type CommandName } from "@/lib/control/identity-commands";
 
 /**
  * Data access for Control identity management. Everything here runs on the
@@ -25,14 +26,6 @@ export type ControlGrantRow = {
   granted_at: string;
   expires_at: string | null;
   revoked_at: string | null;
-};
-
-export type CommandName = "set_status" | "grant_role" | "revoke_role";
-
-const RPC: Record<CommandName, string> = {
-  set_status: "control_set_identity_status",
-  grant_role: "control_grant_role",
-  revoke_role: "control_revoke_role",
 };
 
 export async function listIdentities(): Promise<ControlIdentityRow[]> {
@@ -99,7 +92,7 @@ export async function callCommand(
 ): Promise<{ ok: true } | { ok: false; condition: string }> {
   const supabase = await controlServerClient();
   if (!supabase) return { ok: false, condition: "unconfigured" };
-  const { error } = await supabase.rpc(RPC[command], args);
+  const { error } = await supabase.rpc(COMMAND_RPC[command], args);
   if (!error) return { ok: true };
   const match = /control_[a-z_]+/.exec(error.message ?? "");
   return { ok: false, condition: match ? match[0] : "control_command_failed" };

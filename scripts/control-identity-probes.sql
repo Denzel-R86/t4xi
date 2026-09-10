@@ -288,6 +288,88 @@ begin
   results := results || jsonb_build_object('probe', '21 no sensitive data in audit metadata',
     'expected', 0, 'actual', n);
 
+  -- ── 23-27. onboarding an existing Auth account ─────────────────────────
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', auth_a::text, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+
+  begin
+    perform public.control_create_identity('nobody.' || gen_random_uuid()::text || '@example.invalid', 'Onbekend account');
+    results := results || jsonb_build_object('probe', '23 unknown auth account',
+      'expected', 'denied', 'actual', 'ALLOWED');
+  exception when others then
+    results := results || jsonb_build_object('probe', '23 unknown auth account',
+      'expected', 'denied', 'actual', sqlerrm);
+  end;
+
+  begin
+    perform public.control_create_identity(
+      (select email from auth.users where id = auth_a), 'Zelf toevoegen');
+    results := results || jsonb_build_object('probe', '24 self onboarding',
+      'expected', 'denied', 'actual', 'ALLOWED');
+  exception when others then
+    results := results || jsonb_build_object('probe', '24 self onboarding',
+      'expected', 'denied', 'actual', sqlerrm);
+  end;
+
+  begin
+    perform public.control_create_identity(
+      (select email from auth.users where id = auth_b), 'Dubbele identiteit');
+    results := results || jsonb_build_object('probe', '25 duplicate identity',
+      'expected', 'denied', 'actual', 'ALLOWED');
+  exception when others then
+    results := results || jsonb_build_object('probe', '25 duplicate identity',
+      'expected', 'denied', 'actual', sqlerrm);
+  end;
+  execute 'reset role';
+
+  -- Free B up so a real onboarding can be exercised. All of this rolls back.
+  delete from public.control_audit_events where actor_identity_id = id_b;
+  delete from public.control_identity_roles where identity_id = id_b;
+  delete from public.control_identities where id = id_b;
+
+  execute 'set local role authenticated';
+  begin
+    perform public.control_create_identity(
+      (select email from auth.users where id = auth_b), 'Nieuwe operator', 'control_auditor');
+    select status into status_after from public.control_identities where auth_user_id = auth_b;
+    results := results || jsonb_build_object('probe', '26 onboarding starts without access',
+      'expected', 'invited', 'actual', status_after);
+  exception when others then
+    results := results || jsonb_build_object('probe', '26 onboarding starts without access',
+      'expected', 'invited', 'actual', 'REFUSED: ' || sqlerrm);
+  end;
+  execute 'reset role';
+
+  -- The invited identity may not authorize anything yet.
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', auth_b::text, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select public.control_authorize('control.access') into flag;
+  execute 'reset role';
+  results := results || jsonb_build_object('probe', '27 invited identity authorizes nothing',
+    'expected', false, 'actual', flag);
+
+  -- An admin starting role still needs the second permission.
+  delete from public.control_audit_events where resource_id = (select id::text from public.control_identities where auth_user_id = auth_b);
+  delete from public.control_identity_roles where identity_id = (select id from public.control_identities where auth_user_id = auth_b);
+  delete from public.control_identities where auth_user_id = auth_b;
+  delete from public.control_role_permissions
+   where role_id = role_admin and permission_id = perm_grant_admin;
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', auth_a::text, 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  begin
+    perform public.control_create_identity(
+      (select email from auth.users where id = auth_b), 'Nieuwe admin', 'control_admin');
+    results := results || jsonb_build_object('probe', '28 admin starting role without identity.grant_admin',
+      'expected', 'denied', 'actual', 'ALLOWED');
+  exception when others then
+    results := results || jsonb_build_object('probe', '28 admin starting role without identity.grant_admin',
+      'expected', 'denied', 'actual', sqlerrm);
+  end;
+  execute 'reset role';
+
   -- What the identity commands actually wrote, so the shape can be reviewed
   -- rather than assumed.
   select coalesce(jsonb_agg(entry), '[]'::jsonb) into audit_shape

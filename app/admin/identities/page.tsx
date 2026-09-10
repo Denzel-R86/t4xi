@@ -3,7 +3,12 @@ import Link from "next/link";
 import ControlLogin from "@/components/control/ControlLogin";
 import { IDENTITY_STATUSES, mayChangeRole } from "@/lib/control/identity-commands";
 import { loadIdentityOverview } from "@/lib/control/identity-service";
-import { changeStatusAction, grantRoleAction, revokeRoleAction } from "./actions";
+import {
+  changeStatusAction,
+  createIdentityAction,
+  grantRoleAction,
+  revokeRoleAction,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -56,6 +61,55 @@ export default async function IdentitiesPage({
             Je kunt identiteiten lezen maar niet beheren. Beheeracties vereisen
             <code className="mx-1">identity.manage</code>.
           </p>
+        )}
+
+        {canManage && (
+          <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+            <h2 className="font-semibold">Operator toevoegen</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Het Supabase Auth-account moet al bestaan; Control maakt geen accounts aan. De
+              nieuwe identiteit begint als <code>invited</code> en krijgt pas toegang na een
+              aparte activatie. Je kunt jezelf hier niet toevoegen.
+            </p>
+            <form action={createIdentityAction} className="mt-4 grid gap-3 md:grid-cols-4">
+              <label className="block text-sm md:col-span-2">
+                E-mail van het bestaande account
+                <input
+                  className="mt-1 w-full rounded-lg border p-2"
+                  type="email"
+                  name="email"
+                  required
+                />
+              </label>
+              <label className="block text-sm">
+                Weergavenaam
+                <input
+                  className="mt-1 w-full rounded-lg border p-2"
+                  name="displayName"
+                  minLength={2}
+                  maxLength={120}
+                  required
+                />
+              </label>
+              <label className="block text-sm">
+                Beginrol
+                <select name="initialRoleKey" className="mt-1 w-full rounded-lg border p-2">
+                  <option value="">geen</option>
+                  {roleKeys.filter(mayChange).map((roleKey) => (
+                    <option key={roleKey} value={roleKey}>
+                      {roleKey}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                className="rounded-lg bg-slate-950 px-4 py-2 font-medium text-white md:col-span-1"
+                type="submit"
+              >
+                Aanmaken
+              </button>
+            </form>
+          </section>
         )}
 
         <section className="py-8">
