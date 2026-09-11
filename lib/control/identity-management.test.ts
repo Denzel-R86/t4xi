@@ -13,7 +13,7 @@ import {
 } from "@/lib/control/identity-commands";
 
 const migration = readFileSync(
-  "supabase/migrations/20260910120000_control_identity_management.sql",
+  "supabase/migrations/20260910150000_control_identity_management.sql",
   "utf8",
 );
 const service = readFileSync("lib/control/identity-service.ts", "utf8");
