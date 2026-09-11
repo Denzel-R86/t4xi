@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { pollActiveFlightsWithSupabase } from "@/lib/flight-monitoring/service";
+import {
+  completeExecution,
+  countsFromSummary,
+  readTraceId,
+  startExecution,
+} from "@/lib/scheduler/executions";
 
 /**
  * POST /api/flights/monitor
@@ -13,6 +19,13 @@ import { pollActiveFlightsWithSupabase } from "@/lib/flight-monitoring/service";
  *
  * Server-only (service-role client). Geen pricing, geen Stripe, geen UI.
  * Statisch pad — wint in Next.js van /api/flights/[flightNumber].
+ *
+ * OBSERVABILITY (Phase 3, ticket 1)
+ *   De scheduler maakt de execution aan en geeft de database-side trace_id mee
+ *   in de `x-trace-id`-header. Deze route maakt er NOOIT zelf een aan: zonder
+ *   geldige trace_id wordt er niet gepolld, zodat werk zonder spoor onmogelijk
+ *   is. Slaagt de start niet — onbekende id, al gestart, al afgerond — dan
+ *   blijft de pollronde eveneens achterwege.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +67,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
+  // Geen geldige trace_id → geen scheduler-run. Bewust vóór de databaseclient:
+  // er wordt niets geclaimd en er ontstaat geen execution.
+  const traceId = readTraceId(request);
+  if (!traceId) {
+    return NextResponse.json(
+      { ok: false, error: "missing_trace_id", message: "Een geldige x-trace-id is verplicht." },
+      { status: 400 }
+    );
+  }
+
   const supabase = serviceRoleClient();
   if (!supabase) {
     return NextResponse.json(
@@ -62,7 +85,39 @@ export async function POST(request: Request) {
     );
   }
 
+  const started = await startExecution(supabase, traceId);
+  if (!started.ok) {
+    // Niet pollen. Een onbekende id mag geen run laten ontstaan, en een al
+    // lopende of afgeronde execution mag niet dubbel verwerkt worden.
+    const status = started.error === "unknown_trace_id" ? 404 : started.error === "rpc_error" ? 503 : 409;
+    return NextResponse.json(
+      { ok: false, error: started.error, trace_id: traceId, status: started.status },
+      { status }
+    );
+  }
+
   const summary = await pollActiveFlightsWithSupabase(supabase);
   const httpStatus = summary.aborted ? 502 : 200;
-  return NextResponse.json({ ok: !summary.aborted, ...summary }, { status: httpStatus });
+
+  // Afronden is best-effort voor de HTTP-response: lukt het niet, dan blijft de
+  // execution op `running` staan en is hij ná de maximale looptijd als
+  // stale/abandoned afleidbaar. Dat is beter dan een response ophouden.
+  const completion = await completeExecution(supabase, traceId, {
+    status: summary.aborted ? "failed" : "completed",
+    ...countsFromSummary(summary),
+    httpStatus,
+    errorCode: summary.aborted,
+  }).catch(() => ({ ok: false, error: "complete_failed" }) as const);
+
+  if (!completion.ok) {
+    console.error(
+      `[ALERT][scheduler] execution_not_completed — ${traceId}: ${completion.error}. ` +
+        "De vluchten zijn wél verwerkt; de run blijft op 'running' en wordt stale."
+    );
+  }
+
+  return NextResponse.json(
+    { ok: !summary.aborted, trace_id: traceId, ...summary },
+    { status: httpStatus }
+  );
 }
