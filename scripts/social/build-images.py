@@ -111,13 +111,20 @@ LOGO_H, WM_H = 72, 640
 WM_KAART, WM_FOTO = 0.08, 0.09        # watermerkdekking
 KOPMAAT = {1: 104, 2: 96, 3: 84, 4: 72}
 
-# Curatie: deze posts krijgen bewust een specifieke foto, ongeacht de pijler.
-# Sleutel is de kolom `idx` in posts.csv.
+# Curatie: deze posts krijgen bewust een specifieke achtergrond, ongeacht de
+# pijler. Sleutel is de kolom `idx` in posts.csv. De waarde "kaart" dwingt een
+# tekstkaart af — voor posts waar geen enkele foto past, of waar typografie het
+# betere beeld IS.
 CURATIE = {
-    2:  "vasteprijs+fairfare--dashboard",                       # leeg scherm bij "geen taxameter"
+    2:  "vasteprijs+fairfare--dashboard",                           # leeg scherm bij "geen taxameter"
     8:  "schiphol+luchthavens+bagage+chauffeur--transfer-terminal",  # chauffeur ontvangt iemand
+    9:  "vloot+station--lynk-co",                                   # Den Haag: geen stadsfoto in de set
     14: "schiphol+luchthavens+bagage+chauffeur--transfer-terminal",  # koffer bij bagagepost
+    36: "kaart",   # Sinterklaas: kerstverlichting leest half november als te vroeg
+    41: "kaart",   # Black Friday: "geen korting" werkt als typografie, niet als foto
 }
+
+KAART = "kaart"   # curatiewaarde die een tekstkaart afdwingt
 
 # Hoe vaak dezelfde foto in de hele reeks mag terugkeren.
 #
@@ -327,7 +334,9 @@ def toewijzen(posts, pool):
         # Curatie gaat voor, maar mag de herhaalgrens niet omzeilen: een
         # bewuste keuze voor dezelfde foto bij drie posts is nog steeds
         # drie keer dezelfde foto in de feed.
-        if (i in CURATIE and CURATIE[i] in sum(pool.values(), [])
+        if CURATIE.get(i) == KAART:
+            gekozen = None
+        elif (i in CURATIE and CURATIE[i] in sum(pool.values(), [])
                 and gebruik.get(CURATIE[i], 0) < MAX_HERHALING):
             gekozen = CURATIE[i]
         elif groep in pool and genomen < tempo * gezien:
