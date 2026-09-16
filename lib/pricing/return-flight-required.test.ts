@@ -9,7 +9,7 @@ import { airportContext } from "@/lib/pricing/service";
  *   Vertrekt het RETOUR-ritdeel vanaf een luchthaven, dan is een
  *   retour-vluchtnummer VERPLICHT (de server weigert de boeking zonder).
  *
- * Waarom een aparte test: de serverreject in app/api/bookings/route.ts is de
+ * Waarom een aparte test: de serverreject in lib/bookings/create.ts is de
  * échte veiligheidsgrens. De functionaliteit is aantoonbaar correct, maar dit is
  * precies het soort regel dat later ongemerkt kan sneuvelen bij een refactor van
  * route.ts, airport-context of de booking-service. UI-validatie alléén is daar
@@ -23,10 +23,9 @@ import { airportContext } from "@/lib/pricing/service";
  *   Draai "departure"/"arrival" hier dus NOOIT om zonder deze test te herzien.
  *
  * De luchthavenrichting komt uit één bron van waarheid: `airportContext()` in
- * lib/pricing/service.ts (afgeleid van `locations.location_type`). De booking-
- * route leest exact dat object. Deze test bewaakt (1) de richting-afleiding via
- * de ECHTE functie en (2) dat de route die richting nog steeds naar de retour-
- * plicht + server-reject bedraadt.
+ * lib/pricing/service.ts (afgeleid van `locations.location_type`). De gedeelde bookingservice leest exact dat object. Deze test bewaakt (1) de richting-afleiding via
+ * de ECHTE functie en (2) dat de service die richting nog steeds naar de retour-
+ * plicht + server-reject bedraadt en de API die service gebruikt.
  *
  * NB — grens van deze test: de HTTP-reject zelf loopt via de volledige
  * prijsresolutie, die `locations` uit Supabase leest en dus niet offline te
@@ -39,7 +38,7 @@ const AIRPORT: { location_type: string | null } = { location_type: "airport" };
 const CITY: { location_type: string | null } = { location_type: "city" };
 
 /**
- * De regel exact zoals app/api/bookings/route.ts hem samenstelt, gevoed door de
+ * De regel exact zoals lib/bookings/create.ts hem samenstelt, gevoed door de
  * echte `airportContext`. Wijkt de route hiervan af, dan vangt de wiring-lock-
  * test hieronder dat af.
  */
@@ -77,16 +76,20 @@ test("4. enkele reis → geen retour-vluchtnummerplicht (bestaand gedrag ongewij
   assert.equal(returnFlightNumberRequired(CITY, AIRPORT, false), false);
 });
 
-test("wiring-lock: route.ts bedraadt de plicht op flightDirection === 'departure' en rejecteert een leeg nummer", () => {
-  const src = readFileSync("app/api/bookings/route.ts", "utf8");
+test("wiring-lock: gedeelde service bedraadt de plicht op flightDirection === 'departure' en rejecteert een leeg nummer", () => {
+  const src = readFileSync("lib/bookings/create.ts", "utf8");
+  const route = readFileSync("app/api/bookings/route.ts", "utf8");
+  assert.match(route, /import\s*\{\s*createBooking\s*\}\s*from\s*["\']@\/lib\/bookings\/create["\']/);
+  assert.match(route, /const result = await createBooking\(body\);/);
+  assert.match(route, /return json\(result\.status, result\.payload\);/);
   assert.match(
     src,
     /const returnFlightRequired\s*=\s*[\s\S]*?returnTrip[\s\S]*?airport\.isAirportTransfer[\s\S]*?airport\.flightDirection === "departure"/,
-    "route moet de retour-plicht afleiden uit flightDirection === 'departure'",
+    "bookingservice moet de retour-plicht afleiden uit flightDirection === 'departure'",
   );
   assert.match(
     src,
     /if \(returnFlightRequired && returnFlightNumber === ""\)\s*\{[\s\S]*?return bad\(/,
-    "route moet een leeg verplicht retour-vluchtnummer server-side weigeren",
+    "bookingservice moet een leeg verplicht retour-vluchtnummer server-side weigeren",
   );
 });

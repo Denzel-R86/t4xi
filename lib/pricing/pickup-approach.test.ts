@@ -590,10 +590,11 @@ test("cent-consistentie: buildPriceSnapshot gebruikt priceCents/singlePriceCents
 
 test("pickupApproach en de interne PickupApproachBreakdown-velden komen NOOIT voor in de whitelist van app/api/pricing/quote/route.ts", async () => {
   const src = (await import("node:fs")).readFileSync(
-    (await import("node:path")).resolve(process.cwd(), "app/api/pricing/quote/route.ts"),
+    (await import("node:path")).resolve(process.cwd(), "lib/pricing/quote.ts"),
     "utf8"
   );
-  const successBlockStart = src.indexOf("return json(200, {");
+  const successBlockStart = src.indexOf("json(200, {");
+  assert.ok(successBlockStart >= 0);
   const successBlockEnd = src.indexOf("});", successBlockStart);
   const block = src.slice(successBlockStart, successBlockEnd);
   for (const forbidden of ["pickupApproach", "driverPayout", "chauffeurCost", "settlement", "priceCents", "singlePriceCents", "returnPriceCents"]) {
@@ -1375,10 +1376,11 @@ test("Gooi-floor: intern gelogd met oorspronkelijke prijs, referentieprijs, toeg
   assert.equal(res.economicFloor?.flooredRidePriceCents, 10200);
 
   const src = (await import("node:fs")).readFileSync(
-    (await import("node:path")).resolve(process.cwd(), "app/api/pricing/quote/route.ts"),
+    (await import("node:path")).resolve(process.cwd(), "lib/pricing/quote.ts"),
     "utf8"
   );
-  const successBlockStart = src.indexOf("return json(200, {");
+  const successBlockStart = src.indexOf("json(200, {");
+  assert.ok(successBlockStart >= 0);
   const successBlockEnd = src.indexOf("});", successBlockStart);
   const block = src.slice(successBlockStart, successBlockEnd);
   assert.doesNotMatch(block, /economicFloor/, "economicFloor mag nooit in de publieke quote-response staan");

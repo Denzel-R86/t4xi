@@ -192,7 +192,7 @@ test("persist: autoritatieve velden komen uit de server-snapshot, niet uit input
   assert.equal(a.p_pricing_source, s.pricingSource);
 });
 
-const quoteRouteSrc = readFileSync(resolve(process.cwd(), "app/api/pricing/quote/route.ts"), "utf8");
+const quoteRouteSrc = (readFileSync(resolve(process.cwd(), "app/api/pricing/quote/route.ts"), "utf8") + readFileSync(resolve(process.cwd(), "lib/pricing/quote.ts"), "utf8"));
 
 test("quote-route: input alleen uit bekende velden; geen autoritatieve velden uit de body", () => {
   assert.match(quoteRouteSrc, /const \{ pickup, dropoff, returnTrip, passengers, luggageCategory, date, time, returnDate, returnTime \} = body/);
@@ -207,7 +207,7 @@ test("quote-route: input alleen uit bekende velden; geen autoritatieve velden ui
 
 test("quote-route: vaste prijs faalt gesloten zonder bevestigde snapshotopslag", () => {
   assert.match(quoteRouteSrc, /if \(!snapshot\) \{[\s\S]*?quote_lock_unavailable/);
-  assert.match(quoteRouteSrc, /const stored = await persistPriceSnapshot\(snapshot\)/);
+  assert.match(quoteRouteSrc, /const stored = await persist\(snapshot\)/);
   assert.match(quoteRouteSrc, /if \(!stored\) \{[\s\S]*?quote_lock_unavailable/);
   assert.match(quoteRouteSrc, /const displayPrice = snapshot\.totalCents \/ 100/);
   assert.match(quoteRouteSrc, /price: displayPrice/);

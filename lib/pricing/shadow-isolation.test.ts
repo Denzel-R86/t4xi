@@ -56,6 +56,7 @@ function assertNoShadowIdentifiers(relPath: string) {
 
 test("publieke quote-route (app/api/pricing/quote/route.ts) bevat geen enkele shadow-identifier", () => {
   assertNoShadowIdentifiers("app/api/pricing/quote/route.ts");
+  assertNoShadowIdentifiers("lib/pricing/quote.ts");
 });
 
 test("booking-route (app/api/bookings/route.ts) bevat geen enkele shadow-identifier", () => {

@@ -215,13 +215,14 @@ test("pass-through bewaart de exacte euro-waarde → eurosToCents blijft identie
 
 // ── 7. Statische bron-invarianten (call-sites + geen client-prijs) ───────────
 
-const bookingsRouteSrc = readFileSync(resolve(process.cwd(), "app/api/bookings/route.ts"), "utf8");
-const quoteRouteSrc = readFileSync(resolve(process.cwd(), "app/api/pricing/quote/route.ts"), "utf8");
+const bookingsRouteSrc = readFileSync(resolve(process.cwd(), "app/api/bookings/route.ts"), "utf8")
+  + readFileSync(resolve(process.cwd(), "lib/bookings/create.ts"), "utf8");
+const quoteRouteSrc = (readFileSync(resolve(process.cwd(), "app/api/pricing/quote/route.ts"), "utf8") + readFileSync(resolve(process.cwd(), "lib/pricing/quote.ts"), "utf8"));
 const createIntentSrc = readFileSync(resolve(process.cwd(), "lib/payments/create-intent.ts"), "utf8");
 
-test("beide runtime-callers gebruiken de centrale calculateBookingPrice", () => {
-  assert.match(bookingsRouteSrc, /calculateBookingPrice\(/);
-  assert.match(quoteRouteSrc, /calculateBookingPrice\(/);
+test("quote en booking gebruiken hun centrale pricing-entrypoint", () => {
+  assert.match(bookingsRouteSrc, /await resolveBookingPrice\(/);
+  assert.match(quoteRouteSrc, /deps.calculate \?\? calculateBookingPrice/);
 });
 
 test("geen directe runtime-call meer naar getPricingQuote in de routes", () => {
@@ -235,7 +236,7 @@ test("geen directe runtime-call meer naar getPricingQuote in de routes", () => {
 
 test("booking-creatie leidt de prijs server-side af en vertrouwt geen client-prijs", () => {
   // De autoritatieve prijs komt uit de centrale functie, niet uit de request-body.
-  assert.match(bookingsRouteSrc, /calculateBookingPrice\(/);
+  assert.match(bookingsRouteSrc, /await resolveBookingPrice\(/);
   // Er wordt nergens een prijs uit de binnenkomende payload overgenomen.
   assert.doesNotMatch(bookingsRouteSrc, /\bprice[A-Za-z]*\s*[:=][^\n]*\b(body|payload|json|reqBody|requestBody|data)\b/i);
   // De payment-laag weigert bovendien expliciet client-aangeleverde bedragen.

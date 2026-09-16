@@ -10,7 +10,7 @@ const MIG = "supabase/migrations";
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 const hist = read(`${MIG}/20260807220341_secure_create_booking_rpc.sql`);
 const fix = read(`${MIG}/20260808103643_harden_search_path_booking_fns.sql`);
-const route = read("app/api/bookings/route.ts");
+const route = read("app/api/bookings/route.ts") + read("lib/bookings/create.ts");
 
 // ── Historische immutabiliteit: 140000 == wat op prod is toegepast ───────────
 

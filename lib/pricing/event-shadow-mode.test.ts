@@ -315,7 +315,7 @@ test("12. ontbrekende tariefregel: match wÃ©l geobserveerd, potentieel bedrag â‚
 test("13/14. eventFee komt uitsluitend uit de snapshot-adjustments", () => {
   // In shadow bestaan die adjustments niet, dus kan het veld per constructie
   // niet in de response komen. In live wel. De route leidt niets zelf af.
-  const src = readFileSync(resolve(process.cwd(), "app/api/pricing/quote/route.ts"), "utf8");
+  const src = (readFileSync(resolve(process.cwd(), "app/api/pricing/quote/route.ts"), "utf8") + readFileSync(resolve(process.cwd(), "lib/pricing/quote.ts"), "utf8"));
   assert.ok(src.includes("snapshot.adjustments"));
   assert.ok(!src.includes("shadow"));
   assert.ok(!src.includes("eventPricingMode"));

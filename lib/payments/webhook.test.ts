@@ -146,7 +146,8 @@ test("19/20 · create-intent zoekt de boeking server-side op (op UUID) en gebrui
 
 // ── BLOCKER 1 — booking_id (UUID) is de capability, booking_ref niet ───────────
 
-const bookingsRouteSrc = readFileSync("app/api/bookings/route.ts", "utf8");
+const bookingsRouteSrc = readFileSync("app/api/bookings/route.ts", "utf8")
+  + readFileSync("lib/bookings/create.ts", "utf8");
 const paymentStepSrc = readFileSync("components/booking/PaymentStep.tsx", "utf8");
 const flowSrc = readFileSync("lib/payments/payment-flow.ts", "utf8");
 

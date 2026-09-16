@@ -35,6 +35,9 @@
 /** De productie-Supabase project-ref. Mag in niet-productie NOOIT de bron zijn. */
 export const PRODUCTION_SUPABASE_REF = "ajdsiklxfmmgisdvarhv";
 
+/** Het expliciet toegestane staging-project; geen configureerbare productie-override. */
+export const STAGING_SUPABASE_REF = "ztlhydagjqfzkyfiqgio";
+
 /** Generieke, lekvrije foutmelding — bevat nooit sleutelwaarden of env-namen. */
 const UNSAFE_STRIPE_MESSAGE = "Unsafe Stripe environment configuration.";
 

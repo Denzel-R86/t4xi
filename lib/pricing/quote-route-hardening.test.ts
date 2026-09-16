@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { POST as quote } from "@/app/api/pricing/quote/route";
 import { resolveQuoteWith, type ResolveQuoteDeps } from "@/lib/pricing/service";
 
-const routeSource = readFileSync("app/api/pricing/quote/route.ts", "utf8");
+const routeSource = (readFileSync("app/api/pricing/quote/route.ts", "utf8") + readFileSync("lib/pricing/quote.ts", "utf8"));
 let requestSequence = 0;
 
 function post(body: unknown, ip = `198.51.100.${++requestSequence}`): Request {
