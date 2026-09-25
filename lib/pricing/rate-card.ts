@@ -18,6 +18,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /** Genormaliseerde route-rij zoals de grouping die verwacht (puur, testbaar). */
 export type RawRateRow = {
   pickupName: string;
+  /** locations.location_type van het vertrekpunt ("district", "city", …). */
+  pickupType: string;
   citySlug: string;
   cityName: string;
   dropoffSlug: string;
@@ -36,6 +38,13 @@ export type RateEntry = {
   distanceKm: number;
   single: number;
   retour: number | null;
+  /**
+   * Terugvalprijs op stadsniveau: geldt wanneer een adres niet op een stadsdeel
+   * uitkomt. Hij hoort NIET in een tabel die per stadsdeel is opgebouwd — daar
+   * leest hij als een zevende wijk met een afwijkende prijs. Op /tarieven en de
+   * homepage blijft hij wel staan: het is een echte, boekbare prijs.
+   */
+  isCatchAll: boolean;
 };
 
 export type CityRates = {
@@ -88,6 +97,7 @@ export function groupRoutes(rows: RawRateRow[]): CityRates[] {
       distanceKm: r.distanceKm,
       single: r.single,
       retour: r.retour !== null && validPrice(r.retour) ? r.retour : null,
+      isCatchAll: r.pickupType === "city",
     };
 
     const key = `${r.citySlug}|${entry.from}→${entry.to}`;
@@ -127,7 +137,7 @@ export async function loadRateCard(): Promise<CityRates[]> {
     .from("fixed_route_prices")
     .select(
       `price, return_price, distance_km, service_type,
-       pickup:locations!fixed_route_prices_pickup_location_id_fkey ( name, city:cities ( slug, name ) ),
+       pickup:locations!fixed_route_prices_pickup_location_id_fkey ( name, location_type, city:cities ( slug, name ) ),
        dropoff:locations!fixed_route_prices_dropoff_location_id_fkey ( slug, name, location_type )`
     )
     .eq("active", true);
@@ -146,6 +156,7 @@ export async function loadRateCard(): Promise<CityRates[]> {
     return [
       {
         pickupName: String(pickup.name ?? ""),
+        pickupType: String(pickup.location_type ?? ""),
         citySlug,
         cityName: String(city.name ?? ""),
         dropoffSlug: String(dropoff.slug ?? ""),
