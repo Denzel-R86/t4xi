@@ -22,3 +22,31 @@ test("homepagehero is direct zichtbaar en toont een mobiele campagne-uitsnede", 
 test("kleine vaste-prijslabels gebruiken de contrastrijkere secundaire tekstkleur", () => {
   assert.match(patterns, /e\.factNote[\s\S]*?text-secondary/);
 });
+
+test("ledger toont per stad een stadsdeel, nooit de terugvalprijs op stadsniveau", () => {
+  const blok = home.match(/const LEDGER_SELECTIE[\s\S]*?\n\];/)?.[0] ?? "";
+  assert.ok(blok, "LEDGER_SELECTIE niet gevonden");
+
+  const selectie = [...blok.matchAll(/citySlug: "([^"]+)", from: "([^"]+)"/g)]
+    .map(([, citySlug, from]) => ({ citySlug, from }));
+  assert.ok(selectie.length >= 6);
+
+  // De rij op stadsniveau heet exact zoals de stad ("Den Haag", "Rotterdam") en
+  // is de terugval voor adressen zonder stadsdeel — per definitie het duurste
+  // tarief van die stad. Wie die hier selecteert, adverteert het hoogste bedrag.
+  const stadsnamen: Record<string, string> = {
+    amsterdam: "Amsterdam",
+    almere: "Almere",
+    "den-haag": "Den Haag",
+    rotterdam: "Rotterdam",
+    utrecht: "Utrecht",
+    spijkenisse: "Spijkenisse",
+  };
+  for (const { citySlug, from } of selectie) {
+    assert.notEqual(
+      from,
+      stadsnamen[citySlug],
+      `ledger wijst voor ${citySlug} naar de catch-all "${from}" in plaats van een stadsdeel`,
+    );
+  }
+});

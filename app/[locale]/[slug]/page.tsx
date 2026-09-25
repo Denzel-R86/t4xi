@@ -84,7 +84,11 @@ export default async function SeoLandingPage({
   // bedrag — liever geen prijs dan een verkeerde.
   const rateCard = await loadRateCard();
   const cityRates = rateCard.find((city) => city.citySlug === stad.citySlug) ?? null;
-  const schipholRates = cityRates?.toSchiphol ?? [];
+  // Alleen stadsdelen: deze tabel is per stadsdeel opgebouwd ("Uw prijs hangt af
+  // van uw stadsdeel"). De terugvalprijs op stadsniveau hoort daar niet tussen —
+  // die verscheen als een rij "Den Haag" naast "Den Haag Centrum". Op /tarieven
+  // en de homepage blijft hij wel zichtbaar.
+  const schipholRates = (cityRates?.toSchiphol ?? []).filter((r) => !r.isCatchAll);
   const canonical = localeUrl(locale, `/${stad.slug}`);
   const bookingUrl = localeUrl(locale, bookingHref);
 

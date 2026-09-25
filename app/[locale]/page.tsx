@@ -54,14 +54,21 @@ import comfortAanBoord from "@/public/t4xi-campagne-03-comfort.png";
  * klopten toevallig nog, maar de afstanden niet meer: Amsterdam Centrum stond op
  * 14 km waar het er 26 zijn, Rotterdam op 80 waar het er 61 zijn. Precies dezelfde
  * veroudering als op de landingspagina's, alleen op de drukst bezochte pagina.
+ *
+ * Kies hier altijd een STADSDEEL, nooit de rij op stadsniveau. Die laatste is de
+ * terugvalprijs voor adressen die niet op een stadsdeel uitkomen en staat per
+ * definitie gelijk aan het duurste stadsdeel van die stad. Tot 2026-09-25 wezen
+ * Den Haag en Rotterdam daarnaar, waardoor de homepage voor die twee steden het
+ * hoogste tarief adverteerde terwijl Amsterdam, Almere en Utrecht een stadsdeel
+ * toonden. Zes steden, twee verschillende soorten getal.
  */
 const LEDGER_SELECTIE: { citySlug: string; from: string }[] = [
   { citySlug: "amsterdam", from: "Amsterdam Zuidas" },
   { citySlug: "amsterdam", from: "Amsterdam Centrum" },
   { citySlug: "almere", from: "Almere Poort" },
-  { citySlug: "den-haag", from: "Den Haag" },
+  { citySlug: "den-haag", from: "Den Haag Centrum" },
   { citySlug: "utrecht", from: "Utrecht Centrum" },
-  { citySlug: "rotterdam", from: "Rotterdam" },
+  { citySlug: "rotterdam", from: "Rotterdam Centrum" },
 ];
 
 function buildLedger(cities: CityRates[], naar: string, vast: string): LedgerEntry[] {

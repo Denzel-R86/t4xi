@@ -5,26 +5,26 @@ import { groupRoutes, type RawRateRow } from "./rate-card";
 /** Steekproef uit de echte fixed_route_prices-data (genormaliseerd). */
 const SAMPLE: RawRateRow[] = [
   // Amsterdam → Schiphol (stad + wijken)
-  { pickupName: "Amsterdam", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 69, retour: 124, distanceKm: 22 },
-  { pickupName: "Amsterdam Zuidas", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 50, retour: 90, distanceKm: 10 },
-  { pickupName: "Amsterdam Noord", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 65, retour: 117, distanceKm: 20 },
+  { pickupName: "Amsterdam", pickupType: "city", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 69, retour: 124, distanceKm: 22 },
+  { pickupName: "Amsterdam Zuidas", pickupType: "district", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 50, retour: 90, distanceKm: 10 },
+  { pickupName: "Amsterdam Noord", pickupType: "district", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 65, retour: 117, distanceKm: 20 },
   // Amsterdam intercity
-  { pickupName: "Amsterdam", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "rotterdam", dropoffName: "Rotterdam", dropoffType: "city", serviceType: "intercity", single: 109, retour: 196, distanceKm: 78 },
-  { pickupName: "Amsterdam", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "utrecht", dropoffName: "Utrecht", dropoffType: "city", serviceType: "intercity", single: 69, retour: 124, distanceKm: 40 },
+  { pickupName: "Amsterdam", pickupType: "city", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "rotterdam", dropoffName: "Rotterdam", dropoffType: "city", serviceType: "intercity", single: 109, retour: 196, distanceKm: 78 },
+  { pickupName: "Amsterdam", pickupType: "city", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "utrecht", dropoffName: "Utrecht", dropoffType: "city", serviceType: "intercity", single: 69, retour: 124, distanceKm: 40 },
   // Amsterdam → Rotterdam Airport (secundaire luchthaven: hoort in otherAirports)
-  { pickupName: "Amsterdam", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "rotterdam-airport", dropoffName: "Rotterdam The Hague Airport", dropoffType: "airport", serviceType: "airport", single: 119, retour: 214, distanceKm: 85 },
+  { pickupName: "Amsterdam", pickupType: "city", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "rotterdam-airport", dropoffName: "Rotterdam The Hague Airport", dropoffType: "airport", serviceType: "airport", single: 119, retour: 214, distanceKm: 85 },
   // Almere wijken → Schiphol
-  { pickupName: "Almere Poort", citySlug: "almere", cityName: "Almere", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 102, retour: 184, distanceKm: 39 },
-  { pickupName: "Almere Buiten", citySlug: "almere", cityName: "Almere", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 110, retour: 198, distanceKm: 44 },
+  { pickupName: "Almere Poort", pickupType: "district", citySlug: "almere", cityName: "Almere", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 102, retour: 184, distanceKm: 39 },
+  { pickupName: "Almere Buiten", pickupType: "district", citySlug: "almere", cityName: "Almere", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 110, retour: 198, distanceKm: 44 },
   // Almere intercity
-  { pickupName: "Almere", citySlug: "almere", cityName: "Almere", dropoffSlug: "amsterdam", dropoffName: "Amsterdam", dropoffType: "city", serviceType: "intercity", single: 45, retour: 81, distanceKm: 35 },
+  { pickupName: "Almere", pickupType: "city", citySlug: "almere", cityName: "Almere", dropoffSlug: "amsterdam", dropoffName: "Amsterdam", dropoffType: "city", serviceType: "intercity", single: 45, retour: 81, distanceKm: 35 },
   // Utrecht wijken → Schiphol
-  { pickupName: "Utrecht Centrum", citySlug: "utrecht", cityName: "Utrecht", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 110, retour: 198, distanceKm: 44 },
-  { pickupName: "Leidsche Rijn", citySlug: "utrecht", cityName: "Utrecht", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 104, retour: 187, distanceKm: 40 },
+  { pickupName: "Utrecht Centrum", pickupType: "district", citySlug: "utrecht", cityName: "Utrecht", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 110, retour: 198, distanceKm: 44 },
+  { pickupName: "Leidsche Rijn", pickupType: "district", citySlug: "utrecht", cityName: "Utrecht", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 104, retour: 187, distanceKm: 40 },
   // Den Haag → Schiphol (vertrekstad zonder intercity in de data → fallback verwacht)
-  { pickupName: "Den Haag", citySlug: "den-haag", cityName: "Den Haag", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 107, retour: 193, distanceKm: 43 },
+  { pickupName: "Den Haag", pickupType: "city", citySlug: "den-haag", cityName: "Den Haag", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: 107, retour: 193, distanceKm: 43 },
   // ongeldige prijs → mag niet verschijnen
-  { pickupName: "Kapot", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: NaN, retour: null, distanceKm: 5 },
+  { pickupName: "Kapot", pickupType: "district", citySlug: "amsterdam", cityName: "Amsterdam", dropoffSlug: "schiphol-airport", dropoffName: "Schiphol Airport", dropoffType: "airport", serviceType: "airport", single: NaN, retour: null, distanceKm: 5 },
 ];
 
 const grouped = groupRoutes(SAMPLE);
@@ -91,4 +91,20 @@ test("secundaire luchthaven verschijnt in otherAirports en wordt niet weggegooid
 test("Schiphol-groep is op prijs oplopend gesorteerd", () => {
   const s = city("amsterdam")!.toSchiphol.map((e) => e.single);
   assert.deepEqual(s, [...s].sort((a, b) => a - b));
+});
+
+test("catch-all op stadsniveau is herkenbaar en filterbaar", () => {
+  const ams = city("amsterdam")?.toSchiphol ?? [];
+
+  // De terugvalprijs op stadsniveau is gemarkeerd, de stadsdelen niet.
+  const catchAll = ams.find((r) => r.from === "Amsterdam");
+  assert.ok(catchAll, "stadsrij hoort in de rate card te blijven staan");
+  assert.equal(catchAll.isCatchAll, true);
+  assert.equal(ams.find((r) => r.from === "Amsterdam Zuidas")?.isCatchAll, false);
+  assert.equal(ams.find((r) => r.from === "Amsterdam Noord")?.isCatchAll, false);
+
+  // De landingspagina toont alleen stadsdelen: zo verdween de rij "Den Haag"
+  // naast "Den Haag Centrum" uit een tabel die per stadsdeel is opgebouwd.
+  const alleenWijken = ams.filter((r) => !r.isCatchAll).map((r) => r.from);
+  assert.deepEqual(alleenWijken.sort(), ["Amsterdam Noord", "Amsterdam Zuidas"]);
 });
