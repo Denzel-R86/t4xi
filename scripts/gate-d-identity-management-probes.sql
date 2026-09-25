@@ -1,4 +1,4 @@
--- T4XI Control Sprint 2A — behavioural probes for identity management.
+-- Gate D probes — Control identity management on the platform identity.
 --
 -- Read this before running it. The entire script is one statement that raises
 -- on purpose at the end, so everything it creates or changes is rolled back:
@@ -15,6 +15,7 @@ do $probe$
 declare
   results jsonb := '[]'::jsonb;
   auth_a uuid; auth_b uuid;
+  ident_a uuid; ident_b uuid;
   id_a uuid; id_b uuid;
   role_admin uuid; role_auditor uuid; role_probe uuid;
   perm_manage uuid; perm_grant_admin uuid; perm_read uuid;
@@ -33,14 +34,24 @@ begin
   select id into perm_grant_admin from public.control_permissions where permission_key = 'identity.grant_admin';
   select id into perm_read from public.control_permissions where permission_key = 'identity.read';
 
-  -- A is administrator, B starts as read-only auditor.
-  insert into public.control_identities (auth_user_id, display_name, email, status)
-  select auth_a, 'Probe A admin', lower(u.email), 'active' from auth.users u where u.id = auth_a
-  on conflict (auth_user_id) do update set status = 'active', disabled_at = null
+  -- A is administrator, B starts as read-only auditor. Both are attached to the
+  -- platform identity that Gate A guarantees; a missing one is a real problem
+  -- and stops the probe rather than being papered over.
+  select id into ident_a from public.identities where auth_user_id = auth_a and erased_at is null;
+  select id into ident_b from public.identities where auth_user_id = auth_b and erased_at is null;
+  if ident_a is null or ident_b is null then
+    raise exception 'PROBE_PRECONDITION: both auth accounts need a platform identity (Gate A)';
+  end if;
+
+  insert into public.control_identities (identity_id, auth_user_id, display_name, email, status)
+  select ident_a, auth_a, 'Probe A admin', lower(u.email), 'active'
+    from auth.users u where u.id = auth_a
+  on conflict (identity_id) do update set status = 'active', disabled_at = null
   returning id into id_a;
-  insert into public.control_identities (auth_user_id, display_name, email, status)
-  select auth_b, 'Probe B auditor', lower(u.email), 'active' from auth.users u where u.id = auth_b
-  on conflict (auth_user_id) do update set status = 'active', disabled_at = null
+  insert into public.control_identities (identity_id, auth_user_id, display_name, email, status)
+  select ident_b, auth_b, 'Probe B auditor', lower(u.email), 'active'
+    from auth.users u where u.id = auth_b
+  on conflict (identity_id) do update set status = 'active', disabled_at = null
   returning id into id_b;
 
   insert into public.control_identity_roles (identity_id, role_id, granted_by)

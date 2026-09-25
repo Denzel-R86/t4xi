@@ -32,8 +32,19 @@ test("authorization is server-verified, permission-based and MFA-gated", () => {
   assert.match(auth, /getAuthenticatorAssuranceLevel\(\)/);
   assert.match(auth, /currentLevel === "aal2"/);
   assert.match(auth, /control_authorize/);
-  assert.match(migration, /security invoker/i);
-  assert.doesNotMatch(migration, /security definer/i);
+  // Sprint 1 made control_authorize SECURITY INVOKER so RLS stayed the final
+  // layer. Gate B replaces it with a DEFINER version, because it has to read
+  // `identities`, which no client role may see. Asserting the Sprint-1 file
+  // still says "invoker" would keep a green test guarding a guarantee the
+  // system no longer gives, so the property is asserted where it now lives.
+  assert.match(migration, /security invoker/i, "the Sprint-1 file itself is unchanged");
+  const cutover = readFileSync(
+    "supabase/migrations/20260912110000_control_authorization_via_identities.sql",
+    "utf8",
+  );
+  assert.match(cutover, /create or replace function public\.control_authorize[\s\S]*?security definer/);
+  // The reason must be recorded, not just the change.
+  assert.match(cutover, /resolve the caller from auth\.uid\(\) and nothing else/);
 });
 
 test("every new table has explicit RLS and browser mutations stay denied", () => {
