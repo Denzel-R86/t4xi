@@ -10,7 +10,12 @@ export type ControlAuthResult =
   | { ok: true; principal: ControlPrincipal }
   | { ok: false; reason: "unconfigured" | "unauthenticated" | "mfa_required" | "forbidden" };
 
-async function serverClient() {
+/**
+ * A Supabase client bound to the caller's own session. Reads therefore run as
+ * `authenticated` and RLS applies; the service role never reaches the browser
+ * or a Control read path.
+ */
+export async function controlServerClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
@@ -41,7 +46,7 @@ async function serverClient() {
  * must abort when the write fails.
  */
 export async function authorizeControl(permission = "control.access"): Promise<ControlAuthResult> {
-  const supabase = await serverClient();
+  const supabase = await controlServerClient();
   if (!supabase) return { ok: false, reason: "unconfigured" };
 
   const { data: userData, error: userError } = await supabase.auth.getUser();

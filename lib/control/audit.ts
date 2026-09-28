@@ -64,6 +64,39 @@ function reportAuditFailure(action: string, policy: ControlAuditPolicy, detail: 
   );
 }
 
+/**
+ * Resolves both actor facts an audit row needs. The platform identity is the
+ * stable actor and must exist for anything attributed to an authenticated
+ * person — the auth trigger and the Gate A backfill guarantee it. The Control
+ * identity is optional: an authenticated user who is not an operator has none,
+ * and recording exactly that is the point.
+ */
+async function resolveActor(
+  client: NonNullable<ReturnType<typeof serviceClient>>,
+  authUserId: string,
+): Promise<{ platformIdentityId: string | null; controlIdentityId: string | null }> {
+  const { data: platform } = await client
+    .from("identities")
+    .select("id")
+    .eq("auth_user_id", authUserId)
+    .is("erased_at", null)
+    .maybeSingle();
+  if (!platform) return { platformIdentityId: null, controlIdentityId: null };
+
+  const { data: control } = await client
+    .from("control_identities")
+    .select("id")
+    .eq("identity_id", platform.id)
+    .eq("status", "active")
+    .is("disabled_at", null)
+    .maybeSingle();
+
+  return {
+    platformIdentityId: platform.id as string,
+    controlIdentityId: (control?.id as string | undefined) ?? null,
+  };
+}
+
 const ACCESS_PURPOSE = "Security, fraud prevention and accountability";
 
 /**
@@ -99,19 +132,20 @@ export async function recordControlAccessDecision(input: {
     return false;
   }
 
-  // Best effort: an authenticated user without an active Control identity is
-  // exactly the event worth keeping, so a missing identity is not a reason to
-  // drop the row — only actor_identity_id stays null.
-  const { data: identity } = await client
-    .from("control_identities")
-    .select("id")
-    .eq("auth_user_id", input.authUserId)
-    .eq("status", "active")
-    .is("disabled_at", null)
-    .maybeSingle();
+  const actor = await resolveActor(client, input.authUserId);
+  // An authenticated user without a Control identity is exactly the event worth
+  // keeping, so a missing Control identity is not a reason to drop the row. A
+  // missing *platform* identity is different: the schema requires one for a
+  // user-attributed event, so the write would be refused anyway.
+  if (!actor.platformIdentityId) {
+    reportAuditFailure("control.access", policy, "platform_identity_unresolved");
+    return false;
+  }
 
   const { error } = await client.from("control_audit_events").insert({
-    actor_identity_id: identity?.id ?? null,
+    actor_kind: "user",
+    actor_identity_id: actor.platformIdentityId,
+    actor_control_identity_id: actor.controlIdentityId,
     actor_auth_user_id: input.authUserId,
     action: "control.access",
     resource_type: "control_shell",
@@ -121,7 +155,7 @@ export async function recordControlAccessDecision(input: {
     metadata: {
       aal: input.aal,
       reason: input.reason ?? "granted",
-      identity_resolved: Boolean(identity),
+      identity_resolved: Boolean(actor.controlIdentityId),
     },
     processing_purpose: ACCESS_PURPOSE,
     classification: "restricted",
@@ -157,19 +191,15 @@ export async function recordControlAuditEvent(input: {
     reportAuditFailure(input.action, policy, "unconfigured");
     return false;
   }
-  const { data: identity, error: identityError } = await client
-    .from("control_identities")
-    .select("id")
-    .eq("auth_user_id", input.principal.userId)
-    .eq("status", "active")
-    .is("disabled_at", null)
-    .single();
-  if (identityError || !identity) {
+  const actor = await resolveActor(client, input.principal.userId);
+  if (!actor.platformIdentityId || !actor.controlIdentityId) {
     reportAuditFailure(input.action, policy, "identity_unresolved");
     return false;
   }
   const { error } = await client.from("control_audit_events").insert({
-    actor_identity_id: identity.id,
+    actor_kind: "user",
+    actor_identity_id: actor.platformIdentityId,
+    actor_control_identity_id: actor.controlIdentityId,
     actor_auth_user_id: input.principal.userId,
     action: input.action,
     resource_type: input.resourceType,
