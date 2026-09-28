@@ -22,18 +22,39 @@ test("no existing audit row is modified", () => {
   assert.match(sql, /rename column actor_identity_id to actor_control_identity_id/);
 });
 
-test("the new invariant is conditional and does not touch the historical rows", () => {
+test("the invariant is fully valid, not permanently unvalidated", () => {
   assert.match(
     gateC,
-    /check \(actor_kind <> 'user' or actor_identity_id is not null\) not valid/,
-    "an unconditional check would either fail on history or forbid system events",
+    /add constraint control_audit_user_has_platform_actor\s+check \(actor_kind <> 'user' or actor_identity_id is not null\);/,
+    "a NOT VALID invariant would be permanent design debt: it could never be validated",
+  );
+  assert.doesNotMatch(statementsOf(gateC), /not valid/i, "no constraint may be left unvalidated");
+});
+
+test("history is separated by its own actor kind, acquired without a rewrite", () => {
+  // A non-volatile default materialises for existing rows without touching them.
+  assert.match(gateC, /add column actor_kind text not null default 'legacy';/);
+  assert.match(gateC, /check \(actor_kind in \('legacy', 'user', 'system'\)\)/);
+  // No default afterwards: an omitted kind is a not-null violation, never a
+  // silent mislabelling.
+  assert.match(gateC, /alter column actor_kind drop default/);
+  assert.doesNotMatch(gateC, /'anonymous'/);
+});
+
+test("no new row can disguise itself as legacy", () => {
+  // A check constraint cannot tell an existing row from a new one, which is why
+  // this is a trigger. It fires for every writer, including service_role.
+  assert.match(gateC, /create trigger control_audit_reject_legacy_write\s+before insert on public\.control_audit_events/);
+  assert.match(gateC, /raise exception 'control_audit_legacy_kind_reserved'/);
+  assert.match(
+    gateC,
+    /revoke all on function public\.control_audit_reject_legacy_write\(\)\s+from public, anon, authenticated, service_role;/,
   );
 });
 
 test("a system event may exist without any actor", () => {
-  assert.match(gateC, /check \(actor_kind in \('user', 'system'\)\)/);
-  // No third kind: anonymous events are not written by any producer today.
-  assert.doesNotMatch(gateC, /'anonymous'/);
+  // The invariant only constrains 'user'; 'system' and 'legacy' carry no actor.
+  assert.match(gateC, /check \(actor_kind <> 'user' or actor_identity_id is not null\)/);
 });
 
 // ── The three distinct facts ─────────────────────────────────────────────
