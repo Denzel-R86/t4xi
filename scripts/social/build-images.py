@@ -122,6 +122,9 @@ CURATIE = {
     14: "schiphol+luchthavens+bagage+chauffeur--transfer-terminal",  # koffer bij bagagepost
     36: "kaart",   # Sinterklaas: kerstverlichting leest half november als te vroeg
     41: "kaart",   # Black Friday: "geen korting" werkt als typografie, niet als foto
+    58: "merk--model-y-kust",        # jaarafsluiting: eigen auto, eigen kust. Alleen
+                                    # pijler merk in de naam: met vloot erbij pakte de
+                                    # al gepubliceerde post van 04-09 hem eerst.
 }
 
 KAART = "kaart"   # curatiewaarde die een tekstkaart afdwingt
