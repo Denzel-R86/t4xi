@@ -153,7 +153,7 @@ export function bootstrapRatioCI(a, b, { q = 0.75, iterations = 4000, seed = 42 
  * Gate van masterplan §10 (> 10% verslechtering) op één metriek, volgens het protocol:
  *   · "regressie"   — p75-ratio > 1,10 én Mann-Whitney eenzijdig p < 0,05
  *   · "onbeslist"   — p75-ratio > 1,10 maar p ≥ 0,05 → meer runs (verdubbel n) en opnieuw
- *   · "verbetering" — p75-ratio < 0,90 én de omgekeerde toets p < 0,05
+ *   · "verbetering" — p75-ratio < 0,90 én de omgekeerde toets p < 0,05 én BI-bovengrens ≤ 1,10
  *   · "geen-regressie" — geen van bovenstaande én bovengrens bootstrap-95%-BI van de ratio ≤ 1,10
  *   · "onbeslist"   — anders (een niet-significante toets bewijst geen regressie < 10%)
  * Bij te weinig runs (n < minN) is de uitkomst altijd "onvoldoende-runs".
@@ -170,10 +170,13 @@ export function gate(baseline, candidate, { threshold = 0.1, alpha = 0.05, minN 
   let verdict;
   if (A.length < minN || B.length < minN) verdict = "onvoldoende-runs";
   else if (ratio > 1 + threshold) verdict = worse.p < alpha ? "regressie" : "onbeslist";
+  else if (!(ci && ci.hi <= 1 + threshold)) verdict = "onbeslist";
   else if (ratio < 1 - threshold && better.p < alpha) verdict = "verbetering";
-  else verdict = ci && ci.hi <= 1 + threshold ? "geen-regressie" : "onbeslist";
+  else verdict = "geen-regressie";
   return {
     verdict,
+    /** Gate §10 gehaald: alleen bij "verbetering" of "geen-regressie" (beide met BI-bovengrens ≤ 1 + threshold). */
+    passed: verdict === "verbetering" || verdict === "geen-regressie",
     nA: A.length,
     nB: B.length,
     medianA: quantile(A, 0.5),

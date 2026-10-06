@@ -85,9 +85,12 @@ diagnostisch), basis A tegen kandidaat B, beide volgens dit protocol en elk met 
 |---|---|
 | **regressie** (niet mergen) | p75(B) / p75(A) > 1,10 **én** Mann-Whitney eenzijdig (B > A) p < 0,05 |
 | **onbeslist** | ratio > 1,10 maar p ≥ 0,05 → beide kanten naar n = 30 en opnieuw toetsen |
-| **verbetering** | ratio < 0,90 én de omgekeerde toets p < 0,05 |
-| **geen regressie > 10% aangetoond** | geen van bovenstaande **én** bovengrens van het bootstrap-95%-interval van de p75-ratio ≤ 1,10 |
-| **onbeslist** | geen van bovenstaande en BI-bovengrens > 1,10 → naar n = 30; blijft het onbeslist, dan is de gate **niet** gehaald |
+| **verbetering** | ratio < 0,90 én de omgekeerde toets p < 0,05 **én** BI-bovengrens ≤ 1,10 |
+| **geen regressie > 10% aangetoond** | geen regressie of verbetering **én** bovengrens van het bootstrap-95%-interval van de p75-ratio ≤ 1,10 |
+| **onbeslist** | elke andere uitkomst, ook een gunstige puntschatting of toets met BI-bovengrens > 1,10 → naar n = 30; blijft het onbeslist, dan is de gate **niet** gehaald |
+
+**Gate gehaald** = "verbetering" of "geen regressie > 10% aangetoond"; beide eisen een
+BI-bovengrens ≤ 1,10. Een gunstige puntschatting of significante toets alleen is onvoldoende.
 | **onvoldoende-runs** | n < 15 aan een van beide kanten |
 
 Waarom zo:
@@ -97,6 +100,12 @@ Waarom zo:
 - Erbij staat een **bootstrap-95%-interval** van de p75-ratio (4000 trekkingen, vaste seed,
   reproduceerbaar). Een niet-significante toets bewijst níét dat een eventuele regressie
   kleiner dan 10% is; daarvoor is de bovengrens van dit interval het criterium (zie tabel).
+
+**Welke methode de gate bepaalt (één regel).** Standaard is `simulate` de gate-methode.
+`devtools` is alleen gate-waardig als dat vóór de meting per cel is vastgelegd én basis en
+kandidaat in **één sessie geïnterleaved** worden gemeten (vanwege de hostgevoeligheid; een
+vergelijking van aparte `devtools`-sessies via `--compare` is nooit gate-waardig). In alle
+andere gevallen is een `devtools`-meting diagnostisch.
 
 **Dezelfde methode voor basis én kandidaat.** Per cel ligt vóór de meting vast welke
 throttling-methode (`simulate` of `devtools`), Lighthouse-versie, doel, cache-toestand en n
@@ -124,8 +133,8 @@ reproduceerbaar.
 trace. Een pagina waarvan de waargenomen eerste paint soms vóór en soms ná het laden van
 grote scripts valt, levert twee modi op. Dat is dan een eigenschap van de pagina (veel werk
 dat met de eerste paint concurreert), maar de grootte van de sprong is deels een
-modelartefact. Bij twijfel controleer je met `--throttling=devtools` (echte throttling,
-diagnostisch, niet gate-waardig wegens grotere hostgevoeligheid).
+modelartefact. `--throttling=devtools` (echte throttling) is hostgevoeliger; zie de regel
+hieronder voor wanneer die methode de gate bepaalt.
 
 **Vastgesteld in H-2** (`h2-boeken-diagnose.md`): headless Chrome presenteert in een deel
 van de runs pas rond **~2,54 s** het eerste frame (waargenomen FCP), terwijl de main thread

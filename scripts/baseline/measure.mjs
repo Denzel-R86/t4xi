@@ -75,7 +75,7 @@ function gateTable(gates) {
   const rows = ["| Cel | Metriek | Basis → kandidaat | n | mediaan A → B | p75 A → B | ratio p75 (95%-BI) | p(slechter) | Uitspraak |", "|---|---|---|---|---|---|---|---|---|"];
   for (const g of gates) {
     const ci = g.ratioCI95 ? `${g.ratioCI95.lo.toFixed(2)}–${g.ratioCI95.hi.toFixed(2)}` : "—";
-    rows.push(`| ${g.cell} | ${g.metric} | ${g.a} → ${g.b} | ${g.nA}/${g.nB} | ${fmtS(g.medianA)} → ${fmtS(g.medianB)} s | ${fmtS(g.p75A)} → ${fmtS(g.p75B)} s | ${g.ratio?.toFixed(2) ?? "—"} (${ci}) | ${g.pWorse?.toFixed(3) ?? "—"} | **${g.verdict}** |`);
+    rows.push(`| ${g.cell} | ${g.metric} | ${g.a} → ${g.b} | ${g.nA}/${g.nB} | ${fmtS(g.medianA)} → ${fmtS(g.medianB)} s | ${fmtS(g.p75A)} → ${fmtS(g.p75B)} s | ${g.ratio?.toFixed(2) ?? "—"} (${ci}) | ${g.pWorse?.toFixed(3) ?? "—"} | **${g.verdict}** (${g.passed ? "gate gehaald" : "gate niet gehaald"}) |`);
   }
   return rows.join("\n");
 }

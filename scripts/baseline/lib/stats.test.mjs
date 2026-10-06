@@ -44,6 +44,8 @@ test("gate_requires_min_runs_and_significance", () => {
   assert.equal(gate(base, base.map((x) => x * 1.3)).verdict, "regressie");
   assert.equal(gate(base, base.map((x) => x * 1.05)).verdict, "geen-regressie");
   assert.equal(gate(base.map((x) => x * 2), base).verdict, "verbetering");
+  assert.equal(gate(base.map((x) => x * 2), base).passed, true);
+  assert.equal(gate(base, base.map((x) => x * 1.3)).passed, false);
 });
 
 test("gate_marks_slow_mode_shift_undecided_at_n15_and_regression_at_n30", () => {
@@ -66,6 +68,18 @@ test("gate_does_not_treat_non_significance_as_no_regression", () => {
   const g = gate(a, b);
   assert.ok(g.ratio <= 1.1 && g.ratioCI95.hi > 1.1);
   assert.equal(g.verdict, "onbeslist");
+});
+
+test("gate_rejects_favourable_result_with_too_wide_interval", () => {
+  // Gunstige puntschatting (ratio ≈ 0,63) én significante toets (p ≈ 0,005), maar de
+  // bovengrens van het 95%-BI ligt ruim boven 1,10: geen "verbetering", gate niet gehaald.
+  const mk = (n, f) => Array.from({ length: n }, (_, i) => f(i));
+  const a = mk(15, (i) => (i < 10 ? 3000 + i * 10 : 6000 + i * 10));
+  const b = mk(15, (i) => (i < 11 ? 1500 + i * 10 : 6000 + i * 10));
+  const g = gate(a, b);
+  assert.ok(g.ratio < 0.9 && g.pBetter < 0.05 && g.ratioCI95.hi > 1.1);
+  assert.equal(g.verdict, "onbeslist");
+  assert.equal(g.passed, false);
 });
 
 test("extracts_lcp_element_from_lighthouse13_insight", () => {
