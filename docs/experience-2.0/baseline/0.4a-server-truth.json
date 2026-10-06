@@ -1,0 +1,278 @@
+{
+  "generatedAt": "2026-10-06T11:20:15.758Z",
+  "timeZone": "Europe/Amsterdam",
+  "period": {
+    "first": "2026-07-07",
+    "last": "2026-10-02",
+    "snapshotsFirst": "2026-07-30",
+    "snapshotsLast": "2026-10-02",
+    "quoteLogsFirst": "2026-07-07",
+    "quoteLogsLast": "2026-10-02",
+    "bookingsFirst": "2026-07-25",
+    "bookingsLast": "2026-09-08"
+  },
+  "totals": {
+    "quotes": 707,
+    "uniqueQuoteFingerprints": 390,
+    "quotesWithoutFingerprint": 40,
+    "quoteCalculations": 1149,
+    "quoteCalculationsAvailable": 968,
+    "bookingsAll": 10,
+    "bookingsExcluded": 7,
+    "bookings": 3,
+    "bookingsWithQuote": 0,
+    "bookingsWithPaymentIntent": 1,
+    "paidBookings": 1,
+    "paidRevenueCents": 5700,
+    "quoteToBooking": {
+      "numerator": 0,
+      "denominator": 707,
+      "pct": 0
+    },
+    "bookingToPaid": {
+      "numerator": 1,
+      "denominator": 3,
+      "pct": 33.3
+    },
+    "quoteToPaid": {
+      "numerator": 0,
+      "denominator": 707,
+      "pct": 0
+    },
+    "bookingsSinceSnapshots": 2,
+    "quoteToBookingSinceSnapshots": {
+      "numerator": 2,
+      "denominator": 707,
+      "pct": 0.3
+    }
+  },
+  "exclusions": {
+    "test_marker": 5,
+    "internal_domain": 0,
+    "shared_contact": 2
+  },
+  "quotesBySource": {
+    "fixed_route_prices": 218,
+    "dynamic": 489
+  },
+  "bookingStatusMix": {
+    "inquiry/unpaid": 2,
+    "inquiry/paid": 1
+  },
+  "weeks": [
+    {
+      "week": "2026-W28",
+      "weekStart": "2026-07-06",
+      "quotes": 0,
+      "uniqueQuoteFingerprints": 0,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 20,
+      "quoteCalculationsAvailable": 14,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    },
+    {
+      "week": "2026-W29",
+      "weekStart": "2026-07-13",
+      "quotes": 0,
+      "uniqueQuoteFingerprints": 0,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 57,
+      "quoteCalculationsAvailable": 48,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    },
+    {
+      "week": "2026-W30",
+      "weekStart": "2026-07-20",
+      "quotes": 0,
+      "uniqueQuoteFingerprints": 0,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 195,
+      "quoteCalculationsAvailable": 165,
+      "bookings": 1,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    },
+    {
+      "week": "2026-W31",
+      "weekStart": "2026-07-27",
+      "quotes": 14,
+      "uniqueQuoteFingerprints": 0,
+      "quotesWithoutFingerprint": 14,
+      "quoteCalculations": 50,
+      "quoteCalculationsAvailable": 33,
+      "bookings": 2,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 1,
+      "paidBookings": 1,
+      "excludedTestBookings": 6
+    },
+    {
+      "week": "2026-W32",
+      "weekStart": "2026-08-03",
+      "quotes": 138,
+      "uniqueQuoteFingerprints": 76,
+      "quotesWithoutFingerprint": 26,
+      "quoteCalculations": 205,
+      "quoteCalculationsAvailable": 150,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    },
+    {
+      "week": "2026-W33",
+      "weekStart": "2026-08-10",
+      "quotes": 169,
+      "uniqueQuoteFingerprints": 91,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 181,
+      "quoteCalculationsAvailable": 169,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    },
+    {
+      "week": "2026-W34",
+      "weekStart": "2026-08-17",
+      "quotes": 307,
+      "uniqueQuoteFingerprints": 192,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 336,
+      "quoteCalculationsAvailable": 307,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    },
+    {
+      "week": "2026-W35",
+      "weekStart": "2026-08-24",
+      "quotes": 25,
+      "uniqueQuoteFingerprints": 5,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 34,
+      "quoteCalculationsAvailable": 25,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    },
+    {
+      "week": "2026-W36",
+      "weekStart": "2026-08-31",
+      "quotes": 3,
+      "uniqueQuoteFingerprints": 3,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 6,
+      "quoteCalculationsAvailable": 6,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    },
+    {
+      "week": "2026-W37",
+      "weekStart": "2026-09-07",
+      "quotes": 41,
+      "uniqueQuoteFingerprints": 21,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 52,
+      "quoteCalculationsAvailable": 41,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 1
+    },
+    {
+      "week": "2026-W38",
+      "weekStart": "2026-09-14",
+      "quotes": 0,
+      "uniqueQuoteFingerprints": 0,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 0,
+      "quoteCalculationsAvailable": 0,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    },
+    {
+      "week": "2026-W39",
+      "weekStart": "2026-09-21",
+      "quotes": 2,
+      "uniqueQuoteFingerprints": 1,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 5,
+      "quoteCalculationsAvailable": 2,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    },
+    {
+      "week": "2026-W40",
+      "weekStart": "2026-09-28",
+      "quotes": 8,
+      "uniqueQuoteFingerprints": 4,
+      "quotesWithoutFingerprint": 0,
+      "quoteCalculations": 8,
+      "quoteCalculationsAvailable": 8,
+      "bookings": 0,
+      "bookingsWithQuote": 0,
+      "bookingsWithPaymentIntent": 0,
+      "paidBookings": 0,
+      "excludedTestBookings": 0
+    }
+  ],
+  "findings": [
+    {
+      "code": "booking_without_quote_id_before_lock",
+      "count": 9,
+      "detail": "Boekingen zonder quote_id aangemaakt vóór de quote-lock (2026-08-08); verwacht."
+    },
+    {
+      "code": "booking_without_quote_id_after_lock",
+      "count": 1,
+      "detail": "Boekingen zonder quote_id aangemaakt ná de quote-lock (2026-08-08)."
+    },
+    {
+      "code": "booking_without_price",
+      "count": 2,
+      "detail": "Boekingen zonder price_euros (aanvraag/offerte-pad of handmatig)."
+    },
+    {
+      "code": "payment_pending_without_paid",
+      "count": 3,
+      "detail": "Boekingen met gekoppelde PaymentIntent die op payment_status 'pending' blijven staan (betaling afgebroken of nooit afgerond)."
+    },
+    {
+      "code": "paid_but_lifecycle_inquiry",
+      "count": 2,
+      "detail": "Betaalde boekingen waarvan de lifecycle-status nog 'inquiry' is (payment_status en status zijn bewust orthogonaal; betaling zet de status niet door)."
+    },
+    {
+      "code": "completed_unpaid",
+      "count": 1,
+      "detail": "Boekingen met status 'completed' die niet betaald zijn."
+    }
+  ]
+}
