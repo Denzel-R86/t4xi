@@ -22,6 +22,8 @@ import Header from "@/components/sections/Header";
 import Footer from "@/components/sections/Footer";
 import StickyCta from "@/components/sections/StickyCta";
 
+const HOUR_CYCLE_SCRIPT = `try{var h=new Intl.DateTimeFormat(void 0,{hour:"numeric"}).resolvedOptions().hourCycle;if(h)document.documentElement.setAttribute("data-hour-cycle",h)}catch(e){}`;
+
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
@@ -132,6 +134,13 @@ export default async function RootLayout({
         <Script id="js-detect" strategy="beforeInteractive">
           {`document.documentElement.classList.add("js");`}
         </Script>
+        {/* Uurnotatie van de browser (F-18) als data-hour-cycle op <html>, zodat
+            het tijdveld in de hero-zin ook zonder ::-webkit-datetime-edit-
+            pseudo-elementen (Safari/iOS) breed genoeg is voor "02:30 PM".
+            Gewoon inline-script, geen next/script: het draait tijdens het parsen,
+            vóór de eerste paint, dus zonder layoutsprong. suppressHydrationWarning
+            op <html> dekt het attribuut. */}
+        <script dangerouslySetInnerHTML={{ __html: HOUR_CYCLE_SCRIPT }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

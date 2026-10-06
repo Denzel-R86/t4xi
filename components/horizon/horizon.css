@@ -137,6 +137,14 @@ input.hz-time::-webkit-datetime-edit-ampm-field {
   min-width: 2.75ch;
   text-align: center;
 }
+/* Fallback zonder pseudo-elementen (Safari/iOS): bij een 12-uursnotatie
+   ("02:30 PM") een ruimere minimumbreedte. data-hour-cycle zet een inline-script
+   in app/[locale]/layout.tsx vóór de eerste paint. 24-uurs ("14:30") past in de
+   standaard 6ch (mobiel 7.5ch, zie hieronder). */
+html[data-hour-cycle="h12"] input[type="time"].hz-time,
+html[data-hour-cycle="h11"] input[type="time"].hz-time {
+  min-width: 9ch;
+}
 
 /* De boekingszin blijft visueel licht, maar de native invoervelden moeten op
    mobiel wel een volwaardig aanraakdoel zijn. De ruimere minimum-breedte
