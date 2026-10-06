@@ -52,6 +52,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Reveal, Odometer, usePrefersReducedMotion } from "./motion";
 import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
+import { useHidesStickyCta } from "@/components/sections/sticky-cta-visibility";
 import { useTranslations } from "next-intl";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 
@@ -308,6 +309,29 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   const addressesSet = Boolean(pickup && dropoff);
   const quoteReady = addressesSet && departureValid && Boolean(luggage);
   const quote = useRouteQuote(pickup, dropoff, { date, time, luggage, ready: quoteReady });
+  const reducedMotion = usePrefersReducedMotion();
+
+  // F-14: de zin draagt de boekingshandeling zelf. De mobiele StickyCta wijkt
+  // zolang hij in beeld is, anders dekt die balk de zin en de prijs af.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useHidesStickyCta(rootRef);
+
+  // F-14: op een smal scherm valt de uitkomst (prijs + "Bevestig") na het
+  // invullen onder de vouw. Zodra de quote landt, schuift de pagina precies
+  // genoeg om die regel te tonen — alleen als hij onder de vouw staat, de
+  // bovenkant nog in beeld is en de klant niet midden in een adresveld typt.
+  const resultRef = useRef<HTMLDivElement>(null);
+  const settled = quote.status === "ready" || quote.status === "onrequest" || quote.status === "error";
+  useEffect(() => {
+    const el = resultRef.current;
+    if (!settled || !quoteReady || !el) return;
+    if (document.activeElement?.getAttribute("role") === "combobox") return;
+    const r = el.getBoundingClientRect();
+    const viewportH = window.visualViewport?.height ?? window.innerHeight;
+    if (r.top > 0 && r.bottom > viewportH) {
+      el.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
+    }
+  }, [settled, quote.status, quoteReady, reducedMotion]);
 
   const href =
     quoteReady && pickup && dropoff
@@ -414,7 +438,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   );
 
   return (
-    <div className="border-t border-ink/30 pt-5">
+    <div ref={rootRef} className="border-t border-ink/30 pt-5" data-hides-sticky-cta="">
       {/* Bewust een <div>, geen <p>: de invulvelden dragen een <ul>-listbox en
           een <ul> mag in HTML niet binnen een <p> (hydration-fout). */}
       {/* Onder md hangt de suggestielijst aan deze zin (F-15): volle zinsbreedte,
@@ -465,7 +489,8 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         .
       </div>
       <div
-        className="mt-4 flex flex-wrap items-baseline gap-x-7 gap-y-3"
+        ref={resultRef}
+        className="mt-4 flex scroll-mb-4 flex-wrap items-baseline gap-x-7 gap-y-3"
         aria-live="polite"
         aria-busy={quote.status === "loading"}
       >

@@ -70,3 +70,20 @@ footer {
     transform: none;
   }
 }
+
+/* Mobiele StickyCta (F-14): wijkt zolang de hero-boekingszin in beeld is, zodat
+   de balk de zin, de prijs en "Bevestig" niet afdekt. StickyCtaBar zet
+   data-hidden; vóór hydratie (nog geen data-hidden) verbergt de :has()-regel de
+   balk al op pagina's met zo'n zin, zodat hij niet eerst verschijnt en dan
+   wegschuift. Alleen met JS (html.js): zonder JS blijft de balk gewoon staan.
+   visibility:hidden haalt de links ook uit tabvolgorde en a11y-boom. */
+.sticky-cta[data-hidden="true"],
+html.js body:has([data-hides-sticky-cta]) .sticky-cta:not([data-hidden]) {
+  visibility: hidden;
+  transform: translateY(100%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sticky-cta {
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.3s;
+  }
+}
