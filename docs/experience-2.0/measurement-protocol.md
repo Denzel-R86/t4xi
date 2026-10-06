@@ -120,6 +120,13 @@ dat met de eerste paint concurreert), maar de grootte van de sprong is deels een
 modelartefact. Bij twijfel controleer je met `--throttling=devtools` (echte throttling,
 diagnostisch, niet gate-waardig wegens grotere hostgevoeligheid).
 
+**Vastgesteld in H-2** (`h2-boeken-diagnose.md`): headless Chrome presenteert in een deel
+van de runs pas rond **~2,54 s** het eerste frame (waargenomen FCP), terwijl de main thread
+stil is. Op pagina's met veel vroeg werk (`/boeken`: Stripe.js en booking-JS) maakt lantern
+daar een trage modus van. Regel: zie je in `runs.json` een cluster van `observed.fcpMs`
+rond 2,5 s, behandel de gesimuleerde bimodaliteit dan als artefact. Meet die cel daarnaast
+met `--throttling=devtools` (n = 15) en neem die uitkomst mee in de gate-uitspraak.
+
 ## 7. Commando's
 
 ```bash
