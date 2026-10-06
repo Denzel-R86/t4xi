@@ -154,7 +154,8 @@ export function bootstrapRatioCI(a, b, { q = 0.75, iterations = 4000, seed = 42 
  *   · "regressie"   — p75-ratio > 1,10 én Mann-Whitney eenzijdig p < 0,05
  *   · "onbeslist"   — p75-ratio > 1,10 maar p ≥ 0,05 → meer runs (verdubbel n) en opnieuw
  *   · "verbetering" — p75-ratio < 0,90 én de omgekeerde toets p < 0,05
- *   · "gelijk"      — anders
+ *   · "geen-regressie" — geen van bovenstaande én bovengrens bootstrap-95%-BI van de ratio ≤ 1,10
+ *   · "onbeslist"   — anders (een niet-significante toets bewijst geen regressie < 10%)
  * Bij te weinig runs (n < minN) is de uitkomst altijd "onvoldoende-runs".
  */
 export function gate(baseline, candidate, { threshold = 0.1, alpha = 0.05, minN = 15 } = {}) {
@@ -166,10 +167,11 @@ export function gate(baseline, candidate, { threshold = 0.1, alpha = 0.05, minN 
   const worse = mannWhitneyGreater(A, B);
   const better = mannWhitneyGreater(B, A);
   const ci = bootstrapRatioCI(A, B);
-  let verdict = "gelijk";
+  let verdict;
   if (A.length < minN || B.length < minN) verdict = "onvoldoende-runs";
   else if (ratio > 1 + threshold) verdict = worse.p < alpha ? "regressie" : "onbeslist";
   else if (ratio < 1 - threshold && better.p < alpha) verdict = "verbetering";
+  else verdict = ci && ci.hi <= 1 + threshold ? "geen-regressie" : "onbeslist";
   return {
     verdict,
     nA: A.length,

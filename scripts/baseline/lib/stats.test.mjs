@@ -42,7 +42,7 @@ test("gate_requires_min_runs_and_significance", () => {
   const base = Array.from({ length: 15 }, (_, i) => 2800 + i * 5);
   assert.equal(gate(base.slice(0, 5), base.slice(0, 5)).verdict, "onvoldoende-runs");
   assert.equal(gate(base, base.map((x) => x * 1.3)).verdict, "regressie");
-  assert.equal(gate(base, base.map((x) => x * 1.05)).verdict, "gelijk");
+  assert.equal(gate(base, base.map((x) => x * 1.05)).verdict, "geen-regressie");
   assert.equal(gate(base.map((x) => x * 2), base).verdict, "verbetering");
 });
 
@@ -55,6 +55,17 @@ test("gate_marks_slow_mode_shift_undecided_at_n15_and_regression_at_n30", () => 
   assert.equal(gate(mk(11, 4), mk(6, 9)).verdict, "onbeslist");
   // Dezelfde aandelen met verdubbelde n zijn wél onderscheidbaar.
   assert.equal(gate(mk(22, 8), mk(12, 18)).verdict, "regressie");
+});
+
+test("gate_does_not_treat_non_significance_as_no_regression", () => {
+  // Ratio < 1,10 en niet significant, maar zo veel spreiding dat de BI-bovengrens > 1,10:
+  // dat is "onbeslist", nooit "geen-regressie".
+  const r = rng(11);
+  const a = Array.from({ length: 15 }, () => 2000 + Math.round(r() * 2000));
+  const b = a.map((x) => x * 1.04);
+  const g = gate(a, b);
+  assert.ok(g.ratio <= 1.1 && g.ratioCI95.hi > 1.1);
+  assert.equal(g.verdict, "onbeslist");
 });
 
 test("extracts_lcp_element_from_lighthouse13_insight", () => {
