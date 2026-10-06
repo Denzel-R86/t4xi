@@ -9,6 +9,7 @@ import { normalizeLocale } from "@/lib/notifications/booking-email";
 import { dispatch } from "@/lib/communication/orchestrator";
 import { supabaseDeliveryLog } from "@/lib/communication/delivery-log";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
+import { persistSourceQuoteId, resolveQuoteLink } from "@/lib/bookings/quote-link";
 import {
   buildTripMonitoringRegistration,
   registerFlightMonitoring,
@@ -253,6 +254,10 @@ export async function POST(request: Request) {
   }
   // outcome.kind === "on_request" (of overleg) → offerte op aanvraag (prijs null).
 
+  // Meetbaarheid (H-3): welke getoonde quote hoort bij deze boeking. Puur
+  // attributie in `source_quote_id`; de lock hierboven blijft ongewijzigd.
+  const quoteLink = resolveQuoteLink({ outcome, luggageNeedsManualReview });
+
   // 3b. Vluchtnummer — verplicht bij een luchthavenOPHALING (aankomende vlucht),
   // optioneel bij wegbrengen naar de luchthaven. Dit is exact dezelfde regel als
   // in BookingSection; formulier en server mogen elkaar hier nooit tegenspreken.
@@ -419,6 +424,14 @@ export async function POST(request: Request) {
       message: "Boeking kon niet worden bevestigd.",
     });
   }
+
+  // Quote-attributie (H-3): best-effort, kan de boeking of response nooit breken.
+  // Werkt ook zonder de nieuwe kolom (degradeert naar een eenmalige waarschuwing).
+  await persistSourceQuoteId(
+    (id, patch) => supabase.from("bookings").update(patch).eq("id", id),
+    bookingId,
+    quoteLink.sourceQuoteId
+  );
 
   // Een retour is één betaalde boeking met twee operationele momenten. De
   // gestructureerde velden worden direct na de (eventueel transactionele)
