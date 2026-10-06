@@ -56,9 +56,10 @@ toegepast op staging of productie.
 2. `bookings.payment_started_at timestamptz null`. Geen backfill: het historische moment is
    niet af te leiden.
 3. `link_booking_payment`: dezelfde functie, met als enige extra regel
-   `payment_started_at = coalesce(payment_started_at, now())` in de bestaande UPDATE. Die
-   update draait alleen bij uitkomst `linked`. Retries met dezelfde PaymentIntent houden het
-   eerste moment. Signature, return-codes, de overgang `unpaid → pending`, de guards en de
+   `payment_started_at` in de bestaande UPDATE, alleen gezet bij een nieuwe koppeling (nog
+   geen PI op de boeking). Retries met dezelfde PaymentIntent veranderen het niet, en een
+   historische boeking met PI maar zonder starttijd blijft NULL (zie
+   `h3-migratievoorstel.md` §2 en §8). Signature, return-codes, de overgang `unpaid → pending`, de guards en de
    rechten blijven gelijk. Een test vergelijkt de functietekst met het origineel. De
    productiedefinitie (read-only opgevraagd op 2026-10-06) is gelijk aan het
    repo-origineel.
