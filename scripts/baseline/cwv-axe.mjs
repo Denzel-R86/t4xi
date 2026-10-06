@@ -27,6 +27,8 @@ import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadavg, cpus } from "node:os";
+import { extractLcp } from "./lib/lighthouse.mjs";
 
 const LH_VERSION = "13.5.0";
 const ORIGIN = "https://www.t4xi.nl"; // lib/seo-locale.ts SITE_URL; NL = default locale zonder prefix
@@ -108,7 +110,8 @@ async function lighthouseInDir(url, formFactor, tmp) {
   const lhr = JSON.parse(await readFile(outFile, "utf8"));
   await rm(outFile, { force: true });
   const a = lhr.audits;
-  const lcpEl = a["largest-contentful-paint-element"]?.details?.items?.[0]?.items?.[0]?.node;
+  // F-10: Lighthouse 13 levert het LCP-element via `lcp-breakdown-insight` (zie lib/lighthouse.mjs).
+  const lcpEl = extractLcp(lhr).element;
   return {
     url,
     formFactor,
@@ -128,7 +131,9 @@ async function lighthouseInDir(url, formFactor, tmp) {
     siMs: a["speed-index"]?.numericValue ?? null,
     ttfbMs: a["server-response-time"]?.numericValue ?? null,
     totalBytes: a["total-byte-weight"]?.numericValue ?? null,
-    lcpElement: lcpEl ? { selector: lcpEl.selector, snippet: lcpEl.snippet?.slice(0, 200) } : null,
+    lcpElement: lcpEl,
+    observedFcpMs: a.metrics?.details?.items?.[0]?.observedFirstContentfulPaint ?? null,
+    load1: loadavg()[0],
     a11yFailed: Object.values(a)
       .filter((x) => x.score === 0 && lhr.categories.accessibility?.auditRefs.some((r) => r.id === x.id))
       .map((x) => x.id),
@@ -136,6 +141,11 @@ async function lighthouseInDir(url, formFactor, tmp) {
 }
 
 async function runCwv() {
+  // Meetprotocol (measurement-protocol.md): niet meten onder CPU-last. Voor gate-metingen
+  // hoort scripts/baseline/measure.mjs (wacht/weigert); dit script waarschuwt alleen.
+  const load1 = loadavg()[0];
+  if (load1 > cpus().length * 0.5)
+    process.stderr.write(`[lighthouse] WAARSCHUWING: load1 ${load1.toFixed(2)} > ${cpus().length * 0.5}; resultaat niet gate-waardig\n`);
   const tmp = await mkdtemp(path.join(tmpdir(), "t4xi-lh-"));
   const runs = [];
   let aborted = null;
