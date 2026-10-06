@@ -116,16 +116,20 @@ input.hz-blank::placeholder { color: #999694; font-weight: 300; }
 select.hz-blank { appearance: none; -webkit-appearance: none; cursor: pointer; }
 select.hz-blank:invalid { color: #999694; font-weight: 300; }
 
-/* Tijdveld in de boekingszin (F-18). Geen vaste breedte in ch: die sneed het
-   uurdeel af zodra de klokknop meer ruimte nam (768: ":30", 1280: "4:30"), en
-   een 12-uursweergave ("02:30 PM") is nog breder. De browser maakt het veld nu
-   zelf precies zo breed als zijn eigen tijdformaat. Elk deelveld krijgt een
-   vaste minimumbreedte, zodat "--:--" en "14:30" (en "-- / PM") even breed zijn:
-   geen sprong bij invullen. Pseudo-elementen alleen in Chromium/WebKit; overige
-   browsers hanteren hun eigen intrinsieke breedte. */
-input[type="time"].hz-time {
+/* Tijdveld in de boekingszin (F-18). Een vaste 6ch sneed het uurdeel af
+   zodra de klokknop ruimte nam (768: ":30", 1280: "4:30"). Nu:
+   · basis-minimumbreedte die de 12-uursnotatie ("02:30 PM") past, ongeacht
+     wat taal of Intl zeggen — dus ook "14:30" past altijd;
+   · width:auto, zodat een browser met een bredere eigen weergave (Chromium:
+     klokknop) het veld zelf breder maakt;
+   · vaste deelveldbreedtes (Chromium/WebKit-pseudo-elementen), zodat "--:--" en
+     de waarde even breed zijn: geen sprong bij invullen.
+   Geen meet-vangnet: scrollWidth/clientWidth melden afkappen van een tijdveld
+   niet (Chromium en WebKit gemeten, H-1), dus dat zou schijnzekerheid zijn.
+   Hogere specificiteit dan de mobiele 7.5ch-regel hieronder. */
+input[type="time"].hz-blank.hz-time {
   width: auto;
-  min-width: 6ch;
+  min-width: 9ch;
   font-variant-numeric: tabular-nums;
 }
 input.hz-time::-webkit-datetime-edit-hour-field,
@@ -136,14 +140,6 @@ input.hz-time::-webkit-datetime-edit-minute-field {
 input.hz-time::-webkit-datetime-edit-ampm-field {
   min-width: 2.75ch;
   text-align: center;
-}
-/* Fallback zonder pseudo-elementen (Safari/iOS): bij een 12-uursnotatie
-   ("02:30 PM") een ruimere minimumbreedte. data-hour-cycle zet een inline-script
-   in app/[locale]/layout.tsx vóór de eerste paint. 24-uurs ("14:30") past in de
-   standaard 6ch (mobiel 7.5ch, zie hieronder). */
-html[data-hour-cycle="h12"] input[type="time"].hz-time,
-html[data-hour-cycle="h11"] input[type="time"].hz-time {
-  min-width: 9ch;
 }
 
 /* De boekingszin blijft visueel licht, maar de native invoervelden moeten op
