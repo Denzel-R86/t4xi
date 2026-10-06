@@ -42,7 +42,7 @@ Ernst: **H** hoog · **M** middel · **L** laag · **i** informatief.
 | F-15 | M | Suggestielijst in de hero loopt op 375 buiten de viewport. | 0.3 | Idem. |
 | F-16 | M | Eerste suggestie bij "Schiphol" is een straatadres, niet de luchthaven. | 0.3 | Autocomplete-ranking. |
 | F-17 | M | RouteFinder toont "Geen adressen gevonden" onder een geaccepteerd en geprijsd adres. | 0.3 | Fase 5 (RouteFinder). |
-| F-18 | L | Tijdveld (6ch) kapt een 12-uurstijd af — **open, mogelijk testprobleem**: gezien in een Linux-run zonder nl-locale (`11/12/2026`, `02:30 PM`); met `LANG=nl_NL` toont de run `12-11-2026` en `14:30`. Of bezoekers met een 12-uursinstelling dit zien, is nog niet vastgesteld. AddressAutocomplete kan na blur heropenen (alleen in code gezien). | 0.3 | Vaststellen met een expliciete en-US-run; daarna fixen of sluiten. |
+| F-18 | M | **Bestaand productprobleem:** het tijdveld in de hero-zin is te smal en snijdt het uurdeel af, óók met nl-instellingen en zonder focus: op 768 px is het uur helemaal weg (`:30`), op 1280 px half (`4:30`); op 375 px wel volledig (`14:30`). Bewijs: visual-baselines `zin-ready` (run 37499511603). Bij een 12-uursinstelling van de browser is het waarschijnlijk erger (`11/12/2026`, `02:30 PM` in een Linux-run zonder nl-locale) — nog vast te stellen. Daarnaast: AddressAutocomplete kan na blur heropenen (alleen in code gezien). | 0.3 | Aparte herstel-PR (breedte tijdveld op 768/1280); daarna 12-uurscheck met expliciete en-US-run. |
 
 ## SEO
 
