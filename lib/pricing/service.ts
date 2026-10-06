@@ -390,7 +390,9 @@ export async function getPricingQuote(
 ): Promise<PricingQuoteResult> {
   const { result, shadow, pickupApproach } = await resolveQuote(input);
   // Loggen mag de offerte nooit blokkeren of laten falen.
-  void logQuote(input, result, shadow, pickupApproach).catch(() => {});
+  void logQuote(input, result, shadow, pickupApproach).catch((e: unknown) =>
+    reportQuoteLogFailure("exception", e)
+  );
   return result;
 }
 
@@ -1682,13 +1684,14 @@ export async function loadServiceAreaBaseSlugs(
  * `null` als deze offerte niet via het afstand-tarief liep) en komt
  * uitsluitend in `price_breakdown` terecht — beïnvloedt niets anders.
  */
-async function logQuote(
+export async function logQuote(
   input: PricingQuoteInput,
   result: PricingQuoteResult,
   shadow: ShadowLogEntry | null = null,
-  pickupApproach: PickupApproachLogEntry | null = null
+  pickupApproach: PickupApproachLogEntry | null = null,
+  createLogger: () => QuoteLogClient | null = createPricingLogClient
 ): Promise<void> {
-  const logger = createPricingLogClient();
+  const logger = createLogger();
   if (!logger) return; // geen service-role key → stil overslaan
 
   // `pickupApproach` genest onder een eigen sleutel — de bestaande, al-live
@@ -1744,5 +1747,34 @@ async function logQuote(
     } satisfies Json,
   };
 
-  await logger.from("pricing_quote_logs").insert(row);
+  // F-05: een mislukte insert was onzichtbaar. Nu gelogd — alleen de foutcode,
+  // nooit de rij (adressen) of de PostgREST-melding (kan waarden bevatten).
+  // Gedrag verder gelijk: de offerte wordt nooit geblokkeerd.
+  const { error } = await logger.from("pricing_quote_logs").insert(row);
+  if (error) reportQuoteLogFailure("insert", error);
+}
+
+/** Minimale vorm van de log-client die logQuote gebruikt (injecteerbaar voor tests). */
+export type QuoteLogClient = {
+  from(table: "pricing_quote_logs"): {
+    insert(
+      row: TablesInsert<"pricing_quote_logs">
+    ): PromiseLike<{ error: { code?: string | null } | null }>;
+  };
+};
+
+/**
+ * PII-vrije melding van een verloren quote-logregel (F-05). Logt uitsluitend
+ * de fase en een foutcode of foutnaam — nooit invoer, adressen of de ruwe
+ * foutmelding.
+ */
+export function reportQuoteLogFailure(stage: "insert" | "exception", error: unknown): void {
+  let code = "onbekend";
+  if (error instanceof Error) {
+    code = error.name;
+  } else if (typeof error === "object" && error !== null && "code" in error) {
+    const c = (error as { code?: unknown }).code;
+    if (typeof c === "string" && /^[A-Za-z0-9_]{1,32}$/.test(c)) code = c;
+  }
+  console.error(`[pricing] quote-log niet opgeslagen (stage=${stage}, code=${code}).`);
 }
