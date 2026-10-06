@@ -438,8 +438,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         <span className="hz-focus relative inline-block align-baseline">
           <input
             type="time"
-            className="hz-blank font-display font-medium"
-            style={{ width: "6ch" }}
+            className="hz-blank hz-time font-display font-medium"
             value={time}
             onChange={(e) => setTime(e.target.value)}
             aria-label={t("ariaTijd")}
