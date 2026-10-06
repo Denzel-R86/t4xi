@@ -1,0 +1,114 @@
+name: Visual regression
+
+# Experience 2.0 §10b (PR 0.3): Playwright toHaveScreenshot-gate.
+#
+#  · pull_request / push op main → vergelijkt met de gecommitte Linux-baselines
+#    (tests/visual/__screenshots__/linux). Zolang die er nog niet zijn, slaat de
+#    job de run over met een notice in plaats van te falen.
+#  · workflow_dispatch → genereert de baselines in het vastgepinde image en
+#    uploadt ze als artifact `visual-baselines-linux`. Die worden daarna
+#    handmatig gecommit in dezelfde PR (zie docs/experience-2.0/baseline/0.3-visual.md).
+#
+# Image-tag en @playwright/test-versie MOETEN gelijk zijn; de eerste stap
+# controleert dat. Een Playwright-upgrade is een eigen PR die alléén baselines
+# ververst.
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: "Baselines (her)genereren en als artifact uploaden"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    name: Visual snapshots (Playwright image)
+    # x86_64-runner: de gecommitte baselines horen bij deze architectuur.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host --init
+    env:
+      PLAYWRIGHT_IMAGE_VERSION: "1.63.0"
+      APP_ENV: development
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      HOME: /root
+      UPDATE_SNAPSHOTS: ${{ github.event_name == 'workflow_dispatch' && inputs.update_snapshots }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Decide whether to run
+        id: gate
+        shell: bash
+        run: |
+          if [ "$UPDATE_SNAPSHOTS" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif compgen -G "tests/visual/__screenshots__/linux/*" > /dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Nog geen Linux-baselines in de repo — start deze workflow via workflow_dispatch om ze te genereren."
+          fi
+
+      - name: Verify Playwright version matches image
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          pinned="$(node -p "require('./package.json').devDependencies['@playwright/test']")"
+          if [ "$pinned" != "$PLAYWRIGHT_IMAGE_VERSION" ]; then
+            echo "::error::@playwright/test ($pinned) wijkt af van het image ($PLAYWRIGHT_IMAGE_VERSION)"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: npm ci --no-audit --no-fund
+
+      - name: Build
+        if: steps.gate.outputs.run == 'true'
+        run: npm run build
+
+      - name: Compare snapshots
+        if: steps.gate.outputs.run == 'true' && env.UPDATE_SNAPSHOTS != 'true'
+        run: npx playwright test
+
+      - name: Generate baselines
+        if: steps.gate.outputs.run == 'true' && env.UPDATE_SNAPSHOTS == 'true'
+        run: npx playwright test --update-snapshots=all
+
+      - name: Upload baselines
+        if: steps.gate.outputs.run == 'true' && env.UPDATE_SNAPSHOTS == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines-linux
+          path: tests/visual/__screenshots__/linux
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload report and diffs
+        if: failure() && steps.gate.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-report
+          path: |
+            playwright-report/visual
+            test-results/visual
+          retention-days: 14
