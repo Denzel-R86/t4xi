@@ -13,13 +13,15 @@
 --      (create_booking_from_snapshot + unieke index bookings_quote_id_key) en
 --      wordt hier niet aangeraakt. Gevuld door de app (lib/bookings/quote-link.ts),
 --      óók op het aanvraagpad (handmatige bagagereview na een getoonde prijs).
---   2. bookings.payment_started_at — moment van de EERSTE succesvolle koppeling
---      van een PaymentIntent (link_booking_payment → 'linked'). Wordt nooit
---      overschreven (coalesce), dus retries/herkoppeling van dezelfde PI houden
---      het eerste moment.
+--   2. bookings.payment_started_at — moment waarop deze boeking voor het eerst een
+--      PaymentIntent kreeg via link_booking_payment ('linked' terwijl er nog geen PI
+--      op stond). Herkoppeling van dezelfde PI verandert het niet. Historische
+--      boekingen die al een PI hadden vóór deze migratie houden NULL: een herhaalde
+--      koppeling legt dan géén "nu" als historisch startmoment vast.
 --   3. link_booking_payment: identiek aan 20260724120000, met als ENIGE wijziging
---      `payment_started_at = coalesce(payment_started_at, now())` in de bestaande
---      UPDATE. Signature, return-codes, statusovergang (unpaid → pending), guards
+--      `payment_started_at = case when v_existing_pi is null then coalesce(...)
+--      else payment_started_at end` in de bestaande UPDATE. Signature, return-codes,
+--      statusovergang (unpaid → pending), guards
 --      (already_paid / no_price / pi_conflict), search_path en rechten: ongewijzigd.
 --
 -- ADDITIEF + IDEMPOTENT: opnieuw uitvoeren is een no-op. Beide kolommen zijn
@@ -57,7 +59,7 @@ alter table public.bookings
 comment on column public.bookings.source_quote_id is
   'Quote (price_snapshots.quote_id) die de klant zag bij het boeken. Attributie, geen lock; zie quote_id voor de bindende prijs-lock.';
 comment on column public.bookings.payment_started_at is
-  'Eerste succesvolle koppeling van een PaymentIntent (link_booking_payment). Nooit overschreven.';
+  'Eerste nieuwe koppeling van een PaymentIntent (link_booking_payment, nog geen PI aanwezig). NULL bij boekingen die hun PI vóór deze kolom kregen.';
 
 do $$
 begin
@@ -65,6 +67,19 @@ begin
     alter table public.bookings
       add constraint bookings_source_quote_id_fkey
       foreign key (source_quote_id) references public.price_snapshots(quote_id) on delete set null;
+  end if;
+end $$;
+
+-- Invariant: als beide gevuld zijn, wijzen lock en attributie naar dezelfde quote.
+-- source_quote_id MAG ontbreken (best-effort attributie; ontbrekende attributie wordt
+-- gerapporteerd, niet afgedwongen). Let op NULL-semantiek: een CHECK slaagt bij NULL,
+-- daarom staan beide NULL-gevallen expliciet in de expressie.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'bookings_source_quote_matches_lock') then
+    alter table public.bookings
+      add constraint bookings_source_quote_matches_lock
+      check (quote_id is null or source_quote_id is null or source_quote_id = quote_id);
   end if;
 end $$;
 
@@ -124,7 +139,10 @@ begin
          amount_due_cents = p_amount_due_cents,
          payment_currency = lower(p_currency),
          payment_status = case when payment_status = 'unpaid' then 'pending' else payment_status end,
-         payment_started_at = coalesce(payment_started_at, pg_catalog.now())
+         payment_started_at = case
+                                when v_existing_pi is null then coalesce(payment_started_at, pg_catalog.now())
+                                else payment_started_at
+                              end
    where id = p_booking_id;
 
   return 'linked';

@@ -207,11 +207,17 @@ test("migratie: link_booking_payment wijzigt alleen door payment_started_at toe 
   );
   const proposed = functionBody(readFileSync(`supabase/migrations/${MIGRATION}`, "utf8"), "link_booking_payment");
 
-  const added = "payment_started_at = coalesce(payment_started_at, pg_catalog.now())";
-  assert.ok(proposed.includes(added), "betaalstart moet het eerste moment bewaren (coalesce)");
-  const normalized = proposed
-    .replace(/,\npayment_started_at = coalesce\(payment_started_at, pg_catalog\.now\(\)\)/, "")
-    .trim();
+  // Betaalstart ontstaat alleen bij een NIEUWE koppeling (nog geen PaymentIntent op de
+  // boeking). Een herhaalde koppeling van een historische boeking (PI al gezet, start
+  // onbekend) mag niet "nu" als historisch startmoment vastleggen.
+  const added = [
+    "payment_started_at = case",
+    "when v_existing_pi is null then coalesce(payment_started_at, pg_catalog.now())",
+    "else payment_started_at",
+    "end",
+  ].join("\n");
+  assert.ok(proposed.includes(added), "betaalstart alleen bij eerste nieuwe koppeling");
+  const normalized = proposed.replace(",\n" + added, "").trim();
   assert.equal(normalized, original.trim());
 });
 
@@ -230,6 +236,11 @@ test("migratie: additief, idempotent en rechten gelijk", () => {
   assert.ok(!/not null/i.test(code.replace(/is not null/gi, "")));
   assert.match(code, /revoke execute on function public\.link_booking_payment\(uuid, text, integer, text\) from public, anon, authenticated/);
   assert.match(code, /grant execute on function public\.link_booking_payment\(uuid, text, integer, text\) to service_role/);
+  // Invariant lock ↔ attributie, met expliciete NULL-gevallen (CHECK slaagt bij NULL).
+  assert.match(
+    code,
+    /check \(quote_id is null or source_quote_id is null or source_quote_id = quote_id\)/
+  );
   // De quote-lock-RPC wordt niet aangeraakt.
   assert.ok(!/create_booking_from_snapshot/.test(code));
 });

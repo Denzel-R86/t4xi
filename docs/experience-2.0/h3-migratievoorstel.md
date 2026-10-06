@@ -12,11 +12,21 @@ Bestand: `supabase/migrations/20261006150000_h3_booking_quote_source_and_payment
 | `bookings.source_quote_id` | **nieuw** | **Attributie**: de quote die de klant zag toen hij de boeking indiende — ook als de boeking daarna een aanvraag werd (handmatige bagagereview) | app (`lib/bookings/quote-link.ts`), best-effort na het aanmaken | FK → `price_snapshots`, `on delete set null`; **geen** unieke index; partiële index |
 | `pricing_quote_logs` | ja | Log van elke prijsberekening (ook niet-opgeslagen) | `logQuote` | heeft **geen** quote-id; blijft buiten dit voorstel (rest van F-04) |
 | `bookings.stripe_payment_intent_id`, `payment_status`, `paid_at` | ja | Betaalkoppeling en -status | `link_booking_payment`, webhook | ongewijzigd |
-| `bookings.payment_started_at` | **nieuw** | Moment van de **eerste** succesvolle koppeling van een PaymentIntent aan de boeking (= betaalstart) | `link_booking_payment` | nooit overschreven (`coalesce`) |
+| `bookings.payment_started_at` | **nieuw** | Moment waarop de boeking voor het eerst een PaymentIntent kreeg (= betaalstart) | `link_booking_payment`, alleen als er nog geen PI op de boeking stond | herkoppeling verandert het niet; boekingen met een PI van vóór de migratie houden NULL |
 
-**Invariant:** als `quote_id` gevuld is, hoort `source_quote_id` gelijk te zijn. Op het lock-pad
-zet de app beide; de backfill maakt bestaande rijen gelijk. De invariant wordt in dit voorstel
-**niet** door de database afgedwongen (zie §6, keuze A).
+**Invariant (afgedwongen):** constraint `bookings_source_quote_matches_lock`
+`check (quote_id is null or source_quote_id is null or source_quote_id = quote_id)`.
+
+Precies wat dit garandeert:
+- Als **beide** gevuld zijn, wijzen ze naar dezelfde quote. Een afwijkende combinatie wordt
+  door de database geweigerd, bij insert én update.
+- `source_quote_id` **mag ontbreken**, ook als `quote_id` gevuld is: de attributie is
+  best-effort en wordt ná het aanmaken gezet. De database dwingt aanwezigheid dus **niet**
+  af. Omdat een CHECK bij NULL slaagt, staan beide NULL-gevallen expliciet in de expressie
+  zodat de bedoeling leesbaar is.
+- Ontbrekende attributie wordt **gerapporteerd** (§7), niet stil gecorrigeerd. Er is geen
+  `coalesce`-trigger: die zou een al ingevulde afwijkende waarde niet corrigeren en een
+  ontbrekende waarde maskeren.
 
 **Waarom niet `quote_id` hergebruiken:** door de unieke index zou een aanvraag-boeking met
 `quote_id` een latere geldige lock-boeking op dezelfde quote laten falen. Dat verandert de
@@ -32,9 +42,11 @@ quote-lock, en dat mag H-3 niet.
 - **Meervoudigheid bewust toegestaan:** meerdere boekingen mogen naar dezelfde quote wijzen
   (bv. eerst een aanvraag, later een lock-boeking). Daarom geen unieke index.
 - **`payment_started_at`:** alleen via `link_booking_payment` (security definer, alleen
-  `service_role`), servertijd (`pg_catalog.now()`), eerste koppeling wint. Retries met
-  dezelfde PaymentIntent veranderen het tijdstip niet; `pi_conflict`, `already_paid` en
-  `no_price` raken de kolom niet.
+  `service_role`), servertijd (`pg_catalog.now()`), en **alleen bij een nieuwe koppeling**
+  (`v_existing_pi is null`). Retries met dezelfde PaymentIntent veranderen het tijdstip
+  niet. Een historische boeking die al een PI had maar geen starttijd, krijgt bij een
+  herhaalde koppeling **geen** starttijd (anders zou "nu" als historisch moment gelden).
+  `pi_conflict`, `already_paid` en `no_price` raken de kolom niet.
 - **`link_booking_payment` verder identiek:** signature, return-codes, statusovergang
   `unpaid → pending`, guards, `search_path` en rechten zijn gelijk aan `20260724120000`. Een
   test vergelijkt de functietekst regel voor regel met het origineel; de H-3-agent heeft
@@ -78,12 +90,40 @@ Voorkeur: **forward-only** (de kolommen zijn nullable en onschadelijk; er zijn g
 
 ## 6. Open keuzes voor de eigenaar
 
-- **A. Invariant afdwingen?** Nu niet. Alternatief: een `before insert or update`-trigger
-  `source_quote_id := coalesce(source_quote_id, quote_id)`, of een CHECK
-  `quote_id is null or source_quote_id = quote_id` (die CHECK vereist dan dat
-  `create_booking_from_snapshot` ook `source_quote_id` zet — een wijziging aan de lock-RPC,
-  dus buiten H-3).
+- **A. Invariant:** verwerkt als "gelijk als beide gevuld, attributie mag ontbreken" (§1).
+  Aanwezigheid afdwingen zou `create_booking_from_snapshot` moeten wijzigen en valt buiten H-3.
 - **B. Akkoord op de aparte kolom `source_quote_id`.**
 - **C. Akkoord op de wijziging van `link_booking_payment`** (betaalpad, één regel).
 - **D. Rest van F-04** (`pricing_quote_logs` zonder quote-id; geen surface/locale/sessie):
   apart voorstel.
+
+## 7. Ontbrekende attributie rapporteren
+
+Na toepassing telt de server-truth-rapportage (0.4a) expliciet:
+
+```sql
+select count(*) filter (where quote_id is not null and source_quote_id is null) as lock_zonder_attributie,
+       count(*) filter (where quote_id is null and source_quote_id is not null) as aanvraag_met_attributie,
+       count(*) filter (where stripe_payment_intent_id is not null and payment_started_at is null) as betaling_zonder_starttijd
+from public.bookings;
+```
+
+`lock_zonder_attributie > 0` betekent dat de best-effort-update faalde; de app logt dan een
+PII-vrije foutcode. Dit wordt een finding, geen automatische correctie. De 0.4a-uitbreiding
+volgt pas ná toepassing van de migratie (de kolommen bestaan nu niet).
+
+## 8. Verificatie
+
+- **Unit-tests** (`lib/bookings/quote-link.test.ts`, 15/15): o.a. functietekst identiek aan
+  het origineel op de ene betaalstartregel na, de exacte CHECK-expressie, geen unieke index,
+  lock-RPC ongemoeid.
+- **Uitgevoerd in een echte Postgres** (PGlite, eenmalig buiten de repo; schema van
+  `20260724120000` + deze migratie, 2× toegepast) — 12/12 geslaagd:
+  idempotent · backfill lock → attributie · eerste nieuwe koppeling zet starttijd en
+  `pending` · herhaalde koppeling zelfde PI laat starttijd ongewijzigd · **historische
+  boeking met PI zonder starttijd + herhaalde koppeling → starttijd blijft NULL** ·
+  `pi_conflict` wijzigt niets · `already_paid` · invariant weigert afwijkende combinatie en
+  staat NULL-gevallen en gelijke waarden toe · rechten alleen `service_role`.
+- **Controle op de test zelf:** met de eerdere versie (`coalesce` zonder voorwaarde) faalt
+  het historische scenario. Die fout zat in het eerste voorstel en is hiermee hersteld.
+- Nog niet uitgevoerd: staging (§4). Dit is geen uitvoeringsakkoord.
