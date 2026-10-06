@@ -29,7 +29,8 @@
     "test:cms": "tsx --test lib/cms/*.test.ts",
     "preview:invoice-email": "tsx scripts/verify-invoice-email.ts",
     "test:communication": "tsx --test lib/communication/*.test.ts lib/bookings/*.test.ts",
-    "verify:communication": "tsx scripts/verify-communication.ts"
+    "verify:communication": "tsx scripts/verify-communication.ts",
+    "seo:snapshot": "tsx scripts/seo-snapshot.ts"
   },
   "dependencies": {
     "@sanity/icons": "5.2.1",
