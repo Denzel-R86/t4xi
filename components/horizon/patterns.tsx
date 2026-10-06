@@ -53,6 +53,7 @@ import { Reveal, Odometer, usePrefersReducedMotion } from "./motion";
 import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import { useHidesStickyCta } from "@/components/sections/sticky-cta-visibility";
+import { isTextEntry, quoteOutcomeKey, shouldRevealResult } from "@/lib/hero/hero-visibility";
 import { useTranslations } from "next-intl";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 
@@ -312,26 +313,52 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   const reducedMotion = usePrefersReducedMotion();
 
   // F-14: de zin draagt de boekingshandeling zelf. De mobiele StickyCta wijkt
-  // zolang hij in beeld is, anders dekt die balk de zin en de prijs af.
+  // alleen als die handeling zichtbaar én bruikbaar is: de resultaatregel
+  // (prijs + "Bevestig") grotendeels in beeld, of focus in de zin.
   const rootRef = useRef<HTMLDivElement>(null);
-  useHidesStickyCta(rootRef);
-
-  // F-14: op een smal scherm valt de uitkomst (prijs + "Bevestig") na het
-  // invullen onder de vouw. Zodra de quote landt, schuift de pagina precies
-  // genoeg om die regel te tonen — alleen als hij onder de vouw staat, de
-  // bovenkant nog in beeld is en de klant niet midden in een adresveld typt.
   const resultRef = useRef<HTMLDivElement>(null);
-  const settled = quote.status === "ready" || quote.status === "onrequest" || quote.status === "error";
+  useHidesStickyCta(resultRef, rootRef);
+
+  // F-14: op een smal scherm valt een nieuwe uitkomst onder de vouw. Dan schuift
+  // de pagina één keer precies genoeg om de resultaatregel te tonen — zie
+  // shouldRevealResult. scrollIntoView verplaatst de focus niet.
+  const outcomeKey = quoteReady
+    ? quoteOutcomeKey({
+        status: quote.status,
+        price: quote.status === "ready" ? quote.price : null,
+        pickup: pickup?.label ?? "",
+        dropoff: dropoff?.label ?? "",
+        date,
+        time,
+        luggage,
+      })
+    : null;
+  const lastHandledOutcome = useRef<string | null>(null);
   useEffect(() => {
-    const el = resultRef.current;
-    if (!settled || !quoteReady || !el) return;
-    if (document.activeElement?.getAttribute("role") === "combobox") return;
-    const r = el.getBoundingClientRect();
-    const viewportH = window.visualViewport?.height ?? window.innerHeight;
-    if (r.top > 0 && r.bottom > viewportH) {
-      el.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
-    }
-  }, [settled, quote.status, quoteReady, reducedMotion]);
+    const result = resultRef.current;
+    const root = rootRef.current;
+    if (!result || !root || outcomeKey === null) return;
+    const r = result.getBoundingClientRect();
+    const active = document.activeElement as HTMLElement | null;
+    const reveal = shouldRevealResult({
+      key: outcomeKey,
+      lastHandledKey: lastHandledOutcome.current,
+      resultTop: r.top,
+      resultBottom: r.bottom,
+      sentenceTop: root.getBoundingClientRect().top,
+      viewportHeight: window.visualViewport?.height ?? window.innerHeight,
+      textEntryFocused: isTextEntry(
+        active && {
+          tagName: active.tagName,
+          type: active.getAttribute("type"),
+          role: active.getAttribute("role"),
+          isContentEditable: active.isContentEditable,
+        }
+      ),
+    });
+    lastHandledOutcome.current = outcomeKey;
+    if (reveal) result.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
+  }, [outcomeKey, reducedMotion]);
 
   const href =
     quoteReady && pickup && dropoff
@@ -438,7 +465,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   );
 
   return (
-    <div ref={rootRef} className="border-t border-ink/30 pt-5" data-hides-sticky-cta="">
+    <div ref={rootRef} className="border-t border-ink/30 pt-5">
       {/* Bewust een <div>, geen <p>: de invulvelden dragen een <ul>-listbox en
           een <ul> mag in HTML niet binnen een <p> (hydration-fout). */}
       {/* Onder md hangt de suggestielijst aan deze zin (F-15): volle zinsbreedte,

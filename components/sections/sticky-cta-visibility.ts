@@ -1,52 +1,82 @@
 "use client";
 
 import { useEffect, type RefObject } from "react";
+import {
+  anyHidesStickyCta,
+  STICKY_CTA_THRESHOLDS,
+  type StickyCtaHiderState,
+} from "@/lib/hero/hero-visibility";
 
 /**
- * Wanneer wijkt de mobiele StickyCta (F-14)? Zolang een element dat zelf de
- * boekingshandeling draagt (de hero-zin) in beeld is. Dat element meldt zich
- * hier aan via `useHidesStickyCta`; StickyCtaBar luistert mee.
+ * Wanneer wijkt de mobiele StickyCta (F-14)? Alleen als de hero-boekingsactie
+ * zichtbaar én bruikbaar is — zie `shouldHideStickyCta`. Een zin meldt zich hier
+ * aan via `useHidesStickyCta`; StickyCtaBar luistert mee.
  *
- * Een net gemount element telt meteen als "in beeld" tot de IntersectionObserver
- * zijn eerste meting geeft, zodat de balk bij hydratie of terugnavigatie niet
- * eerst verschijnt en dan wegschuift.
+ * Startwaarde = niet verbergen: een net gemounte zin telt pas mee na de eerste
+ * meting van de IntersectionObserver of een focus-event.
  */
-const inView = new Map<symbol, boolean>();
+const hiders = new Map<symbol, StickyCtaHiderState>();
 const listeners = new Set<(hidden: boolean) => void>();
 
-function isHidden() {
-  for (const v of inView.values()) if (v) return true;
-  return false;
-}
 function emit() {
-  const hidden = isHidden();
+  const hidden = anyHidesStickyCta(hiders.values());
   listeners.forEach((l) => l(hidden));
 }
 
 export function subscribeStickyCtaHidden(listener: (hidden: boolean) => void): () => void {
   listeners.add(listener);
-  listener(isHidden());
+  listener(anyHidesStickyCta(hiders.values()));
   return () => {
     listeners.delete(listener);
   };
 }
 
-export function useHidesStickyCta(ref: RefObject<HTMLElement | null>) {
+/**
+ * @param actionRef de resultaatregel met de hero-CTA (prijs + "Bevestig")
+ * @param scopeRef  de hele boekingszin (voor focus binnen de zin)
+ */
+export function useHidesStickyCta(
+  actionRef: RefObject<HTMLElement | null>,
+  scopeRef: RefObject<HTMLElement | null>
+) {
   useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
+    const action = actionRef.current;
+    const scope = scopeRef.current;
+    if (!action || !scope) return;
     const id = Symbol("sticky-cta-hider");
-    inView.set(id, true);
+    const state: StickyCtaHiderState = { resultRatio: 0, focusWithin: scope.contains(document.activeElement) };
+    hiders.set(id, state);
     emit();
-    const io = new IntersectionObserver(([entry]) => {
-      inView.set(id, entry.isIntersecting);
-      emit();
-    });
-    io.observe(el);
-    return () => {
-      io.disconnect();
-      inView.delete(id);
+
+    const io =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver(
+            ([entry]) => {
+              state.resultRatio = entry.isIntersecting ? entry.intersectionRatio : 0;
+              emit();
+            },
+            { threshold: STICKY_CTA_THRESHOLDS }
+          );
+    io?.observe(action);
+
+    const onFocusIn = () => {
+      state.focusWithin = true;
       emit();
     };
-  }, [ref]);
+    const onFocusOut = (e: FocusEvent) => {
+      state.focusWithin = e.relatedTarget instanceof Node && scope.contains(e.relatedTarget);
+      emit();
+    };
+    scope.addEventListener("focusin", onFocusIn);
+    scope.addEventListener("focusout", onFocusOut);
+
+    return () => {
+      io?.disconnect();
+      scope.removeEventListener("focusin", onFocusIn);
+      scope.removeEventListener("focusout", onFocusOut);
+      hiders.delete(id);
+      emit();
+    };
+  }, [actionRef, scopeRef]);
 }

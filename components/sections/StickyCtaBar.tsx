@@ -4,11 +4,11 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { subscribeStickyCtaHidden } from "@/components/sections/sticky-cta-visibility";
 
 /**
- * Schil van de mobiele StickyCta (F-14). De balk wijkt zolang de hero-zin
- * (`useHidesStickyCta`) in beeld is: daar staat de boekingshandeling al op de
- * pagina, en de balk zou de zin, de prijs en "Bevestig" afdekken. Buiten beeld
- * komt hij terug. Vóór hydratie verbergt globals.css de balk al op pagina's met
- * zo'n zin (`body:has([data-hides-sticky-cta])`).
+ * Schil van de mobiele StickyCta (F-14). De balk wijkt alleen als de
+ * hero-boekingsactie zichtbaar én bruikbaar is (resultaatregel grotendeels in
+ * beeld, of focus in de zin; zie `useHidesStickyCta`): dan staat de handeling al
+ * op de pagina en zou de balk de zin, de prijs en "Bevestig" afdekken.
+ * Startwaarde (SSR en vóór de eerste meting) = zichtbaar.
  */
 export default function StickyCtaBar({
   label,
