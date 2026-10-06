@@ -17,6 +17,7 @@ on:
   pull_request:
     branches:
       - main
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches:
       - main
@@ -49,6 +50,11 @@ jobs:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
       HOME: /root
+      # Chromium op Linux negeert --lang voor native date/time-velden en volgt
+      # de omgeving; zonder dit tonen de baselines mm/dd/yyyy en AM/PM.
+      LANG: nl_NL.UTF-8
+      LANGUAGE: nl_NL:nl
+      LC_ALL: nl_NL.UTF-8
       UPDATE_SNAPSHOTS: ${{ github.event_name == 'workflow_dispatch' && inputs.update_snapshots }}
 
     steps:
@@ -58,20 +64,23 @@ jobs:
       - name: Decide mode
         id: gate
         shell: bash
+        env:
+          BASELINE_LABEL: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'visual:update-baselines') }}
         run: |
           # update  = baselines (her)genereren en als artifact uploaden
           # compare = vergelijken met de gecommitte Linux-baselines
-          # Zonder baselines in de repo draait de job in bootstrap-modus (update):
-          # workflow_dispatch werkt pas als dit bestand op main staat, dus de
-          # eerste baselines komen uit de PR-run zelf.
+          # Genereren gebeurt ALLEEN op expliciet verzoek: workflow_dispatch met
+          # update_snapshots, of het PR-label `visual:update-baselines`.
+          # Ontbrekende baselines zonder dat verzoek = fout, nooit een stille bootstrap.
           echo "run=true" >> "$GITHUB_OUTPUT"
-          if [ "$UPDATE_SNAPSHOTS" = "true" ]; then
+          if [ "$UPDATE_SNAPSHOTS" = "true" ] || [ "$BASELINE_LABEL" = "true" ]; then
             echo "mode=update" >> "$GITHUB_OUTPUT"
+            echo "::notice::Baselines worden gegenereerd en als artifact visual-baselines-linux geüpload (expliciet verzoek)."
           elif compgen -G "tests/visual/__screenshots__/linux/*" > /dev/null; then
             echo "mode=compare" >> "$GITHUB_OUTPUT"
           else
-            echo "mode=update" >> "$GITHUB_OUTPUT"
-            echo "::notice::Nog geen Linux-baselines in de repo — bootstrap: baselines worden gegenereerd en als artifact visual-baselines-linux geüpload."
+            echo "::error::Geen Linux-baselines in tests/visual/__screenshots__/linux. Genereer ze bewust via het PR-label visual:update-baselines of workflow_dispatch (update_snapshots)."
+            exit 1
           fi
 
       - name: Verify Playwright version matches image

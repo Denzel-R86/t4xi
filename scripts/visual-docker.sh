@@ -28,5 +28,6 @@ docker run --rm --init --ipc=host --platform "$PLATFORM" \
   -v t4xi-visual-node-modules:/work/node_modules \
   -v t4xi-visual-next:/work/.next \
   -e APP_ENV=development -e CI=true -e NEXT_TELEMETRY_DISABLED=1 \
+  -e LANG=nl_NL.UTF-8 -e LANGUAGE=nl_NL:nl -e LC_ALL=nl_NL.UTF-8 \
   "$IMAGE" \
   bash -c 'npm ci --no-audit --no-fund && npm run build && npx playwright test "$@"' _ "$@"
