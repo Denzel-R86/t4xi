@@ -11,17 +11,16 @@ export const STICKY_CTA_THRESHOLDS = [0, STICKY_CTA_RESULT_RATIO, 1];
 export type StickyCtaHiderState = {
   /** Zichtbare fractie (0–1) van de resultaatregel met de hero-CTA. */
   resultRatio: number;
-  /** Focus staat ergens binnen de boekingszin. */
-  focusWithin: boolean;
 };
 
 /**
- * De StickyCta wijkt alleen als de hero-boekingsactie zichtbaar én bruikbaar is:
- * de resultaatregel staat grotendeels in beeld, of de klant is de zin aan het
- * invullen. Een zin die alleen met een randje in beeld staat, telt niet.
+ * De StickyCta wijkt alleen als de hero-boekingsactie zelf (de resultaatregel
+ * met de hero-knop) grotendeels in beeld is. Focus in de zin is geen reden: de
+ * balk blijft dan staan. Een zin die alleen met een randje in beeld staat, telt
+ * niet.
  */
 export function shouldHideStickyCta(state: StickyCtaHiderState): boolean {
-  return state.focusWithin || state.resultRatio >= STICKY_CTA_RESULT_RATIO;
+  return state.resultRatio >= STICKY_CTA_RESULT_RATIO;
 }
 
 /** Wijkt de balk voor minstens één aangemelde zin? Zonder zinnen: nooit. */
@@ -32,7 +31,6 @@ export function anyHidesStickyCta(states: Iterable<StickyCtaHiderState>): boolea
 
 export type QuoteOutcome = {
   status: "idle" | "loading" | "ready" | "onrequest" | "error";
-  price?: number | null;
   pickup: string;
   dropoff: string;
   date: string;
@@ -41,13 +39,17 @@ export type QuoteOutcome = {
 };
 
 /**
- * Sleutel van een geland quote-resultaat. Gelijke sleutel = zelfde uitkomst voor
- * dezelfde rit, dus niets nieuws om te tonen. Null zolang er geen uitkomst is.
+ * Sleutel van een geland quote-resultaat: de identiteit van de rit (van, naar,
+ * datum, tijd, bagage) plus de uitkomststatus. Een andere rit met dezelfde prijs
+ * is dus nieuw; een dubbele response voor dezelfde rit niet.
+ *
+ * Bewust niet de quoteId: elke quote-aanvraag krijgt een nieuwe prijslock, dus
+ * een tweede response voor dezelfde rit zou dan als "nieuw" tellen.
+ * Null zolang er geen uitkomst is.
  */
 export function quoteOutcomeKey(o: QuoteOutcome): string | null {
   if (o.status !== "ready" && o.status !== "onrequest" && o.status !== "error") return null;
-  const price = o.status === "ready" ? String(o.price ?? "") : "";
-  return JSON.stringify([o.status, price, o.pickup, o.dropoff, o.date, o.time, o.luggage]);
+  return JSON.stringify([o.status, o.pickup, o.dropoff, o.date, o.time, o.luggage]);
 }
 
 /** Minimale vorm van het element met focus (testbaar zonder DOM). */

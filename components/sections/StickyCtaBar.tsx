@@ -5,9 +5,9 @@ import { subscribeStickyCtaHidden } from "@/components/sections/sticky-cta-visib
 
 /**
  * Schil van de mobiele StickyCta (F-14). De balk wijkt alleen als de
- * hero-boekingsactie zichtbaar én bruikbaar is (resultaatregel grotendeels in
- * beeld, of focus in de zin; zie `useHidesStickyCta`): dan staat de handeling al
- * op de pagina en zou de balk de zin, de prijs en "Bevestig" afdekken.
+ * hero-boekingsactie zelf grotendeels in beeld is (zie `useHidesStickyCta`):
+ * dan staat de handeling al op de pagina en zou de balk de prijs en "Bevestig"
+ * afdekken.
  * Startwaarde (SSR en vóór de eerste meting) = zichtbaar.
  */
 export default function StickyCtaBar({

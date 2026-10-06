@@ -313,19 +313,19 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   const reducedMotion = usePrefersReducedMotion();
 
   // F-14: de zin draagt de boekingshandeling zelf. De mobiele StickyCta wijkt
-  // alleen als die handeling zichtbaar én bruikbaar is: de resultaatregel
-  // (prijs + "Bevestig") grotendeels in beeld, of focus in de zin.
+  // alleen als de resultaatregel (prijs + "Bevestig") grotendeels in beeld is.
   const rootRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
-  useHidesStickyCta(resultRef, rootRef);
+  useHidesStickyCta(resultRef);
 
-  // F-14: op een smal scherm valt een nieuwe uitkomst onder de vouw. Dan schuift
-  // de pagina één keer precies genoeg om de resultaatregel te tonen — zie
-  // shouldRevealResult. scrollIntoView verplaatst de focus niet.
+  // F-14: op een smal scherm valt de uitkomst voor een nieuwe rit onder de vouw.
+  // Dan schuift de pagina één keer precies genoeg om de resultaatregel te tonen
+  // (zie shouldRevealResult). scrollIntoView verplaatst de focus niet. Bij
+  // reduced motion springt de pagina zonder animatie: de positie is nodig om de
+  // prijs te zien, de beweging niet.
   const outcomeKey = quoteReady
     ? quoteOutcomeKey({
         status: quote.status,
-        price: quote.status === "ready" ? quote.price : null,
         pickup: pickup?.label ?? "",
         dropoff: dropoff?.label ?? "",
         date,

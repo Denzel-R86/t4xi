@@ -12,34 +12,29 @@ import {
 
 // ── StickyCta ────────────────────────────────────────────────────────────────
 
-test("StickyCta blijft staan zolang de hero-actie niet in beeld is en er geen focus is", () => {
-  assert.equal(shouldHideStickyCta({ resultRatio: 0, focusWithin: false }), false);
+test("StickyCta blijft staan zolang de hero-actie niet in beeld is", () => {
+  assert.equal(shouldHideStickyCta({ resultRatio: 0 }), false);
 });
 
 test("StickyCta blijft staan als de resultaatregel maar half in beeld is", () => {
-  assert.equal(shouldHideStickyCta({ resultRatio: 0.5, focusWithin: false }), false);
+  assert.equal(shouldHideStickyCta({ resultRatio: 0.5 }), false);
 });
 
 test("StickyCta wijkt als de resultaatregel grotendeels (>= 75%) in beeld is", () => {
-  assert.equal(shouldHideStickyCta({ resultRatio: 0.75, focusWithin: false }), true);
-  assert.equal(shouldHideStickyCta({ resultRatio: 1, focusWithin: false }), true);
-});
-
-test("StickyCta wijkt zolang de klant de zin invult (focus binnen de zin)", () => {
-  assert.equal(shouldHideStickyCta({ resultRatio: 0, focusWithin: true }), true);
+  assert.equal(shouldHideStickyCta({ resultRatio: 0.75 }), true);
+  assert.equal(shouldHideStickyCta({ resultRatio: 1 }), true);
 });
 
 test("zonder aangemelde zin wijkt de StickyCta nooit (startwaarde = zichtbaar)", () => {
   assert.equal(anyHidesStickyCta([]), false);
-  assert.equal(anyHidesStickyCta([{ resultRatio: 0, focusWithin: false }]), false);
-  assert.equal(anyHidesStickyCta([{ resultRatio: 0, focusWithin: false }, { resultRatio: 0.9, focusWithin: false }]), true);
+  assert.equal(anyHidesStickyCta([{ resultRatio: 0 }]), false);
+  assert.equal(anyHidesStickyCta([{ resultRatio: 0 }, { resultRatio: 0.9 }]), true);
 });
 
 // ── Automatisch tonen van de uitkomst ────────────────────────────────────────
 
 const RIDE: QuoteOutcome = {
   status: "ready",
-  price: 89,
   pickup: "Amsterdam Zuidas",
   dropoff: "Schiphol",
   date: "2026-11-12",
@@ -60,18 +55,25 @@ test("geen uitkomst (idle/loading) geeft geen sleutel", () => {
   assert.equal(quoteOutcomeKey({ ...RIDE, status: "loading" }), null);
 });
 
-test("sleutel verandert met prijs, status en rit, niet bij dezelfde uitkomst", () => {
+test("sleutel = rit + status: verandert met route, datum, tijd, bagage en status", () => {
   const k = quoteOutcomeKey(RIDE);
   assert.equal(quoteOutcomeKey({ ...RIDE }), k);
-  assert.notEqual(quoteOutcomeKey({ ...RIDE, price: 95 }), k);
+  assert.notEqual(quoteOutcomeKey({ ...RIDE, dropoff: "Rotterdam The Hague Airport" }), k);
+  assert.notEqual(quoteOutcomeKey({ ...RIDE, date: "2026-11-13" }), k);
   assert.notEqual(quoteOutcomeKey({ ...RIDE, luggage: "3-koffers" }), k);
   assert.notEqual(quoteOutcomeKey({ ...RIDE, time: "15:00" }), k);
-  assert.notEqual(quoteOutcomeKey({ ...RIDE, status: "onrequest", price: null }), k);
+  assert.notEqual(quoteOutcomeKey({ ...RIDE, status: "onrequest" }), k);
 });
 
-test("zelfde prijs opnieuw → geen scroll", () => {
+test("dubbele response voor dezelfde rit → geen scroll", () => {
   const key = quoteOutcomeKey(RIDE);
   assert.equal(reveal({ key, lastHandledKey: key }), false);
+});
+
+test("andere route, zelfde prijs → wel scroll (nieuwe rit)", () => {
+  const prev = quoteOutcomeKey(RIDE);
+  const next = quoteOutcomeKey({ ...RIDE, pickup: "Utrecht Centraal" });
+  assert.equal(reveal({ key: next, lastHandledKey: prev }), true);
 });
 
 test("nieuwe prijs al in beeld → geen scroll", () => {

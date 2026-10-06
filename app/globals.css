@@ -71,8 +71,9 @@ footer {
   }
 }
 
-/* Mobiele StickyCta (F-14): wijkt alleen als de hero-boekingsactie zichtbaar en
-   bruikbaar is (zie lib/hero/hero-visibility.ts); StickyCtaBar zet data-hidden.
+/* Mobiele StickyCta (F-14): wijkt alleen als de resultaatregel met de hero-knop
+   grotendeels in beeld is (zie lib/hero/hero-visibility.ts); StickyCtaBar zet
+   data-hidden.
    Startwaarde = zichtbaar, dus geen regel vóór hydratie. visibility:hidden haalt
    de links ook uit tabvolgorde en a11y-boom. */
 .sticky-cta[data-hidden="true"] {
