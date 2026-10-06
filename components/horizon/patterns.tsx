@@ -360,7 +360,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     placeholder: string,
     label: string
   ) => (
-    <span className="hz-focus relative inline-block align-baseline">
+    <span className="hz-focus inline-block align-baseline md:relative">
       <input
         className="hz-blank font-display font-medium"
         style={{
@@ -392,7 +392,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         <ul
           id={`hero-${field}-listbox`}
           role="listbox"
-          className="absolute left-0 top-full z-30 mt-2 w-max min-w-[280px] max-w-[90vw] overflow-hidden rounded-field border border-line bg-card text-left shadow-card"
+          className="absolute inset-x-0 z-30 mt-2 overflow-hidden rounded-field border border-line bg-card text-left shadow-card md:right-auto md:top-full md:w-max md:min-w-[280px] md:max-w-[90vw]"
         >
           {suggestions.map((s, i) => (
             <li key={s.id} id={`hero-${field}-option-${i}`} role="option" aria-selected={i === activeIndex}>
@@ -417,7 +417,11 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     <div className="border-t border-ink/30 pt-5">
       {/* Bewust een <div>, geen <p>: de invulvelden dragen een <ul>-listbox en
           een <ul> mag in HTML niet binnen een <p> (hydration-fout). */}
-      <div className="font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink">
+      {/* Onder md hangt de suggestielijst aan deze zin (F-15): volle zinsbreedte,
+          verticaal direct onder de regel van het veld (statische positie, geen
+          `top`), zodat hij op 375 niet buiten de viewport loopt. Vanaf md hangt
+          hij weer aan het veld zelf. */}
+      <div className="relative font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink md:static">
         {t("voor")} {blank("from", from, setFrom, () => setFromResolved(""), t("phVertrek"), t("ariaVertrek"))} {t("tussen")}{" "}
         {blank("to", to, setTo, () => setToResolved(""), t("phBestemming"), t("ariaBestemming"))}.
       </div>
