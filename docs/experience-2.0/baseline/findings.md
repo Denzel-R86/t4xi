@@ -78,7 +78,7 @@ Elk als afzonderlijke PR, in deze prioriteit:
 | CWV | ✓ lab-nulmeting (`0.1-cwv.md`); velddata ontbreekt (F-09) |
 | axe | ✓ `0.1-axe.md` |
 | SEO snapshot | ✓ test + CI-stap (`0.2-seo.md`) |
-| visual snapshots | ◐ harness + CI-job klaar; Linux-baselines nog te genereren via de workflow na push (`0.3-visual.md`) |
+| visual snapshots | ✓ 67 Linux-baselines beoordeeld en vastgelegd in PR 0.3 (`75c936c`); vergelijkingsrun zonder update-optie groen (run 37500503441, 67 passed, `maxDiffPixelRatio` 0.001) |
 
-**Fase 0 blijft formeel open** totdat de Linux-snapshots gegenereerd, beoordeeld en in PR 0.3 vastgelegd zijn. Fase 1 start pas daarna.
+**Baseline Gate: compleet (06-10-2026).** Alle vijf onderdelen staan; Fase 0 is afgesloten zodra de baseline-PR's gemerged zijn. Goedkeuring van de baselines legt de huidige UI vast en keurt de findings hierboven niet goed als ontwerp.
 | server measurement | ✓ `0.4a-server-truth.md` |
