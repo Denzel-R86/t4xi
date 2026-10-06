@@ -55,17 +55,23 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Decide whether to run
+      - name: Decide mode
         id: gate
         shell: bash
         run: |
+          # update  = baselines (her)genereren en als artifact uploaden
+          # compare = vergelijken met de gecommitte Linux-baselines
+          # Zonder baselines in de repo draait de job in bootstrap-modus (update):
+          # workflow_dispatch werkt pas als dit bestand op main staat, dus de
+          # eerste baselines komen uit de PR-run zelf.
+          echo "run=true" >> "$GITHUB_OUTPUT"
           if [ "$UPDATE_SNAPSHOTS" = "true" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "mode=update" >> "$GITHUB_OUTPUT"
           elif compgen -G "tests/visual/__screenshots__/linux/*" > /dev/null; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "mode=compare" >> "$GITHUB_OUTPUT"
           else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Nog geen Linux-baselines in de repo — start deze workflow via workflow_dispatch om ze te genereren."
+            echo "mode=update" >> "$GITHUB_OUTPUT"
+            echo "::notice::Nog geen Linux-baselines in de repo — bootstrap: baselines worden gegenereerd en als artifact visual-baselines-linux geüpload."
           fi
 
       - name: Verify Playwright version matches image
@@ -87,15 +93,15 @@ jobs:
         run: npm run build
 
       - name: Compare snapshots
-        if: steps.gate.outputs.run == 'true' && env.UPDATE_SNAPSHOTS != 'true'
+        if: steps.gate.outputs.mode == 'compare'
         run: npx playwright test
 
       - name: Generate baselines
-        if: steps.gate.outputs.run == 'true' && env.UPDATE_SNAPSHOTS == 'true'
+        if: steps.gate.outputs.mode == 'update'
         run: npx playwright test --update-snapshots=all
 
       - name: Upload baselines
-        if: steps.gate.outputs.run == 'true' && env.UPDATE_SNAPSHOTS == 'true'
+        if: steps.gate.outputs.mode == 'update'
         uses: actions/upload-artifact@v4
         with:
           name: visual-baselines-linux
