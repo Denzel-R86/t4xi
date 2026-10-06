@@ -1,0 +1,646 @@
+{
+ "protocol": {
+  "lighthouse": "13.5.0",
+  "throttlingMethod": "simulate",
+  "throttling": {
+   "mobile": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "cpuSlowdownMultiplier": 4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675
+   }
+  },
+  "cache": "cold",
+  "runsPerCell": 15,
+  "maxLoad": 4,
+  "pages": [
+   "/boeken",
+   "/tarieven"
+  ],
+  "formFactors": [
+   "mobile"
+  ],
+  "variants": [
+   {
+    "name": "prod",
+    "origin": "https://www.t4xi.nl",
+    "blocked": []
+   },
+   {
+    "name": "zonder-js",
+    "origin": "https://www.t4xi.nl",
+    "blocked": [
+     "*.js"
+    ]
+   }
+  ],
+  "startedAt": "2026-10-06T18:08:52.716Z",
+  "consistent": true,
+  "benchmarkIndexMedian": 2868.75,
+  "finishedAt": "2026-10-06T18:27:23.199Z"
+ },
+ "summary": [
+  {
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "okRuns": 15,
+   "failedRuns": 0,
+   "excludedRuns": 0,
+   "lcpMs": {
+    "n": 15,
+    "median": 5107.1845,
+    "p75": 5730.7455,
+    "p25": 2864.31175,
+    "iqr": 2866.43375,
+    "min": 2766.0255,
+    "max": 6897.4355000000005,
+    "cv": 0.33856173172487103,
+    "bimodal": true,
+    "split": 3981.7365,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 6,
+      "share": 0.4,
+      "median": 2834.5455,
+      "min": 2766.0255,
+      "max": 2943.1775
+     },
+     {
+      "name": "traag",
+      "n": 9,
+      "share": 0.6,
+      "median": 5389.7919999999995,
+      "min": 5020.2955,
+      "max": 6897.4355000000005
+     }
+    ]
+   },
+   "fcpMs": {
+    "n": 15,
+    "median": 1240.2285000000002,
+    "p75": 2204.414125,
+    "p25": 1108.69075,
+    "iqr": 1095.7233749999998,
+    "min": 1077.6154999999999,
+    "max": 3673.6195000000002,
+    "cv": 0.5515781456401613,
+    "bimodal": true,
+    "split": 2204.414125,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 11,
+      "share": 0.7333333333333333,
+      "median": 1121.5030000000002,
+      "min": 1077.6154999999999,
+      "max": 1511.2589999999998
+     },
+     {
+      "name": "traag",
+      "n": 4,
+      "share": 0.26666666666666666,
+      "median": 3330.9945,
+      "min": 2897.56925,
+      "max": 3673.6195000000002
+     }
+    ]
+   },
+   "siMs": {
+    "n": 15,
+    "median": 2592.1046099990795,
+    "p75": 4295.742647882452,
+    "p25": 1361.2600659990003,
+    "iqr": 2934.4825818834515,
+    "min": 1166.256180001934,
+    "max": 5862.300148000353,
+    "cv": 0.6052053264298948,
+    "bimodal": true,
+    "split": 4295.742647882452,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 11,
+      "share": 0.7333333333333333,
+      "median": 1716.6958173311773,
+      "min": 1166.256180001934,
+      "max": 3113.089029763282
+     },
+     {
+      "name": "traag",
+      "n": 4,
+      "share": 0.26666666666666666,
+      "median": 5673.573005000577,
+      "min": 5478.396266001622,
+      "max": 5862.300148000353
+     }
+    ]
+   },
+   "tbtMs": {
+    "n": 15,
+    "median": 106,
+    "p75": 122.5,
+    "p25": 80.5,
+    "iqr": 42,
+    "min": 53.5,
+    "max": 470,
+    "cv": 0.7970460582489985,
+    "bimodal": false,
+    "modes": []
+   },
+   "cls": {
+    "n": 15,
+    "median": 0,
+    "p75": 0,
+    "p25": 0,
+    "iqr": 0,
+    "min": 0,
+    "max": 0,
+    "cv": null,
+    "bimodal": false,
+    "modes": []
+   },
+   "performance": {
+    "n": 15,
+    "median": 0.8,
+    "p75": 0.95,
+    "p25": 0.68,
+    "iqr": 0.2699999999999999,
+    "min": 0.63,
+    "max": 0.96,
+    "cv": 0.15845648547107513,
+    "bimodal": false,
+    "modes": []
+   },
+   "observedFcpMs": {
+    "n": 15,
+    "median": 1502,
+    "p75": 2058.5,
+    "p25": 543,
+    "iqr": 1515.5,
+    "min": 488,
+    "max": 2634,
+    "cv": 0.5979031491092685,
+    "bimodal": true,
+    "split": 2058.5,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 11,
+      "share": 0.7333333333333333,
+      "median": 671,
+      "min": 488,
+      "max": 1594
+     },
+     {
+      "name": "traag",
+      "n": 4,
+      "share": 0.26666666666666666,
+      "median": 2567,
+      "min": 2523,
+      "max": 2634
+     }
+    ]
+   },
+   "lcpElements": {
+    "main#content > section.mx-auto > div > p.mt-4": {
+     "n": 15,
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen."
+    }
+   }
+  },
+  {
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "okRuns": 15,
+   "failedRuns": 0,
+   "excludedRuns": 0,
+   "lcpMs": {
+    "n": 15,
+    "median": 1823.7350000000001,
+    "p75": 2401.152,
+    "p25": 1752.9895,
+    "iqr": 648.1625000000001,
+    "min": 1746.5235,
+    "max": 2573.4875,
+    "cv": 0.16295352705594549,
+    "bimodal": true,
+    "split": 2121.00025,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 10,
+      "share": 0.6666666666666666,
+      "median": 1755.1777499999998,
+      "min": 1746.5235,
+      "max": 1844.1905000000002
+     },
+     {
+      "name": "traag",
+      "n": 5,
+      "share": 0.3333333333333333,
+      "median": 2415.7830000000004,
+      "min": 2397.8100000000004,
+      "max": 2573.4875
+     }
+    ]
+   },
+   "fcpMs": {
+    "n": 15,
+    "median": 1087.6305,
+    "p75": 1227.539,
+    "p25": 1076.446,
+    "iqr": 151.09300000000007,
+    "min": 1071.5235,
+    "max": 1294.6975,
+    "cv": 0.0743767577689968,
+    "bimodal": false,
+    "modes": []
+   },
+   "siMs": {
+    "n": 15,
+    "median": 2571.100609998298,
+    "p75": 2665.1593449991874,
+    "p25": 1165.138941998729,
+    "iqr": 1500.0204030004584,
+    "min": 1074.635,
+    "max": 4115.121705996765,
+    "cv": 0.48904278313597516,
+    "bimodal": true,
+    "split": 1898.4248049991488,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 7,
+      "share": 0.4666666666666667,
+      "median": 1147.4957339983239,
+      "min": 1074.635,
+      "max": 1225.749
+     },
+     {
+      "name": "traag",
+      "n": 8,
+      "share": 0.5333333333333333,
+      "median": 2665.1593449991874,
+      "min": 2571.100609998298,
+      "max": 4115.121705996765
+     }
+    ]
+   },
+   "tbtMs": {
+    "n": 15,
+    "median": 0,
+    "p75": 0,
+    "p25": 0,
+    "iqr": 0,
+    "min": 0,
+    "max": 91,
+    "cv": 2.693665832889144,
+    "bimodal": false,
+    "modes": []
+   },
+   "cls": {
+    "n": 15,
+    "median": 0,
+    "p75": 0,
+    "p25": 0,
+    "iqr": 0,
+    "min": 0,
+    "max": 0,
+    "cv": null,
+    "bimodal": false,
+    "modes": []
+   },
+   "performance": {
+    "n": 15,
+    "median": 0.99,
+    "p75": 0.995,
+    "p25": 0.975,
+    "iqr": 0.020000000000000018,
+    "min": 0.96,
+    "max": 1,
+    "cv": 0.0142938026516384,
+    "bimodal": false,
+    "modes": []
+   },
+   "observedFcpMs": {
+    "n": 15,
+    "median": 1514,
+    "p75": 1557.5,
+    "p25": 486,
+    "iqr": 1071.5,
+    "min": 435,
+    "max": 2586,
+    "cv": 0.6263939727762476,
+    "bimodal": true,
+    "split": 1021,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 7,
+      "share": 0.4666666666666667,
+      "median": 484,
+      "min": 435,
+      "max": 528
+     },
+     {
+      "name": "traag",
+      "n": 8,
+      "share": 0.5333333333333333,
+      "median": 1557.5,
+      "min": 1514,
+      "max": 2586
+     }
+    ]
+   },
+   "lcpElements": {
+    "main#content > section.mx-auto > div > p.mt-4": {
+     "n": 15,
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen."
+    }
+   }
+  },
+  {
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "okRuns": 15,
+   "failedRuns": 0,
+   "excludedRuns": 0,
+   "lcpMs": {
+    "n": 15,
+    "median": 2850.388,
+    "p75": 2904.2264999999998,
+    "p25": 2827.19,
+    "iqr": 77.0364999999997,
+    "min": 2798.305,
+    "max": 2977.36,
+    "cv": 0.018239488004765925,
+    "bimodal": false,
+    "modes": []
+   },
+   "fcpMs": {
+    "n": 15,
+    "median": 1160.687,
+    "p75": 1179.2265,
+    "p25": 1108.654,
+    "iqr": 70.57249999999999,
+    "min": 1100.559,
+    "max": 1205.112,
+    "cv": 0.03319232002300326,
+    "bimodal": false,
+    "modes": []
+   },
+   "siMs": {
+    "n": 15,
+    "median": 1872.2627400506124,
+    "p75": 2066.3348999978875,
+    "p25": 1826.0387400003672,
+    "iqr": 240.29615999752036,
+    "min": 1707.8037074424292,
+    "max": 5546.4280340053465,
+    "cv": 0.4330291655459597,
+    "bimodal": false,
+    "modes": []
+   },
+   "tbtMs": {
+    "n": 15,
+    "median": 30,
+    "p75": 43,
+    "p25": 16.5,
+    "iqr": 26.5,
+    "min": 0,
+    "max": 179.5,
+    "cv": 1.081853518864434,
+    "bimodal": false,
+    "modes": []
+   },
+   "cls": {
+    "n": 15,
+    "median": 0,
+    "p75": 0,
+    "p25": 0,
+    "iqr": 0,
+    "min": 0,
+    "max": 0,
+    "cv": null,
+    "bimodal": false,
+    "modes": []
+   },
+   "performance": {
+    "n": 15,
+    "median": 0.95,
+    "p75": 0.95,
+    "p25": 0.95,
+    "iqr": 0,
+    "min": 0.89,
+    "max": 0.95,
+    "cv": 0.0178160564803407,
+    "bimodal": false,
+    "modes": []
+   },
+   "observedFcpMs": {
+    "n": 15,
+    "median": 984,
+    "p75": 1115,
+    "p25": 956.5,
+    "iqr": 158.5,
+    "min": 892,
+    "max": 3591,
+    "cv": 0.5487587369661043,
+    "bimodal": false,
+    "modes": []
+   },
+   "lcpElements": {
+    "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6": {
+     "n": 15,
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …"
+    }
+   }
+  },
+  {
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "okRuns": 15,
+   "failedRuns": 0,
+   "excludedRuns": 0,
+   "lcpMs": {
+    "n": 15,
+    "median": 2360.1045000000004,
+    "p75": 2413.575,
+    "p25": 2271.6325,
+    "iqr": 141.94249999999965,
+    "min": 1775.65,
+    "max": 2455.7605000000003,
+    "cv": 0.07444570086571645,
+    "bimodal": false,
+    "modes": []
+   },
+   "fcpMs": {
+    "n": 15,
+    "median": 1120.4470000000001,
+    "p75": 1150.587,
+    "p25": 1087.0485,
+    "iqr": 63.538499999999885,
+    "min": 1070.019,
+    "max": 1179.2640000000001,
+    "cv": 0.03298141179090041,
+    "bimodal": false,
+    "modes": []
+   },
+   "siMs": {
+    "n": 15,
+    "median": 1858.9516097208418,
+    "p75": 1989.191973493539,
+    "p25": 1735.4557160020775,
+    "iqr": 253.73625749146163,
+    "min": 1541.2609180037307,
+    "max": 2168.6885898925875,
+    "cv": 0.09817980918607053,
+    "bimodal": false,
+    "modes": []
+   },
+   "tbtMs": {
+    "n": 15,
+    "median": 0,
+    "p75": 63.5,
+    "p25": 0,
+    "iqr": 63.5,
+    "min": 0,
+    "max": 196,
+    "cv": 1.5801204267987972,
+    "bimodal": false,
+    "modes": []
+   },
+   "cls": {
+    "n": 15,
+    "median": 0,
+    "p75": 0,
+    "p25": 0,
+    "iqr": 0,
+    "min": 0,
+    "max": 0,
+    "cv": null,
+    "bimodal": false,
+    "modes": []
+   },
+   "performance": {
+    "n": 15,
+    "median": 0.98,
+    "p75": 0.98,
+    "p25": 0.98,
+    "iqr": 0,
+    "min": 0.94,
+    "max": 1,
+    "cv": 0.014820754903530643,
+    "bimodal": false,
+    "modes": []
+   },
+   "observedFcpMs": {
+    "n": 15,
+    "median": 973,
+    "p75": 1062.5,
+    "p25": 907.5,
+    "iqr": 155,
+    "min": 772,
+    "max": 1182,
+    "cv": 0.12110550682318687,
+    "bimodal": false,
+    "modes": []
+   },
+   "lcpElements": {
+    "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6": {
+     "n": 15,
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …"
+    }
+   }
+  }
+ ],
+ "gates": [
+  {
+   "cell": "`/boeken` mobile",
+   "metric": "lcpMs",
+   "a": "prod",
+   "b": "zonder-js",
+   "verdict": "verbetering",
+   "nA": 15,
+   "nB": 15,
+   "medianA": 5107.1845,
+   "medianB": 1823.7350000000001,
+   "p75A": 5730.7455,
+   "p75B": 2401.152,
+   "ratio": 0.4189947014747034,
+   "ratioCI95": {
+    "lo": 0.293483859299211,
+    "hi": 0.4730165906479392
+   },
+   "pWorse": 0.9999989951680104,
+   "pBetter": 0.0000012296312992265968
+  },
+  {
+   "cell": "`/boeken` mobile",
+   "metric": "fcpMs",
+   "a": "prod",
+   "b": "zonder-js",
+   "verdict": "verbetering",
+   "nA": 15,
+   "nB": 15,
+   "medianA": 1240.2285000000002,
+   "medianB": 1087.6305,
+   "p75A": 2204.414125,
+   "p75B": 1227.539,
+   "ratio": 0.5568549874901568,
+   "ratioCI95": {
+    "lo": 0.3526336207770777,
+    "hi": 0.9897684176746461
+   },
+   "pWorse": 0.9915372143846669,
+   "pBetter": 0.00944280477000281
+  },
+  {
+   "cell": "`/tarieven` mobile",
+   "metric": "lcpMs",
+   "a": "prod",
+   "b": "zonder-js",
+   "verdict": "verbetering",
+   "nA": 15,
+   "nB": 15,
+   "medianA": 2850.388,
+   "medianB": 2360.1045000000004,
+   "p75A": 2904.2264999999998,
+   "p75B": 2413.575,
+   "ratio": 0.8310560488309021,
+   "ratioCI95": {
+    "lo": 0.8102496505523961,
+    "hi": 0.8490864732608516
+   },
+   "pWorse": 0.9999989951680104,
+   "pBetter": 0.0000012296312992265968
+  },
+  {
+   "cell": "`/tarieven` mobile",
+   "metric": "fcpMs",
+   "a": "prod",
+   "b": "zonder-js",
+   "verdict": "gelijk",
+   "nA": 15,
+   "nB": 15,
+   "medianA": 1160.687,
+   "medianB": 1120.4470000000001,
+   "p75A": 1179.2265,
+   "p75B": 1150.587,
+   "ratio": 0.9757133171617157,
+   "ratioCI95": {
+    "lo": 0.9454170089334782,
+    "hi": 1.0028504645770657
+   },
+   "pWorse": 0.9739534306725564,
+   "pBetter": 0.028599458201949313
+  }
+ ]
+}

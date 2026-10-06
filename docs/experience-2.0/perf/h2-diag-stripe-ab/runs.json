@@ -1,0 +1,1861 @@
+{
+ "protocol": {
+  "lighthouse": "13.5.0",
+  "throttlingMethod": "simulate",
+  "throttling": {
+   "mobile": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "cpuSlowdownMultiplier": 4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675
+   }
+  },
+  "cache": "cold",
+  "runsPerCell": 15,
+  "maxLoad": 4,
+  "pages": [
+   "/boeken"
+  ],
+  "formFactors": [
+   "mobile"
+  ],
+  "variants": [
+   {
+    "name": "prod",
+    "origin": "https://www.t4xi.nl",
+    "blocked": []
+   },
+   {
+    "name": "zonder-stripe",
+    "origin": "https://www.t4xi.nl",
+    "blocked": [
+     "*stripe.com*",
+     "*stripe.network*"
+    ]
+   }
+  ],
+  "startedAt": "2026-10-06T17:39:14.327Z",
+  "consistent": true,
+  "benchmarkIndexMedian": 2933,
+  "finishedAt": "2026-10-06T17:45:44.971Z"
+ },
+ "runs": [
+  {
+   "run": 1,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 3.5244140625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:39:24.617Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2920.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2825.5955,
+   "fcpMs": 1100.5955,
+   "siMs": 2919.5613679998714,
+   "tbtMs": 31,
+   "cls": 0,
+   "ttfbMs": 29,
+   "totalBytes": 429415,
+   "observed": {
+    "fcpMs": 1747,
+    "lcpMs": 1747,
+    "loadMs": 1726,
+    "dclMs": 1725
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 141,
+     "elementRenderDelay": 1606
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 1,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.9326171875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:39:38.087Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2913,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2822.1755000000003,
+   "fcpMs": 1247.1755,
+   "siMs": 1277.3714340024858,
+   "tbtMs": 68,
+   "cls": 0,
+   "ttfbMs": 31,
+   "totalBytes": 720929,
+   "observed": {
+    "fcpMs": 504,
+    "lcpMs": 504,
+    "loadMs": 483,
+    "dclMs": 423
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 138,
+     "elementRenderDelay": 365
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 270944,
+     "mainThreadMs": 48
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.87548828125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:39:50.196Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2926,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2825.4845,
+   "fcpMs": 1100.4845,
+   "siMs": 1100.4845,
+   "tbtMs": 60.5,
+   "cls": 0,
+   "ttfbMs": 35,
+   "totalBytes": 721488,
+   "observed": {
+    "fcpMs": 448,
+    "lcpMs": 448,
+    "loadMs": 424,
+    "dclMs": 423
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 123,
+     "elementRenderDelay": 325
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 271175,
+     "mainThreadMs": 45
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.580078125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:40:02.233Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2939,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.96,
+   "lcpMs": 2817.978,
+   "fcpMs": 1242.978,
+   "siMs": 1242.978,
+   "tbtMs": 18,
+   "cls": 0,
+   "ttfbMs": 31,
+   "totalBytes": 429416,
+   "observed": {
+    "fcpMs": 426,
+    "lcpMs": 426,
+    "loadMs": 393,
+    "dclMs": 378
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 108,
+     "elementRenderDelay": 318
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 3,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.7158203125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:40:14.057Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2911,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.91,
+   "lcpMs": 3446.573,
+   "fcpMs": 1091.5729999999999,
+   "siMs": 1245.9035260006829,
+   "tbtMs": 12,
+   "cls": 0,
+   "ttfbMs": 38,
+   "totalBytes": 428286,
+   "observed": {
+    "fcpMs": 527,
+    "lcpMs": 527,
+    "loadMs": 483,
+    "dclMs": 483
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 124,
+     "elementRenderDelay": 403
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 3,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.12109375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:40:25.798Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2945.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.66,
+   "lcpMs": 6170.2095,
+   "fcpMs": 3211.4890000000005,
+   "siMs": 5482.835900004237,
+   "tbtMs": 133,
+   "cls": 0,
+   "ttfbMs": 27,
+   "totalBytes": 722813,
+   "observed": {
+    "fcpMs": 2536,
+    "lcpMs": 2536,
+    "loadMs": 563,
+    "dclMs": 549
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 136,
+     "elementRenderDelay": 2400
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 272522,
+     "mainThreadMs": 54
+    }
+   ]
+  },
+  {
+   "run": 4,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.216796875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:40:39.754Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2905,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2833.867,
+   "fcpMs": 1112.653,
+   "siMs": 1223.598330000703,
+   "tbtMs": 61,
+   "cls": 0,
+   "ttfbMs": 37,
+   "totalBytes": 749099,
+   "observed": {
+    "fcpMs": 502,
+    "lcpMs": 502,
+    "loadMs": 491,
+    "dclMs": 426
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 161,
+     "elementRenderDelay": 341
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 300150,
+     "mainThreadMs": 42
+    }
+   ]
+  },
+  {
+   "run": 4,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 3.029296875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:40:51.746Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2936.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.87,
+   "lcpMs": 3604.9584999999997,
+   "fcpMs": 1745.9585,
+   "siMs": 4523.194988800746,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 35,
+   "totalBytes": 429419,
+   "observed": {
+    "fcpMs": 2542,
+    "lcpMs": 2542,
+    "loadMs": 631,
+    "dclMs": 615
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 138,
+     "elementRenderDelay": 2404
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 5,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.72705078125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:41:05.530Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2925,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.96,
+   "lcpMs": 2794.2664999999997,
+   "fcpMs": 1069.2665,
+   "siMs": 1217.4835879980833,
+   "tbtMs": 16,
+   "cls": 0,
+   "ttfbMs": 30,
+   "totalBytes": 429381,
+   "observed": {
+    "fcpMs": 540,
+    "lcpMs": 540,
+    "loadMs": 511,
+    "dclMs": 510
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 129,
+     "elementRenderDelay": 411
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 5,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.380859375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:41:17.396Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2946.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2849.901500000001,
+   "fcpMs": 1103.0515,
+   "siMs": 1127.907454002826,
+   "tbtMs": 69.5,
+   "cls": 0,
+   "ttfbMs": 34,
+   "totalBytes": 706137,
+   "observed": {
+    "fcpMs": 455,
+    "lcpMs": 455,
+    "loadMs": 740,
+    "dclMs": 416
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 132,
+     "elementRenderDelay": 323
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 255763,
+     "mainThreadMs": 47
+    }
+   ]
+  },
+  {
+   "run": 6,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.14794921875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:41:29.675Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2904.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.97,
+   "lcpMs": 2503.365,
+   "fcpMs": 1153.365,
+   "siMs": 1174.1751940001996,
+   "tbtMs": 52.5,
+   "cls": 0,
+   "ttfbMs": 34,
+   "totalBytes": 707126,
+   "observed": {
+    "fcpMs": 486,
+    "lcpMs": 486,
+    "loadMs": 804,
+    "dclMs": 579
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 133,
+     "elementRenderDelay": 353
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 255763,
+     "mainThreadMs": 48
+    }
+   ]
+  },
+  {
+   "run": 6,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.169921875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:41:46.961Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2933,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.88,
+   "lcpMs": 3587.1325,
+   "fcpMs": 1232.1325000000002,
+   "siMs": 4129.250870001801,
+   "tbtMs": 8,
+   "cls": 0,
+   "ttfbMs": 33,
+   "totalBytes": 429390,
+   "observed": {
+    "fcpMs": 2553,
+    "lcpMs": 2553,
+    "loadMs": 601,
+    "dclMs": 586
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 156,
+     "elementRenderDelay": 2397
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 7,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.2119140625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:42:00.687Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2898,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2830.418,
+   "fcpMs": 1105.4180000000001,
+   "siMs": 1105.4180000000001,
+   "tbtMs": 17,
+   "cls": 0,
+   "ttfbMs": 39,
+   "totalBytes": 428380,
+   "observed": {
+    "fcpMs": 447,
+    "lcpMs": 447,
+    "loadMs": 433,
+    "dclMs": 425
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 131,
+     "elementRenderDelay": 316
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 7,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.24609375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:42:12.513Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2922.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2326.3975,
+   "fcpMs": 1126.3975,
+   "siMs": 1177.8323579987361,
+   "tbtMs": 50,
+   "cls": 0,
+   "ttfbMs": 33,
+   "totalBytes": 748810,
+   "observed": {
+    "fcpMs": 496,
+    "lcpMs": 496,
+    "loadMs": 583,
+    "dclMs": 582
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 134,
+     "elementRenderDelay": 362
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 299705,
+     "mainThreadMs": 45
+    }
+   ]
+  },
+  {
+   "run": 8,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.53662109375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:42:24.648Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2936,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.66,
+   "lcpMs": 6562.328999999999,
+   "fcpMs": 3116.78675,
+   "siMs": 5661.937830000265,
+   "tbtMs": 116,
+   "cls": 0,
+   "ttfbMs": 34,
+   "totalBytes": 720729,
+   "observed": {
+    "fcpMs": 2538,
+    "lcpMs": 2538,
+    "loadMs": 518,
+    "dclMs": 501
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 123,
+     "elementRenderDelay": 2415
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 270946,
+     "mainThreadMs": 48
+    }
+   ]
+  },
+  {
+   "run": 8,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 3.19287109375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:42:38.634Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2948,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.89,
+   "lcpMs": 3536.083,
+   "fcpMs": 1603.083,
+   "siMs": 3123.3422140984885,
+   "tbtMs": 5,
+   "cls": 0,
+   "ttfbMs": 30,
+   "totalBytes": 429397,
+   "observed": {
+    "fcpMs": 1531,
+    "lcpMs": 1531,
+    "loadMs": 475,
+    "dclMs": 432
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 131,
+     "elementRenderDelay": 1400
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 9,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 3.076171875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:42:51.586Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2946.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.96,
+   "lcpMs": 2801.563,
+   "fcpMs": 1076.563,
+   "siMs": 1214.3550139992356,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 44,
+   "totalBytes": 429401,
+   "observed": {
+    "fcpMs": 536,
+    "lcpMs": 536,
+    "loadMs": 530,
+    "dclMs": 529
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 159,
+     "elementRenderDelay": 377
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 9,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.16943359375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:43:03.434Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2939.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.65,
+   "lcpMs": 6452.073,
+   "fcpMs": 3357.22325,
+   "siMs": 5601.552043998635,
+   "tbtMs": 138,
+   "cls": 0,
+   "ttfbMs": 40,
+   "totalBytes": 719440,
+   "observed": {
+    "fcpMs": 2535,
+    "lcpMs": 2535,
+    "loadMs": 543,
+    "dclMs": 529
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 143,
+     "elementRenderDelay": 2392
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 270791,
+     "mainThreadMs": 55
+    }
+   ]
+  },
+  {
+   "run": 10,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.1240234375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:43:17.384Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2932,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.97,
+   "lcpMs": 2612.34,
+   "fcpMs": 1112.3400000000001,
+   "siMs": 1149.5199639979528,
+   "tbtMs": 59,
+   "cls": 0,
+   "ttfbMs": 29,
+   "totalBytes": 721665,
+   "observed": {
+    "fcpMs": 483,
+    "lcpMs": 483,
+    "loadMs": 523,
+    "dclMs": 439
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 118,
+     "elementRenderDelay": 365
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 270792,
+     "mainThreadMs": 45
+    }
+   ]
+  },
+  {
+   "run": 10,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.65283203125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:43:29.435Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2934,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2839.575,
+   "fcpMs": 1114.575,
+   "siMs": 1213.6424859967906,
+   "tbtMs": 20,
+   "cls": 0,
+   "ttfbMs": 37,
+   "totalBytes": 429412,
+   "observed": {
+    "fcpMs": 523,
+    "lcpMs": 523,
+    "loadMs": 493,
+    "dclMs": 489
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 150,
+     "elementRenderDelay": 373
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 11,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.9521484375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:43:41.343Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2931,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.86,
+   "lcpMs": 3645.2505,
+   "fcpMs": 1784.2505,
+   "siMs": 4536.217399666689,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 35,
+   "totalBytes": 429411,
+   "observed": {
+    "fcpMs": 2542,
+    "lcpMs": 2542,
+    "loadMs": 561,
+    "dclMs": 546
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 127,
+     "elementRenderDelay": 2415
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 11,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.75927734375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:43:55.043Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2930,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2818.8505,
+   "fcpMs": 1093.8505,
+   "siMs": 1093.8505,
+   "tbtMs": 65,
+   "cls": 0,
+   "ttfbMs": 38,
+   "totalBytes": 721500,
+   "observed": {
+    "fcpMs": 426,
+    "lcpMs": 426,
+    "loadMs": 402,
+    "dclMs": 385
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 118,
+     "elementRenderDelay": 308
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 271220,
+     "mainThreadMs": 46
+    }
+   ]
+  },
+  {
+   "run": 12,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.93017578125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:44:06.929Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2940,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2829.7015,
+   "fcpMs": 1104.7015000000001,
+   "siMs": 1231.3132159997365,
+   "tbtMs": 51.5,
+   "cls": 0,
+   "ttfbMs": 26,
+   "totalBytes": 706564,
+   "observed": {
+    "fcpMs": 509,
+    "lcpMs": 509,
+    "loadMs": 502,
+    "dclMs": 500
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 128,
+     "elementRenderDelay": 381
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 255763,
+     "mainThreadMs": 46
+    }
+   ]
+  },
+  {
+   "run": 12,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.65576171875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:44:18.945Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2933,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.96,
+   "lcpMs": 2806.369,
+   "fcpMs": 1081.3690000000001,
+   "siMs": 1160.9228559985595,
+   "tbtMs": 18,
+   "cls": 0,
+   "ttfbMs": 30,
+   "totalBytes": 429519,
+   "observed": {
+    "fcpMs": 499,
+    "lcpMs": 499,
+    "loadMs": 491,
+    "dclMs": 469
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 122,
+     "elementRenderDelay": 377
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 13,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.4072265625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:44:30.758Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2935,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.87,
+   "lcpMs": 3581.6235,
+   "fcpMs": 1727.6235000000001,
+   "siMs": 4512.098699179025,
+   "tbtMs": 1,
+   "cls": 0,
+   "ttfbMs": 29,
+   "totalBytes": 429408,
+   "observed": {
+    "fcpMs": 2530,
+    "lcpMs": 2530,
+    "loadMs": 525,
+    "dclMs": 507
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 122,
+     "elementRenderDelay": 2408
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 13,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.4638671875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:44:44.515Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2932.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.96,
+   "lcpMs": 2807.805,
+   "fcpMs": 1082.8049999999998,
+   "siMs": 1094.1052600015105,
+   "tbtMs": 61.5,
+   "cls": 0,
+   "ttfbMs": 37,
+   "totalBytes": 706867,
+   "observed": {
+    "fcpMs": 448,
+    "lcpMs": 448,
+    "loadMs": 439,
+    "dclMs": 408
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 133,
+     "elementRenderDelay": 315
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 255763,
+     "mainThreadMs": 45
+    }
+   ]
+  },
+  {
+   "run": 14,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.08447265625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:44:56.513Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2939,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.96,
+   "lcpMs": 2768.888,
+   "fcpMs": 1117.973,
+   "siMs": 1154.4357960012003,
+   "tbtMs": 66.5,
+   "cls": 0,
+   "ttfbMs": 32,
+   "totalBytes": 706147,
+   "observed": {
+    "fcpMs": 484,
+    "lcpMs": 484,
+    "loadMs": 469,
+    "dclMs": 467
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 124,
+     "elementRenderDelay": 360
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 255763,
+     "mainThreadMs": 45
+    }
+   ]
+  },
+  {
+   "run": 14,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.14501953125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:45:08.574Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2890.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2833.9139999999998,
+   "fcpMs": 1108.914,
+   "siMs": 1164.4970840014948,
+   "tbtMs": 20,
+   "cls": 0,
+   "ttfbMs": 66,
+   "totalBytes": 429524,
+   "observed": {
+    "fcpMs": 494,
+    "lcpMs": 494,
+    "loadMs": 492,
+    "dclMs": 456
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 173,
+     "elementRenderDelay": 321
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 15,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*stripe.com*",
+    "*stripe.network*"
+   ],
+   "env": {
+    "load1": 2.16796875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:45:20.419Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2937,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.87,
+   "lcpMs": 3602.7635,
+   "fcpMs": 1425.7635,
+   "siMs": 4380.067344741893,
+   "tbtMs": 9,
+   "cls": 0,
+   "ttfbMs": 40,
+   "totalBytes": 429392,
+   "observed": {
+    "fcpMs": 2553,
+    "lcpMs": 2553,
+    "loadMs": 616,
+    "dclMs": 576
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 147,
+     "elementRenderDelay": 2406
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 15,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.7158203125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T17:45:34.176Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2939.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.66,
+   "lcpMs": 6308.5885,
+   "fcpMs": 3118.0772500000003,
+   "siMs": 5640.6950240012775,
+   "tbtMs": 150,
+   "cls": 0,
+   "ttfbMs": 34,
+   "totalBytes": 750929,
+   "observed": {
+    "fcpMs": 2550,
+    "lcpMs": 2550,
+    "loadMs": 645,
+    "dclMs": 629
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 148,
+     "elementRenderDelay": 2402
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 300159,
+     "mainThreadMs": 57
+    }
+   ]
+  }
+ ]
+}

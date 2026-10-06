@@ -1,0 +1,284 @@
+{
+ "protocol": {
+  "lighthouse": "13.5.0",
+  "throttlingMethod": "devtools",
+  "throttling": {
+   "mobile": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "cpuSlowdownMultiplier": 4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675
+   }
+  },
+  "cache": "cold",
+  "runsPerCell": 15,
+  "maxLoad": 4,
+  "pages": [
+   "/boeken"
+  ],
+  "formFactors": [
+   "mobile"
+  ],
+  "variants": [
+   {
+    "name": "prod",
+    "origin": "https://www.t4xi.nl",
+    "blocked": []
+   },
+   {
+    "name": "zonder-stripe",
+    "origin": "https://www.t4xi.nl",
+    "blocked": [
+     "*stripe.com*",
+     "*stripe.network*"
+    ]
+   }
+  ],
+  "startedAt": "2026-10-06T18:28:04.596Z",
+  "consistent": true,
+  "benchmarkIndexMedian": 2854.25,
+  "finishedAt": "2026-10-06T18:43:27.531Z"
+ },
+ "summary": [
+  {
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "okRuns": 15,
+   "failedRuns": 0,
+   "excludedRuns": 0,
+   "lcpMs": {
+    "n": 15,
+    "median": 2201.509,
+    "p75": 2261.6535000000003,
+    "p25": 2160.91,
+    "iqr": 100.7435000000005,
+    "min": 2117.062,
+    "max": 2324.072,
+    "cv": 0.03093387523841939,
+    "bimodal": false,
+    "modes": []
+   },
+   "fcpMs": {
+    "n": 15,
+    "median": 2201.509,
+    "p75": 2261.6535000000003,
+    "p25": 2160.91,
+    "iqr": 100.7435000000005,
+    "min": 2117.062,
+    "max": 2324.072,
+    "cv": 0.03093387523841939,
+    "bimodal": false,
+    "modes": []
+   },
+   "siMs": {
+    "n": 15,
+    "median": 2275,
+    "p75": 2347,
+    "p25": 2235.5,
+    "iqr": 111.5,
+    "min": 2156,
+    "max": 2425,
+    "cv": 0.03722440387453954,
+    "bimodal": false,
+    "modes": []
+   },
+   "tbtMs": {
+    "n": 15,
+    "median": 121.06900000000041,
+    "p75": 127.45499999999947,
+    "p25": 107.64599999809298,
+    "iqr": 19.809000001906497,
+    "min": 95.67499999999973,
+    "max": 794.2929999961852,
+    "cv": 1.0765509439866934,
+    "bimodal": false,
+    "modes": []
+   },
+   "cls": {
+    "n": 15,
+    "median": 0,
+    "p75": 0,
+    "p25": 0,
+    "iqr": 0,
+    "min": 0,
+    "max": 0,
+    "cv": null,
+    "bimodal": false,
+    "modes": []
+   },
+   "performance": {
+    "n": 15,
+    "median": 0.96,
+    "p75": 0.96,
+    "p25": 0.95,
+    "iqr": 0.010000000000000009,
+    "min": 0.77,
+    "max": 0.96,
+    "cv": 0.05126340306655453,
+    "bimodal": false,
+    "modes": []
+   },
+   "observedFcpMs": {
+    "n": 15,
+    "median": 2202,
+    "p75": 2261.5,
+    "p25": 2161,
+    "iqr": 100.5,
+    "min": 2117,
+    "max": 2324,
+    "cv": 0.030937953860839532,
+    "bimodal": false,
+    "modes": []
+   },
+   "lcpElements": {
+    "main#content > section.mx-auto > div > p.mt-4": {
+     "n": 15,
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen."
+    }
+   }
+  },
+  {
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "okRuns": 15,
+   "failedRuns": 0,
+   "excludedRuns": 0,
+   "lcpMs": {
+    "n": 15,
+    "median": 2183.203,
+    "p75": 2253.1915,
+    "p25": 2142.708,
+    "iqr": 110.48349999999982,
+    "min": 2122.04,
+    "max": 2360.117,
+    "cv": 0.03836025515927175,
+    "bimodal": false,
+    "modes": []
+   },
+   "fcpMs": {
+    "n": 15,
+    "median": 2183.203,
+    "p75": 2253.1915,
+    "p25": 2142.708,
+    "iqr": 110.48349999999982,
+    "min": 2122.04,
+    "max": 2360.117,
+    "cv": 0.03836025515927175,
+    "bimodal": false,
+    "modes": []
+   },
+   "siMs": {
+    "n": 15,
+    "median": 2276,
+    "p75": 2341.5,
+    "p25": 2208,
+    "iqr": 133.5,
+    "min": 2163,
+    "max": 2466,
+    "cv": 0.04474546968732937,
+    "bimodal": false,
+    "modes": []
+   },
+   "tbtMs": {
+    "n": 15,
+    "median": 22.15000000000009,
+    "p75": 28.45699999999988,
+    "p25": 9.248499999999922,
+    "iqr": 19.208499999999958,
+    "min": 7.304999999999836,
+    "max": 431.4500000000003,
+    "cv": 1.9866700635652736,
+    "bimodal": false,
+    "modes": []
+   },
+   "cls": {
+    "n": 15,
+    "median": 0,
+    "p75": 0,
+    "p25": 0,
+    "iqr": 0,
+    "min": 0,
+    "max": 0,
+    "cv": null,
+    "bimodal": false,
+    "modes": []
+   },
+   "performance": {
+    "n": 15,
+    "median": 0.96,
+    "p75": 0.97,
+    "p25": 0.96,
+    "iqr": 0.010000000000000009,
+    "min": 0.84,
+    "max": 0.97,
+    "cv": 0.03446573894164578,
+    "bimodal": false,
+    "modes": []
+   },
+   "observedFcpMs": {
+    "n": 15,
+    "median": 2183,
+    "p75": 2253,
+    "p25": 2142.5,
+    "iqr": 110.5,
+    "min": 2122,
+    "max": 2360,
+    "cv": 0.03833890931001582,
+    "bimodal": false,
+    "modes": []
+   },
+   "lcpElements": {
+    "main#content > section.mx-auto > div > p.mt-4": {
+     "n": 15,
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen."
+    }
+   }
+  }
+ ],
+ "gates": [
+  {
+   "cell": "`/boeken` mobile",
+   "metric": "lcpMs",
+   "a": "prod",
+   "b": "zonder-stripe",
+   "verdict": "gelijk",
+   "nA": 15,
+   "nB": 15,
+   "medianA": 2201.509,
+   "medianB": 2183.203,
+   "p75A": 2261.6535000000003,
+   "p75B": 2253.1915,
+   "ratio": 0.9962584896404332,
+   "ratioCI95": {
+    "lo": 0.9522257555654515,
+    "hi": 1.0612791474965744
+   },
+   "pWorse": 0.7121632956883163,
+   "pBetter": 0.30377917543742206
+  },
+  {
+   "cell": "`/boeken` mobile",
+   "metric": "fcpMs",
+   "a": "prod",
+   "b": "zonder-stripe",
+   "verdict": "gelijk",
+   "nA": 15,
+   "nB": 15,
+   "medianA": 2201.509,
+   "medianB": 2183.203,
+   "p75A": 2261.6535000000003,
+   "p75B": 2253.1915,
+   "ratio": 0.9962584896404332,
+   "ratioCI95": {
+    "lo": 0.9522257555654515,
+    "hi": 1.0612791474965744
+   },
+   "pWorse": 0.7121632956883163,
+   "pBetter": 0.30377917543742206
+  }
+ ]
+}

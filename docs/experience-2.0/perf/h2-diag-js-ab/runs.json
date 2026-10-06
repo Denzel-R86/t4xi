@@ -1,0 +1,3556 @@
+{
+ "protocol": {
+  "lighthouse": "13.5.0",
+  "throttlingMethod": "simulate",
+  "throttling": {
+   "mobile": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "cpuSlowdownMultiplier": 4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675
+   }
+  },
+  "cache": "cold",
+  "runsPerCell": 15,
+  "maxLoad": 4,
+  "pages": [
+   "/boeken",
+   "/tarieven"
+  ],
+  "formFactors": [
+   "mobile"
+  ],
+  "variants": [
+   {
+    "name": "prod",
+    "origin": "https://www.t4xi.nl",
+    "blocked": []
+   },
+   {
+    "name": "zonder-js",
+    "origin": "https://www.t4xi.nl",
+    "blocked": [
+     "*.js"
+    ]
+   }
+  ],
+  "startedAt": "2026-10-06T18:08:52.716Z",
+  "consistent": true,
+  "benchmarkIndexMedian": 2868.75,
+  "finishedAt": "2026-10-06T18:27:23.199Z"
+ },
+ "runs": [
+  {
+   "run": 1,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.55078125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:09:06.080Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2571.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.97,
+   "lcpMs": 1844.1905000000002,
+   "fcpMs": 1257.1905000000002,
+   "siMs": 3799.278638096681,
+   "tbtMs": 91,
+   "cls": 0,
+   "ttfbMs": 31,
+   "totalBytes": 173138,
+   "observed": {
+    "fcpMs": 2283,
+    "lcpMs": 2283,
+    "loadMs": 2285,
+    "dclMs": 2262
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 134,
+     "elementRenderDelay": 2149
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 1,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.91552734375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:09:20.941Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2850.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2850.388,
+   "fcpMs": 1171.388,
+   "siMs": 2784.7727814277637,
+   "tbtMs": 31,
+   "cls": 0,
+   "ttfbMs": 34,
+   "totalBytes": 377852,
+   "observed": {
+    "fcpMs": 1633,
+    "lcpMs": 1633,
+    "loadMs": 1618,
+    "dclMs": 1498
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 221,
+     "elementRenderDelay": 1412
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 1,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.74951171875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:09:50.923Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2815.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.94,
+   "lcpMs": 2455.7605000000003,
+   "fcpMs": 1087.411,
+   "siMs": 2168.6885898925875,
+   "tbtMs": 196,
+   "cls": 0,
+   "ttfbMs": 34,
+   "totalBytes": 177111,
+   "observed": {
+    "fcpMs": 1182,
+    "lcpMs": 1182,
+    "loadMs": 1187,
+    "dclMs": 1177
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 173,
+     "elementRenderDelay": 1009
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 1,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.67578125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:10:04.381Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2748.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.63,
+   "lcpMs": 6897.4355000000005,
+   "fcpMs": 3673.6195000000002,
+   "siMs": 5862.300148000353,
+   "tbtMs": 142.73399999999992,
+   "cls": 0,
+   "ttfbMs": 33,
+   "totalBytes": 751547,
+   "observed": {
+    "fcpMs": 2562,
+    "lcpMs": 2562,
+    "loadMs": 762,
+    "dclMs": 738
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 205,
+     "elementRenderDelay": 2357
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 300778,
+     "mainThreadMs": 52
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.6611328125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:10:19.546Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2807,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.89,
+   "lcpMs": 2885.687,
+   "fcpMs": 1160.687,
+   "siMs": 5546.4280340053465,
+   "tbtMs": 141,
+   "cls": 0,
+   "ttfbMs": 29,
+   "totalBytes": 377800,
+   "observed": {
+    "fcpMs": 3591,
+    "lcpMs": 3591,
+    "loadMs": 3616,
+    "dclMs": 3578
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 122,
+     "elementRenderDelay": 3469
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 2,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.65478515625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:10:36.882Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2778.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2281.03,
+   "fcpMs": 1107.2060000000001,
+   "siMs": 1897.8090971111203,
+   "tbtMs": 20,
+   "cls": 0,
+   "ttfbMs": 107,
+   "totalBytes": 177155,
+   "observed": {
+    "fcpMs": 1002,
+    "lcpMs": 1002,
+    "loadMs": 997,
+    "dclMs": 988
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 193,
+     "elementRenderDelay": 809
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 2,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.0595703125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:10:50.013Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2846,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.8,
+   "lcpMs": 5159.992499999999,
+   "fcpMs": 1436.4440000000002,
+   "siMs": 3079.081147166356,
+   "tbtMs": 65,
+   "cls": 0,
+   "ttfbMs": 28,
+   "totalBytes": 723414,
+   "observed": {
+    "fcpMs": 1536,
+    "lcpMs": 1536,
+    "loadMs": 637,
+    "dclMs": 616
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 208,
+     "elementRenderDelay": 1328
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 272292,
+     "mainThreadMs": 45
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 2.89208984375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:11:03.572Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2821,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1819.76,
+   "fcpMs": 1219.76,
+   "siMs": 2649.437051998727,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 32,
+   "totalBytes": 173123,
+   "observed": {
+    "fcpMs": 1536,
+    "lcpMs": 1536,
+    "loadMs": 523,
+    "dclMs": 503
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 124,
+     "elementRenderDelay": 1412
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 3,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.048828125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:11:16.740Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2823,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2413.6349999999993,
+   "fcpMs": 1174.7269999999999,
+   "siMs": 2134.4982168700562,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 51,
+   "totalBytes": 177154,
+   "observed": {
+    "fcpMs": 1165,
+    "lcpMs": 1165,
+    "loadMs": 1154,
+    "dclMs": 1143
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 318,
+     "elementRenderDelay": 847
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 3,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.796875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:11:30.137Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2828.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.79,
+   "lcpMs": 5389.7919999999995,
+   "fcpMs": 1511.2589999999998,
+   "siMs": 3113.089029763282,
+   "tbtMs": 76.5,
+   "cls": 0,
+   "ttfbMs": 80,
+   "totalBytes": 723008,
+   "observed": {
+    "fcpMs": 1594,
+    "lcpMs": 1594,
+    "loadMs": 761,
+    "dclMs": 741
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 269,
+     "elementRenderDelay": 1325
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 271915,
+     "mainThreadMs": 57
+    }
+   ]
+  },
+  {
+   "run": 3,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 2.39794921875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:11:46.432Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2583.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.97,
+   "lcpMs": 2415.7830000000004,
+   "fcpMs": 1087.6305,
+   "siMs": 2604.925592726114,
+   "tbtMs": 41,
+   "cls": 0,
+   "ttfbMs": 30,
+   "totalBytes": 173110,
+   "observed": {
+    "fcpMs": 1514,
+    "lcpMs": 1514,
+    "loadMs": 538,
+    "dclMs": 476
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 113,
+     "elementRenderDelay": 1401
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 3,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.3154296875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:12:00.250Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2825.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2798.305,
+   "fcpMs": 1126.3049999999998,
+   "siMs": 1829.239829999201,
+   "tbtMs": 106,
+   "cls": 0,
+   "ttfbMs": 30,
+   "totalBytes": 376612,
+   "observed": {
+    "fcpMs": 942,
+    "lcpMs": 942,
+    "loadMs": 954,
+    "dclMs": 913
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 197,
+     "elementRenderDelay": 745
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 4,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.755859375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:12:14.133Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2721.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.8,
+   "lcpMs": 5107.1845,
+   "fcpMs": 1240.2285000000002,
+   "siMs": 2790.857119221297,
+   "tbtMs": 121,
+   "cls": 0,
+   "ttfbMs": 35,
+   "totalBytes": 721935,
+   "observed": {
+    "fcpMs": 1477,
+    "lcpMs": 1477,
+    "loadMs": 597,
+    "dclMs": 552
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 120,
+     "elementRenderDelay": 1357
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 272342,
+     "mainThreadMs": 50
+    }
+   ]
+  },
+  {
+   "run": 4,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.2275390625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:12:28.115Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2807,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1830.951,
+   "fcpMs": 1230.951,
+   "siMs": 2680.881637999648,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 34,
+   "totalBytes": 173125,
+   "observed": {
+    "fcpMs": 1555,
+    "lcpMs": 1555,
+    "loadMs": 693,
+    "dclMs": 667
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 213,
+     "elementRenderDelay": 1342
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 4,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.19189453125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:12:41.742Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2848.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.92,
+   "lcpMs": 2977.36,
+   "fcpMs": 1102.3600000000001,
+   "siMs": 2685.1771282909344,
+   "tbtMs": 179.5,
+   "cls": 0,
+   "ttfbMs": 35,
+   "totalBytes": 377857,
+   "observed": {
+    "fcpMs": 1522,
+    "lcpMs": 1522,
+    "loadMs": 1552,
+    "dclMs": 1500
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 220,
+     "elementRenderDelay": 1302
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 4,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.89990234375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:17:17.360Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2837,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2336.452,
+   "fcpMs": 1127.863,
+   "siMs": 1858.9516097208418,
+   "tbtMs": 70,
+   "cls": 0,
+   "ttfbMs": 32,
+   "totalBytes": 177114,
+   "observed": {
+    "fcpMs": 973,
+    "lcpMs": 973,
+    "loadMs": 975,
+    "dclMs": 962
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 132,
+     "elementRenderDelay": 841
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 5,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.64453125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:17:30.561Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2856,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 1,
+   "lcpMs": 1749.942,
+   "fcpMs": 1074.942,
+   "siMs": 1147.4957339983239,
+   "tbtMs": 7,
+   "cls": 0,
+   "ttfbMs": 107,
+   "totalBytes": 173133,
+   "observed": {
+    "fcpMs": 488,
+    "lcpMs": 488,
+    "loadMs": 452,
+    "dclMs": 450
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 220,
+     "elementRenderDelay": 268
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 5,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.74169921875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:17:42.197Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2898,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2834.7219999999998,
+   "fcpMs": 1109.722,
+   "siMs": 1707.8037074424292,
+   "tbtMs": 42,
+   "cls": 0,
+   "ttfbMs": 35,
+   "totalBytes": 377769,
+   "observed": {
+    "fcpMs": 892,
+    "lcpMs": 892,
+    "loadMs": 929,
+    "dclMs": 899
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 205,
+     "elementRenderDelay": 688
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 5,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.62744140625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:17:57.200Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2811.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2390.965,
+   "fcpMs": 1150.193,
+   "siMs": 1841.7508040023565,
+   "tbtMs": 10,
+   "cls": 0,
+   "ttfbMs": 40,
+   "totalBytes": 177129,
+   "observed": {
+    "fcpMs": 959,
+    "lcpMs": 959,
+    "loadMs": 957,
+    "dclMs": 953
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 135,
+     "elementRenderDelay": 825
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 5,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.17431640625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:18:10.149Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2849,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.66,
+   "lcpMs": 6095.312999999999,
+   "fcpMs": 3186.0044999999996,
+   "siMs": 5607.255382000545,
+   "tbtMs": 142.5,
+   "cls": 0,
+   "ttfbMs": 51,
+   "totalBytes": 722604,
+   "observed": {
+    "fcpMs": 2634,
+    "lcpMs": 2634,
+    "loadMs": 763,
+    "dclMs": 606
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 203,
+     "elementRenderDelay": 2430
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 272292,
+     "mainThreadMs": 48
+    }
+   ]
+  },
+  {
+   "run": 6,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.44970703125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:18:25.198Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2777.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2821.0550000000003,
+   "fcpMs": 1184.055,
+   "siMs": 2001.0457839977298,
+   "tbtMs": 25,
+   "cls": 0,
+   "ttfbMs": 50,
+   "totalBytes": 377772,
+   "observed": {
+    "fcpMs": 1064,
+    "lcpMs": 1064,
+    "loadMs": 1071,
+    "dclMs": 1030
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 242,
+     "elementRenderDelay": 822
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 6,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.4912109375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:18:38.872Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2588.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2451.773,
+   "fcpMs": 1086.6860000000001,
+   "siMs": 1880.7391889186022,
+   "tbtMs": 172,
+   "cls": 0,
+   "ttfbMs": 45,
+   "totalBytes": 177086,
+   "observed": {
+    "fcpMs": 973,
+    "lcpMs": 973,
+    "loadMs": 975,
+    "dclMs": 957
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 154,
+     "elementRenderDelay": 819
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 6,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.43701171875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:19:07.972Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2861.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.68,
+   "lcpMs": 6071.6990000000005,
+   "fcpMs": 2897.56925,
+   "siMs": 5478.396266001622,
+   "tbtMs": 113.5,
+   "cls": 0,
+   "ttfbMs": 33,
+   "totalBytes": 707843,
+   "observed": {
+    "fcpMs": 2523,
+    "lcpMs": 2523,
+    "loadMs": 542,
+    "dclMs": 510
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 123,
+     "elementRenderDelay": 2401
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 256690,
+     "mainThreadMs": 44
+    }
+   ]
+  },
+  {
+   "run": 6,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 2.970703125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:19:22.150Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2905,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 1,
+   "lcpMs": 1746.5235,
+   "fcpMs": 1071.5235,
+   "siMs": 1117.1418319976046,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 32,
+   "totalBytes": 173132,
+   "observed": {
+    "fcpMs": 484,
+    "lcpMs": 484,
+    "loadMs": 440,
+    "dclMs": 439
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 153,
+     "elementRenderDelay": 331
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 7,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.22900390625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:19:33.674Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2851.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 2178.7920000000004,
+   "fcpMs": 1179.2640000000001,
+   "siMs": 1869.2832920003666,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 29,
+   "totalBytes": 177141,
+   "observed": {
+    "fcpMs": 990,
+    "lcpMs": 990,
+    "loadMs": 966,
+    "dclMs": 965
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 148,
+     "elementRenderDelay": 842
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 7,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.2060546875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:19:45.788Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2918,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2802.886,
+   "fcpMs": 1077.886,
+   "siMs": 1196.5167740007355,
+   "tbtMs": 78,
+   "cls": 0,
+   "ttfbMs": 36,
+   "totalBytes": 706581,
+   "observed": {
+    "fcpMs": 525,
+    "lcpMs": 525,
+    "loadMs": 518,
+    "dclMs": 480
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 126,
+     "elementRenderDelay": 400
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 256692,
+     "mainThreadMs": 49
+    }
+   ]
+  },
+  {
+   "run": 7,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.0986328125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:19:57.856Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2899,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2397.8100000000004,
+   "fcpMs": 1074.635,
+   "siMs": 1074.635,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 32,
+   "totalBytes": 173120,
+   "observed": {
+    "fcpMs": 448,
+    "lcpMs": 448,
+    "loadMs": 404,
+    "dclMs": 403
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 123,
+     "elementRenderDelay": 325
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 7,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.14990234375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:20:09.443Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2880.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2828.821,
+   "fcpMs": 1103.821,
+   "siMs": 1938.1100899980825,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 122,
+   "totalBytes": 375530,
+   "observed": {
+    "fcpMs": 1043,
+    "lcpMs": 1043,
+    "loadMs": 1090,
+    "dclMs": 1089
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 212,
+     "elementRenderDelay": 831
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 8,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.0400390625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:20:21.924Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2911,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.94,
+   "lcpMs": 2943.1775,
+   "fcpMs": 1489.9995000000001,
+   "siMs": 1716.6958173311773,
+   "tbtMs": 53.5,
+   "cls": 0,
+   "ttfbMs": 32,
+   "totalBytes": 723411,
+   "observed": {
+    "fcpMs": 499,
+    "lcpMs": 499,
+    "loadMs": 470,
+    "dclMs": 441
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 128,
+     "elementRenderDelay": 371
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 272292,
+     "mainThreadMs": 45
+    }
+   ]
+  },
+  {
+   "run": 8,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.37548828125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:20:34.040Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2911,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1754.513,
+   "fcpMs": 1079.513,
+   "siMs": 2571.100609998298,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 30,
+   "totalBytes": 173116,
+   "observed": {
+    "fcpMs": 1525,
+    "lcpMs": 1525,
+    "loadMs": 477,
+    "dclMs": 476
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 108,
+     "elementRenderDelay": 1417
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 8,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.08349609375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:20:46.606Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2908,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2907.393,
+   "fcpMs": 1182.393,
+   "siMs": 1819.2091000003336,
+   "tbtMs": 30,
+   "cls": 0,
+   "ttfbMs": 38,
+   "totalBytes": 376715,
+   "observed": {
+    "fcpMs": 952,
+    "lcpMs": 952,
+    "loadMs": 933,
+    "dclMs": 932
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 134,
+     "elementRenderDelay": 818
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 8,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 2.53515625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:20:58.996Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2899,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2395.632,
+   "fcpMs": 1115.696,
+   "siMs": 1754.7137800014334,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 45,
+   "totalBytes": 177153,
+   "observed": {
+    "fcpMs": 919,
+    "lcpMs": 919,
+    "loadMs": 1003,
+    "dclMs": 995
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 168,
+     "elementRenderDelay": 751
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 9,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 2.53271484375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:21:11.271Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2908.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1823.7350000000001,
+   "fcpMs": 1223.7350000000001,
+   "siMs": 1223.7350000000001,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 101,
+   "totalBytes": 173124,
+   "observed": {
+    "fcpMs": 494,
+    "lcpMs": 494,
+    "loadMs": 439,
+    "dclMs": 417
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 220,
+     "elementRenderDelay": 275
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 9,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.4580078125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:21:24.106Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2872,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2819.373,
+   "fcpMs": 1147.373,
+   "siMs": 2131.6240159980453,
+   "tbtMs": 44,
+   "cls": 0,
+   "ttfbMs": 32,
+   "totalBytes": 377782,
+   "observed": {
+    "fcpMs": 1166,
+    "lcpMs": 1166,
+    "loadMs": 1207,
+    "dclMs": 1173
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 209,
+     "elementRenderDelay": 957
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 9,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.46044921875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:21:37.341Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2820,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2446.1904999999997,
+   "fcpMs": 1085.671,
+   "siMs": 1712.8551573566508,
+   "tbtMs": 57,
+   "cls": 0,
+   "ttfbMs": 43,
+   "totalBytes": 177128,
+   "observed": {
+    "fcpMs": 887,
+    "lcpMs": 887,
+    "loadMs": 864,
+    "dclMs": 862
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 142,
+     "elementRenderDelay": 745
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 9,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.2783203125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:21:49.902Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2820,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2882.1205,
+   "fcpMs": 1157.1205,
+   "siMs": 1440.3928239981797,
+   "tbtMs": 106,
+   "cls": 0,
+   "ttfbMs": 36,
+   "totalBytes": 722727,
+   "observed": {
+    "fcpMs": 671,
+    "lcpMs": 671,
+    "loadMs": 654,
+    "dclMs": 653
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 189,
+     "elementRenderDelay": 482
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 271861,
+     "mainThreadMs": 48
+    }
+   ]
+  },
+  {
+   "run": 10,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.36376953125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:22:03.226Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2861.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2898.761,
+   "fcpMs": 1174.761,
+   "siMs": 1911.136677449105,
+   "tbtMs": 15,
+   "cls": 0,
+   "ttfbMs": 51,
+   "totalBytes": 376689,
+   "observed": {
+    "fcpMs": 1016,
+    "lcpMs": 1016,
+    "loadMs": 1040,
+    "dclMs": 1010
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 182,
+     "elementRenderDelay": 833
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 10,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.55419921875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:22:16.208Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2775.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2262.235,
+   "fcpMs": 1120.4470000000001,
+   "siMs": 2109.695107949952,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 34,
+   "totalBytes": 177110,
+   "observed": {
+    "fcpMs": 1161,
+    "lcpMs": 1161,
+    "loadMs": 1153,
+    "dclMs": 1143
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 167,
+     "elementRenderDelay": 994
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 10,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.640625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:22:29.076Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2868.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2846.503,
+   "fcpMs": 1121.5030000000002,
+   "siMs": 1166.256180001934,
+   "tbtMs": 93,
+   "cls": 0,
+   "ttfbMs": 105,
+   "totalBytes": 722956,
+   "observed": {
+    "fcpMs": 488,
+    "lcpMs": 488,
+    "loadMs": 466,
+    "dclMs": 465
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 190,
+     "elementRenderDelay": 299
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 271862,
+     "mainThreadMs": 47
+    }
+   ]
+  },
+  {
+   "run": 10,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.71435546875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:22:41.430Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2885.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.96,
+   "lcpMs": 2573.4875,
+   "fcpMs": 1294.6975,
+   "siMs": 2706.5139099999665,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 29,
+   "totalBytes": 173182,
+   "observed": {
+    "fcpMs": 1560,
+    "lcpMs": 1560,
+    "loadMs": 503,
+    "dclMs": 480
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 133,
+     "elementRenderDelay": 1427
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 11,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.78076171875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:23:10.778Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2816,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.97,
+   "lcpMs": 2303.4335,
+   "fcpMs": 1150.981,
+   "siMs": 2080.5748498759576,
+   "tbtMs": 99,
+   "cls": 0,
+   "ttfbMs": 35,
+   "totalBytes": 177143,
+   "observed": {
+    "fcpMs": 1123,
+    "lcpMs": 1123,
+    "loadMs": 1099,
+    "dclMs": 1097
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 132,
+     "elementRenderDelay": 992
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 11,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.31201171875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:23:23.516Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2860.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.81,
+   "lcpMs": 5020.2955,
+   "fcpMs": 1077.6154999999999,
+   "siMs": 2592.1046099990795,
+   "tbtMs": 89.5,
+   "cls": 0,
+   "ttfbMs": 33,
+   "totalBytes": 722278,
+   "observed": {
+    "fcpMs": 1541,
+    "lcpMs": 1541,
+    "loadMs": 494,
+    "dclMs": 493
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 121,
+     "elementRenderDelay": 1419
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 271881,
+     "mainThreadMs": 47
+    }
+   ]
+  },
+  {
+   "run": 11,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.26318359375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:23:36.726Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2900.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.96,
+   "lcpMs": 2425.9739999999997,
+   "fcpMs": 1229.329,
+   "siMs": 4115.121705996765,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 81,
+   "totalBytes": 173119,
+   "observed": {
+    "fcpMs": 2586,
+    "lcpMs": 2586,
+    "loadMs": 528,
+    "dclMs": 511
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 262,
+     "elementRenderDelay": 2323
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 11,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.00146484375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:23:50.372Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2906.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2825.559,
+   "fcpMs": 1100.559,
+   "siMs": 1839.9005326015442,
+   "tbtMs": 27,
+   "cls": 0,
+   "ttfbMs": 35,
+   "totalBytes": 377767,
+   "observed": {
+    "fcpMs": 983,
+    "lcpMs": 983,
+    "loadMs": 994,
+    "dclMs": 989
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 226,
+     "elementRenderDelay": 757
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 12,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:24:02.906Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2899.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.65,
+   "lcpMs": 6472.264,
+   "fcpMs": 3475.9845,
+   "siMs": 5739.890628000609,
+   "tbtMs": 124,
+   "cls": 0,
+   "ttfbMs": 38,
+   "totalBytes": 722633,
+   "observed": {
+    "fcpMs": 2572,
+    "lcpMs": 2572,
+    "loadMs": 590,
+    "dclMs": 575
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 122,
+     "elementRenderDelay": 2451
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 271844,
+     "mainThreadMs": 50
+    }
+   ]
+  },
+  {
+   "run": 12,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 2.916015625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:24:17.071Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2907,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 1,
+   "lcpMs": 1751.426,
+   "fcpMs": 1076.426,
+   "siMs": 1076.426,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 102,
+   "totalBytes": 173139,
+   "observed": {
+    "fcpMs": 435,
+    "lcpMs": 435,
+    "loadMs": 403,
+    "dclMs": 402
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 194,
+     "elementRenderDelay": 241
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 12,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.7734375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:24:28.546Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2908,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2924.563,
+   "fcpMs": 1199.563,
+   "siMs": 1865.315068986805,
+   "tbtMs": 18,
+   "cls": 0,
+   "ttfbMs": 37,
+   "totalBytes": 377872,
+   "observed": {
+    "fcpMs": 980,
+    "lcpMs": 980,
+    "loadMs": 957,
+    "dclMs": 956
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 118,
+     "elementRenderDelay": 862
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 12,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 2.93603515625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:24:40.977Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2913,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 1,
+   "lcpMs": 1775.65,
+   "fcpMs": 1125.65,
+   "siMs": 1716.1976520027215,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 40,
+   "totalBytes": 177197,
+   "observed": {
+    "fcpMs": 896,
+    "lcpMs": 896,
+    "loadMs": 931,
+    "dclMs": 931
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 141,
+     "elementRenderDelay": 755
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 13,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 2.8701171875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:24:53.162Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2903.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1751.466,
+   "fcpMs": 1076.466,
+   "siMs": 2638.1779259997543,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 37,
+   "totalBytes": 173129,
+   "observed": {
+    "fcpMs": 1574,
+    "lcpMs": 1574,
+    "loadMs": 528,
+    "dclMs": 527
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 122,
+     "elementRenderDelay": 1452
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 13,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.8896484375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:25:05.802Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2880.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2930.112,
+   "fcpMs": 1205.112,
+   "siMs": 1872.2627400506124,
+   "tbtMs": 31,
+   "cls": 0,
+   "ttfbMs": 31,
+   "totalBytes": 377851,
+   "observed": {
+    "fcpMs": 984,
+    "lcpMs": 984,
+    "loadMs": 963,
+    "dclMs": 963
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 110,
+     "elementRenderDelay": 873
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 13,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.00048828125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:25:18.475Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2869,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2360.1045000000004,
+   "fcpMs": 1070.019,
+   "siMs": 1676.2252839988455,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 32,
+   "totalBytes": 177113,
+   "observed": {
+    "fcpMs": 883,
+    "lcpMs": 883,
+    "loadMs": 825,
+    "dclMs": 777
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 206,
+     "elementRenderDelay": 677
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 13,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.77880859375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:25:30.527Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2908.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2822.5879999999997,
+   "fcpMs": 1097.588,
+   "siMs": 1236.8996379968942,
+   "tbtMs": 108.5,
+   "cls": 0,
+   "ttfbMs": 39,
+   "totalBytes": 723385,
+   "observed": {
+    "fcpMs": 546,
+    "lcpMs": 546,
+    "loadMs": 521,
+    "dclMs": 499
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 206,
+     "elementRenderDelay": 340
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 272287,
+     "mainThreadMs": 46
+    }
+   ]
+  },
+  {
+   "run": 14,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.80615234375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:25:43.023Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2905,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2901.06,
+   "fcpMs": 1176.06,
+   "siMs": 1822.8376500015333,
+   "tbtMs": 15,
+   "cls": 0,
+   "ttfbMs": 30,
+   "totalBytes": 377814,
+   "observed": {
+    "fcpMs": 958,
+    "lcpMs": 958,
+    "loadMs": 932,
+    "dclMs": 931
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 124,
+     "elementRenderDelay": 835
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 14,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.4033203125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:25:55.455Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2909,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2413.5150000000003,
+   "fcpMs": 1079.73,
+   "siMs": 1541.2609180037307,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 37,
+   "totalBytes": 177135,
+   "observed": {
+    "fcpMs": 772,
+    "lcpMs": 772,
+    "loadMs": 916,
+    "dclMs": 914
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 133,
+     "elementRenderDelay": 639
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 14,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.18701171875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:26:07.631Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2907,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.96,
+   "lcpMs": 2766.0255,
+   "fcpMs": 1119.7935,
+   "siMs": 1282.127307999821,
+   "tbtMs": 83,
+   "cls": 0,
+   "ttfbMs": 32,
+   "totalBytes": 705373,
+   "observed": {
+    "fcpMs": 540,
+    "lcpMs": 540,
+    "loadMs": 995,
+    "dclMs": 508
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 124,
+     "elementRenderDelay": 416
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 256691,
+     "mainThreadMs": 51
+    }
+   ]
+  },
+  {
+   "run": 14,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 2.85498046875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:26:25.414Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2905.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2404.4939999999997,
+   "fcpMs": 1225.749,
+   "siMs": 1225.749,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 33,
+   "totalBytes": 173129,
+   "observed": {
+    "fcpMs": 462,
+    "lcpMs": 462,
+    "loadMs": 413,
+    "dclMs": 396
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 128,
+     "elementRenderDelay": 334
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 15,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 3.2099609375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:26:36.978Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2913,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.98,
+   "lcpMs": 2208.615,
+   "fcpMs": 1176.205,
+   "siMs": 1821.2966044642546,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 35,
+   "totalBytes": 177102,
+   "observed": {
+    "fcpMs": 953,
+    "lcpMs": 953,
+    "loadMs": 949,
+    "dclMs": 940
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 134,
+     "elementRenderDelay": 819
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 15,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 3.00927734375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:26:49.021Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2912,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.68,
+   "lcpMs": 5262.736499999999,
+   "fcpMs": 1086.5040000000001,
+   "siMs": 2542.1895720044804,
+   "tbtMs": 470,
+   "cls": 0,
+   "ttfbMs": 27,
+   "totalBytes": 706707,
+   "observed": {
+    "fcpMs": 1502,
+    "lcpMs": 1502,
+    "loadMs": 504,
+    "dclMs": 449
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 118,
+     "elementRenderDelay": 1384
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "Stripe",
+     "bytes": 256700,
+     "mainThreadMs": 49
+    }
+   ]
+  },
+  {
+   "run": 15,
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-js",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [
+    "*.js"
+   ],
+   "env": {
+    "load1": 2.77978515625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:27:02.195Z",
+   "finalUrl": "https://www.t4xi.nl/boeken",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2898,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 1,
+   "lcpMs": 1755.8425,
+   "fcpMs": 1080.8425,
+   "siMs": 1182.7821499991344,
+   "tbtMs": 0,
+   "cls": 0,
+   "ttfbMs": 33,
+   "totalBytes": 173116,
+   "observed": {
+    "fcpMs": 528,
+    "lcpMs": 528,
+    "loadMs": 489,
+    "dclMs": 487
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.mx-auto > div > p.mt-4",
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen.",
+     "snippet": "<p class=\"mt-4 max-w-md text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 117,
+     "elementRenderDelay": 411
+    }
+   },
+   "thirdParties": []
+  },
+  {
+   "run": 15,
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "origin": "https://www.t4xi.nl",
+   "blocked": [],
+   "env": {
+    "load1": 2.70556640625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-06T18:27:13.770Z",
+   "finalUrl": "https://www.t4xi.nl/tarieven",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2909.5,
+   "throttlingMethod": "simulate",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.95,
+   "lcpMs": 2832.5860000000002,
+   "fcpMs": 1107.586,
+   "siMs": 1794.5449239993486,
+   "tbtMs": 15,
+   "cls": 0,
+   "ttfbMs": 111,
+   "totalBytes": 376760,
+   "observed": {
+    "fcpMs": 955,
+    "lcpMs": 955,
+    "loadMs": 983,
+    "dclMs": 982
+   },
+   "lcp": {
+    "element": {
+     "selector": "section.border-b > div.mx-auto > header.max-w-3xl > p.mt-6",
+     "label": "Comfortabel vervoer met een professionele chauffeur en een vaste prijs vooraf. …",
+     "snippet": "<p class=\"mt-6 max-w-xl text-[17px] leading-relaxed text-secondary\">"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 208,
+     "elementRenderDelay": 747
+    }
+   },
+   "thirdParties": []
+  }
+ ]
+}
