@@ -138,7 +138,6 @@ export function defaultMasks(page: Page): Locator[] {
 /** CSS die sticky header en StickyCta uit component-opnames haalt. */
 export const HIDE_OVERLAYS = path.join(__dirname, "hide-overlays.css");
 
-/** Geeft de browser twee frames om te schilderen. */
 /**
  * Haalt focus weg vóór gewone toestand-opnames (ready/loading/error), zodat
  * een geselecteerd segment in date/time-velden niet in de baseline belandt.
@@ -148,7 +147,34 @@ export async function blurActive(page: Page) {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 }
 
+/**
+ * Wacht tot de pagina stilstaat en geeft de browser daarna twee frames om te
+ * schilderen.
+ *
+ * Productcode scrollt met `scrollIntoView({ behavior: "smooth" })` (o.a. de
+ * RouteFinder na "Bereken vaste prijs"). Chromium animeert dat óók bij
+ * `reducedMotion: "reduce"`, en de animatie start pas na de quote-debounce.
+ * Een opname midden in die scroll legt een tussentoestand vast: tekst in een
+ * element op een fractionele paginapositie (bv. de bagage-select) snapt dan
+ * per run 1px anders. Daarom: wacht tot scrollX/scrollY 10 frames gelijk zijn.
+ */
 export async function settle(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        let last = "";
+        let still = 0;
+        const deadline = performance.now() + 5_000;
+        const tick = () => {
+          const pos = `${window.scrollX},${window.scrollY}`;
+          still = pos === last ? still + 1 : 0;
+          last = pos;
+          if (still >= 10 || performance.now() > deadline) resolve();
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      })
+  );
   await page.evaluate(
     () =>
       new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
