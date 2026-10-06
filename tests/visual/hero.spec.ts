@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { defaultMasks, HIDE_OVERLAYS, imagesReady, open, RIDE, settle, stabilize, type QuoteMode } from "./support/harness";
+import { blurActive, defaultMasks, HIDE_OVERLAYS, imagesReady, open, RIDE, settle, stabilize, type QuoteMode } from "./support/harness";
 
 /**
  * Hero (Arrival) en SentencePattern op de homepage (§10b).
@@ -25,6 +25,7 @@ async function fillRide(page: Page) {
   await page.getByLabel("Datum", { exact: true }).first().fill(RIDE.date);
   await page.getByLabel("Tijd", { exact: true }).first().fill(RIDE.time);
   await page.getByLabel("Bagage", { exact: true }).first().selectOption("1-2-koffers");
+  await blurActive(page);
 }
 
 async function heroWithQuote(page: Page, mode: QuoteMode, expected: RegExp) {

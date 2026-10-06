@@ -139,6 +139,15 @@ export function defaultMasks(page: Page): Locator[] {
 export const HIDE_OVERLAYS = path.join(__dirname, "hide-overlays.css");
 
 /** Geeft de browser twee frames om te schilderen. */
+/**
+ * Haalt focus weg vóór gewone toestand-opnames (ready/loading/error), zodat
+ * een geselecteerd segment in date/time-velden niet in de baseline belandt.
+ * Focus-toestanden zetten hun focus daarna expliciet.
+ */
+export async function blurActive(page: Page) {
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+}
+
 export async function settle(page: Page) {
   await page.evaluate(
     () =>

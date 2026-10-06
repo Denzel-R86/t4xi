@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { defaultMasks, HIDE_OVERLAYS, open, RIDE, settle, stabilize, type QuoteMode } from "./support/harness";
+import { blurActive, defaultMasks, HIDE_OVERLAYS, open, RIDE, settle, stabilize, type QuoteMode } from "./support/harness";
 
 /** Quote-resultaat in de RouteFinder op /tarieven ("UW RIT"-kaart, §10b). */
 
@@ -36,6 +36,7 @@ async function compute(page: Page, mode: QuoteMode, opts: { retour?: boolean } =
 }
 
 async function finderShot(page: Page, name: string) {
+  await blurActive(page);
   await settle(page);
   await expect(finder(page)).toHaveScreenshot(name, { mask: defaultMasks(page), stylePath: HIDE_OVERLAYS });
 }
