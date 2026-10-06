@@ -7,8 +7,9 @@ cel, varianten geïnterleaved, load1 ≤ 4 en geen build van een andere agent ti
 
 ## Conclusie
 
-1. **De bimodaliteit is een artefact van lantern (`simulate`) in headless Chrome. Het is
-   geen gebruikersprobleem van de pagina.** Met echte throttling (`devtools`, dezelfde
+1. **De bimodaliteit is waarschijnlijk een artefact van lantern (`simulate`) in headless
+   Chrome.** Dat het geen gebruikersprobleem is, is daarmee níét bewezen: velddata ontbreekt
+   en de oorzaak van de late paint in Chrome is niet vastgesteld. Met echte throttling (`devtools`, dezelfde
    4G- en 4×-CPU-waarden) is `/boeken` mobiel **unimodaal**: LCP mediaan **2,20 s**, p75
    **2,26 s**, IQR 0,10 s. Dat valt binnen het budget van 2,5 s. LCP = FCP, en het
    LCP-element is de tekst `main#content > section > div > p.mt-4` ("Vaste prijs vooraf…").
@@ -65,8 +66,12 @@ A = `perf/h2-diag-stripe-ab`, B = `perf/h2-diag-js-ab`, C = `perf/h2-diag-stripe
 
 ## Besluit: geen productcode-fix in H-2
 
-De trage modus is aantoonbaar een meetartefact. Met echte throttling haalt `/boeken` het
-LCP-budget al (p75 2,26 s). Er is dus geen bewezen LCP-oorzaak om te fixen.
+Er is geen bewezen LCP-oorzaak in de pagina gevonden die een fix rechtvaardigt. Met echte
+throttling ligt de lab-p75 op 2,26 s. Dit is een labresultaat, geen veld-p75 (§10 blijft
+formeel open tot er velddata is).
+
+**Besluit eigenaar (07-10-2026):** Stripe.js-laadmoment blijft ongewijzigd; er is geen
+aangetoonde noodzaak voor deze productwijziging.
 
 **Voorstel (niet uitgevoerd, besluit nodig):** laad Stripe.js pas bij de betaalstap, via
 `next/dynamic` voor `PaymentStep` of via `@stripe/stripe-js/pure` in `stripe-client.ts`.
@@ -78,9 +83,10 @@ LCP-budget al (p75 2,26 s). Er is dus geen bewezen LCP-oorzaak om te fixen.
 
 ## Gevolgen voor protocol en baseline
 
-- F-07 moet worden **herzien**. "LCP 6,0 s, +140%" komt van lantern plus een
-  headless-hapering, en is geen gedrag van de pagina.
-- Een realistischere lab-baseline voor `/boeken` mobiel is 2,20 s (mediaan) / 2,26 s (p75)
-  met devtools-throttling.
-- Het protocol (§6) is aangevuld: als de waargenomen FCP clustert rond ~2,5 s, dan is de
-  gesimuleerde modus een artefact. Neem in dat geval de devtools-cel mee in de gate.
+- F-07 krijgt een **aanvullend** labresultaat: 2,20 s mediaan / 2,26 s p75 (devtools-
+  throttling, n = 15, dit protocol). De oorspronkelijke meting (LCP mediaan 6,01 s, n = 5,
+  `simulate`, Lighthouse 13.5.0) blijft staan met haar methode en de verklaring hierboven.
+  Geen van beide is een veld-p75.
+- Het protocol (§5, §6) is aangevuld: dezelfde methode voor basis en kandidaat, vooraf
+  vastgelegd; voor `/boeken` mobiel worden beide methoden gemeten en gerapporteerd, en een
+  niet-significante uitkomst geldt niet als bewijs dat een regressie < 10% is.

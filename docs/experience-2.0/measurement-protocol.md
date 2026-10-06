@@ -86,7 +86,8 @@ diagnostisch), basis A tegen kandidaat B, beide volgens dit protocol en elk met 
 | **regressie** (niet mergen) | p75(B) / p75(A) > 1,10 **én** Mann-Whitney eenzijdig (B > A) p < 0,05 |
 | **onbeslist** | ratio > 1,10 maar p ≥ 0,05 → beide kanten naar n = 30 en opnieuw toetsen |
 | **verbetering** | ratio < 0,90 én de omgekeerde toets p < 0,05 |
-| **gelijk** | anders |
+| **geen regressie > 10% aangetoond** | geen van bovenstaande **én** bovengrens van het bootstrap-95%-interval van de p75-ratio ≤ 1,10 |
+| **onbeslist** | geen van bovenstaande en BI-bovengrens > 1,10 → naar n = 30; blijft het onbeslist, dan is de gate **niet** gehaald |
 | **onvoldoende-runs** | n < 15 aan een van beide kanten |
 
 Waarom zo:
@@ -94,7 +95,13 @@ Waarom zo:
 - **Mann-Whitney**, omdat die rangtoets de hele verdeling bekijkt. Hij ziet dus ook een groter
   aandeel trage runs, zonder aanname van normaliteit.
 - Erbij staat een **bootstrap-95%-interval** van de p75-ratio (4000 trekkingen, vaste seed,
-  reproduceerbaar), als maat voor de onzekerheid. Het interval zelf is geen gate-criterium.
+  reproduceerbaar). Een niet-significante toets bewijst níét dat een eventuele regressie
+  kleiner dan 10% is; daarvoor is de bovengrens van dit interval het criterium (zie tabel).
+
+**Dezelfde methode voor basis én kandidaat.** Per cel ligt vóór de meting vast welke
+throttling-methode (`simulate` of `devtools`), Lighthouse-versie, doel, cache-toestand en n
+de gate bepalen; dat staat in het rapport vóór de resultaten. Je wisselt niet van methode
+na het zien van een uitkomst — ook niet alleen bij een ongunstige.
 
 Basis en kandidaat meet je bij voorkeur **in één sessie, geïnterleaved** (twee `--variant`'s),
 zodat host en netwerk gelijk zijn. Twee aparte sessies vergelijken mag via `--compare`, maar
@@ -123,9 +130,13 @@ diagnostisch, niet gate-waardig wegens grotere hostgevoeligheid).
 **Vastgesteld in H-2** (`h2-boeken-diagnose.md`): headless Chrome presenteert in een deel
 van de runs pas rond **~2,54 s** het eerste frame (waargenomen FCP), terwijl de main thread
 stil is. Op pagina's met veel vroeg werk (`/boeken`: Stripe.js en booking-JS) maakt lantern
-daar een trage modus van. Regel: zie je in `runs.json` een cluster van `observed.fcpMs`
-rond 2,5 s, behandel de gesimuleerde bimodaliteit dan als artefact. Meet die cel daarnaast
-met `--throttling=devtools` (n = 15) en neem die uitkomst mee in de gate-uitspraak.
+daar een trage modus van. Regel: voor een cel waar dit eerder is vastgesteld (nu:
+`/boeken` mobiel) leg je **vóór** de vergelijking vast dat basis én kandidaat met beide
+methoden worden gemeten (`simulate` en `devtools`, elk n ≥ 15) en dat beide uitkomsten in
+het rapport staan. De gate-uitspraak volgt de vooraf vastgelegde methode; een ongunstige
+`simulate`-uitkomst wordt niet achteraf vervangen door `devtools`. Zie je dit cluster in een
+nieuwe cel, dan meld je het als observatie en leg je de methode voor de volgende vergelijking
+vast — niet voor de lopende.
 
 ## 7. Commando's
 
