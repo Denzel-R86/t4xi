@@ -17,6 +17,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test \"lib/**/*.test.ts\"",
+    "test:visual": "playwright test",
+    "test:visual:docker": "bash scripts/visual-docker.sh",
     "pricing:import": "tsx scripts/import-fixed-routes.ts",
     "brain:analyze": "tsx scripts/brain-analyze.ts",
     "brain:simulate": "tsx scripts/brain-simulate.ts",
@@ -48,6 +50,7 @@
     "styled-components": "6.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@types/node": "^20.14.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",

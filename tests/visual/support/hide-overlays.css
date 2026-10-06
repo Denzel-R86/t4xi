@@ -1,0 +1,13 @@
+/*
+ * Alleen tijdens component-opnames (toHaveScreenshot stylePath): vaste/sticky
+ * overlays horen niet in een component-snapshot. Element-opnames die hoger zijn
+ * dan de viewport zouden anders de sticky header en de mobiele StickyCta
+ * ergens midden in of onderaan het component tonen, afhankelijk van de
+ * scrollpositie. Header en StickyCta hebben hun eigen snapshots.
+ */
+header.sticky {
+  position: relative !important;
+}
+[role="complementary"][aria-label="Snelle acties"] {
+  visibility: hidden !important;
+}

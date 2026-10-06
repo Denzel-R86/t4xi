@@ -1,0 +1,10 @@
+{
+  "available": false,
+  "message": "Offerte op aanvraag",
+  "isAirportTransfer": false,
+  "pickupIsAirport": false,
+  "dropoffIsAirport": false,
+  "isAirportPickup": false,
+  "isAirportDropoff": false,
+  "flightDirection": null
+}

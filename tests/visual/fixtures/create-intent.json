@@ -1,0 +1,6 @@
+{
+  "clientSecret": "pi_visual_fixture_secret_visual_fixture",
+  "paymentIntentId": "pi_visual_fixture",
+  "amount": 8900,
+  "currency": "eur"
+}

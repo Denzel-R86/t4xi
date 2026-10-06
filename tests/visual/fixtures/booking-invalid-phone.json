@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "invalid_input",
+  "message": "Geldig telefoonnummer is verplicht."
+}
