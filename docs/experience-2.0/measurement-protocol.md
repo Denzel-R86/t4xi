@@ -140,7 +140,7 @@ node scripts/baseline/measure.mjs --label=<naam> --variant="voor|http://localhos
 # twee sessies vergelijken:
 node scripts/baseline/measure.mjs --compare=docs/experience-2.0/perf/a/runs.json,docs/experience-2.0/perf/b/runs.json
 # traces voor diagnose (buiten de repo): --assets-dir=/pad/buiten/repo
-node --test scripts/baseline/lib/   # tests van statistiek en extractie
+node --test scripts/baseline/lib/*.test.mjs   # tests van statistiek en extractie
 ```
 
 Output: `docs/experience-2.0/perf/<label>/{runs.json,summary.json,summary.md}`.

@@ -1,4 +1,4 @@
-// node --test scripts/baseline/lib/
+// node --test scripts/baseline/lib/*.test.mjs
 import test from "node:test";
 import assert from "node:assert/strict";
 import { describe, detectModes, gate, mannWhitneyGreater, quantile, rng } from "./stats.mjs";
