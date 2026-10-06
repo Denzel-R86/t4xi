@@ -291,11 +291,14 @@ Per gate: bewijs = test of script in de repo, niet een bewering.
 later een identiteit vragen ("Bekijk boeking", zakelijke boeker, chauffeur, Control). Zonder
 expliciete gate glipt een login-UI mee in een design-PR.
 
-**Huidige stand** (`proxy.ts`, ADR-015): geen Supabase Auth voor klanten; `/klant` en
-overige `/dashboard` → 404; `/dashboard/brain` achter HTTP Basic Auth; `/dashboard/invoices`
-met HttpOnly-sessie op een gedeeld wachtwoord (`OPS_DASHBOARD_PASSWORD`); `/admin` (Control)
-default-deny met Supabase-auth + verplichte MFA (Control Sprint 1). ADR-015 is aanvaard
-voor staging; productie is een apart eigenaarsbesluit.
+**Huidige stand** (`proxy.ts`, stand 6f9bc52, audit 06-10-2026): geen Supabase Auth voor
+klanten; `/klant` en overige `/dashboard` → 404; `/dashboard/brain` achter HTTP Basic Auth;
+`/dashboard/invoices` en `/api/admin/*` met een HttpOnly-HMAC-sessie op het gedeelde
+`OPS_DASHBOARD_PASSWORD` (sleutel = wachtwoord, terugval op `BRAIN_DASHBOARD_*`); `/admin`
+(Control) in code default-deny met Supabase `getUser()` + verplichte AAL2 + platform-identiteit
+(#45 Gates A–D, #47 first-admin bootstrap). Het Control-schema staat op staging maar **niet op
+productie** — Control is daar nog geen werkende vervanging en de legacy-toegang is volledig
+actief. ADR-015 staat niet als bestand in de repo; productie is een apart eigenaarsbesluit.
 
 **Trigger:** S8 moet groen zijn vóór een PR die (a) een login-, account- of
 "mijn boekingen"-scherm publiek bereikbaar maakt, (b) een nieuwe rol (customer, business
@@ -320,9 +323,12 @@ huidige identiteitsbeveiliging akkoord is. Bekende schuld, blokkeert 2.0 niet:
 
 | Item | Risico | Einddatum |
 |---|---|---|
-| `/dashboard/invoices` op gedeeld `OPS_DASHBOARD_PASSWORD` | geen persoonsidentiteit, geen intrekking per persoon, audit-actor niet verifieerbaar | zodra Control facturatie overneemt; uiterlijk [datum, eigenaar] |
-| `/dashboard/brain` achter HTTP Basic Auth | gedeelde credentials, geen MFA, geen sessietimeout | zodra Control de Pricing Brain-weergave heeft; uiterlijk [datum, eigenaar] |
-| `booking_status_transitions.actor` als vrije tekst | niet herleidbaar wie een status wijzigde | met ADR-015 in productie |
+| `/dashboard/invoices` + `/api/admin/*` op gedeeld `OPS_DASHBOARD_PASSWORD` (HMAC-sessie, sleutel = wachtwoord; terugval op `BRAIN_DASHBOARD_*`) | geen persoonsidentiteit; intrekking alleen via wachtwoordrotatie (breekt alle sessies); audit-actor niet verifieerbaar | zodra Control (identiteitsschema op productie) facturatie overneemt; uiterlijk [datum, eigenaar] |
+| `/dashboard/brain` achter HTTP Basic Auth | gedeelde credentials, geen MFA, geen sessietimeout/uitlog | zodra Control de Pricing Brain-weergave heeft; uiterlijk [datum, eigenaar] |
+| `booking_status_transitions.actor` als vrije tekst (altijd `"ops-dashboard"`) | niet herleidbaar wie een status wijzigde; de Control-actorinvariant (`20260912120000`) dekt alleen `control_audit_events` | met platform-identiteit op productie + ops-acties via Control; uiterlijk [datum, eigenaar] |
+
+Herzien 06-10-2026 na #45/#47: alle drie items **ongewijzigd** (geen diff in `proxy.ts`,
+`lib/admin/`, `app/[locale]/dashboard/`, `app/api/admin/`; Control-migraties niet op productie).
 
 Deze tabel wordt bij elke Control-release herzien; een item verdwijnt alleen met bewijs
 dat de oude toegang is uitgeschakeld.
