@@ -86,7 +86,7 @@ function invoiceShell(title: string, preheader: string, invoiceNumber: string, i
         </tr>
         <tr>
           <td align="center" style="background:${INK};border-radius:0 0 18px 18px;padding:24px 22px;color:#CBC8C4;font-size:11px;line-height:1.8;">
-            <span style="font-weight:700;letter-spacing:0.7px;color:${FOG};">ARRIVE WITH CONFIDENCE.</span><br>
+            <span style="font-weight:700;letter-spacing:0.7px;color:${FOG};">ARRIVE COMPOSED.</span><br>
             <span style="color:${STONE};">${T4XI.phoneDisplay} &nbsp;·&nbsp; ${T4XI.email} &nbsp;·&nbsp; t4xi.nl</span>
           </td>
         </tr>
@@ -198,7 +198,7 @@ export function renderInvoiceEmail(data: InvoiceData): RenderedInvoiceEmail {
     "",
     `Vragen? ${T4XI.phoneDisplay} | WhatsApp | ${T4XI.email}`,
     "",
-    "T4XI — Arrive with confidence.",
+    "T4XI — Arrive composed.",
   ].join("\n");
 
   return {
