@@ -74,3 +74,22 @@ Mockups van hero (desktop + mobiel), prijsreveal, RouteFinder-resultaat, boeksta
 bevestiging (aanvraag-status), homepage-editorial en footer: artifact "T4XI Experience 2.0 mockups" — https://claude.ai/artifact/HyZBtQ8PRc4Lr7fNky7fCf
 (link in PR 1.5). De mockups zijn richtinggevend voor compositie en hiërarchie; tokens
 en copy in dit plan gaan voor.
+
+### 13e. Button-varianten (vastgelegd vóór adoptie, besluit eigenaar PR #60)
+
+Eén component: `components/ui/Button.tsx` (klassen in `components/ui/button-styles.ts`).
+Drie varianten, geen andere knopstijlen (§5b).
+
+| Actie | Voorbeelden | Variant | Rust | Hover / focus |
+|---|---|---|---|---|
+| Primaire boekingsactie | "Boek deze rit", "Bevestig", "Bekijk mijn vaste prijs", "Betaal en vraag aan" | `primary` | **Gevuld**: ink, fog-tekst (13,64:1) | Vulling links → rechts in accent-light (fog-tekst 8,71:1) |
+| Secundaire actie | Bellen, WhatsApp, terug, meer info | `secondary` | **Omlijnd**: ink-kader, ink-tekst (13,64:1), geen vulling | Lichte vulling links → rechts (overlay, ink-tekst 12,61:1) |
+| Inline / tertiair | "Meer over T4XI →", links in lopende tekst of onder een kaart | `text` | Ink-tekst, geen kader; optionele pijl | Onderstreping links → rechts, pijl 4px |
+
+Regels:
+- **Maximaal één `primary` per scherm of sectie.** Twee gelijkwaardige acties: één `primary`, de ander `secondary`.
+- Omlijnd is uitsluitend `secondary`; een primaire actie is nooit alleen een kader.
+- **Touch:** de rustvorm draagt de hiërarchie — primary is zonder hover herkenbaar gevuld. `:active` toont dezelfde vulling als hover als directe drukfeedback; er is geen hover-afhankelijke informatie. Aanraakdoel ≥ 44px (`lg` ≥ 52px).
+- Focus: ink-ring 2px met 2px offset, dus buiten de vulling en zichtbaar op fog. Op een donkere achtergrond eerst een lichte ring toevoegen (nog niet nodig: niets geadopteerd).
+- Disabled/loading: primary verliest de donkere vulling (overlay, `stone-text` 4,86:1); secondary/text in `stone-text` (5,26:1 op fog). Nooit `text-stone` (F-11). Loading = `aria-busy`, label blijft staan, geen spinner.
+- Geen lift (`-translate-y`), geen `scale`, geen schaduw; reduced motion = geen transitie.
