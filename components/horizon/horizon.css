@@ -29,6 +29,16 @@
   --hz-composed: 700ms;
   --hz-cinematic: 1100ms;
   --hz-ambient: 6000ms;
+  /* Hero-cascade (§5, PR 1.4): starttijden en stijghoogtes, alleen voor .hz-hero-*.
+     De generieke Reveal (26px, hz-d1..3 = 90/180/270ms) blijft tot Fase 4. */
+  --hz-hero-eyebrow: 100ms;
+  --hz-hero-line1: 180ms;
+  --hz-hero-line2: 280ms;
+  --hz-hero-sub: 430ms;
+  --hz-hero-booking: 550ms;
+  --hz-hero-trust: 700ms;
+  --hz-rise-editorial: 20px;
+  --hz-rise-ui: 12px;
   --hz-line: rgba(31, 39, 48, 0.28);
   --hz-line-soft: rgba(31, 39, 48, 0.12);
   --hz-y: 62svh; /* de horizon */
@@ -89,8 +99,9 @@ html.js .hz-reveal.hz-d3.hz-in { transition-delay: 270ms; }
    Eenmalige cascade boven de vouw, puur CSS (`animation-delay` op klassen):
    geen IntersectionObserver, geen hydratie, geen JS-animatielib. Alleen opacity
    en transform, dus geen layout of CLS. Alles is binnen 1s klaar:
-     eyebrow 100ms · regel 1 180ms · regel 2 280ms (composed, 20px)
+     eyebrow 100ms · regel 1 180ms · regel 2 280ms (composed; regels 20px)
      subcopy 430ms · booking 550ms · trustline 700ms (ui, 12px)
+   Starttijden en afstanden staan als --hz-hero-* / --hz-rise-* in :root.
    Poort: `scripting: enabled` + `prefers-reduced-motion: no-preference`.
    Waarom niet `html.js`: die klasse zet de Next-runtime (beforeInteractive in de
    App Router = `self.__next_s`), dus pas ná de eerste paint. Dan zou de hero
@@ -104,7 +115,7 @@ html.js .hz-reveal.hz-d3.hz-in { transition-delay: 270ms; }
 @keyframes hz-hero-rise {
   from {
     opacity: var(--hz-hero-from, 0);
-    transform: translateY(var(--hz-hero-y, 12px));
+    transform: translateY(var(--hz-hero-y, var(--hz-rise-ui)));
   }
 }
 @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
@@ -116,19 +127,19 @@ html.js .hz-reveal.hz-d3.hz-in { transition-delay: 270ms; }
   .hz-hero-trust {
     animation: hz-hero-rise var(--hz-ui) var(--hz-ease) both;
   }
-  .hz-hero-eyebrow { animation-duration: var(--hz-composed); animation-delay: 100ms; }
+  .hz-hero-eyebrow { animation-duration: var(--hz-composed); animation-delay: var(--hz-hero-eyebrow); }
   .hz-hero-line1,
   .hz-hero-line2 {
     display: inline-block; /* transform werkt niet op inline; regels staan al los (<br>) */
     --hz-hero-from: 0.01;
-    --hz-hero-y: 20px;
+    --hz-hero-y: var(--hz-rise-editorial);
     animation-duration: var(--hz-composed);
   }
-  .hz-hero-line1 { animation-delay: 180ms; }
-  .hz-hero-line2 { animation-delay: 280ms; }
-  .hz-hero-sub { animation-delay: 430ms; }
-  .hz-hero-booking { animation-delay: 550ms; }
-  .hz-hero-trust { animation-delay: 700ms; }
+  .hz-hero-line1 { animation-delay: var(--hz-hero-line1); }
+  .hz-hero-line2 { animation-delay: var(--hz-hero-line2); }
+  .hz-hero-sub { animation-delay: var(--hz-hero-sub); }
+  .hz-hero-booking { animation-delay: var(--hz-hero-booking); }
+  .hz-hero-trust { animation-delay: var(--hz-hero-trust); }
   /* Invoer wacht nooit op de animatie: wie de zin aanraakt, ziet hem meteen. */
   .hz-hero-booking:focus-within { animation: none; }
 }

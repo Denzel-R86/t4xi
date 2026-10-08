@@ -47,6 +47,7 @@ function rulesFor(body: string, name: string): string {
 }
 
 const top = blocks(css);
+const root = top.find((b) => b.prelude === ":root")?.body ?? "";
 const motionBlocks = top.filter((b) => b.prelude.startsWith("@media") && b.prelude.includes("prefers-reduced-motion: no-preference"));
 const reducedBlock = top.find((b) => b.prelude.startsWith("@media") && b.prelude.includes("prefers-reduced-motion: reduce"));
 
@@ -71,9 +72,11 @@ test("1.4: delays volgen §5 en alles is binnen 1s klaar, met --hz-*-duurtokens"
   const body = motionBlocks[0].body;
   for (const name of CLASSES) {
     const rules = rulesFor(body, name);
-    const delay = rules.match(/animation-delay:\s*(\d+)ms/);
-    assert.ok(delay, `.hz-hero-${name} zonder animation-delay`);
-    assert.equal(Number(delay[1]), DELAYS[name], `.hz-hero-${name} delay`);
+    // Starttijd via token: animation-delay: var(--hz-hero-<name>) met de §5-waarde in :root.
+    assert.match(rules, new RegExp(`animation-delay:\\s*var\\(--hz-hero-${name}\\)`), `.hz-hero-${name} zonder delay-token`);
+    const token = root.match(new RegExp(`--hz-hero-${name}:\\s*(\\d+)ms;`));
+    assert.ok(token, `--hz-hero-${name} ontbreekt in :root`);
+    assert.equal(Number(token[1]), DELAYS[name], `--hz-hero-${name}`);
     const durationToken = [...rules.matchAll(/animation-duration:\s*var\((--hz-[a-z]+)\)/g)].at(-1)?.[1] ?? "--hz-ui";
     assert.ok(durationToken in TOKENS, `.hz-hero-${name}: onbekend duurtoken ${durationToken}`);
     assert.ok(DELAYS[name] + TOKENS[durationToken] < 1000, `.hz-hero-${name} eindigt na 1s`);
@@ -86,6 +89,18 @@ test("1.4: keyframes animeren alleen opacity en transform", () => {
   assert.ok(kf, "@keyframes hz-hero-rise ontbreekt");
   const props = [...kf.body.matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
   assert.deepEqual([...new Set(props)].sort(), ["opacity", "transform"]);
+});
+
+test("1.4: stijghoogte hero = §5 (regels 20px, rest 12px); generieke Reveal ongewijzigd", () => {
+  assert.match(root, /--hz-rise-editorial:\s*20px;/);
+  assert.match(root, /--hz-rise-ui:\s*12px;/);
+  for (const name of ["line1", "line2"]) {
+    assert.match(rulesFor(motionBlocks[0].body, name), /--hz-hero-y:\s*var\(--hz-rise-editorial\)/);
+  }
+  const kf = top.find((b) => b.prelude === "@keyframes hz-hero-rise")?.body ?? "";
+  assert.match(kf, /translateY\(var\(--hz-hero-y, var\(--hz-rise-ui\)\)\)/);
+  // Fase 4 migreert Reveal; tot dan blijft de bestaande startstaat exact staan.
+  assert.match(css, /html\.js \.hz-reveal \{\s*opacity: 0;\s*transform: translateY\(26px\);/);
 });
 
 test("1.4: LCP-kop start nooit op opacity 0 (regels op .01)", () => {
