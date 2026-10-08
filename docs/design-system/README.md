@@ -1,19 +1,26 @@
 # T4XI Design System 2.0
 
-De enige bron voor tokens, componenten, patronen, motion en voice van t4xi.nl
-(Experience 2.0, PR 1.5 — opdracht: `docs/experience-2.0/design-specs.md` §13a).
-Codecommentaren verwijzen hierheen; ze herhalen de regels niet.
+Documentatie van de **huidige implementatie**: tokens, componenten, patronen, motion en
+voice zoals ze nu in de code van t4xi.nl staan (Experience 2.0, PR 1.5 — opdracht:
+`docs/experience-2.0/design-specs.md` §13a). Codecommentaren verwijzen hierheen; ze
+herhalen de regels niet.
+
+**Canoniek blijven `docs/experience-2.0/masterplan.md` en `design-specs.md`.** Zij leggen
+de ontwerpafspraken vast; dit README beschrijft wat er gebouwd is. Wijkt de code af van
+die afspraken, dan staat dat in [Open afwijkingen](#6-open-afwijkingen). **Een afwijking
+documenteren betekent niet dat ze is goedgekeurd**: elke afwijking wordt hersteld in de
+genoemde fase, of de afspraak wordt via een besluit aangepast in masterplan/design-specs.
 
 **Reviewregel.** Een PR die een token of component wijzigt, werkt dit document in
 dezelfde PR bij. `lib/design/design-system-readme.test.ts` faalt zodra een tokenwaarde
 hier niet meer gelijk is aan de code.
 
 **Hoe te lezen.** Elke waarde verwijst naar code (`bestand:regel` of tokennaam). Waar
-de specificatie (masterplan/design-specs) iets anders zegt dan de code, staat hier de
-code — en de tegenstrijdigheid in [Open afwijkingen](#6-open-afwijkingen). Niets
-daarvan is in deze PR opgelost.
+masterplan/design-specs iets anders zeggen, beschrijft dit document de code en staat de
+tegenstrijdigheid in [Open afwijkingen](#6-open-afwijkingen) — de afspraak in de specs
+blijft daarbij leidend tot er anders besloten is.
 
-Visuele referentie (richtinggevend; tokens en copy hier gaan voor, §13d):
+Visuele referentie (richtinggevend; tokens en copy in masterplan/design-specs gaan voor, §13d):
 [T4XI Experience 2.0 mockups](https://claude.ai/artifact/HyZBtQ8PRc4Lr7fNky7fCf).
 
 Inhoud: [1. Foundations](#1-foundations) · [2. Componenten](#2-componenten) ·
@@ -368,40 +375,57 @@ Primaire CTA beschrijft wat er gebeurt ("Vraag deze rit aan", "Betaal en vraag a
 
 ## 6. Open afwijkingen
 
-Tegenstrijdigheden tussen specificatie en code, of binnen de code. Niet opgelost in
-PR 1.5; elk punt wordt een besluit of een eigen PR.
+Tegenstrijdigheden tussen specificatie en code, of binnen de code. **Niet goedgekeurd en
+niet opgelost in PR 1.5.** Per punt staat waar het wordt opgepakt; tot dan is de afspraak
+in masterplan/design-specs leidend.
 
 1. **Gutter mobiel.** §13a: "gutter `5vw` / 16px mobiel". Code: `px-[5vw]` op alle
    breedtes (`patterns.tsx:137`); geen 16px-regel.
+    → **Oppakken:** Fase 3 (homepage-secties) en Fase 7 (overige pagina's).
 2. **Sectieritme 128.** §13a: 64/96/128. Code: alleen 64/96 (`py-16 md:py-24`); `py-32`
    komt nergens voor.
+    → **Oppakken:** Fase 3 (sectieritme per homepage-sectie).
 3. **12 kolommen** is geen token of utility; één gebruik (`app/[locale]/page.tsx:160`).
+    → **Oppakken:** Fase 3 (grid bij herbouw van de secties).
 4. **Elevation.** §13a: max. twee niveaus (`card`, `cta`). Code: vijf schaduwtokens,
    alle in gebruik (`tailwind.config.ts:71-75`).
+    → **Oppakken:** Besluit eigenaar (specs of code aanpassen); uitvoering Fase 2.4/3.2.
 5. **Radius.** §13a: field 14 + card 24, "geen nieuwe". Code heeft ook `card-lg` 30px en
    `fleet` 34px (in gebruik). Daarnaast verbiedt §5b "`rounded-3xl`+ op contentkaarten",
    terwijl `rounded-card` (24px) gelijk is aan `rounded-3xl`.
+    → **Oppakken:** Besluit eigenaar (`card-lg`/`fleet` en §5b vs. `rounded-card`); uitvoering Fase 3.2.
 6. **Icon-stroke.** §13a: 1,5px. Code: `strokeWidth="1.75"` (`Icon.tsx:253`); de
    headercommentaar van `Icon.tsx:2` zegt "stroke 2".
+    → **Oppakken:** Fase 4 (afronding) als losse kleine PR; besluit 1,5 vs. 1,75.
 7. **Hardgecodeerde duren in `horizon.css`** buiten de tokens: travel-tick 160ms linear
    (`:50`), guide-line 420ms (`:84`), guide-space 300ms (`:98`), odometer 850ms (`:167`),
    confirm-btn 350ms (`:177,184`), reveal-vertraging 90/180/270ms (`:70-72`). Spec §5
    zegt "vijf tempo's".
+    → **Oppakken:** Hero-cascade (reveal-vertragingen): PR 1.4. Overige (Guide, Odometer, confirm-btn, travel-tick): Fase 4.
 8. **Reveal-afstand.** §5: foto-reveal 12–20px; §3: `distance` 12/20/26px. Code: vast 26px
    (`horizon.css:61`), geen `distance`-prop.
+    → **Oppakken:** Hero: PR 1.4 (§5-cascade). Overige Reveal-gebruik: Fase 4 (ScrollReveal → Reveal).
 9. **`--hz-immediate` (240ms)** staat niet in §5 en wordt nog door Guide/Focus gebruikt;
    §3 noemt het een alias, maar het is een eigen waarde (tussen micro en ui).
+    → **Oppakken:** Besloten 08-10: blijft 240 ms. Specs aanvullen (§5) in Fase 4; geen codewijziging.
 10. **Button-vulling en `.hz-confirm-btn`.** §3: primary "hergebruik `.hz-confirm-btn`,
     richting links→rechts". Code: Button v2 heeft een eigen `scaleX`-vulling
     (`button-styles.ts:38-45`); `.hz-confirm-btn` vult nog van onder (`scaleY`,
     `horizon.css:172-187`) en wordt in geen enkele `.tsx` gebruikt.
+    → **Oppakken:** Fase 2.1 (adoptie Button v2; `.hz-confirm-btn` opruimen of gelijktrekken).
 11. **Hover-tempo Button.** §5 koppelt hover aan `--hz-micro`; de primary/secondary-
     hovervulling loopt op `--hz-ui` 280ms (`button-styles.ts:41,52`). §13e noemt geen duur.
-12. **Hero-h1 gebruikt het serif-token niet.** §13f: "één token: `text-display-serif`"
-    (line-height 1.04). De hero zet een eigen clamp (48→108px, md 48→112px) met
-    `leading-[1.02]` (`app/[locale]/page.tsx:306`).
+    → **Oppakken:** Fase 2.1 (bij adoptie); besluit micro vs. ui-tempo voor de vulling.
+12. **Hero-h1: tokenverwijzing ontbreekt, font is correct.** Op `main` (na #62) gebruikt de
+    hero-h1 het familie-token `font-display-serif` (Playfair Display, rechtop, 600/400,
+    ≥ 48px) — conform B1. Alleen de **grootte** komt niet uit `text-display-serif`: de hero
+    zet een eigen clamp (48→108px, md 48→112px) met `leading-[1.02]` i.p.v. 1.04
+    (`app/[locale]/page.tsx:306`), omdat hij in de 48%-splitkolom staat. B1 staat niet ter
+    discussie; het gaat om een ontbrekende tokenvariant voor de splitkolom.
+    → **Oppakken:** PR 1.4 (hero).
 13. ~~**Verouderde verwijzing.**~~ Opgelost in PR 1.5: `app/[locale]/layout.tsx:37` verwijst
     nu naar design-specs §13f.
 14. **Dubbele kleurwaarden.** `accent.DEFAULT` = `ink.soft` (#28313B), `accent.hover` =
     `ink.DEFAULT` (#1F2730), `secondary` = `stone.text` (#5F666D). Geen fout, wel drie
     namen voor twee waarden.
+    → **Oppakken:** Fase 4 (tokenopschoning); geen functioneel effect.
