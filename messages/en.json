@@ -167,7 +167,12 @@
   "autocomplete": {
     "zoeken": "Searching addresses…",
     "leeg": "No addresses found. Please check the spelling.",
-    "fout": "Search is temporarily unavailable. Check your connection and try again."
+    "fout": "Search is temporarily unavailable. Check your connection and try again.",
+    "typeLuchthaven": "Airport",
+    "typeStation": "Station",
+    "typeBestemming": "Destination",
+    "typeAdres": "Address",
+    "aantal": "{count, plural, one {# suggestion} other {# suggestions}} available. Use the arrow keys to choose."
   },
   "tarieven": {
     "kicker": "Fixed fares — no meter, no surprises",

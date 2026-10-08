@@ -167,7 +167,12 @@
   "autocomplete": {
     "zoeken": "Adressen zoeken…",
     "leeg": "Geen adressen gevonden. Controleer de spelling.",
-    "fout": "Zoeken lukt even niet. Controleer uw verbinding en probeer het opnieuw."
+    "fout": "Zoeken lukt even niet. Controleer uw verbinding en probeer het opnieuw.",
+    "typeLuchthaven": "Luchthaven",
+    "typeStation": "Station",
+    "typeBestemming": "Bestemming",
+    "typeAdres": "Adres",
+    "aantal": "{count, plural, one {# suggestie} other {# suggesties}} beschikbaar. Gebruik de pijltjestoetsen om te kiezen."
   },
   "tarieven": {
     "kicker": "Vaste tarieven — geen taxameter, geen verrassing",
