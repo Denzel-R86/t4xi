@@ -323,21 +323,29 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   // (zie shouldRevealResult). scrollIntoView verplaatst de focus niet. Bij
   // reduced motion springt de pagina zonder animatie: de positie is nodig om de
   // prijs te zien, de beweging niet.
-  const outcomeKey = quoteReady
-    ? quoteOutcomeKey({
-        status: quote.status,
-        pickup: pickup?.label ?? "",
-        dropoff: dropoff?.label ?? "",
-        date,
-        time,
-        luggage,
-      })
-    : null;
+  // De sleutel hoort bij de rit waarvoor de prijs is OPGEVRAAGD, niet bij de
+  // huidige invoer: direct na een wijziging toont de hook nog één render lang de
+  // oude uitkomst. Daarom onthouden we de rit op het moment dat de hook "loading"
+  // meldt, en vormen we de sleutel pas als die aanvraag geland is.
+  const pickupLabel = pickup?.label ?? "";
+  const dropoffLabel = dropoff?.label ?? "";
+  const requestedRide = useRef<{ pickup: string; dropoff: string; date: string; time: string; luggage: string } | null>(null);
   const lastHandledOutcome = useRef<string | null>(null);
   useEffect(() => {
+    if (!quoteReady) {
+      requestedRide.current = null;
+      return;
+    }
+    if (quote.status === "loading") {
+      requestedRide.current = { pickup: pickupLabel, dropoff: dropoffLabel, date, time, luggage };
+      return;
+    }
+    const ride = requestedRide.current;
     const result = resultRef.current;
     const root = rootRef.current;
-    if (!result || !root || outcomeKey === null) return;
+    if (!ride || !result || !root) return;
+    const outcomeKey = quoteOutcomeKey({ status: quote.status, ...ride });
+    if (outcomeKey === null) return;
     const r = result.getBoundingClientRect();
     const active = document.activeElement as HTMLElement | null;
     const reveal = shouldRevealResult({
@@ -358,7 +366,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     });
     lastHandledOutcome.current = outcomeKey;
     if (reveal) result.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
-  }, [outcomeKey, reducedMotion]);
+  }, [quote.status, quoteReady, pickupLabel, dropoffLabel, date, time, luggage, reducedMotion]);
 
   const href =
     quoteReady && pickup && dropoff
