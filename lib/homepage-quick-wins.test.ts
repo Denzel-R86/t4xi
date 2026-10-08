@@ -13,7 +13,7 @@ test("homepagehero gebruikt een prijsgerichte CTA in beide talen", () => {
 });
 
 test("homepagehero is direct zichtbaar en toont een mobiele campagne-uitsnede", () => {
-  assert.match(home, /<NarrativePattern[\s\S]*?immediate[\s\S]*?echoClassName="font-light text-secondary"/);
+  assert.match(home, /<NarrativePattern[\s\S]*?immediate[\s\S]*?echoClassName="font-normal text-secondary"/);
   assert.match(home, /<Reveal immediate>/);
   assert.match(home, /order-first h-\[32svh\][\s\S]*?md:order-none/);
   assert.match(home, /object-\[62%_center\][\s\S]*?md:object-\[57%_center\]/);
