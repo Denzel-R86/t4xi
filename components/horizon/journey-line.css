@@ -1,0 +1,177 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   HORIZON v2 — JourneyLine (Experience 2.0 §4)
+   ─────────────────────────────────────────────
+   A → B als één hairline met begin- en eindpunt. Werkwoord: Travel.
+   De beslislogica (toestand → lengte/punten) staat in
+   lib/horizon/journey-line-view.ts; dit bestand schildert alleen.
+
+   · Lijn via transform: scaleX()/scaleY(), nooit width/height.
+   · travelling: één 6px-punt reist 600ms (--hz-ease) en eindigt als arrived —
+     puur CSS, geen timer, dus server-renderbaar.
+   · Reduced motion: direct de eindstaat, geen reizend punt.
+   Tokens met fallback, zodat de component ook werkt waar horizon.css (of de
+   motion-tokens uit PR 1.1) nog niet geladen zijn.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.hz-jl {
+  --jl-ease: var(--hz-ease, cubic-bezier(0.22, 1, 0.36, 1));
+  --jl-ui: var(--hz-ui, 280ms);
+  --jl-micro: var(--hz-micro, 160ms);
+  --jl-ink: #1f2730;
+  --jl-meta: #5f666d; /* stone.text — 5,3:1 op fog (F-11: géén #999694 voor tekst) */
+  --jl-track: var(--hz-line-soft, rgba(31, 39, 48, 0.12));
+  --jl-dot: 7px;
+  --jl-traveller: 6px;
+  --jl-run: 600ms;
+  --jl-span: 3rem; /* minimale lijnlengte */
+
+  display: grid;
+  grid-template-columns: auto minmax(var(--jl-span), 1fr) auto;
+  align-items: center;
+  column-gap: 0.875rem;
+  color: var(--jl-ink);
+}
+.hz-jl--micro { --jl-dot: 6px; --jl-span: 1.5rem; grid-template-columns: minmax(var(--jl-span), 1fr); column-gap: 0; }
+.hz-jl--display { --jl-dot: 9px; --jl-span: 5rem; column-gap: 1.25rem; }
+
+/* ── eindpunten (tekst); vaste kolommen, ook als een plaats ontbreekt ── */
+.hz-jl-end--from { grid-column: 1; }
+.hz-jl-track { grid-column: 2; }
+.hz-jl-end--to { grid-column: 3; }
+.hz-jl--micro .hz-jl-track { grid-column: 1; }
+.hz-jl-end { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.hz-jl-end--to { text-align: right; align-items: flex-end; }
+.hz-jl-name {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--jl-ink);
+}
+.hz-jl-meta {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: var(--jl-meta);
+}
+.hz-jl--display .hz-jl-name { font-size: 0.8125rem; }
+.hz-jl--display .hz-jl-meta { font-size: 0.8125rem; }
+
+/* ── spoor ── */
+.hz-jl-track {
+  position: relative;
+  display: block;
+  height: var(--jl-dot);
+  min-width: var(--jl-span);
+}
+.hz-jl-ghost,
+.hz-jl-rule {
+  position: absolute;
+  top: calc(50% - 0.5px);
+  left: calc(var(--jl-dot) / 2);
+  right: calc(var(--jl-dot) / 2);
+  height: 1px;
+}
+.hz-jl-ghost { background: var(--jl-track); }
+.hz-jl-rule {
+  background: var(--jl-ink);
+  transform: scaleX(var(--jl-progress, 0));
+  transform-origin: left center;
+  transition: transform var(--jl-ui) var(--jl-ease);
+}
+.hz-jl-dot {
+  position: absolute;
+  top: 0;
+  width: var(--jl-dot);
+  height: var(--jl-dot);
+  border-radius: 9999px;
+  border: 1px solid var(--jl-ink);
+  background: transparent;
+  box-sizing: border-box;
+  transition: background-color var(--jl-micro) var(--jl-ease);
+}
+.hz-jl-dot--from { left: 0; }
+.hz-jl-dot--to { right: 0; }
+.hz-jl-dot[data-dot="filled"] { background: var(--jl-ink); }
+
+/* Travel: een laag zo breed als het spoor schuift over zijn eigen breedte;
+   het punt erin start links en eindigt op de bestemming. */
+.hz-jl-run {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation:
+    hz-jl-travel var(--jl-run) var(--jl-ease) both,
+    hz-jl-hide 1ms linear var(--jl-run) forwards;
+}
+.hz-jl-run::before {
+  content: "";
+  position: absolute;
+  top: calc(50% - var(--jl-traveller) / 2);
+  left: calc((var(--jl-dot) - var(--jl-traveller)) / 2);
+  width: var(--jl-traveller);
+  height: var(--jl-traveller);
+  border-radius: 9999px;
+  background: var(--jl-ink);
+}
+.hz-jl-dot[data-dot="arriving"] { animation: hz-jl-fill 1ms linear var(--jl-run) forwards; }
+
+@keyframes hz-jl-travel {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(100% - var(--jl-dot))); }
+}
+@keyframes hz-jl-travel-y {
+  from { transform: translateY(0); }
+  to { transform: translateY(calc(100% - var(--jl-dot))); }
+}
+@keyframes hz-jl-hide { to { opacity: 0; } }
+@keyframes hz-jl-fill { to { background-color: var(--jl-ink); } }
+
+/* ── verticaal (quiet proof, footer mobiel): spoor links, plaatsen rechts ── */
+.hz-jl--vertical {
+  grid-template-columns: var(--jl-dot) minmax(0, 1fr);
+  grid-template-rows: auto minmax(var(--jl-span), 1fr) auto;
+  column-gap: 0.875rem;
+  align-items: start;
+}
+.hz-jl--vertical .hz-jl-end--from { grid-column: 2; grid-row: 1; }
+.hz-jl--vertical .hz-jl-end--to { grid-column: 2; grid-row: 3; text-align: left; align-items: flex-start; }
+.hz-jl--vertical .hz-jl-track {
+  grid-column: 1;
+  grid-row: 1 / 4;
+  width: var(--jl-dot);
+  height: auto;
+  min-width: 0;
+  min-height: var(--jl-span);
+  align-self: stretch;
+}
+.hz-jl--vertical .hz-jl-ghost,
+.hz-jl--vertical .hz-jl-rule {
+  top: calc(var(--jl-dot) / 2);
+  bottom: calc(var(--jl-dot) / 2);
+  left: calc(50% - 0.5px);
+  right: auto;
+  width: 1px;
+  height: auto;
+}
+.hz-jl--vertical .hz-jl-rule { transform: scaleY(var(--jl-progress, 0)); transform-origin: center top; }
+.hz-jl--vertical .hz-jl-dot--from { top: 0; left: 0; }
+.hz-jl--vertical .hz-jl-dot--to { top: auto; bottom: 0; left: 0; right: auto; }
+.hz-jl--vertical .hz-jl-run {
+  animation:
+    hz-jl-travel-y var(--jl-run) var(--jl-ease) both,
+    hz-jl-hide 1ms linear var(--jl-run) forwards;
+}
+.hz-jl--vertical .hz-jl-run::before {
+  top: calc((var(--jl-dot) - var(--jl-traveller)) / 2);
+  left: calc(50% - var(--jl-traveller) / 2);
+}
+
+/* ── reduced motion: direct de eindstaat, geen reizend punt ── */
+@media (prefers-reduced-motion: reduce) {
+  .hz-jl-run { display: none; animation: none; }
+  .hz-jl-rule, .hz-jl-dot { transition: none; }
+  .hz-jl-dot[data-dot="arriving"] { animation: none; background: var(--jl-ink); }
+}
