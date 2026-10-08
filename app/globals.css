@@ -70,3 +70,18 @@ footer {
     transform: none;
   }
 }
+
+/* Mobiele StickyCta (F-14): wijkt alleen als de resultaatregel met de hero-knop
+   grotendeels in beeld is (zie lib/hero/hero-visibility.ts); StickyCtaBar zet
+   data-hidden.
+   Startwaarde = zichtbaar, dus geen regel vóór hydratie. visibility:hidden haalt
+   de links ook uit tabvolgorde en a11y-boom. */
+.sticky-cta[data-hidden="true"] {
+  visibility: hidden;
+  transform: translateY(100%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sticky-cta {
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.3s;
+  }
+}

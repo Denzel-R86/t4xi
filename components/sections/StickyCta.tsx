@@ -1,15 +1,16 @@
 import { Link } from "@/i18n/navigation";
 import Icon from "@/components/ui/Icon";
 import { useTranslations } from "next-intl";
+import StickyCtaBar from "@/components/sections/StickyCtaBar";
 
-/** Sticky mobiele actiebalk uit het v14-bronbestand — verborgen op desktop. */
+/** Sticky mobiele actiebalk uit het v14-bronbestand — verborgen op desktop.
+ *  Wijkt zolang de hero-boekingszin in beeld is (zie StickyCtaBar, F-14). */
 export default function StickyCta() {
   const t = useTranslations("sticky");
   return (
-    <div
+    <StickyCtaBar
       className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2.5 border-t border-line bg-fog/95 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-3 backdrop-blur-lg lg:hidden"
-      role="complementary"
-      aria-label={t("label")}
+      label={t("label")}
     >
       <Link
         href="/boeken"
@@ -34,6 +35,6 @@ export default function StickyCta() {
       >
         <Icon name="whatsapp" size={20} />
       </a>
-    </div>
+    </StickyCtaBar>
   );
 }

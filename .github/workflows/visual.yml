@@ -109,6 +109,12 @@ jobs:
         if: steps.gate.outputs.mode == 'update'
         run: npx playwright test --update-snapshots=all
 
+      # Gedragschecks (H-1): automatisch scrollen naar de prijs in WebKit (iPhone 13)
+      # en Chromium 375. Draait in beide modi, ook als de snapshotstap faalde.
+      - name: Behavior checks
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        run: npm run test:behavior
+
       - name: Upload baselines
         if: steps.gate.outputs.mode == 'update'
         uses: actions/upload-artifact@v4
@@ -126,4 +132,6 @@ jobs:
           path: |
             playwright-report/visual
             test-results/visual
+            playwright-report/behavior
+            test-results/behavior
           retention-days: 14

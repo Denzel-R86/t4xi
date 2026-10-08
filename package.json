@@ -19,6 +19,7 @@
     "test": "node --import tsx --test \"lib/**/*.test.ts\"",
     "test:visual": "playwright test",
     "test:visual:docker": "bash scripts/visual-docker.sh",
+    "test:behavior": "playwright test -c playwright.behavior.config.ts",
     "pricing:import": "tsx scripts/import-fixed-routes.ts",
     "brain:analyze": "tsx scripts/brain-analyze.ts",
     "brain:simulate": "tsx scripts/brain-simulate.ts",

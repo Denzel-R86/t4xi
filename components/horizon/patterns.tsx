@@ -52,6 +52,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Reveal, Odometer, usePrefersReducedMotion } from "./motion";
 import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
+import { useHidesStickyCta } from "@/components/sections/sticky-cta-visibility";
+import { isTextEntry, quoteOutcomeKey, shouldRevealResult } from "@/lib/hero/hero-visibility";
 import { useTranslations } from "next-intl";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 
@@ -308,6 +310,63 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   const addressesSet = Boolean(pickup && dropoff);
   const quoteReady = addressesSet && departureValid && Boolean(luggage);
   const quote = useRouteQuote(pickup, dropoff, { date, time, luggage, ready: quoteReady });
+  const reducedMotion = usePrefersReducedMotion();
+
+  // F-14: de zin draagt de boekingshandeling zelf. De mobiele StickyCta wijkt
+  // alleen als de resultaatregel (prijs + "Bevestig") grotendeels in beeld is.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+  useHidesStickyCta(resultRef);
+
+  // F-14: op een smal scherm valt de uitkomst voor een nieuwe rit onder de vouw.
+  // Dan schuift de pagina één keer precies genoeg om de resultaatregel te tonen
+  // (zie shouldRevealResult). scrollIntoView verplaatst de focus niet. Bij
+  // reduced motion springt de pagina zonder animatie: de positie is nodig om de
+  // prijs te zien, de beweging niet.
+  // De sleutel hoort bij de rit waarvoor de prijs is OPGEVRAAGD, niet bij de
+  // huidige invoer: direct na een wijziging toont de hook nog één render lang de
+  // oude uitkomst. Daarom onthouden we de rit op het moment dat de hook "loading"
+  // meldt, en vormen we de sleutel pas als die aanvraag geland is.
+  const pickupLabel = pickup?.label ?? "";
+  const dropoffLabel = dropoff?.label ?? "";
+  const requestedRide = useRef<{ pickup: string; dropoff: string; date: string; time: string; luggage: string } | null>(null);
+  const lastHandledOutcome = useRef<string | null>(null);
+  useEffect(() => {
+    if (!quoteReady) {
+      requestedRide.current = null;
+      return;
+    }
+    if (quote.status === "loading") {
+      requestedRide.current = { pickup: pickupLabel, dropoff: dropoffLabel, date, time, luggage };
+      return;
+    }
+    const ride = requestedRide.current;
+    const result = resultRef.current;
+    const root = rootRef.current;
+    if (!ride || !result || !root) return;
+    const outcomeKey = quoteOutcomeKey({ status: quote.status, ...ride });
+    if (outcomeKey === null) return;
+    const r = result.getBoundingClientRect();
+    const active = document.activeElement as HTMLElement | null;
+    const reveal = shouldRevealResult({
+      key: outcomeKey,
+      lastHandledKey: lastHandledOutcome.current,
+      resultTop: r.top,
+      resultBottom: r.bottom,
+      sentenceTop: root.getBoundingClientRect().top,
+      viewportHeight: window.visualViewport?.height ?? window.innerHeight,
+      textEntryFocused: isTextEntry(
+        active && {
+          tagName: active.tagName,
+          type: active.getAttribute("type"),
+          role: active.getAttribute("role"),
+          isContentEditable: active.isContentEditable,
+        }
+      ),
+    });
+    lastHandledOutcome.current = outcomeKey;
+    if (reveal) result.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
+  }, [quote.status, quoteReady, pickupLabel, dropoffLabel, date, time, luggage, reducedMotion]);
 
   const href =
     quoteReady && pickup && dropoff
@@ -360,7 +419,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     placeholder: string,
     label: string
   ) => (
-    <span className="hz-focus relative inline-block align-baseline">
+    <span className="hz-focus inline-block align-baseline md:relative">
       <input
         className="hz-blank font-display font-medium"
         style={{
@@ -392,7 +451,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         <ul
           id={`hero-${field}-listbox`}
           role="listbox"
-          className="absolute left-0 top-full z-30 mt-2 w-max min-w-[280px] max-w-[90vw] overflow-hidden rounded-field border border-line bg-card text-left shadow-card"
+          className="absolute inset-x-0 z-30 mt-2 overflow-hidden rounded-field border border-line bg-card text-left shadow-card md:right-auto md:top-full md:w-max md:min-w-[280px] md:max-w-[90vw]"
         >
           {suggestions.map((s, i) => (
             <li key={s.id} id={`hero-${field}-option-${i}`} role="option" aria-selected={i === activeIndex}>
@@ -414,10 +473,14 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   );
 
   return (
-    <div className="border-t border-ink/30 pt-5">
+    <div ref={rootRef} className="border-t border-ink/30 pt-5">
       {/* Bewust een <div>, geen <p>: de invulvelden dragen een <ul>-listbox en
           een <ul> mag in HTML niet binnen een <p> (hydration-fout). */}
-      <div className="font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink">
+      {/* Onder md hangt de suggestielijst aan deze zin (F-15): volle zinsbreedte,
+          verticaal direct onder de regel van het veld (statische positie, geen
+          `top`), zodat hij op 375 niet buiten de viewport loopt. Vanaf md hangt
+          hij weer aan het veld zelf. */}
+      <div className="relative font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink md:static">
         {t("voor")} {blank("from", from, setFrom, () => setFromResolved(""), t("phVertrek"), t("ariaVertrek"))} {t("tussen")}{" "}
         {blank("to", to, setTo, () => setToResolved(""), t("phBestemming"), t("ariaBestemming"))}.
       </div>
@@ -438,8 +501,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         <span className="hz-focus relative inline-block align-baseline">
           <input
             type="time"
-            className="hz-blank font-display font-medium"
-            style={{ width: "6ch" }}
+            className="hz-blank hz-time font-display font-medium"
             value={time}
             onChange={(e) => setTime(e.target.value)}
             aria-label={t("ariaTijd")}
@@ -462,7 +524,8 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         .
       </div>
       <div
-        className="mt-4 flex flex-wrap items-baseline gap-x-7 gap-y-3"
+        ref={resultRef}
+        className="mt-4 flex scroll-mb-4 flex-wrap items-baseline gap-x-7 gap-y-3"
         aria-live="polite"
         aria-busy={quote.status === "loading"}
       >
