@@ -13,8 +13,9 @@ import {
  *
  * Polymorf: met `href` een link (interne paden via de locale-bewuste `Link`,
  * `tel:`/`mailto:`/`https:`/`#…` als gewone `<a>`), zonder `href` een `<button>`.
- * Varianten: `primary` (Confirm-vulling links → rechts), `secondary` (hairline),
- * `text` (onderstreping + optionele pijl). Klassen: `./button-styles.ts`.
+ * Varianten: `primary` (gevuld in rust), `secondary` (omlijnd), `text`
+ * (onderstreping + optionele pijl). Klassen: `./button-styles.ts`; welke actie
+ * welke variant krijgt: docs/experience-2.0/design-specs.md §13e.
  *
  * Nog nergens geadopteerd (PR 1.3); adoptie per pagina in latere PR's.
  */
