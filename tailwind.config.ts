@@ -6,6 +6,11 @@ import type { Config } from "tailwindcss";
  * Warm stone-canvas, witte cards met zachte diepe schaduwen,
  * donkere navy-accent (#28313B) voor CTA's en highlights.
  */
+
+// Experience 2.0 B1 (besloten 08-10-2026): Playfair Display, rechtop, alleen voor
+// Brand Mode-display ≥ 48px (design-specs §13e). Eén stack voor beide namen.
+const SERIF_STACK = ["var(--font-playfair)", "Georgia", "serif"];
+
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
@@ -43,7 +48,10 @@ const config: Config = {
       fontFamily: {
         display: ["var(--font-outfit)", "system-ui", "sans-serif"],
         body: ["var(--font-inter)", "system-ui", "sans-serif"],
-        playfair: ["var(--font-playfair)", "Georgia", "serif"],
+        // Brand Mode-display (B1). Nooit in transactionele UI — lib/design/display-font.test.ts.
+        "display-serif": SERIF_STACK,
+        // Legacy: dagtochten (fase 5 migreert naar display-serif).
+        playfair: SERIF_STACK,
       },
       fontSize: {
         "display-xl": ["clamp(2.75rem, 6vw, 4.5rem)", { lineHeight: "1.05", letterSpacing: "-0.055em" }],
@@ -56,6 +64,8 @@ const config: Config = {
         "display-statement": ["clamp(2.5rem, 5.5vw, 5.5rem)", { lineHeight: "1.05", letterSpacing: "-0.03em" }],
         "body-lg": ["clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem)", { lineHeight: "1.6" }],
         meta: ["0.6875rem", { lineHeight: "1.2", letterSpacing: "0.16em" }],
+        // B1: serif-display, ondergrens 48px (3rem) — kleiner wordt nooit serif.
+        "display-serif": ["clamp(3rem, 7.6vw, 6.75rem)", { lineHeight: "1.04", letterSpacing: "-0.015em" }],
       },
       boxShadow: {
         card: "0 22px 60px rgba(31,39,48,0.08)",
