@@ -85,6 +85,54 @@ html.js .hz-reveal.hz-d1.hz-in { transition-delay: 90ms; }
 html.js .hz-reveal.hz-d2.hz-in { transition-delay: 180ms; }
 html.js .hz-reveal.hz-d3.hz-in { transition-delay: 270ms; }
 
+/* ── Hero-choreografie (Experience 2.0 §5, PR 1.4) ──
+   Eenmalige cascade boven de vouw, puur CSS (`animation-delay` op klassen):
+   geen IntersectionObserver, geen hydratie, geen JS-animatielib. Alleen opacity
+   en transform, dus geen layout of CLS. Alles is binnen 1s klaar:
+     eyebrow 100ms · regel 1 180ms · regel 2 280ms (composed, 20px)
+     subcopy 430ms · booking 550ms · trustline 700ms (ui, 12px)
+   Poort: `scripting: enabled` + `prefers-reduced-motion: no-preference`.
+   Waarom niet `html.js`: die klasse zet de Next-runtime (beforeInteractive in de
+   App Router = `self.__next_s`), dus pas ná de eerste paint. Dan zou de hero
+   eerst zichtbaar staan en daarna opnieuw van 0 inklappen. `scripting` geldt
+   al bij de eerste paint; browsers zonder deze media feature krijgen niets.
+   LCP-regel: de kopregels starten op opacity .01 (nooit 0), zodat de h1 al bij
+   de eerste paint als LCP-kandidaat telt. De boekingszin blijft bedienbaar
+   (opacity laat focus en klikken door) en springt bij focus direct op 1.
+   Zonder animatie (reduced motion, oude browser) blijven de regels inline:
+   pixel-gelijk aan de situatie vóór 1.4. */
+@keyframes hz-hero-rise {
+  from {
+    opacity: var(--hz-hero-from, 0);
+    transform: translateY(var(--hz-hero-y, 12px));
+  }
+}
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .hz-hero-eyebrow,
+  .hz-hero-line1,
+  .hz-hero-line2,
+  .hz-hero-sub,
+  .hz-hero-booking,
+  .hz-hero-trust {
+    animation: hz-hero-rise var(--hz-ui) var(--hz-ease) both;
+  }
+  .hz-hero-eyebrow { animation-duration: var(--hz-composed); animation-delay: 100ms; }
+  .hz-hero-line1,
+  .hz-hero-line2 {
+    display: inline-block; /* transform werkt niet op inline; regels staan al los (<br>) */
+    --hz-hero-from: 0.01;
+    --hz-hero-y: 20px;
+    animation-duration: var(--hz-composed);
+  }
+  .hz-hero-line1 { animation-delay: 180ms; }
+  .hz-hero-line2 { animation-delay: 280ms; }
+  .hz-hero-sub { animation-delay: 430ms; }
+  .hz-hero-booking { animation-delay: 550ms; }
+  .hz-hero-trust { animation-delay: 700ms; }
+  /* Invoer wacht nooit op de animatie: wie de zin aanraakt, ziet hem meteen. */
+  .hz-hero-booking:focus-within { animation: none; }
+}
+
 /* ── Guide ── */
 .hz-guide-line { position: relative; }
 .hz-guide-line::after {
@@ -223,6 +271,8 @@ input.hz-time::-webkit-datetime-edit-ampm-field {
 @media (prefers-reduced-motion: reduce) {
   html.js .hz-reveal, html.js .hz-reveal.hz-in { opacity: 1; transform: none; transition: none; }
   .hz-reveal { opacity: 1; transform: none; transition: none; }
+  .hz-hero-eyebrow, .hz-hero-line1, .hz-hero-line2, .hz-hero-sub,
+  .hz-hero-booking, .hz-hero-trust { animation: none; }
   .hz-spine { transform: scaleX(1); transition: none; }
   .hz-spine .hz-travel-tick { display: none; }
   .hz-confirm-roll.hz-live .hz-col { transition: none; }

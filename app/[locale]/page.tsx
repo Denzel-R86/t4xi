@@ -295,6 +295,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             echo={t("arrivalEcho")}
             note={t("arrivalNote")}
             immediate
+            cascade
             echoClassName="font-normal text-secondary"
             // 2026-08-19 (hotfix): deze kop staat in de 48%-splitkolom van de
             // ARRIVAL-sectie, niet in een bijna-volle-breedte Viewport zoals de
@@ -306,12 +307,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             titleClassName="mt-6 font-display-serif text-[clamp(48px,7.6vw,108px)] md:text-[clamp(48px,5.4vw,112px)] font-semibold leading-[1.02] tracking-[-0.015em] text-ink"
           />
           <Reveal immediate>
-            <div className="mt-9">
+            {/* PR 1.4: booking 550ms in de hero-cascade (horizon.css); nooit geblokkeerd. */}
+            <div className="hz-hero-booking mt-9">
               <SentencePattern />
             </div>
           </Reveal>
           <Reveal immediate>
-            <Stamp className="mt-7 leading-relaxed">
+            <Stamp className="hz-hero-trust mt-7 leading-relaxed">
               {t("arrivalStamp1")}<Dash />{t("arrivalStamp2")}<Dash />{t("arrivalStamp3")}<Dash />
               <b className="font-semibold text-ink">{t("arrivalStamp4")}</b>
             </Stamp>
