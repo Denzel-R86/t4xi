@@ -1,0 +1,410 @@
+{
+ "protocol": {
+  "lighthouse": "13.5.0",
+  "throttlingMethod": "simulate",
+  "throttling": {
+   "mobile": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "cpuSlowdownMultiplier": 4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675
+   }
+  },
+  "cache": "cold",
+  "runsPerCell": 15,
+  "maxLoad": 4,
+  "pages": [
+   "/boeken"
+  ],
+  "formFactors": [
+   "mobile"
+  ],
+  "variants": [
+   {
+    "name": "prod",
+    "origin": "https://www.t4xi.nl",
+    "blocked": []
+   },
+   {
+    "name": "zonder-stripe",
+    "origin": "https://www.t4xi.nl",
+    "blocked": [
+     "*stripe.com*",
+     "*stripe.network*"
+    ]
+   }
+  ],
+  "startedAt": "2026-10-06T17:39:14.327Z",
+  "consistent": true,
+  "benchmarkIndexMedian": 2933,
+  "finishedAt": "2026-10-06T17:45:44.971Z"
+ },
+ "summary": [
+  {
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "prod",
+   "okRuns": 15,
+   "failedRuns": 0,
+   "excludedRuns": 0,
+   "lcpMs": {
+    "n": 15,
+    "median": 2825.4845,
+    "p75": 4510.0555,
+    "p25": 2788.3464999999997,
+    "iqr": 1721.7090000000007,
+    "min": 2326.3975,
+    "max": 6562.328999999999,
+    "cv": 0.45335280358548047,
+    "bimodal": true,
+    "split": 4510.0555,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 11,
+      "share": 0.7333333333333333,
+      "median": 2818.8505,
+      "min": 2326.3975,
+      "max": 2849.901500000001
+     },
+     {
+      "name": "traag",
+      "n": 4,
+      "share": 0.26666666666666666,
+      "median": 6380.33075,
+      "min": 6170.2095,
+      "max": 6562.328999999999
+     }
+    ]
+   },
+   "fcpMs": {
+    "n": 15,
+    "median": 1117.973,
+    "p75": 2181.9811250000002,
+    "p25": 1103.8765,
+    "iqr": 1078.1046250000002,
+    "min": 1082.8049999999998,
+    "max": 3357.22325,
+    "cv": 0.5683559481565248,
+    "bimodal": true,
+    "split": 2181.9811250000002,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 11,
+      "share": 0.7333333333333333,
+      "median": 1112.3400000000001,
+      "min": 1082.8049999999998,
+      "max": 1247.1755
+     },
+     {
+      "name": "traag",
+      "n": 4,
+      "share": 0.26666666666666666,
+      "median": 3164.7831250000004,
+      "min": 3116.78675,
+      "max": 3357.22325
+     }
+    ]
+   },
+   "siMs": {
+    "n": 15,
+    "median": 1177.8323579987361,
+    "p75": 3380.1036670033614,
+    "p25": 1138.7137090003894,
+    "iqr": 2241.389958002972,
+    "min": 1093.8505,
+    "max": 5661.937830000265,
+    "cv": 0.8652618307020352,
+    "bimodal": true,
+    "split": 3380.103667003362,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 11,
+      "share": 0.7333333333333333,
+      "median": 1154.4357960012003,
+      "min": 1093.8505,
+      "max": 1277.3714340024858
+     },
+     {
+      "name": "traag",
+      "n": 4,
+      "share": 0.26666666666666666,
+      "median": 5621.123533999957,
+      "min": 5482.835900004237,
+      "max": 5661.937830000265
+     }
+    ]
+   },
+   "tbtMs": {
+    "n": 15,
+    "median": 65,
+    "p75": 92.75,
+    "p25": 59.75,
+    "iqr": 33,
+    "min": 50,
+    "max": 150,
+    "cv": 0.4351548211750123,
+    "bimodal": false,
+    "modes": []
+   },
+   "cls": {
+    "n": 15,
+    "median": 0,
+    "p75": 0,
+    "p25": 0,
+    "iqr": 0,
+    "min": 0,
+    "max": 0,
+    "cv": null,
+    "bimodal": false,
+    "modes": []
+   },
+   "performance": {
+    "n": 15,
+    "median": 0.95,
+    "p75": 0.96,
+    "p25": 0.8049999999999999,
+    "iqr": 0.15500000000000003,
+    "min": 0.65,
+    "max": 0.98,
+    "cv": 0.15712351233065763,
+    "bimodal": true,
+    "split": 0.8049999999999999,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 4,
+      "share": 0.26666666666666666,
+      "median": 0.66,
+      "min": 0.65,
+      "max": 0.66
+     },
+     {
+      "name": "traag",
+      "n": 11,
+      "share": 0.7333333333333333,
+      "median": 0.95,
+      "min": 0.95,
+      "max": 0.98
+     }
+    ]
+   },
+   "observedFcpMs": {
+    "n": 15,
+    "median": 496,
+    "p75": 1522,
+    "p25": 469,
+    "iqr": 1053,
+    "min": 426,
+    "max": 2550,
+    "cv": 0.9202047594245113,
+    "bimodal": true,
+    "split": 1522,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 11,
+      "share": 0.7333333333333333,
+      "median": 484,
+      "min": 426,
+      "max": 509
+     },
+     {
+      "name": "traag",
+      "n": 4,
+      "share": 0.26666666666666666,
+      "median": 2537,
+      "min": 2535,
+      "max": 2550
+     }
+    ]
+   },
+   "lcpElements": {
+    "main#content > section.mx-auto > div > p.mt-4": {
+     "n": 15,
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen."
+    }
+   }
+  },
+  {
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "variant": "zonder-stripe",
+   "okRuns": 15,
+   "failedRuns": 0,
+   "excludedRuns": 0,
+   "lcpMs": {
+    "n": 15,
+    "median": 2839.575,
+    "p75": 3584.378,
+    "p25": 2821.78675,
+    "iqr": 762.59125,
+    "min": 2794.2664999999997,
+    "max": 3645.2505,
+    "cv": 0.12347950634760267,
+    "bimodal": false,
+    "modes": []
+   },
+   "fcpMs": {
+    "n": 15,
+    "median": 1114.575,
+    "p75": 1514.42325,
+    "p25": 1096.0842499999999,
+    "iqr": 418.33900000000017,
+    "min": 1069.2665,
+    "max": 1784.2505,
+    "cv": 0.21301497563591873,
+    "bimodal": false,
+    "modes": []
+   },
+   "siMs": {
+    "n": 15,
+    "median": 1245.9035260006829,
+    "p75": 4254.659107371846,
+    "p25": 1213.998749998013,
+    "iqr": 3040.6603573738334,
+    "min": 1105.4180000000001,
+    "max": 4536.217399666689,
+    "cv": 0.6079429943234108,
+    "bimodal": true,
+    "split": 2082.7324470002773,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 8,
+      "share": 0.5333333333333333,
+      "median": 1213.998749998013,
+      "min": 1105.4180000000001,
+      "max": 1245.9035260006829
+     },
+     {
+      "name": "traag",
+      "n": 7,
+      "share": 0.4666666666666667,
+      "median": 4380.067344741893,
+      "min": 2919.5613679998714,
+      "max": 4536.217399666689
+     }
+    ]
+   },
+   "tbtMs": {
+    "n": 15,
+    "median": 12,
+    "p75": 18,
+    "p25": 3,
+    "iqr": 15,
+    "min": 0,
+    "max": 31,
+    "cv": 0.802546966010751,
+    "bimodal": false,
+    "modes": []
+   },
+   "cls": {
+    "n": 15,
+    "median": 0,
+    "p75": 0,
+    "p25": 0,
+    "iqr": 0,
+    "min": 0,
+    "max": 0,
+    "cv": null,
+    "bimodal": false,
+    "modes": []
+   },
+   "performance": {
+    "n": 15,
+    "median": 0.95,
+    "p75": 0.955,
+    "p25": 0.875,
+    "iqr": 0.07999999999999996,
+    "min": 0.86,
+    "max": 0.96,
+    "cv": 0.04474825015566401,
+    "bimodal": false,
+    "modes": []
+   },
+   "observedFcpMs": {
+    "n": 15,
+    "median": 540,
+    "p75": 2536,
+    "p25": 511,
+    "iqr": 2025,
+    "min": 426,
+    "max": 2553,
+    "cv": 0.7264226835221446,
+    "bimodal": true,
+    "split": 1035.5,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 8,
+      "share": 0.5333333333333333,
+      "median": 511,
+      "min": 426,
+      "max": 540
+     },
+     {
+      "name": "traag",
+      "n": 7,
+      "share": 0.4666666666666667,
+      "median": 2542,
+      "min": 1531,
+      "max": 2553
+     }
+    ]
+   },
+   "lcpElements": {
+    "main#content > section.mx-auto > div > p.mt-4": {
+     "n": 15,
+     "label": "Vaste prijs vooraf, inclusief btw. Geen taxameter, geen verrassingen."
+    }
+   }
+  }
+ ],
+ "gates": [
+  {
+   "cell": "`/boeken` mobile",
+   "metric": "lcpMs",
+   "a": "prod",
+   "b": "zonder-stripe",
+   "verdict": "gelijk",
+   "nA": 15,
+   "nB": 15,
+   "medianA": 2825.4845,
+   "medianB": 2839.575,
+   "p75A": 4510.0555,
+   "p75B": 3584.378,
+   "ratio": 0.7947525257726873,
+   "ratioCI95": {
+    "lo": 0.5037462742805837,
+    "hi": 1.2726467420673024
+   },
+   "pWorse": 0.1922886766084797,
+   "pBetter": 0.8192100796422727
+  },
+  {
+   "cell": "`/boeken` mobile",
+   "metric": "fcpMs",
+   "a": "prod",
+   "b": "zonder-stripe",
+   "verdict": "gelijk",
+   "nA": 15,
+   "nB": 15,
+   "medianA": 1117.973,
+   "medianB": 1114.575,
+   "p75A": 2181.9811250000002,
+   "p75B": 1514.42325,
+   "ratio": 0.6940588223465957,
+   "ratioCI95": {
+    "lo": 0.3764626341535879,
+    "hi": 1.5156170873062438
+   },
+   "pWorse": 0.7956973449576855,
+   "pBetter": 0.21684289099605958
+  }
+ ]
+}
