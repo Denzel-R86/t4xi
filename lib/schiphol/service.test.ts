@@ -2,7 +2,9 @@
  * Tests voor de Schiphol-service: vluchtnummer-normalisatie, de pure
  * `normalizeFlight`-vertaling, de HTTP→toestand-mapping van `getFlightStatus` en
  * de `checkSchipholHealth`-interpretatie. Geen echt netwerk: de client krijgt een
- * gestubde `fetchImpl` en injecteerde credentials mee.
+ * gestubde `fetchImpl` mee en — voor de v4 bearer-auth — een vooraf meegegeven
+ * `accessToken`, zodat er geen OAuth-tokenronde nodig is. De tokenacquisitie zelf
+ * wordt los getest in auth.test.ts.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -14,9 +16,12 @@ import {
   checkSchipholHealth,
 } from "./service";
 import { fetchSchipholFlights, parseRetryAfter } from "./client";
+import { resetSchipholTokenCache, type TokenResult } from "./auth";
 import type { RawSchipholFlight } from "./types";
 
-const CREDS = { appId: "test-id", apiKey: "test-key" };
+const CREDS = { clientId: "test-id", clientSecret: "test-secret" };
+/** Deps die de OAuth-ronde overslaan: vast token + injecteerde credentials. */
+const AUTHED = { credentials: CREDS, accessToken: "test-token" };
 
 /** fetchImpl die een specifieke status + headers teruggeeft. */
 function fetchWith(status: number, headers: Record<string, string>): typeof fetch {
@@ -132,7 +137,7 @@ test("getFlightStatus — ongeldig vluchtnummer → invalid_input (geen netwerk)
     called = true;
     return new Response("{}", { status: 200 });
   }) as unknown as typeof fetch;
-  const r = await getFlightStatus("XX", {}, { fetchImpl: spyFetch, credentials: CREDS });
+  const r = await getFlightStatus("XX", {}, { fetchImpl: spyFetch, ...AUTHED });
   assert.equal(r.status, "invalid_input");
   assert.equal(called, false, "de upstream mag niet geraakt worden");
 });
@@ -140,7 +145,7 @@ test("getFlightStatus — ongeldig vluchtnummer → invalid_input (geen netwerk)
 test("getFlightStatus — geen treffers → not_found", async () => {
   const r = await getFlightStatus("KL1234", {}, {
     fetchImpl: fakeFetch(200, { flights: [] }),
-    credentials: CREDS,
+    ...AUTHED,
   });
   assert.equal(r.status, "not_found");
 });
@@ -148,7 +153,7 @@ test("getFlightStatus — geen treffers → not_found", async () => {
 test("getFlightStatus — treffer → ok met genormaliseerde vlucht en matches", async () => {
   const r = await getFlightStatus("kl 1234", {}, {
     fetchImpl: fakeFetch(200, { flights: [RAW_ARRIVAL, RAW_ARRIVAL] }),
-    credentials: CREDS,
+    ...AUTHED,
   });
   assert.equal(r.status, "ok");
   if (r.status !== "ok") return;
@@ -160,7 +165,7 @@ test("getFlightStatus — treffer → ok met genormaliseerde vlucht en matches",
 test("getFlightStatus — 401 → unauthorized", async () => {
   const r = await getFlightStatus("KL1234", {}, {
     fetchImpl: fakeFetch(401, { message: "nope" }),
-    credentials: CREDS,
+    ...AUTHED,
   });
   assert.equal(r.status, "unauthorized");
 });
@@ -168,7 +173,7 @@ test("getFlightStatus — 401 → unauthorized", async () => {
 test("getFlightStatus — 500 → upstream_error met upstreamStatus", async () => {
   const r = await getFlightStatus("KL1234", {}, {
     fetchImpl: fakeFetch(500, {}),
-    credentials: CREDS,
+    ...AUTHED,
   });
   assert.equal(r.status, "upstream_error");
   if (r.status !== "upstream_error") return;
@@ -176,29 +181,29 @@ test("getFlightStatus — 500 → upstream_error met upstreamStatus", async () =
 });
 
 test("getFlightStatus — netwerkfout → upstream_error zonder status", async () => {
-  const r = await getFlightStatus("KL1234", {}, { fetchImpl: throwingFetch, credentials: CREDS });
+  const r = await getFlightStatus("KL1234", {}, { fetchImpl: throwingFetch, ...AUTHED });
   assert.equal(r.status, "upstream_error");
   if (r.status !== "upstream_error") return;
   assert.equal(r.upstreamStatus, null);
 });
 
 test("getFlightStatus — ontbrekende credentials → not_configured", async () => {
-  const saved = { id: process.env.SCHIPHOL_APP_ID, key: process.env.SCHIPHOL_API_KEY };
-  delete process.env.SCHIPHOL_APP_ID;
-  delete process.env.SCHIPHOL_API_KEY;
+  const saved = { id: process.env.SCHIPHOL_CLIENT_ID, secret: process.env.SCHIPHOL_CLIENT_SECRET };
+  delete process.env.SCHIPHOL_CLIENT_ID;
+  delete process.env.SCHIPHOL_CLIENT_SECRET;
   try {
     // Geen credentials meegegeven → client valt terug op (lege) env.
     const r = await getFlightStatus("KL1234", {}, { fetchImpl: fakeFetch(200, { flights: [] }) });
     assert.equal(r.status, "not_configured");
   } finally {
-    if (saved.id !== undefined) process.env.SCHIPHOL_APP_ID = saved.id;
-    if (saved.key !== undefined) process.env.SCHIPHOL_API_KEY = saved.key;
+    if (saved.id !== undefined) process.env.SCHIPHOL_CLIENT_ID = saved.id;
+    if (saved.secret !== undefined) process.env.SCHIPHOL_CLIENT_SECRET = saved.secret;
   }
 });
 
-// ── client: request-opbouw ───────────────────────────────────────────────────
+// ── client: request-opbouw (v4 bearer-auth) ──────────────────────────────────
 
-test("fetchSchipholFlights zet auth-headers, ResourceVersion en query", async () => {
+test("fetchSchipholFlights zet bearer-auth, Accept en query op de v4-URL", async () => {
   let captured: { url: string; headers: Record<string, string> } | null = null;
   const capturing = (async (url: string, init: RequestInit) => {
     const h = (init.headers ?? {}) as Record<string, string>;
@@ -208,37 +213,123 @@ test("fetchSchipholFlights zet auth-headers, ResourceVersion en query", async ()
 
   await fetchSchipholFlights(
     { flightName: "KL1234", scheduleDate: "2026-08-02" },
-    { fetchImpl: capturing, credentials: CREDS }
+    { fetchImpl: capturing, ...AUTHED }
   );
 
   assert.ok(captured, "fetch is aangeroepen");
   const c = captured as { url: string; headers: Record<string, string> };
-  assert.match(c.url, /\/public-flights\/flights\?/);
+  assert.match(c.url, /\/public\/public-flights\/v4\/flights\?/);
   assert.match(c.url, /flightName=KL1234/);
   assert.match(c.url, /scheduleDate=2026-08-02/);
-  assert.equal(c.headers.app_id, "test-id");
-  assert.equal(c.headers.app_key, "test-key");
-  assert.equal(c.headers.ResourceVersion, "v4");
+  assert.equal(c.headers.Authorization, "Bearer test-token");
+  assert.equal(c.headers.Accept, "application/json");
+  // De oude app_id/app_key/ResourceVersion-headers bestaan niet meer.
+  assert.equal(c.headers.app_id, undefined);
+  assert.equal(c.headers.app_key, undefined);
+  assert.equal(c.headers.ResourceVersion, undefined);
+});
+
+// ── client: tokenacquisitie-mapping + 401-retry ──────────────────────────────
+
+/** Tokenprovider-stub die een vaste uitkomst teruggeeft. */
+function tokenStub(result: TokenResult): () => Promise<TokenResult> {
+  return async () => result;
+}
+
+test("fetchSchipholFlights — token not_configured → not_configured (geen API-call)", async () => {
+  let called = false;
+  const spyFetch = (async () => {
+    called = true;
+    return new Response("{}", { status: 200 });
+  }) as unknown as typeof fetch;
+  const r = await fetchSchipholFlights(
+    { flightName: "KL1234" },
+    { fetchImpl: spyFetch, credentials: CREDS, tokenProvider: tokenStub({ ok: false, reason: "not_configured" }) }
+  );
+  assert.equal(r.ok, false);
+  if (r.ok) return;
+  assert.equal(r.reason, "not_configured");
+  assert.equal(called, false, "zonder token geen API-call");
+});
+
+test("fetchSchipholFlights — token unauthorized → unauthorized", async () => {
+  const r = await fetchSchipholFlights(
+    { flightName: "KL1234" },
+    { credentials: CREDS, tokenProvider: tokenStub({ ok: false, reason: "unauthorized", status: 403 }) }
+  );
+  assert.equal(r.ok, false);
+  if (r.ok) return;
+  assert.equal(r.reason, "unauthorized");
+});
+
+test("fetchSchipholFlights — token network_error → network_error", async () => {
+  const r = await fetchSchipholFlights(
+    { flightName: "KL1234" },
+    { credentials: CREDS, tokenProvider: tokenStub({ ok: false, reason: "network_error" }) }
+  );
+  assert.equal(r.ok, false);
+  if (r.ok) return;
+  assert.equal(r.reason, "network_error");
+});
+
+test("fetchSchipholFlights — 401 op API → ververst token en probeert één keer opnieuw", async () => {
+  resetSchipholTokenCache();
+  let apiCalls = 0;
+  let tokenCalls = 0;
+  const flakyFetch = (async () => {
+    apiCalls += 1;
+    return apiCalls === 1
+      ? new Response("{}", { status: 401 })
+      : new Response(JSON.stringify({ flights: [RAW_ARRIVAL] }), { status: 200 });
+  }) as unknown as typeof fetch;
+  const countingProvider = async (): Promise<TokenResult> => {
+    tokenCalls += 1;
+    return { ok: true, token: `tok-${tokenCalls}` };
+  };
+  const r = await fetchSchipholFlights(
+    { flightName: "KL1234" },
+    { fetchImpl: flakyFetch, credentials: CREDS, tokenProvider: countingProvider }
+  );
+  assert.equal(r.ok, true);
+  assert.equal(apiCalls, 2, "de API-call is precies één keer opnieuw geprobeerd");
+  assert.equal(tokenCalls, 2, "er is een vers token opgehaald voor de retry");
+});
+
+test("fetchSchipholFlights — aanhoudende 401 → unauthorized na één retry", async () => {
+  resetSchipholTokenCache();
+  let apiCalls = 0;
+  const always401 = (async () => {
+    apiCalls += 1;
+    return new Response("{}", { status: 401 });
+  }) as unknown as typeof fetch;
+  const r = await fetchSchipholFlights(
+    { flightName: "KL1234" },
+    { fetchImpl: always401, credentials: CREDS, tokenProvider: tokenStub({ ok: true, token: "tok" }) }
+  );
+  assert.equal(r.ok, false);
+  if (r.ok) return;
+  assert.equal(r.reason, "unauthorized");
+  assert.equal(apiCalls, 2, "precies twee pogingen, daarna opgeven");
 });
 
 // ── checkSchipholHealth ──────────────────────────────────────────────────────
 
 test("checkSchipholHealth — 200 → ok", async () => {
-  const h = await checkSchipholHealth({ fetchImpl: fakeFetch(200, { flights: [] }), credentials: CREDS });
+  const h = await checkSchipholHealth({ fetchImpl: fakeFetch(200, { flights: [] }), ...AUTHED });
   assert.equal(h.ok, true);
   assert.equal(h.status, "ok");
   assert.equal(h.upstreamStatus, 200);
 });
 
 test("checkSchipholHealth — 403 → unauthorized", async () => {
-  const h = await checkSchipholHealth({ fetchImpl: fakeFetch(403, {}), credentials: CREDS });
+  const h = await checkSchipholHealth({ fetchImpl: fakeFetch(403, {}), ...AUTHED });
   assert.equal(h.ok, false);
   assert.equal(h.status, "unauthorized");
   assert.equal(h.upstreamStatus, 403);
 });
 
 test("checkSchipholHealth — 500 → unreachable", async () => {
-  const h = await checkSchipholHealth({ fetchImpl: fakeFetch(500, {}), credentials: CREDS });
+  const h = await checkSchipholHealth({ fetchImpl: fakeFetch(500, {}), ...AUTHED });
   assert.equal(h.ok, false);
   assert.equal(h.status, "unreachable");
   assert.equal(h.upstreamStatus, 500);
@@ -250,16 +341,16 @@ test("checkSchipholHealth — geen credentials → not_configured (geen netwerk)
     called = true;
     return new Response("{}", { status: 200 });
   }) as unknown as typeof fetch;
-  const saved = { id: process.env.SCHIPHOL_APP_ID, key: process.env.SCHIPHOL_API_KEY };
-  delete process.env.SCHIPHOL_APP_ID;
-  delete process.env.SCHIPHOL_API_KEY;
+  const saved = { id: process.env.SCHIPHOL_CLIENT_ID, secret: process.env.SCHIPHOL_CLIENT_SECRET };
+  delete process.env.SCHIPHOL_CLIENT_ID;
+  delete process.env.SCHIPHOL_CLIENT_SECRET;
   try {
     const h = await checkSchipholHealth({ fetchImpl: spyFetch });
     assert.equal(h.status, "not_configured");
     assert.equal(called, false);
   } finally {
-    if (saved.id !== undefined) process.env.SCHIPHOL_APP_ID = saved.id;
-    if (saved.key !== undefined) process.env.SCHIPHOL_API_KEY = saved.key;
+    if (saved.id !== undefined) process.env.SCHIPHOL_CLIENT_ID = saved.id;
+    if (saved.secret !== undefined) process.env.SCHIPHOL_CLIENT_SECRET = saved.secret;
   }
 });
 
@@ -278,7 +369,7 @@ test("parseRetryAfter — seconden, HTTP-datum en ongeldige waarden", () => {
 test("fetchSchipholFlights — 429 levert http_error met retryAfterSeconds", async () => {
   const r = await fetchSchipholFlights({ flightName: "KL1234" }, {
     fetchImpl: fetchWith(429, { "retry-after": "90" }),
-    credentials: CREDS,
+    ...AUTHED,
   });
   assert.equal(r.ok, false);
   if (r.ok) return;
@@ -291,7 +382,7 @@ test("fetchSchipholFlights — 429 levert http_error met retryAfterSeconds", asy
 test("getFlightStatus — 429 → upstream_error met retryAfterSeconds doorgegeven", async () => {
   const r = await getFlightStatus("KL1234", {}, {
     fetchImpl: fetchWith(429, { "retry-after": "45" }),
-    credentials: CREDS,
+    ...AUTHED,
   });
   assert.equal(r.status, "upstream_error");
   if (r.status !== "upstream_error") return;
@@ -301,6 +392,6 @@ test("getFlightStatus — 429 → upstream_error met retryAfterSeconds doorgegev
 
 test("getFlightStatus — 204 No Content → not_found (lege trefferset)", async () => {
   const noContent = (async () => new Response(null, { status: 204 })) as unknown as typeof fetch;
-  const r = await getFlightStatus("ZZ9999", {}, { fetchImpl: noContent, credentials: CREDS });
+  const r = await getFlightStatus("ZZ9999", {}, { fetchImpl: noContent, ...AUTHED });
   assert.equal(r.status, "not_found");
 });

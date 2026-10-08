@@ -3,7 +3,7 @@
  *
  * Twee lagen:
  *   1. RAW — een BEWUST beperkte weergave van de velden uit de Schiphol
- *      `public-flights/flights`-respons die wij gebruiken. De echte respons bevat
+ *      `public-flights/v4/flights`-respons die wij gebruiken. De echte respons bevat
  *      veel meer; we typen alleen wat we lezen en behandelen alles als optioneel,
  *      want een externe API is geen contract.
  *   2. GENORMALISEERD — de schone, stabiele vorm die de rest van T4XI ziet. De
