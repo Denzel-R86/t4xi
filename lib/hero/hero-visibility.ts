@@ -23,6 +23,21 @@ export function shouldHideStickyCta(state: StickyCtaHiderState): boolean {
   return state.resultRatio >= STICKY_CTA_RESULT_RATIO;
 }
 
+/** Minimale vorm van een IntersectionObserverEntry (testbaar zonder DOM). */
+export type IntersectionLike = { isIntersecting: boolean; intersectionRatio: number };
+
+/**
+ * Zichtbare fractie volgens de NIEUWSTE meting. Een callback kan meerdere entries
+ * voor hetzelfde element bevatten (oudste eerst), bv. "in beeld" bij laden en "uit
+ * beeld" na een snelle scroll, als de browser de callback pas later aflevert. De
+ * oudste lezen liet de balk dan verborgen staan.
+ */
+export function latestResultRatio(entries: readonly IntersectionLike[], previous: number): number {
+  const last = entries[entries.length - 1];
+  if (!last) return previous;
+  return last.isIntersecting ? last.intersectionRatio : 0;
+}
+
 /** Wijkt de balk voor minstens één aangemelde zin? Zonder zinnen: nooit. */
 export function anyHidesStickyCta(states: Iterable<StickyCtaHiderState>): boolean {
   for (const s of states) if (shouldHideStickyCta(s)) return true;

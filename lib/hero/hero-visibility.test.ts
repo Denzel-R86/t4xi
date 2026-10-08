@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  latestResultRatio,
   anyHidesStickyCta,
   isTextEntry,
   quoteOutcomeKey,
@@ -110,4 +111,17 @@ test("isTextEntry: combobox en tekstvelden wel; select, datum, tijd en knoppen n
   assert.equal(isTextEntry({ tagName: "INPUT", type: "date" }), false);
   assert.equal(isTextEntry({ tagName: "A" }), false);
   assert.equal(isTextEntry(null), false);
+});
+
+test("StickyCta volgt de nieuwste meting als een callback meerdere entries bevat", () => {
+  // Bij laden in beeld, daarna snel naar de onderkant gescrold; beide entries komen
+  // in één (vertraagde) callback binnen. De oudste lezen liet de balk verborgen.
+  const batch = [
+    { isIntersecting: true, intersectionRatio: 1 },
+    { isIntersecting: false, intersectionRatio: 0 },
+  ];
+  assert.equal(latestResultRatio(batch, 0), 0);
+  assert.equal(shouldHideStickyCta({ resultRatio: latestResultRatio(batch, 0) }), false);
+  assert.equal(latestResultRatio([...batch].reverse(), 0), 1);
+  assert.equal(latestResultRatio([], 0.8), 0.8);
 });

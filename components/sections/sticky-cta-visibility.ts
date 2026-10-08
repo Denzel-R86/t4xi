@@ -3,6 +3,7 @@
 import { useEffect, type RefObject } from "react";
 import {
   anyHidesStickyCta,
+  latestResultRatio,
   STICKY_CTA_THRESHOLDS,
   type StickyCtaHiderState,
 } from "@/lib/hero/hero-visibility";
@@ -46,8 +47,8 @@ export function useHidesStickyCta(actionRef: RefObject<HTMLElement | null>) {
       typeof IntersectionObserver === "undefined"
         ? null
         : new IntersectionObserver(
-            ([entry]) => {
-              state.resultRatio = entry.isIntersecting ? entry.intersectionRatio : 0;
+            (entries) => {
+              state.resultRatio = latestResultRatio(entries, state.resultRatio);
               emit();
             },
             { threshold: STICKY_CTA_THRESHOLDS }
