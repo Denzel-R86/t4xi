@@ -55,5 +55,17 @@ jobs:
       - name: Test
         run: npm test
 
+      # Unit-tests van de SEO-snapshotvergelijking zelf (staan buiten lib/, dus
+      # niet in `npm test`).
+      - name: Test SEO snapshot comparator
+        run: node --import tsx --test "scripts/seo-snapshot/*.test.ts"
+
       - name: Build
         run: npm run build
+
+      # Experience 2.0 / PR 0.2: start `next start` op de zojuist gebouwde app
+      # en vergelijkt alle sitemap-URL's (title, canonical, hreflang, h1, status,
+      # robots) met docs/experience-2.0/baseline/seo-snapshot.json. Verlies of
+      # wijziging = fout; bewuste wijziging via `npm run seo:snapshot -- --update`.
+      - name: SEO snapshot
+        run: npm run seo:snapshot

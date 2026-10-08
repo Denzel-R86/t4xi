@@ -1,0 +1,904 @@
+{
+  "version": 1,
+  "source": "lokale `next start` na `npm run build` met APP_ENV=development, zonder secrets",
+  "robotsTxt": [
+    "User-Agent: *",
+    "Allow: /",
+    "Disallow: /api/",
+    "Disallow: /dashboard",
+    "Disallow: /dashboard/brain",
+    "Disallow: /klant",
+    "Disallow: /studio",
+    "Sitemap: https://www.t4xi.nl/sitemap.xml"
+  ],
+  "pages": {
+    "/": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en",
+        "nl-NL": "https://www.t4xi.nl/",
+        "x-default": "https://www.t4xi.nl/"
+      },
+      "title": "T4XI — Premium taxi & bewuste mobiliteit",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en",
+        "nl-NL": "https://www.t4xi.nl",
+        "x-default": "https://www.t4xi.nl"
+      },
+      "robots": null,
+      "h1": [
+        "Van voordeur tot vertrekhal."
+      ]
+    },
+    "/en": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en",
+        "nl-NL": "https://www.t4xi.nl/",
+        "x-default": "https://www.t4xi.nl/"
+      },
+      "title": "T4XI — Premium taxi & conscious mobility",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en",
+        "nl-NL": "https://www.t4xi.nl",
+        "x-default": "https://www.t4xi.nl"
+      },
+      "robots": null,
+      "h1": [
+        "From your front door to the departure hall."
+      ]
+    },
+    "/diensten": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/diensten",
+        "nl-NL": "https://www.t4xi.nl/diensten",
+        "x-default": "https://www.t4xi.nl/diensten"
+      },
+      "title": "Diensten — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/diensten",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/diensten",
+        "nl-NL": "https://www.t4xi.nl/diensten",
+        "x-default": "https://www.t4xi.nl/diensten"
+      },
+      "robots": null,
+      "h1": [
+        "Voor elke rit de juiste service"
+      ],
+      "cmsDependent": [
+        "title",
+        "h1"
+      ]
+    },
+    "/en/diensten": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/diensten",
+        "nl-NL": "https://www.t4xi.nl/diensten",
+        "x-default": "https://www.t4xi.nl/diensten"
+      },
+      "title": "Services — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/diensten",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/diensten",
+        "nl-NL": "https://www.t4xi.nl/diensten",
+        "x-default": "https://www.t4xi.nl/diensten"
+      },
+      "robots": null,
+      "h1": [
+        "The right service for every ride"
+      ],
+      "cmsDependent": [
+        "title",
+        "h1"
+      ]
+    },
+    "/tarieven": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/tarieven",
+        "nl-NL": "https://www.t4xi.nl/tarieven",
+        "x-default": "https://www.t4xi.nl/tarieven"
+      },
+      "title": "Taxi prijs berekenen — bereken direct uw taxirit — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/tarieven",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/tarieven",
+        "nl-NL": "https://www.t4xi.nl/tarieven",
+        "x-default": "https://www.t4xi.nl/tarieven"
+      },
+      "robots": null,
+      "h1": [
+        "Taxitarieven zonder verrassingen."
+      ]
+    },
+    "/en/tarieven": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/tarieven",
+        "nl-NL": "https://www.t4xi.nl/tarieven",
+        "x-default": "https://www.t4xi.nl/tarieven"
+      },
+      "title": "Calculate taxi fare — get your fixed price instantly — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/tarieven",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/tarieven",
+        "nl-NL": "https://www.t4xi.nl/tarieven",
+        "x-default": "https://www.t4xi.nl/tarieven"
+      },
+      "robots": null,
+      "h1": [
+        "Arrive composed. Your journey begins with certainty."
+      ]
+    },
+    "/over-ons": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/over-ons",
+        "nl-NL": "https://www.t4xi.nl/over-ons",
+        "x-default": "https://www.t4xi.nl/over-ons"
+      },
+      "title": "Over ons — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/over-ons",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/over-ons",
+        "nl-NL": "https://www.t4xi.nl/over-ons",
+        "x-default": "https://www.t4xi.nl/over-ons"
+      },
+      "robots": null,
+      "h1": [
+        "Premium vervoer, bewust gedreven"
+      ]
+    },
+    "/en/over-ons": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/over-ons",
+        "nl-NL": "https://www.t4xi.nl/over-ons",
+        "x-default": "https://www.t4xi.nl/over-ons"
+      },
+      "title": "About us — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/over-ons",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/over-ons",
+        "nl-NL": "https://www.t4xi.nl/over-ons",
+        "x-default": "https://www.t4xi.nl/over-ons"
+      },
+      "robots": null,
+      "h1": [
+        "Premium transport, consciously driven"
+      ]
+    },
+    "/boeken": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/boeken",
+        "nl-NL": "https://www.t4xi.nl/boeken",
+        "x-default": "https://www.t4xi.nl/boeken"
+      },
+      "title": "Boek een rit — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/boeken",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/boeken",
+        "nl-NL": "https://www.t4xi.nl/boeken",
+        "x-default": "https://www.t4xi.nl/boeken"
+      },
+      "robots": null,
+      "h1": [
+        "Plan uw rit nu"
+      ]
+    },
+    "/en/boeken": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/boeken",
+        "nl-NL": "https://www.t4xi.nl/boeken",
+        "x-default": "https://www.t4xi.nl/boeken"
+      },
+      "title": "Book a ride — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/boeken",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/boeken",
+        "nl-NL": "https://www.t4xi.nl/boeken",
+        "x-default": "https://www.t4xi.nl/boeken"
+      },
+      "robots": null,
+      "h1": [
+        "Plan your ride now"
+      ]
+    },
+    "/zakelijk-vervoer": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/zakelijk-vervoer",
+        "nl-NL": "https://www.t4xi.nl/zakelijk-vervoer",
+        "x-default": "https://www.t4xi.nl/zakelijk-vervoer"
+      },
+      "title": "Zakelijk vervoer voor bedrijven — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/zakelijk-vervoer",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/zakelijk-vervoer",
+        "nl-NL": "https://www.t4xi.nl/zakelijk-vervoer",
+        "x-default": "https://www.t4xi.nl/zakelijk-vervoer"
+      },
+      "robots": null,
+      "h1": [
+        "Zakelijk vervoer. Representatief geregeld."
+      ]
+    },
+    "/en/zakelijk-vervoer": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/zakelijk-vervoer",
+        "nl-NL": "https://www.t4xi.nl/zakelijk-vervoer",
+        "x-default": "https://www.t4xi.nl/zakelijk-vervoer"
+      },
+      "title": "Business transport for companies — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/zakelijk-vervoer",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/zakelijk-vervoer",
+        "nl-NL": "https://www.t4xi.nl/zakelijk-vervoer",
+        "x-default": "https://www.t4xi.nl/zakelijk-vervoer"
+      },
+      "robots": null,
+      "h1": [
+        "Business transport. Arrive composed."
+      ]
+    },
+    "/dagtochten": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/dagtochten",
+        "nl-NL": "https://www.t4xi.nl/dagtochten",
+        "x-default": "https://www.t4xi.nl/dagtochten"
+      },
+      "title": "Dagtochten — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/dagtochten",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/dagtochten",
+        "nl-NL": "https://www.t4xi.nl/dagtochten",
+        "x-default": "https://www.t4xi.nl/dagtochten"
+      },
+      "robots": null,
+      "h1": [
+        "Ontdek Europa op uw eigen tempo"
+      ]
+    },
+    "/en/dagtochten": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/dagtochten",
+        "nl-NL": "https://www.t4xi.nl/dagtochten",
+        "x-default": "https://www.t4xi.nl/dagtochten"
+      },
+      "title": "Day trips — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/dagtochten",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/dagtochten",
+        "nl-NL": "https://www.t4xi.nl/dagtochten",
+        "x-default": "https://www.t4xi.nl/dagtochten"
+      },
+      "robots": null,
+      "h1": [
+        "Discover Europe at your own pace"
+      ]
+    },
+    "/producten": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/producten",
+        "nl-NL": "https://www.t4xi.nl/producten",
+        "x-default": "https://www.t4xi.nl/producten"
+      },
+      "title": "Mobiliteitsproducten — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/producten",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/producten",
+        "nl-NL": "https://www.t4xi.nl/producten",
+        "x-default": "https://www.t4xi.nl/producten"
+      },
+      "robots": null,
+      "h1": [
+        "Vaste mobiliteit, voorspelbare kosten"
+      ]
+    },
+    "/en/producten": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/producten",
+        "nl-NL": "https://www.t4xi.nl/producten",
+        "x-default": "https://www.t4xi.nl/producten"
+      },
+      "title": "Mobility products — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/producten",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/producten",
+        "nl-NL": "https://www.t4xi.nl/producten",
+        "x-default": "https://www.t4xi.nl/producten"
+      },
+      "robots": null,
+      "h1": [
+        "Fixed mobility, predictable costs"
+      ]
+    },
+    "/contact": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/contact",
+        "nl-NL": "https://www.t4xi.nl/contact",
+        "x-default": "https://www.t4xi.nl/contact"
+      },
+      "title": "Contact — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/contact",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/contact",
+        "nl-NL": "https://www.t4xi.nl/contact",
+        "x-default": "https://www.t4xi.nl/contact"
+      },
+      "robots": null,
+      "h1": [
+        "Neem contact op"
+      ]
+    },
+    "/en/contact": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/contact",
+        "nl-NL": "https://www.t4xi.nl/contact",
+        "x-default": "https://www.t4xi.nl/contact"
+      },
+      "title": "Contact — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/contact",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/contact",
+        "nl-NL": "https://www.t4xi.nl/contact",
+        "x-default": "https://www.t4xi.nl/contact"
+      },
+      "robots": null,
+      "h1": [
+        "Get in touch"
+      ]
+    },
+    "/partner": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/partner",
+        "nl-NL": "https://www.t4xi.nl/partner",
+        "x-default": "https://www.t4xi.nl/partner"
+      },
+      "title": "Partner worden — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/partner",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/partner",
+        "nl-NL": "https://www.t4xi.nl/partner",
+        "x-default": "https://www.t4xi.nl/partner"
+      },
+      "robots": null,
+      "h1": [
+        "Rij meer. Verdien eerlijk."
+      ]
+    },
+    "/en/partner": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/partner",
+        "nl-NL": "https://www.t4xi.nl/partner",
+        "x-default": "https://www.t4xi.nl/partner"
+      },
+      "title": "Become a partner — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/partner",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/partner",
+        "nl-NL": "https://www.t4xi.nl/partner",
+        "x-default": "https://www.t4xi.nl/partner"
+      },
+      "robots": null,
+      "h1": [
+        "Drive more. Earn fairly."
+      ]
+    },
+    "/privacy": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/privacy",
+        "nl-NL": "https://www.t4xi.nl/privacy",
+        "x-default": "https://www.t4xi.nl/privacy"
+      },
+      "title": "Privacyverklaring — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/privacy",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/privacy",
+        "nl-NL": "https://www.t4xi.nl/privacy",
+        "x-default": "https://www.t4xi.nl/privacy"
+      },
+      "robots": null,
+      "h1": [
+        "Privacyverklaring"
+      ]
+    },
+    "/en/privacy": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/privacy",
+        "nl-NL": "https://www.t4xi.nl/privacy",
+        "x-default": "https://www.t4xi.nl/privacy"
+      },
+      "title": "Privacy statement — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/privacy",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/privacy",
+        "nl-NL": "https://www.t4xi.nl/privacy",
+        "x-default": "https://www.t4xi.nl/privacy"
+      },
+      "robots": null,
+      "h1": [
+        "Privacy statement"
+      ]
+    },
+    "/voorwaarden": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/voorwaarden",
+        "nl-NL": "https://www.t4xi.nl/voorwaarden",
+        "x-default": "https://www.t4xi.nl/voorwaarden"
+      },
+      "title": "Algemene voorwaarden — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/voorwaarden",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/voorwaarden",
+        "nl-NL": "https://www.t4xi.nl/voorwaarden",
+        "x-default": "https://www.t4xi.nl/voorwaarden"
+      },
+      "robots": null,
+      "h1": [
+        "Algemene voorwaarden"
+      ]
+    },
+    "/en/voorwaarden": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/voorwaarden",
+        "nl-NL": "https://www.t4xi.nl/voorwaarden",
+        "x-default": "https://www.t4xi.nl/voorwaarden"
+      },
+      "title": "Terms and conditions — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/voorwaarden",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/voorwaarden",
+        "nl-NL": "https://www.t4xi.nl/voorwaarden",
+        "x-default": "https://www.t4xi.nl/voorwaarden"
+      },
+      "robots": null,
+      "h1": [
+        "Terms and conditions"
+      ]
+    },
+    "/taxi-almere-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-almere-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-almere-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-almere-schiphol"
+      },
+      "title": "Taxi Almere naar Schiphol — vaste prijs vooraf — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/taxi-almere-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-almere-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-almere-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-almere-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Almere naar Schiphol"
+      ]
+    },
+    "/en/taxi-almere-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-almere-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-almere-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-almere-schiphol"
+      },
+      "title": "Private taxi from Almere to Schiphol — fixed fare — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/taxi-almere-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-almere-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-almere-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-almere-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Almere to Schiphol"
+      ]
+    },
+    "/taxi-amsterdam-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-amsterdam-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-amsterdam-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-amsterdam-schiphol"
+      },
+      "title": "Taxi Amsterdam naar Schiphol — vaste prijs vooraf — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/taxi-amsterdam-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-amsterdam-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-amsterdam-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-amsterdam-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Amsterdam naar Schiphol"
+      ]
+    },
+    "/en/taxi-amsterdam-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-amsterdam-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-amsterdam-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-amsterdam-schiphol"
+      },
+      "title": "Private taxi from Amsterdam to Schiphol — fixed fare — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/taxi-amsterdam-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-amsterdam-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-amsterdam-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-amsterdam-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Amsterdam to Schiphol"
+      ]
+    },
+    "/taxi-rotterdam-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-rotterdam-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-rotterdam-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-rotterdam-schiphol"
+      },
+      "title": "Taxi Rotterdam naar Schiphol — vaste prijs vooraf — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/taxi-rotterdam-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-rotterdam-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-rotterdam-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-rotterdam-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Rotterdam naar Schiphol"
+      ]
+    },
+    "/en/taxi-rotterdam-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-rotterdam-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-rotterdam-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-rotterdam-schiphol"
+      },
+      "title": "Private taxi from Rotterdam to Schiphol — fixed fare — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/taxi-rotterdam-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-rotterdam-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-rotterdam-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-rotterdam-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Rotterdam to Schiphol"
+      ]
+    },
+    "/taxi-den-haag-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-den-haag-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-den-haag-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-den-haag-schiphol"
+      },
+      "title": "Taxi Den Haag naar Schiphol — vaste prijs vooraf — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/taxi-den-haag-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-den-haag-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-den-haag-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-den-haag-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Den Haag naar Schiphol"
+      ]
+    },
+    "/en/taxi-den-haag-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-den-haag-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-den-haag-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-den-haag-schiphol"
+      },
+      "title": "Private taxi from The Hague to Schiphol — fixed fare — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/taxi-den-haag-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-den-haag-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-den-haag-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-den-haag-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi The Hague to Schiphol"
+      ]
+    },
+    "/taxi-utrecht-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-utrecht-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-utrecht-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-utrecht-schiphol"
+      },
+      "title": "Taxi Utrecht naar Schiphol — vaste prijs vooraf — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/taxi-utrecht-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-utrecht-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-utrecht-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-utrecht-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Utrecht naar Schiphol"
+      ]
+    },
+    "/en/taxi-utrecht-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-utrecht-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-utrecht-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-utrecht-schiphol"
+      },
+      "title": "Private taxi from Utrecht to Schiphol — fixed fare — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/taxi-utrecht-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-utrecht-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-utrecht-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-utrecht-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Utrecht to Schiphol"
+      ]
+    },
+    "/taxi-spijkenisse-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-spijkenisse-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-spijkenisse-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-spijkenisse-schiphol"
+      },
+      "title": "Taxi Spijkenisse naar Schiphol — vaste prijs vooraf — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/taxi-spijkenisse-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-spijkenisse-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-spijkenisse-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-spijkenisse-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Spijkenisse naar Schiphol"
+      ]
+    },
+    "/en/taxi-spijkenisse-schiphol": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-spijkenisse-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-spijkenisse-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-spijkenisse-schiphol"
+      },
+      "title": "Private taxi from Spijkenisse to Schiphol — fixed fare — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/taxi-spijkenisse-schiphol",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-spijkenisse-schiphol",
+        "nl-NL": "https://www.t4xi.nl/taxi-spijkenisse-schiphol",
+        "x-default": "https://www.t4xi.nl/taxi-spijkenisse-schiphol"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Spijkenisse to Schiphol"
+      ]
+    },
+    "/taxi-almere": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-almere",
+        "nl-NL": "https://www.t4xi.nl/taxi-almere",
+        "x-default": "https://www.t4xi.nl/taxi-almere"
+      },
+      "title": "Taxi Almere — vaste prijs vooraf, 24/7 reserveren — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/taxi-almere",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-almere",
+        "nl-NL": "https://www.t4xi.nl/taxi-almere",
+        "x-default": "https://www.t4xi.nl/taxi-almere"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Almere"
+      ]
+    },
+    "/en/taxi-almere": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-almere",
+        "nl-NL": "https://www.t4xi.nl/taxi-almere",
+        "x-default": "https://www.t4xi.nl/taxi-almere"
+      },
+      "title": "Taxi Almere — fixed fare in advance, book 24/7 — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/taxi-almere",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-almere",
+        "nl-NL": "https://www.t4xi.nl/taxi-almere",
+        "x-default": "https://www.t4xi.nl/taxi-almere"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Almere"
+      ]
+    },
+    "/taxi-spijkenisse": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-spijkenisse",
+        "nl-NL": "https://www.t4xi.nl/taxi-spijkenisse",
+        "x-default": "https://www.t4xi.nl/taxi-spijkenisse"
+      },
+      "title": "Taxi Spijkenisse — vaste prijs, 24/7 reserveren — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/taxi-spijkenisse",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-spijkenisse",
+        "nl-NL": "https://www.t4xi.nl/taxi-spijkenisse",
+        "x-default": "https://www.t4xi.nl/taxi-spijkenisse"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Spijkenisse"
+      ]
+    },
+    "/en/taxi-spijkenisse": {
+      "status": 200,
+      "location": null,
+      "sitemapAlternates": {
+        "en": "https://www.t4xi.nl/en/taxi-spijkenisse",
+        "nl-NL": "https://www.t4xi.nl/taxi-spijkenisse",
+        "x-default": "https://www.t4xi.nl/taxi-spijkenisse"
+      },
+      "title": "Taxi Spijkenisse — fixed fare in advance, book 24/7 — T4XI",
+      "titleCount": 1,
+      "canonical": "https://www.t4xi.nl/en/taxi-spijkenisse",
+      "canonicalCount": 1,
+      "hreflang": {
+        "en": "https://www.t4xi.nl/en/taxi-spijkenisse",
+        "nl-NL": "https://www.t4xi.nl/taxi-spijkenisse",
+        "x-default": "https://www.t4xi.nl/taxi-spijkenisse"
+      },
+      "robots": null,
+      "h1": [
+        "Taxi Spijkenisse"
+      ]
+    }
+  }
+}
