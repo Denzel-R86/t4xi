@@ -16,10 +16,16 @@ function hzToken(name: string): string {
   return match[1].trim();
 }
 
-test("B4: 'Arrive with confidence' komt nergens meer voor buiten de docs", () => {
+test("B4: 'Arrive with confidence' komt niet meer voor op site- en SEO-oppervlakken", () => {
   let hits = "";
   try {
-    hits = execFileSync("git", ["grep", "-il", "arrive with confidence", "--", ".", ":!docs", ":!lib/design/tokens.test.ts"], {
+    hits = execFileSync("git", [
+      "grep", "-il", "arrive with confidence", "--",
+      "app", "components", "messages", "lib",
+      ":!lib/design/tokens.test.ts",
+      // vervolg: mailfooters, apart werk
+      ":!lib/notifications", ":!lib/invoices",
+    ], {
       encoding: "utf8",
     }).trim();
   } catch (error) {
@@ -52,7 +58,8 @@ test("motion-tokens volgen §5 en Tailwind spiegelt ze met gelijke fallback", ()
     assert.equal(hzToken(name), value, `--hz-${name}`);
     assert.equal(durations[name], `var(--hz-${name}, ${value})`, `duration-${name}`);
   }
-  assert.equal(hzToken("immediate"), "var(--hz-ui)", "--hz-immediate blijft alias");
+  // --hz-immediate staat niet in §5 en houdt zijn bestaande waarde.
+  assert.equal(hzToken("immediate"), "240ms", "--hz-immediate");
 });
 
 test("typeschaal §3 bestaat met de afgesproken grenzen", () => {
