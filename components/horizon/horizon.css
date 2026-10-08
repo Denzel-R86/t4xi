@@ -140,8 +140,11 @@ html.js .hz-reveal.hz-d3.hz-in { transition-delay: 270ms; }
   .hz-hero-sub { animation-delay: var(--hz-hero-sub); }
   .hz-hero-booking { animation-delay: var(--hz-hero-booking); }
   .hz-hero-trust { animation-delay: var(--hz-hero-trust); }
-  /* Invoer wacht nooit op de animatie: wie de zin aanraakt, ziet hem meteen. */
-  .hz-hero-booking:focus-within { animation: none; }
+  /* Invoer wacht nooit op de animatie: wie de zin aanraakt, ziet hem meteen.
+     Niet via `animation: none` — die herstart de animatie bij blur (de zin
+     verdween dan weer). `!important` wint van de animatiewaarden, terwijl de
+     tijdlijn gewoon doorloopt en daarna op de eindstaat blijft (fill: both). */
+  .hz-hero-booking:focus-within { opacity: 1 !important; transform: none !important; }
 }
 
 /* ── Guide ── */

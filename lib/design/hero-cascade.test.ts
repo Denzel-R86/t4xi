@@ -112,7 +112,12 @@ test("1.4: LCP-kop start nooit op opacity 0 (regels op .01)", () => {
 });
 
 test("1.4: de boekingszin springt bij focus direct op zichtbaar", () => {
-  assert.match(motionBlocks[0].body, /\.hz-hero-booking:focus-within\s*\{\s*animation:\s*none;?\s*\}/);
+  const focus = blocks(motionBlocks[0].body).find((b) => b.prelude === ".hz-hero-booking:focus-within");
+  assert.ok(focus, ".hz-hero-booking:focus-within ontbreekt");
+  assert.match(focus.body, /opacity:\s*1 !important/);
+  assert.match(focus.body, /transform:\s*none !important/);
+  // `animation: none` bij focus herstart de animatie bij blur (zin verdwijnt weer).
+  assert.doesNotMatch(focus.body, /animation/);
 });
 
 test("1.4: hero gebruikt de cascadeklassen; NarrativePattern alleen met cascade", () => {
