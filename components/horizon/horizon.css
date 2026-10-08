@@ -15,7 +15,7 @@
      --hz-composed   700ms   koppen, foto-reveal
      --hz-cinematic 1100ms   alleen spine-draw en bevestiging
      --hz-ambient   6000ms   vloot-drift, spine; onmerkbaar
-   --hz-immediate is een alias van --hz-ui (bestaande klassen blijven werken).
+   --hz-immediate  240ms   bestaande klassen (staat niet in §5; ongewijzigd).
    Tailwind spiegelt deze tokens als `ease-premium` / `duration-{micro,ui,…}`
    (tailwind.config.ts); lib/design/tokens.test.ts bewaakt dat ze gelijk blijven.
    Nieuwe animaties bestaan niet: wie beweging nodig heeft, kiest een werkwoord.
@@ -25,7 +25,7 @@
   --hz-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --hz-micro: 160ms;
   --hz-ui: 280ms;
-  --hz-immediate: var(--hz-ui);
+  --hz-immediate: 240ms;
   --hz-composed: 700ms;
   --hz-cinematic: 1100ms;
   --hz-ambient: 6000ms;
