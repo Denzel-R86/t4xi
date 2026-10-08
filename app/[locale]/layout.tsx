@@ -34,9 +34,13 @@ const inter = Inter({
   display: "swap",
 });
 
-// Dagtochten-pagina gebruikt Playfair Display voor routenamen (bron: t4xi_v14)
+// Playfair Display: Brand Mode-display (B1, besloten 08-10-2026; design-specs §13e)
+// + legacy routenamen op dagtochten. Alleen rechtop, alleen latin, variabel
+// gewicht = één bestand. Geen italic of extra subsets bijladen
+// (lib/design/display-font.test.ts).
 const playfair = Playfair_Display({
   subsets: ["latin"],
+  style: "normal",
   variable: "--font-playfair",
   display: "swap",
 });
@@ -73,7 +77,7 @@ const jsonLd = {
   name: "T4XI",
   url: SITE_URL,
   sameAs: ["https://www.instagram.com/t4xi.nl/"],
-  slogan: "Arrive with confidence.",
+  slogan: "Arrive composed.",
   // Alleen steden waar daadwerkelijk actieve vaste routes voor bestaan.
   // Rotterdam, Den Haag en Utrecht draaien sinds juli 2026 en ontbraken hier.
   areaServed: [

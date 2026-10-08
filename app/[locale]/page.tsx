@@ -130,7 +130,7 @@ function FleetPlate({
   return (
     <article className="border-t border-ink/30 py-9 last:border-b md:py-12">
       <header className="mb-7 grid gap-4 md:grid-cols-[64px_minmax(0,1fr)_auto] md:items-end">
-        <span className="text-[12px] font-medium tracking-[0.16em] text-stone [font-variant-numeric:tabular-nums]">
+        <span className="text-[12px] font-medium tracking-[0.16em] text-stone-text [font-variant-numeric:tabular-nums]">
           {index}
         </span>
         <div>
@@ -295,14 +295,15 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             echo={t("arrivalEcho")}
             note={t("arrivalNote")}
             immediate
-            echoClassName="font-light text-secondary"
+            echoClassName="font-normal text-secondary"
             // 2026-08-19 (hotfix): deze kop staat in de 48%-splitkolom van de
             // ARRIVAL-sectie, niet in een bijna-volle-breedte Viewport zoals de
             // overige drie NarrativePattern-koppen — de standaard `7.6vw` overschoot
             // die smalle kolom vanaf md (bv. "Van voordeur" brak middenin het woord
             // af op 1280px breed). `md:`-override schaalt tegen de kolombreedte;
             // onder md (enkele kolom, volle breedte) blijft het standaardgedrag.
-            titleClassName="mt-6 font-display text-[clamp(44px,7.6vw,108px)] md:text-[clamp(40px,5.4vw,112px)] font-extrabold leading-[0.98] tracking-[-0.03em] text-ink"
+            // B1 (08-10): Brand Mode-kop → display-serif, ondergrens 48px (§13f).
+            titleClassName="mt-6 font-display-serif text-[clamp(48px,7.6vw,108px)] md:text-[clamp(48px,5.4vw,112px)] font-semibold leading-[1.02] tracking-[-0.015em] text-ink"
           />
           <Reveal immediate>
             <div className="mt-9">

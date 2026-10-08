@@ -63,7 +63,7 @@ export default async function BoekenPage({
         <h1 className="mt-4 font-display text-display-lg font-bold text-ink">
           {t("kop1")}
           <br />
-          <span className="italic text-stone">{t("kop2")}</span>
+          <span className="italic text-stone-text">{t("kop2")}</span>
         </h1>
         <p className="mt-4 max-w-md text-secondary">
           {t("intro")}
