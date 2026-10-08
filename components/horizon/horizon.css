@@ -9,15 +9,26 @@
      Focus    .hz-focus     — aandacht bij interactie (invoer, prijs)
      Confirm  .hz-confirm-* — een voltooide handeling bevestigt zich (odometer)
 
-   Eén easing (chauffeur-curve), drie tempo's. Nieuwe animaties bestaan niet:
-   wie beweging nodig heeft, kiest een werkwoord.
+   Eén easing (chauffeur-curve), vijf tempo's (Experience 2.0 §5):
+     --hz-micro      160ms   hover, underline, pijl, toggles
+     --hz-ui         280ms   sheets, stapwissel, header-shrink
+     --hz-composed   700ms   koppen, foto-reveal
+     --hz-cinematic 1100ms   alleen spine-draw en bevestiging
+     --hz-ambient   6000ms   vloot-drift, spine; onmerkbaar
+   --hz-immediate is een alias van --hz-ui (bestaande klassen blijven werken).
+   Tailwind spiegelt deze tokens als `ease-premium` / `duration-{micro,ui,…}`
+   (tailwind.config.ts); lib/design/tokens.test.ts bewaakt dat ze gelijk blijven.
+   Nieuwe animaties bestaan niet: wie beweging nodig heeft, kiest een werkwoord.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
   --hz-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --hz-immediate: 240ms;
+  --hz-micro: 160ms;
+  --hz-ui: 280ms;
+  --hz-immediate: var(--hz-ui);
   --hz-composed: 700ms;
   --hz-cinematic: 1100ms;
+  --hz-ambient: 6000ms;
   --hz-line: rgba(31, 39, 48, 0.28);
   --hz-line-soft: rgba(31, 39, 48, 0.12);
   --hz-y: 62svh; /* de horizon */
