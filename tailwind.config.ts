@@ -8,7 +8,7 @@ import type { Config } from "tailwindcss";
  */
 
 // Experience 2.0 B1 (besloten 08-10-2026): Playfair Display, rechtop, alleen voor
-// Brand Mode-display ≥ 48px (design-specs §13e). Eén stack voor beide namen.
+// Brand Mode-display ≥ 48px (design-specs §13f). Eén stack voor beide namen.
 const SERIF_STACK = ["var(--font-playfair)", "Georgia", "serif"];
 
 const config: Config = {

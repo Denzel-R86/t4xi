@@ -83,7 +83,7 @@ visuele check via `npm run dev:staging` (nooit `npm run dev` — live Stripe-key
 
 | # | Besluit | Blokkeert | Advies |
 |---|---|---|---|
-| B1 | Display-font: blijft Outfit, of editorial serif (Playfair zit al in de build, of een nieuwe) | PR 1.2 | **Besloten (08-10):** Playfair Display, **rechtop**, alleen voor grote editorial koppen en merkstatements in **Brand Mode** (≥ 48px). Nooit serif in boekingsvelden, prijsdetails, knoppen of andere transactionele onderdelen (hero-boekingszin, BookingSection, RouteFinder, prijsregels, StickyCta, Button, formulieren). Bestaande fontbestanden; geen italic, geen extra subsets/gewichten. UI/body blijft Inter, hero-h1 en UI-display blijven Outfit. Max. 3 fontfamilies. Toepassing: design-specs §13e. |
+| B1 | Display-font: blijft Outfit, of editorial serif (Playfair zit al in de build, of een nieuwe) | PR 1.2 | **Besloten (08-10):** Playfair Display, **rechtop**, alleen voor grote editorial koppen en merkstatements in **Brand Mode** (≥ 48px). Nooit serif in boekingsvelden, prijsdetails, knoppen of andere transactionele onderdelen (hero-boekingszin, BookingSection, RouteFinder, prijsregels, StickyCta, Button, formulieren). Bestaande fontbestanden; geen italic, geen extra subsets/gewichten. UI/body blijft Inter, hero-h1 en UI-display blijven Outfit. Max. 3 fontfamilies. Toepassing: design-specs §13f. |
 | B2 | Fotoshoot (Departure/Journey/Arrival/Details) — budget + planning | Release 2.0.1 (niet 2.0) | **Besloten (25-09):** 2.0 lanceert met de bestaande drie campagnebeelden + vloot; geen tussenbeeld. De shoot wordt release 2.0.1 "Visual campaign" met eigen gate (§11). |
 | B3 | Nieuwe IA (Particulier/Business/Membership/Drivers) | PR 5.1 | Eerst nav herindelen, URL's ongewijzigd laten. |
 | B4 | Merkregels | PR 1.1 | **Besloten (25-09):** merkprincipe = "Precisie zonder vertoon." (hoe T4XI zich gedraagt: intern, documentenset, over-ons); consumententagline = "Arrive composed." (wat de klant ervaart: footer, EN-hero, JSON-LD `slogan`); "Arrive with confidence" wordt verwijderd (`messages/*.json:941`, `en.json:1333`, `layout.tsx:76`). |
@@ -489,4 +489,4 @@ bestand in `docs/experience-2.0/baseline/` of groene test in de repo. 0.4b hoort
 ## 13. Design-specificaties
 
 Design System 2.0-deliverable (§13a), fotografie-regie en release gate (§13b), header/footer
-per breakpoint (§13c), de mockups (§13d) en de display-serif-regel B1 (§13e) staan in [design-specs.md](design-specs.md).
+per breakpoint (§13c), de mockups (§13d) en de display-serif-regel B1 (§13f) staan in [design-specs.md](design-specs.md).

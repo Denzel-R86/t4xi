@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import config from "../../tailwind.config";
 
-// Experience 2.0 PR 1.2 — besluit B1 (08-10-2026, masterplan §2, design-specs §13e):
+// Experience 2.0 PR 1.2 — besluit B1 (08-10-2026, masterplan §2, design-specs §13f):
 // Playfair Display, rechtop, alleen Brand Mode-display ≥ 48px. Nooit serif in
 // transactionele UI.
 

@@ -75,7 +75,7 @@ bevestiging (aanvraag-status), homepage-editorial en footer: artifact "T4XI Expe
 (link in PR 1.5). De mockups zijn richtinggevend voor compositie en hiërarchie; tokens
 en copy in dit plan gaan voor.
 
-### 13e. Display-serif (B1, besloten 08-10-2026)
+### 13f. Display-serif (B1, besloten 08-10-2026)
 
 **Brand Mode** = de niet-transactionele, merk- en redactionele delen van de site:
 sectiestatements, merkstatements en editorial koppen. Alles waar de klant iets invult,
