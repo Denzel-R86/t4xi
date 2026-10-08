@@ -74,3 +74,22 @@ Mockups van hero (desktop + mobiel), prijsreveal, RouteFinder-resultaat, boeksta
 bevestiging (aanvraag-status), homepage-editorial en footer: artifact "T4XI Experience 2.0 mockups" — https://claude.ai/artifact/HyZBtQ8PRc4Lr7fNky7fCf
 (link in PR 1.5). De mockups zijn richtinggevend voor compositie en hiërarchie; tokens
 en copy in dit plan gaan voor.
+
+### 13e. Display-serif (B1, besloten 08-10-2026)
+
+**Brand Mode** = de niet-transactionele, merk- en redactionele delen van de site:
+sectiestatements, merkstatements en editorial koppen. Alles waar de klant iets invult,
+kiest, een prijs leest of een actie start, is **transactioneel** en blijft sans.
+
+| | Regel |
+|---|---|
+| Wel serif | Standaardkop van `NarrativePattern` (homepage: Certainty, Journey, Invitation); later merkstatements zoals het footer-statement "Arrive composed." (PR 3.5) — alleen op display-grootte |
+| Nooit serif | Hero-h1 en booking sentence, BookingSection, PaymentStep, RouteFinder, prijzen/prijsregels (`LedgerPattern`), StickyCta, Button, formulieren, eyebrows/kickers, body |
+| Grootte | ≥ 48px op elke viewport: token `text-display-serif` = `clamp(3rem, 7.6vw, 6.75rem)` (48→108px), line-height 1.04 |
+| Gewicht | draagstem 600 (`font-semibold`), echostem 400 (`font-normal`, `text-stone-text`); variabel bestand, dus geen extra download |
+| Letterspacing | `-0.015em` (minder strak dan Outfit-display: serif heeft eigen contrast) |
+| Stijl | alleen rechtop; geen `italic`, geen synthetische cursief |
+| Fallback | `var(--font-playfair), Georgia, serif`; `next/font` met `display: swap` en metrische fallback |
+| Bron | één token: `font-display-serif` + `text-display-serif` (`tailwind.config.ts`); `font-playfair` is een legacy-alias voor dagtochten (migreert in fase 5) |
+| Bestanden | bestaande `Playfair_Display`-aanroep in `app/[locale]/layout.tsx`: `latin`, `style: "normal"`, geen `weight` → één woff2 |
+| Bewaking | `lib/design/display-font.test.ts` |
