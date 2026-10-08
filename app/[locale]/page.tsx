@@ -295,14 +295,15 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             echo={t("arrivalEcho")}
             note={t("arrivalNote")}
             immediate
-            echoClassName="font-light text-secondary"
+            echoClassName="font-normal text-secondary"
             // 2026-08-19 (hotfix): deze kop staat in de 48%-splitkolom van de
             // ARRIVAL-sectie, niet in een bijna-volle-breedte Viewport zoals de
             // overige drie NarrativePattern-koppen — de standaard `7.6vw` overschoot
             // die smalle kolom vanaf md (bv. "Van voordeur" brak middenin het woord
             // af op 1280px breed). `md:`-override schaalt tegen de kolombreedte;
             // onder md (enkele kolom, volle breedte) blijft het standaardgedrag.
-            titleClassName="mt-6 font-display text-[clamp(44px,7.6vw,108px)] md:text-[clamp(40px,5.4vw,112px)] font-extrabold leading-[0.98] tracking-[-0.03em] text-ink"
+            // B1 (08-10): Brand Mode-kop → display-serif, ondergrens 48px (§13f).
+            titleClassName="mt-6 font-display-serif text-[clamp(48px,7.6vw,108px)] md:text-[clamp(48px,5.4vw,112px)] font-semibold leading-[1.02] tracking-[-0.015em] text-ink"
           />
           <Reveal immediate>
             <div className="mt-9">
