@@ -69,3 +69,37 @@ read-only export van `fixed_route_prices` op staging maken als referentie.
 
 - Productie: H-3-migratie, `20260928120000` en de Control-migraties.
 - Merge van #54: pas na geslaagde stagingcontroles en de types-commit.
+
+## 5. Uitvoering optie A (08-10-2026, akkoord eigenaar)
+
+**Toegepast:** uitsluitend `20261006150000` op staging, met de ledgerregel onder
+hetzelfde versienummer, in één transactie (geen `db push`, ontbrekende migraties niet
+meegenomen, bestaande historie niet gewijzigd). Ledger 58 → 59 rijen.
+
+**Omgeving.** De #54-preview zit achter Vercel-inloggen; de flows zijn daarom gedraaid
+met de #54-code via `npm run dev:staging`, aantoonbaar staging-DB
+(`ztlhydagjqfzkyfiqgio`) en Stripe-testsleutels (`sk_test`/`pk_test`).
+
+| Controle | Uitkomst |
+|---|---|
+| Kolommen nullable, FK `on delete set null`, CHECK exact zoals §1, partiële index, geen unieke index | ✓ |
+| Rechten `link_booking_payment`: alleen `service_role` (+ eigenaar) | ✓ |
+| Backfill: 0 lock-rijen vooraf, 0 afwijkingen | ✓ |
+| Lock-boeking met getoonde prijs → `quote_id` = `source_quote_id` | ✓ |
+| Aanvraag (3 koffers, 4 pers.) na getoonde prijs → alleen `source_quote_id` | ✓ |
+| Eerste testbetaalstart → `pending`, `payment_started_at` gezet; tweede aanroep zelfde PI → tijdstip gelijk | ✓ |
+| **Historisch:** bestaande PI, lege starttijd, herkoppeling zelfde PI → `linked`, starttijd blijft leeg | ✓ |
+| `pi_conflict` (starttijd en PI ongewijzigd), `no_price`, `already_paid` (starttijd blijft leeg), `not_found` | ✓ |
+| CHECK weigert afwijkende combinatie (23514) | ✓ |
+| Telling §7 draait; `lock_zonder_attributie` toonde de boeking die zonder H-3-code was gemaakt | ✓ |
+| Testdata verwijderd op id (3 boekingen, 4 snapshots, 4 quotelogs); staging terug op 1 boeking / 82 snapshots | ✓ |
+
+**Types.** Staging- en productietypes verschillen voor `bookings` uitsluitend in de
+H-3-velden (2 kolommen + FK). `lib/types/database.ts` loopt in de repo ver achter op
+beide omgevingen (o.a. `quote_id` en de betaalvelden ontbreken); volledig regenereren
+zou ongerelateerd schema meenemen. Daarom bevat #54 alleen de twee H-3-kolommen.
+
+**Bijvangst (buiten H-3).** Een lock-boeking naar Schiphol zonder vluchtnummer faalt met
+`Vluchtrichting zonder vluchtnummer` (ook op productie: identieke functies). Fix in
+draft-PR #58. Voor de H-3-controles is daarom met vluchtnummer `KL1234` geboekt.
+Stripe-test-PaymentIntents van deze test staan nog in het Stripe-testaccount.

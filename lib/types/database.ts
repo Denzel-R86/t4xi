@@ -211,11 +211,13 @@ export type Database = {
           id: string
           luggage: string | null
           notes: string | null
+          payment_started_at: string | null
           persons: number | null
           price_euros: number | null
           ride_date: string
           ride_time: string
           ride_type: string
+          source_quote_id: string | null
           status: string
           to_address: string
           to_lat: number | null
@@ -235,11 +237,13 @@ export type Database = {
           id?: string
           luggage?: string | null
           notes?: string | null
+          payment_started_at?: string | null
           persons?: number | null
           price_euros?: number | null
           ride_date: string
           ride_time: string
           ride_type?: string
+          source_quote_id?: string | null
           status?: string
           to_address: string
           to_lat?: number | null
@@ -259,11 +263,13 @@ export type Database = {
           id?: string
           luggage?: string | null
           notes?: string | null
+          payment_started_at?: string | null
           persons?: number | null
           price_euros?: number | null
           ride_date?: string
           ride_time?: string
           ride_type?: string
+          source_quote_id?: string | null
           status?: string
           to_address?: string
           to_lat?: number | null
