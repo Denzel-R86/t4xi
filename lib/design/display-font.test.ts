@@ -63,6 +63,15 @@ test("B1: serif-display is nergens cursief", () => {
   }
 });
 
+test("B1: de hero-h1 (Brand Mode) is serif rechtop, de booking sentence niet", () => {
+  const page = readFileSync("app/[locale]/page.tsx", "utf8");
+  const title = page.match(/titleClassName="([^"]*font-display-serif[^"]*)"/);
+  assert.ok(title, "hero-h1 hoort font-display-serif te gebruiken");
+  assert.doesNotMatch(title[1], /\bitalic\b/);
+  const min = [...title[1].matchAll(/clamp\((\d+)px/g)].map((m) => Number(m[1]));
+  assert.ok(min.length > 0 && min.every((px) => px >= 48), `ondergrens ≥ 48px, kreeg ${min.join(", ")}`);
+});
+
 test("B1: Playfair laadt alleen rechtop + latin, zonder extra varianten", () => {
   const layout = readFileSync("app/[locale]/layout.tsx", "utf8");
   const block = layout.match(/Playfair_Display\(\{([\s\S]*?)\}\);/);

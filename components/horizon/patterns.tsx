@@ -197,7 +197,7 @@ export function NarrativePattern({
       </Reveal>
       <Reveal delay={1} immediate={immediate}>
         {/* B1 (08-10): de standaardkop is een Brand Mode-statement → serif-display
-            (design-specs §13e). De hero-h1 geeft eigen klassen mee en blijft sans. */}
+            (design-specs §13f). De hero-h1 geeft eigen klassen mee, ook in serif. */}
         <Tag className={titleClassName ?? "mt-6 font-display-serif text-display-serif font-semibold text-ink"}>
           {voice}
           {echo && (

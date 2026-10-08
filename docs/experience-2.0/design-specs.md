@@ -83,8 +83,8 @@ kiest, een prijs leest of een actie start, is **transactioneel** en blijft sans.
 
 | | Regel |
 |---|---|
-| Wel serif | Standaardkop van `NarrativePattern` (homepage: Certainty, Journey, Invitation); later merkstatements zoals het footer-statement "Arrive composed." (PR 3.5) — alleen op display-grootte |
-| Nooit serif | Hero-h1 en booking sentence, BookingSection, PaymentStep, RouteFinder, prijzen/prijsregels (`LedgerPattern`), StickyCta, Button, formulieren, eyebrows/kickers, body |
+| Wel serif | Hero-h1 "Van voordeur tot vertrekhal." (Arrival) en de standaardkop van `NarrativePattern` (homepage: Certainty, Journey, Invitation); later merkstatements zoals het footer-statement "Arrive composed." (PR 3.5) — alleen op display-grootte |
+| Nooit serif | De booking sentence in de hero (invoervelden, prijsregel, knop), BookingSection, PaymentStep, RouteFinder, prijzen/prijsregels (`LedgerPattern`), StickyCta, Button, formulieren, eyebrows/kickers, body |
 | Grootte | ≥ 48px op elke viewport: token `text-display-serif` = `clamp(3rem, 7.6vw, 6.75rem)` (48→108px), line-height 1.04 |
 | Gewicht | draagstem 600 (`font-semibold`), echostem 400 (`font-normal`, `text-stone-text`); variabel bestand, dus geen extra download |
 | Letterspacing | `-0.015em` (minder strak dan Outfit-display: serif heeft eigen contrast) |
@@ -93,3 +93,10 @@ kiest, een prijs leest of een actie start, is **transactioneel** en blijft sans.
 | Bron | één token: `font-display-serif` + `text-display-serif` (`tailwind.config.ts`); `font-playfair` is een legacy-alias voor dagtochten (migreert in fase 5) |
 | Bestanden | bestaande `Playfair_Display`-aanroep in `app/[locale]/layout.tsx`: `latin`, `style: "normal"`, geen `weight` → één woff2 |
 | Bewaking | `lib/design/display-font.test.ts` |
+
+**Bestaande uitzonderingen (legacy, migratie in fase 5).** `/dagtochten`
+(`app/[locale]/dagtochten/page.tsx`, `components/dagtochten/RoutesExplorer.tsx`) gebruikt
+`font-playfair` nog (a) cursief via `italic` op `<em>` — het cursieve bestand wordt niet
+geladen, de browser maakt de cursief zelf na — en (b) in prijsweergave. Beide botsen met B1.
+Tot fase 5 blijven ze ongewijzigd en vallen ze buiten de test; in fase 5 worden ze rechtop
+en sans in prijzen, en verdwijnt de alias `font-playfair`.
