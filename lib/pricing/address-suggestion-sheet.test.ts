@@ -102,6 +102,11 @@ test("titel + adresregel; het veldlabel zelf verandert niet", () => {
   assert.equal(airport.label, "Evert van de Beekstraat 202, 1118 CP Schiphol");
   assert.deepEqual(suggestionParts(street), { title: "Evert van de Beekstraat 202", detail: "1118CP Schiphol" });
   assert.deepEqual(suggestionParts(pdok("w", "Amsterdam")), { title: "Amsterdam", detail: "" });
+  // Station: `address` is de stationsnaam → adresregel toont de plaats, geen herhaling.
+  const station = suggestionParts(local("Utrecht Centraal"));
+  assert.equal(station.title, "Utrecht Centraal");
+  assert.notEqual(station.detail, station.title);
+  assert.equal(station.detail, "Utrecht");
 });
 
 // ── Broncode-lock: WAI-ARIA 1.2 combobox-contract (geen DOM-runner in deze suite) ──
@@ -135,6 +140,7 @@ test("F-17/F-18: lijst en zoekstatus alleen zichtbaar zolang het veld focus heef
 test("mobiel: lijst begrensd tot de viewport, opties ≥ 44px", () => {
   assert.match(src, /max-h-\[min\(22rem,55svh\)\] w-full overflow-y-auto/);
   assert.match(src, /role="option"[\s\S]*?flex min-h-11/);
+  // Type-label boven de titel: volle breedte voor naam en adres in smalle kolommen.
 });
 
 test("transactioneel: geen serif in de suggestielijst (design-specs §13f)", () => {

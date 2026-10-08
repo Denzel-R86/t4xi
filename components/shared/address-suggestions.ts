@@ -26,7 +26,11 @@ export function suggestionKind(s: AddressSuggestion): SuggestionKind {
 export function suggestionParts(s: AddressSuggestion): { title: string; detail: string } {
   if (s.source === "local" && s.location) {
     const loc = s.location;
-    return { title: loc.iata ? `${loc.name} (${loc.iata})` : loc.name, detail: loc.address };
+    const title = loc.iata ? `${loc.name} (${loc.iata})` : loc.name;
+    // Stations dragen hun naam als `address` (ns-stations.ts): toon dan de
+    // plaats, zodat de adresregel de titel niet herhaalt.
+    const detail = loc.address !== loc.name ? loc.address : loc.city !== loc.name ? loc.city : "";
+    return { title, detail };
   }
   const i = s.label.indexOf(", ");
   if (i <= 0) return { title: s.label, detail: "" };

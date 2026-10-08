@@ -470,23 +470,19 @@ export default function AddressAutocomplete({
                 onMouseDown={(e) => e.preventDefault()}
                 onMouseEnter={() => setActiveIndex(i)}
                 onClick={() => choose(s)}
-                className={`flex min-h-11 cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-150 motion-reduce:transition-none ${
+                className={`flex min-h-11 cursor-pointer flex-col justify-center px-4 py-2.5 text-left transition-colors duration-150 motion-reduce:transition-none ${
                   active ? "bg-accent text-white" : "text-ink hover:bg-fog"
                 }`}
               >
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium break-words">{title}</span>
-                  {detail && (
-                    <span className={`block text-xs break-words ${active ? "text-white/80" : "text-stone-text"}`}>
-                      {detail}
-                    </span>
-                  )}
-                </span>
-                <span
-                  className={`shrink-0 text-meta font-semibold uppercase ${active ? "text-white/80" : "text-stone-text"}`}
-                >
+                <span className={`block text-meta font-semibold uppercase ${active ? "text-white/80" : "text-stone-text"}`}>
                   {t(KIND_LABEL_KEY[suggestionKind(s)])}
                 </span>
+                <span className="mt-1 block break-words text-sm font-medium">{title}</span>
+                {detail && (
+                  <span className={`mt-0.5 block break-words text-xs ${active ? "text-white/80" : "text-stone-text"}`}>
+                    {detail}
+                  </span>
+                )}
               </li>
             );
           })}
