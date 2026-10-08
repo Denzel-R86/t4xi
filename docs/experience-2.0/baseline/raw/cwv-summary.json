@@ -1,0 +1,449 @@
+{
+ "lighthouse": "13.5.0",
+ "origin": "https://www.t4xi.nl",
+ "runsPerCell": 5,
+ "aborted": null,
+ "generatedAt": "2026-10-06T11:45:42.309Z",
+ "summary": [
+  {
+   "page": "/",
+   "formFactor": "mobile",
+   "okRuns": 5,
+   "failedRuns": 0,
+   "performance": {
+    "n": 5,
+    "median": 0.95,
+    "min": 0.92,
+    "max": 0.95
+   },
+   "lcpMs": {
+    "n": 5,
+    "median": 2947.273,
+    "min": 2884.4629999999997,
+    "max": 2974.6260000000007
+   },
+   "cls": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "tbtMs": {
+    "n": 5,
+    "median": 7.5,
+    "min": 7,
+    "max": 13
+   },
+   "fcpMs": {
+    "n": 5,
+    "median": 1097.226,
+    "min": 1084.463,
+    "max": 1112.2730000000001
+   },
+   "siMs": {
+    "n": 5,
+    "median": 1796.9905779999576,
+    "min": 1615.2248859989386,
+    "max": 4647.602912000911
+   },
+   "ttfbMs": {
+    "n": 5,
+    "median": 34,
+    "min": 25,
+    "max": 36
+   },
+   "accessibility": {
+    "n": 5,
+    "median": 1,
+    "min": 1,
+    "max": 1
+   },
+   "lcpElements": []
+  },
+  {
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "okRuns": 5,
+   "failedRuns": 0,
+   "performance": {
+    "n": 5,
+    "median": 0.68,
+    "min": 0.66,
+    "max": 0.96
+   },
+   "lcpMs": {
+    "n": 5,
+    "median": 6005.0435,
+    "min": 2801.9105,
+    "max": 6493.9685
+   },
+   "cls": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "tbtMs": {
+    "n": 5,
+    "median": 95.63650000000052,
+    "min": 60,
+    "max": 114.5
+   },
+   "fcpMs": {
+    "n": 5,
+    "median": 2927.5159999999996,
+    "min": 1076.9105,
+    "max": 3295.6455
+   },
+   "siMs": {
+    "n": 5,
+    "median": 5282.894839998406,
+    "min": 1143.1014239999063,
+    "max": 5623.04010399894
+   },
+   "ttfbMs": {
+    "n": 5,
+    "median": 36,
+    "min": 30,
+    "max": 38
+   },
+   "accessibility": {
+    "n": 5,
+    "median": 0.96,
+    "min": 0.96,
+    "max": 0.96
+   },
+   "lcpElements": []
+  },
+  {
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "okRuns": 5,
+   "failedRuns": 0,
+   "performance": {
+    "n": 5,
+    "median": 0.95,
+    "min": 0.93,
+    "max": 0.96
+   },
+   "lcpMs": {
+    "n": 5,
+    "median": 2829.656,
+    "min": 2813.34,
+    "max": 2870.358
+   },
+   "cls": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "tbtMs": {
+    "n": 5,
+    "median": 10,
+    "min": 0,
+    "max": 13
+   },
+   "fcpMs": {
+    "n": 5,
+    "median": 1104.656,
+    "min": 1088.3400000000001,
+    "max": 1145.358
+   },
+   "siMs": {
+    "n": 5,
+    "median": 1834.323894000408,
+    "min": 1522.792277999603,
+    "max": 4161.809323998488
+   },
+   "ttfbMs": {
+    "n": 5,
+    "median": 34,
+    "min": 32,
+    "max": 36
+   },
+   "accessibility": {
+    "n": 5,
+    "median": 0.96,
+    "min": 0.96,
+    "max": 0.96
+   },
+   "lcpElements": []
+  },
+  {
+   "page": "/taxi-almere-schiphol",
+   "formFactor": "mobile",
+   "okRuns": 5,
+   "failedRuns": 0,
+   "performance": {
+    "n": 5,
+    "median": 0.97,
+    "min": 0.96,
+    "max": 0.99
+   },
+   "lcpMs": {
+    "n": 5,
+    "median": 2610.9,
+    "min": 2190.177,
+    "max": 2666.817
+   },
+   "cls": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "tbtMs": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 7
+   },
+   "fcpMs": {
+    "n": 5,
+    "median": 1088.0430000000001,
+    "min": 1076.1770000000001,
+    "max": 1110.9
+   },
+   "siMs": {
+    "n": 5,
+    "median": 1603.2927560010469,
+    "min": 1501.7787999987797,
+    "max": 1772.7088240005792
+   },
+   "ttfbMs": {
+    "n": 5,
+    "median": 32,
+    "min": 31,
+    "max": 37
+   },
+   "accessibility": {
+    "n": 5,
+    "median": 1,
+    "min": 1,
+    "max": 1
+   },
+   "lcpElements": []
+  },
+  {
+   "page": "/",
+   "formFactor": "desktop",
+   "okRuns": 5,
+   "failedRuns": 0,
+   "performance": {
+    "n": 5,
+    "median": 1,
+    "min": 1,
+    "max": 1
+   },
+   "lcpMs": {
+    "n": 5,
+    "median": 621.899,
+    "min": 605.0260000000001,
+    "max": 668.896
+   },
+   "cls": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "tbtMs": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "fcpMs": {
+    "n": 5,
+    "median": 318.609,
+    "min": 310.026,
+    "max": 335.25
+   },
+   "siMs": {
+    "n": 5,
+    "median": 646.3941462499524,
+    "min": 537.8682327501577,
+    "max": 702.6691603336144
+   },
+   "ttfbMs": {
+    "n": 5,
+    "median": 32,
+    "min": 29,
+    "max": 41
+   },
+   "accessibility": {
+    "n": 5,
+    "median": 1,
+    "min": 1,
+    "max": 1
+   },
+   "lcpElements": []
+  },
+  {
+   "page": "/boeken",
+   "formFactor": "desktop",
+   "okRuns": 5,
+   "failedRuns": 0,
+   "performance": {
+    "n": 5,
+    "median": 1,
+    "min": 1,
+    "max": 1
+   },
+   "lcpMs": {
+    "n": 5,
+    "median": 608.6180000000002,
+    "min": 604.386,
+    "max": 614.742
+   },
+   "cls": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "tbtMs": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "fcpMs": {
+    "n": 5,
+    "median": 330.289,
+    "min": 324.38599999999997,
+    "max": 334.9030000000001
+   },
+   "siMs": {
+    "n": 5,
+    "median": 447.8487703328202,
+    "min": 424.78659366626016,
+    "max": 476.95121216667945
+   },
+   "ttfbMs": {
+    "n": 5,
+    "median": 37,
+    "min": 32,
+    "max": 41
+   },
+   "accessibility": {
+    "n": 5,
+    "median": 0.96,
+    "min": 0.96,
+    "max": 0.96
+   },
+   "lcpElements": []
+  },
+  {
+   "page": "/tarieven",
+   "formFactor": "desktop",
+   "okRuns": 5,
+   "failedRuns": 0,
+   "performance": {
+    "n": 5,
+    "median": 1,
+    "min": 1,
+    "max": 1
+   },
+   "lcpMs": {
+    "n": 5,
+    "median": 590.433,
+    "min": 585.577,
+    "max": 592.345
+   },
+   "cls": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "tbtMs": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "fcpMs": {
+    "n": 5,
+    "median": 330.433,
+    "min": 325.577,
+    "max": 332.345
+   },
+   "siMs": {
+    "n": 5,
+    "median": 632.3487333337189,
+    "min": 527.5257916671978,
+    "max": 728.8815333331277
+   },
+   "ttfbMs": {
+    "n": 5,
+    "median": 34,
+    "min": 30,
+    "max": 37
+   },
+   "accessibility": {
+    "n": 5,
+    "median": 0.96,
+    "min": 0.96,
+    "max": 0.96
+   },
+   "lcpElements": []
+  },
+  {
+   "page": "/taxi-almere-schiphol",
+   "formFactor": "desktop",
+   "okRuns": 5,
+   "failedRuns": 0,
+   "performance": {
+    "n": 5,
+    "median": 1,
+    "min": 1,
+    "max": 1
+   },
+   "lcpMs": {
+    "n": 5,
+    "median": 547.542,
+    "min": 408.979,
+    "max": 571.806
+   },
+   "cls": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "tbtMs": {
+    "n": 5,
+    "median": 0,
+    "min": 0,
+    "max": 0
+   },
+   "fcpMs": {
+    "n": 5,
+    "median": 315.086,
+    "min": 310.043,
+    "max": 331.806
+   },
+   "siMs": {
+    "n": 5,
+    "median": 598.0191833331791,
+    "min": 491.22550833359895,
+    "max": 627.1899750001456
+   },
+   "ttfbMs": {
+    "n": 5,
+    "median": 33,
+    "min": 28,
+    "max": 36
+   },
+   "accessibility": {
+    "n": 5,
+    "median": 1,
+    "min": 1,
+    "max": 1
+   },
+   "lcpElements": []
+  }
+ ]
+}

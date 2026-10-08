@@ -1,0 +1,109 @@
+{
+ "generatedAt": "2026-10-06T11:16:00.972Z",
+ "results": [
+  {
+   "page": "/",
+   "formFactor": "mobile",
+   "httpStatus": 429,
+   "error": {
+    "code": 429,
+    "message": "Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'."
+   },
+   "page_field": null,
+   "origin_field": null,
+   "psiLabPerformance": null,
+   "psiLabLcpMs": null
+  },
+  {
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "httpStatus": 429,
+   "error": {
+    "code": 429,
+    "message": "Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'."
+   },
+   "page_field": null,
+   "origin_field": null,
+   "psiLabPerformance": null,
+   "psiLabLcpMs": null
+  },
+  {
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "httpStatus": 429,
+   "error": {
+    "code": 429,
+    "message": "Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'."
+   },
+   "page_field": null,
+   "origin_field": null,
+   "psiLabPerformance": null,
+   "psiLabLcpMs": null
+  },
+  {
+   "page": "/taxi-almere-schiphol",
+   "formFactor": "mobile",
+   "httpStatus": 429,
+   "error": {
+    "code": 429,
+    "message": "Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'."
+   },
+   "page_field": null,
+   "origin_field": null,
+   "psiLabPerformance": null,
+   "psiLabLcpMs": null
+  },
+  {
+   "page": "/",
+   "formFactor": "desktop",
+   "httpStatus": 429,
+   "error": {
+    "code": 429,
+    "message": "Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'."
+   },
+   "page_field": null,
+   "origin_field": null,
+   "psiLabPerformance": null,
+   "psiLabLcpMs": null
+  },
+  {
+   "page": "/boeken",
+   "formFactor": "desktop",
+   "httpStatus": 429,
+   "error": {
+    "code": 429,
+    "message": "Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'."
+   },
+   "page_field": null,
+   "origin_field": null,
+   "psiLabPerformance": null,
+   "psiLabLcpMs": null
+  },
+  {
+   "page": "/tarieven",
+   "formFactor": "desktop",
+   "httpStatus": 429,
+   "error": {
+    "code": 429,
+    "message": "Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'."
+   },
+   "page_field": null,
+   "origin_field": null,
+   "psiLabPerformance": null,
+   "psiLabLcpMs": null
+  },
+  {
+   "page": "/taxi-almere-schiphol",
+   "formFactor": "desktop",
+   "httpStatus": 429,
+   "error": {
+    "code": 429,
+    "message": "Quota exceeded for quota metric 'Queries' and limit 'Queries per day' of service 'pagespeedonline.googleapis.com' for consumer 'project_number:583797351490'."
+   },
+   "page_field": null,
+   "origin_field": null,
+   "psiLabPerformance": null,
+   "psiLabLcpMs": null
+  }
+ ]
+}

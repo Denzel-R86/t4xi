@@ -1,0 +1,247 @@
+{
+ "axeCore": "4.12.1",
+ "tags": [
+  "wcag2a",
+  "wcag2aa",
+  "wcag21a",
+  "wcag21aa",
+  "wcag22aa"
+ ],
+ "viewports": {
+  "mobile": {
+   "width": 412,
+   "height": 823,
+   "deviceScaleFactor": 1.75,
+   "mobile": true,
+   "ua": "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36"
+  },
+  "desktop": {
+   "width": 1350,
+   "height": 940,
+   "deviceScaleFactor": 1,
+   "mobile": false,
+   "ua": null
+  }
+ },
+ "generatedAt": "2026-10-06T11:19:20.998Z",
+ "results": [
+  {
+   "page": "/",
+   "formFactor": "mobile",
+   "url": "https://www.t4xi.nl/",
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 46
+    }
+   ]
+  },
+  {
+   "page": "/boeken",
+   "formFactor": "mobile",
+   "url": "https://www.t4xi.nl/boeken",
+   "violations": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "tags": [
+      "wcag2aa",
+      "wcag143"
+     ],
+     "help": "Elements must meet minimum color contrast ratio thresholds",
+     "nodes": 3,
+     "targets": [
+      {
+       "target": ".rounded-xl.bg-fog.py-2\\.5:nth-child(1) > small",
+       "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.65 (foreground color: #999694, background color: #f5f3f1, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+       "target": ".rounded-xl.bg-fog.py-2\\.5:nth-child(2) > small",
+       "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.65 (foreground color: #999694, background color: #f5f3f1, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+       "target": ".rounded-xl.bg-fog.py-2\\.5:nth-child(3) > small",
+       "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.65 (foreground color: #999694, background color: #f5f3f1, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+     ]
+    }
+   ],
+   "incomplete": [
+    {
+     "id": "aria-prohibited-attr",
+     "impact": "serious",
+     "nodes": 1
+    },
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 11
+    }
+   ]
+  },
+  {
+   "page": "/tarieven",
+   "formFactor": "mobile",
+   "url": "https://www.t4xi.nl/tarieven",
+   "violations": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "tags": [
+      "wcag2aa",
+      "wcag143"
+     ],
+     "help": "Elements must meet minimum color contrast ratio thresholds",
+     "nodes": 1,
+     "targets": [
+      {
+       "target": ".font-light",
+       "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.65 (foreground color: #999694, background color: #f5f3f1, font size: 28.5pt (38px), font weight: normal). Expected contrast ratio of 3:1"
+      }
+     ]
+    }
+   ],
+   "incomplete": [
+    {
+     "id": "aria-prohibited-attr",
+     "impact": "serious",
+     "nodes": 1
+    },
+    {
+     "id": "aria-valid-attr-value",
+     "impact": "critical",
+     "nodes": 1
+    },
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 9
+    }
+   ]
+  },
+  {
+   "page": "/taxi-almere-schiphol",
+   "formFactor": "mobile",
+   "url": "https://www.t4xi.nl/taxi-almere-schiphol",
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 53
+    }
+   ]
+  },
+  {
+   "page": "/",
+   "formFactor": "desktop",
+   "url": "https://www.t4xi.nl/",
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 53
+    }
+   ]
+  },
+  {
+   "page": "/boeken",
+   "formFactor": "desktop",
+   "url": "https://www.t4xi.nl/boeken",
+   "violations": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "tags": [
+      "wcag2aa",
+      "wcag143"
+     ],
+     "help": "Elements must meet minimum color contrast ratio thresholds",
+     "nodes": 3,
+     "targets": [
+      {
+       "target": ".rounded-xl.bg-fog.py-2\\.5:nth-child(1) > small",
+       "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.65 (foreground color: #999694, background color: #f5f3f1, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+       "target": ".rounded-xl.bg-fog.py-2\\.5:nth-child(2) > small",
+       "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.65 (foreground color: #999694, background color: #f5f3f1, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+       "target": ".rounded-xl.bg-fog.py-2\\.5:nth-child(3) > small",
+       "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.65 (foreground color: #999694, background color: #f5f3f1, font size: 7.5pt (10px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+     ]
+    }
+   ],
+   "incomplete": [
+    {
+     "id": "aria-prohibited-attr",
+     "impact": "serious",
+     "nodes": 1
+    },
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 19
+    }
+   ]
+  },
+  {
+   "page": "/tarieven",
+   "formFactor": "desktop",
+   "url": "https://www.t4xi.nl/tarieven",
+   "violations": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "tags": [
+      "wcag2aa",
+      "wcag143"
+     ],
+     "help": "Elements must meet minimum color contrast ratio thresholds",
+     "nodes": 1,
+     "targets": [
+      {
+       "target": ".font-light",
+       "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.65 (foreground color: #999694, background color: #f5f3f1, font size: 62.8pt (83.7px), font weight: normal). Expected contrast ratio of 3:1"
+      }
+     ]
+    }
+   ],
+   "incomplete": [
+    {
+     "id": "aria-prohibited-attr",
+     "impact": "serious",
+     "nodes": 1
+    },
+    {
+     "id": "aria-valid-attr-value",
+     "impact": "critical",
+     "nodes": 1
+    },
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 17
+    }
+   ]
+  },
+  {
+   "page": "/taxi-almere-schiphol",
+   "formFactor": "desktop",
+   "url": "https://www.t4xi.nl/taxi-almere-schiphol",
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": 62
+    }
+   ]
+  }
+ ]
+}
