@@ -130,7 +130,7 @@ function FleetPlate({
   return (
     <article className="border-t border-ink/30 py-9 last:border-b md:py-12">
       <header className="mb-7 grid gap-4 md:grid-cols-[64px_minmax(0,1fr)_auto] md:items-end">
-        <span className="text-[12px] font-medium tracking-[0.16em] text-stone [font-variant-numeric:tabular-nums]">
+        <span className="text-[12px] font-medium tracking-[0.16em] text-stone-text [font-variant-numeric:tabular-nums]">
           {index}
         </span>
         <div>

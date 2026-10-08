@@ -73,7 +73,7 @@ const jsonLd = {
   name: "T4XI",
   url: SITE_URL,
   sameAs: ["https://www.instagram.com/t4xi.nl/"],
-  slogan: "Arrive with confidence.",
+  slogan: "Arrive composed.",
   // Alleen steden waar daadwerkelijk actieve vaste routes voor bestaan.
   // Rotterdam, Den Haag en Utrecht draaien sinds juli 2026 en ontbraken hier.
   areaServed: [
