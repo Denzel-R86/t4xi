@@ -196,12 +196,14 @@ export function NarrativePattern({
         </p>
       </Reveal>
       <Reveal delay={1} immediate={immediate}>
-        <Tag className={titleClassName ?? "mt-6 font-display text-[clamp(44px,7.6vw,108px)] font-extrabold leading-[0.98] tracking-[-0.03em] text-ink"}>
+        {/* B1 (08-10): de standaardkop is een Brand Mode-statement → serif-display
+            (design-specs §13e). De hero-h1 geeft eigen klassen mee en blijft sans. */}
+        <Tag className={titleClassName ?? "mt-6 font-display-serif text-display-serif font-semibold text-ink"}>
           {voice}
           {echo && (
             <>
               <br />
-              <span className={echoClassName ?? "font-light text-stone-text"}>{echo}</span>
+              <span className={echoClassName ?? "font-normal text-stone-text"}>{echo}</span>
             </>
           )}
         </Tag>
