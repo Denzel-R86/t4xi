@@ -304,7 +304,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             // af op 1280px breed). `md:`-override schaalt tegen de kolombreedte;
             // onder md (enkele kolom, volle breedte) blijft het standaardgedrag.
             // B1 (08-10): Brand Mode-kop → display-serif, ondergrens 48px (§13f).
-            titleClassName="mt-6 font-display-serif text-[clamp(48px,7.6vw,108px)] md:text-[clamp(48px,5.4vw,112px)] font-semibold leading-[1.02] tracking-[-0.015em] text-ink"
+            // PR 1.4: grootte uit tokens; `display-serif-split` is de splitkolomvariant.
+            titleClassName="mt-6 font-display-serif text-display-serif md:text-display-serif-split font-semibold text-ink"
           />
           <Reveal immediate>
             {/* PR 1.4: booking 550ms in de hero-cascade (horizon.css); nooit geblokkeerd. */}

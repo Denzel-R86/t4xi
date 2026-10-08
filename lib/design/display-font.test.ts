@@ -68,8 +68,18 @@ test("B1: de hero-h1 (Brand Mode) is serif rechtop, de booking sentence niet", (
   const title = page.match(/titleClassName="([^"]*font-display-serif[^"]*)"/);
   assert.ok(title, "hero-h1 hoort font-display-serif te gebruiken");
   assert.doesNotMatch(title[1], /\bitalic\b/);
-  const min = [...title[1].matchAll(/clamp\((\d+)px/g)].map((m) => Number(m[1]));
-  assert.ok(min.length > 0 && min.every((px) => px >= 48), `ondergrens ≥ 48px, kreeg ${min.join(", ")}`);
+  // PR 1.4: grootte uit tokens (geen eigen clamp meer); beide tokens hebben ondergrens 48px.
+  assert.match(title[1], /(^| )text-display-serif md:text-display-serif-split( |$)/);
+  assert.doesNotMatch(title[1], /text-\[|leading-\[|tracking-\[/, "hero-h1 zonder losse grootte/leading/tracking");
+  const sizes = (config.theme?.extend as Record<string, Record<string, unknown>>).fontSize as Record<
+    string,
+    [string, { lineHeight?: string; letterSpacing?: string }]
+  >;
+  for (const token of ["display-serif", "display-serif-split"]) {
+    assert.match(sizes[token][0], /^clamp\(3rem, /, `${token}: ondergrens 48px`);
+    assert.equal(sizes[token][1].lineHeight, "1.04", `${token}: line-height §13f`);
+    assert.equal(sizes[token][1].letterSpacing, "-0.015em", `${token}: letterspacing §13f`);
+  }
 });
 
 test("B1: Playfair laadt alleen rechtop + latin, zonder extra varianten", () => {
