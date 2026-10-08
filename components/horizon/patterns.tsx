@@ -201,7 +201,7 @@ export function NarrativePattern({
           {echo && (
             <>
               <br />
-              <span className={echoClassName ?? "font-light text-stone"}>{echo}</span>
+              <span className={echoClassName ?? "font-light text-stone-text"}>{echo}</span>
             </>
           )}
         </Tag>
