@@ -1,36 +1,103 @@
 import { Link } from "@/i18n/navigation";
-import type { ReactNode } from "react";
-
-type ButtonProps = {
-  href: string;
-  children: ReactNode;
-  variant?: "primary" | "ghost";
-  size?: "md" | "xl";
-};
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ComponentProps, ReactNode } from "react";
+import {
+  BUTTON_ARROW_CLASS,
+  buttonClassName,
+  isPlainHref,
+  type ButtonSize,
+  type ButtonVariant,
+} from "./button-styles";
 
 /**
- * v14 button-systeem:
- * - primary: accent (#28313B), witte tekst, zachte CTA-schaduw
- * - ghost:   subtiele border op semi-wit vlak
+ * Button v2 — de enige knop van Experience 2.0 (§3 REPLACE, §5b).
+ *
+ * Polymorf: met `href` een link (interne paden via de locale-bewuste `Link`,
+ * `tel:`/`mailto:`/`https:`/`#…` als gewone `<a>`), zonder `href` een `<button>`.
+ * Varianten: `primary` (Confirm-vulling links → rechts), `secondary` (hairline),
+ * `text` (onderstreping + optionele pijl). Klassen: `./button-styles.ts`.
+ *
+ * Nog nergens geadopteerd (PR 1.3); adoptie per pagina in latere PR's.
  */
-export default function Button({
-  href,
-  children,
-  variant = "primary",
-  size = "md",
-}: ButtonProps) {
-  const base =
-    "inline-flex items-center justify-center gap-2 font-display font-medium tracking-wide rounded-md transition-all duration-200 ease-premium hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]";
-  const sizing =
-    size === "xl" ? "min-h-[52px] px-10 text-base" : "min-h-[44px] px-6 text-sm";
-  const styles =
-    variant === "primary"
-      ? "bg-accent text-white shadow-cta hover:bg-accent-hover"
-      : "border border-line-strong bg-white/60 text-ink hover:bg-white";
 
+type CommonProps = {
+  children: ReactNode;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+  /** Toont een pijl die bij hover/focus 4px meebeweegt; standaard aan bij `text`. */
+  arrow?: boolean;
+  className?: string;
+};
+
+type LinkOnlyProps = Omit<ComponentProps<typeof Link>, "href" | "className" | "children">;
+type AnchorOnlyProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "className" | "children">;
+
+export type ButtonAsLinkProps = CommonProps & { href: string } & LinkOnlyProps & AnchorOnlyProps;
+
+export type ButtonAsButtonProps = CommonProps & {
+  href?: undefined;
+  /** Bezig: `aria-busy`, niet klikbaar, label blijft staan (geen spinner). */
+  loading?: boolean;
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children">;
+
+export type ButtonProps = ButtonAsLinkProps | ButtonAsButtonProps;
+
+function Content({ children, arrow }: { children: ReactNode; arrow: boolean }) {
   return (
-    <Link href={href} className={`${base} ${sizing} ${styles}`}>
-      {children}
-    </Link>
+    <>
+      <span>{children}</span>
+      {arrow ? (
+        <span aria-hidden="true" className={BUTTON_ARROW_CLASS}>
+          →
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+export default function Button(props: ButtonProps) {
+  if (props.href !== undefined) {
+    const { children, variant = "primary", size = "md", fullWidth, arrow, className, href, ...rest } = props;
+    const classes = buttonClassName({ variant, size, fullWidth, className });
+    const content = <Content arrow={arrow ?? variant === "text"}>{children}</Content>;
+    if (isPlainHref(href)) {
+      return (
+        <a href={href} className={classes} {...(rest as AnchorOnlyProps)}>
+          {content}
+        </a>
+      );
+    }
+    return (
+      <Link href={href} className={classes} {...(rest as LinkOnlyProps)}>
+        {content}
+      </Link>
+    );
+  }
+
+  const {
+    children,
+    variant = "primary",
+    size = "md",
+    fullWidth,
+    arrow,
+    className,
+    loading = false,
+    disabled = false,
+    type = "button",
+    href: _href,
+    ...rest
+  } = props;
+  void _href;
+  const inactive = disabled || loading;
+  return (
+    <button
+      type={type}
+      disabled={inactive}
+      aria-busy={loading || undefined}
+      className={buttonClassName({ variant, size, fullWidth, inactive, className })}
+      {...rest}
+    >
+      <Content arrow={arrow ?? variant === "text"}>{children}</Content>
+    </button>
   );
 }
