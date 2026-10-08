@@ -249,7 +249,7 @@ function shell(opts: {
         </tr>
         <tr>
           <td align="center" style="background:${INK};border-radius:0 0 18px 18px;padding:24px 22px;color:#CBC8C4;font-size:11px;line-height:1.8;">
-            <span style="font-weight:700;letter-spacing:0.7px;color:${FOG};">ARRIVE COMPOSED.</span><br>
+            <span style="font-weight:700;letter-spacing:0.7px;color:${FOG};">ARRIVE WITH CONFIDENCE.</span><br>
             <span style="color:${STONE};">${T4XI.phoneDisplay} &nbsp;·&nbsp; ${escapeHtml(T4XI.email)} &nbsp;·&nbsp; t4xi.nl</span>
           </td>
         </tr>

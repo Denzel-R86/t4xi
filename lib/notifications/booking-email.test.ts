@@ -52,7 +52,7 @@ test("boekingsbevestiging gebruikt dezelfde premium designtaal als de factuurmai
   assert.match(html, />Vertrek<\/div>[\s\S]*Utrecht Centraal/);
   assert.match(html, />Bestemming<\/div>[\s\S]*Schiphol Airport/);
   assert.match(html, />Boekingsbevestiging · bijgevoegd<\/div>/);
-  assert.match(html, />ARRIVE COMPOSED\.<\/span>/);
+  assert.match(html, />ARRIVE WITH CONFIDENCE\.<\/span>/);
 });
 
 test("prijs wordt gelokaliseerd en retour staat eenmaal als ritsoort, niet achter het bedrag", () => {
