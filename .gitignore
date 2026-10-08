@@ -14,3 +14,9 @@ data/pricing/too-cheap-routes.review.csv
 .vercel
 .env*
 tmp/
+
+# Visual regression (PR 0.3): alleen Linux-baselines uit het Playwright-image worden gecommit
+tests/visual/__screenshots__/*
+!tests/visual/__screenshots__/linux/
+test-results/
+playwright-report/

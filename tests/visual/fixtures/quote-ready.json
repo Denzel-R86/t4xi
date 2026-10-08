@@ -1,0 +1,22 @@
+{
+  "available": true,
+  "price": 89,
+  "subtotal": 89,
+  "nightSurcharge": 0,
+  "currency": "EUR",
+  "singlePrice": 89,
+  "returnPrice": 170,
+  "returnApplied": false,
+  "vehicleClass": "comfort",
+  "distanceKm": 26,
+  "estimatedDurationMin": 28,
+  "vatRate": 9,
+  "source": "fixed_route",
+  "isAirportTransfer": true,
+  "pickupIsAirport": false,
+  "dropoffIsAirport": true,
+  "isAirportPickup": false,
+  "isAirportDropoff": true,
+  "flightDirection": "departure",
+  "quoteId": "visual-fixture-quote-ready"
+}
