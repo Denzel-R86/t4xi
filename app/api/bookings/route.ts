@@ -9,6 +9,7 @@ import { normalizeLocale } from "@/lib/notifications/booking-email";
 import { dispatch } from "@/lib/communication/orchestrator";
 import { supabaseDeliveryLog } from "@/lib/communication/delivery-log";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
+import { flightRpcFields } from "@/lib/bookings/flight-rpc-fields";
 import {
   buildTripMonitoringRegistration,
   registerFlightMonitoring,
@@ -341,8 +342,7 @@ export async function POST(request: Request) {
       p_from_lon: coord(body.fromLon),
       p_to_lat: coord(body.toLat),
       p_to_lon: coord(body.toLon),
-      p_flight_number: flightNumberToStore || null,
-      p_flight_direction: flightDirection,
+      ...flightRpcFields(flightNumberToStore, flightDirection),
     }));
     if (error) {
       // Herkenbare quote-lock-fouten → duidelijke, klantvriendelijke validatiefout.
@@ -385,8 +385,7 @@ export async function POST(request: Request) {
       p_from_lon: coord(body.fromLon),
       p_to_lat: coord(body.toLat),
       p_to_lon: coord(body.toLon),
-      p_flight_number: flightNumberToStore || null,
-      p_flight_direction: flightDirection,
+      ...flightRpcFields(flightNumberToStore, flightDirection),
     }));
   }
 
