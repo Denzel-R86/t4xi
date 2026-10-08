@@ -400,8 +400,8 @@ PR 1.5; elk punt wordt een besluit of een eigen PR.
 12. **Hero-h1 gebruikt het serif-token niet.** §13f: "één token: `text-display-serif`"
     (line-height 1.04). De hero zet een eigen clamp (48→108px, md 48→112px) met
     `leading-[1.02]` (`app/[locale]/page.tsx:306`).
-13. **Verouderde verwijzing.** `app/[locale]/layout.tsx:37` verwijst voor Playfair naar
-    design-specs §13e; de B1-regel staat in §13f.
+13. ~~**Verouderde verwijzing.**~~ Opgelost in PR 1.5: `app/[locale]/layout.tsx:37` verwijst
+    nu naar design-specs §13f.
 14. **Dubbele kleurwaarden.** `accent.DEFAULT` = `ink.soft` (#28313B), `accent.hover` =
     `ink.DEFAULT` (#1F2730), `secondary` = `stone.text` (#5F666D). Geen fout, wel drie
     namen voor twee waarden.
