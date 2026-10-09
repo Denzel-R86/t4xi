@@ -18,7 +18,7 @@ import "./journey-line.css";
  * `lib/horizon/journey-line-state.ts` (`journeyStateFor` → `journeyTransition`),
  * zodat `arrived` alleen volgt op een backend-bevestigde quote.
  *
- * Nog nergens geadopteerd (PR 1.3); toepassingen volgen per fase.
+ * Geadopteerd: hero-boekingszin (PR 2.1); overige toepassingen volgen per fase.
  */
 export type JourneyLineProps = {
   /** Vertrekplaats, bv. "Almere Poort" (hoofdletters via CSS). */

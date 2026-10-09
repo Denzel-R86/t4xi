@@ -146,17 +146,22 @@ test("Button v2: polymorf — interne href via i18n-Link, schema/anker via <a>, 
   assert.match(button, /disabled=\{inactive\}/);
 });
 
-// Scope-lock voor PR 1.3; verwijderen in de eerste adoptie-PR (2.1 e.v.).
-test("1.3 adopteert niets: geen bestaande pagina/component gebruikt Button of JourneyLine", () => {
+// Scope-lock: PR 1.3 adopteerde niets; PR 2.1 adopteert Button v2 en JourneyLine
+// uitsluitend in de hero-boekingszin. Elke volgende adoptie breidt deze lijst
+// bewust uit in de eigen PR.
+const ADOPTERS = new Set([join("components", "booking-sentence", "SentencePattern.tsx")]);
+
+test("adoptie Button/JourneyLine: alleen de hero-boekingszin (PR 2.1)", () => {
   const own = new Set([
     join("components", "ui", "Button.tsx"),
     join("components", "ui", "button-styles.ts"),
     join("components", "horizon", "JourneyLine.tsx"),
   ]);
-  const offenders = [...sourceFiles("app"), ...sourceFiles("components")]
+  const users = [...sourceFiles("app"), ...sourceFiles("components")]
     .filter((f) => !own.has(f))
     .filter((f) => /components\/ui\/Button|ui\/button-styles|horizon\/JourneyLine|journey-line\.css|["']\.\/(Button|JourneyLine)["']/.test(readFileSync(f, "utf8")));
-  assert.deepEqual(offenders, []);
+  assert.deepEqual(users.filter((f) => !ADOPTERS.has(f)), [], "onverwachte adoptie");
+  assert.deepEqual(users.sort(), [...ADOPTERS].sort(), "hero-boekingszin gebruikt Button en JourneyLine");
 });
 
 test("Button als link: aria-disabled geeft de inactieve vorm (§13e)", () => {

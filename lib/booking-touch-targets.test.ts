@@ -13,7 +13,8 @@ test("primaire boekingsbediening heeft minimaal 44px aanraakhoogte", () => {
   assert.match(booking, /role="radio"[\s\S]*?className=\{`min-h-11/);
   assert.match(addressAutocomplete, /role="option"[\s\S]*?flex min-h-11 cursor-pointer/);
   assert.match(sentence, /role="option"[\s\S]*?block min-h-11 w-full/);
-  assert.match(sentence, /hz-confirm-btn inline-flex min-h-11 items-center/);
+  // PR 2.1: hero-CTA is Button v2 (min-h-11 in alle varianten, lib/ui/button.test.ts).
+  assert.match(sentence, /<Button\s+href=\{href\}\s+variant="primary"/);
 });
 
 test("compacte homepage-invoer wordt op mobiel niet kleiner dan 44px", () => {

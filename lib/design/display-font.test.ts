@@ -20,6 +20,7 @@ const TRANSACTIONAL_FILES = [
   "components/sections/StickyCtaBar.tsx",
   "components/ui/Button.tsx",
   "components/booking-sentence/SentencePattern.tsx",
+  "components/booking-sentence/booking-sentence.css",
   "components/contact/ContactLeadForm.tsx",
   "components/producten/ProductForms.tsx",
   "components/partner/PartnerInteractive.tsx",

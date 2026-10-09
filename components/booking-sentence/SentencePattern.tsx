@@ -1,8 +1,10 @@
 "use client";
 
 import "@/components/horizon/horizon.css";
-import { Link } from "@/i18n/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import "./booking-sentence.css";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import Button from "@/components/ui/Button";
+import JourneyLine from "@/components/horizon/JourneyLine";
 import { Odometer, usePrefersReducedMotion } from "@/components/horizon/motion";
 import { Stamp, Dash } from "@/components/horizon/stamp";
 import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
@@ -11,6 +13,36 @@ import { useHidesStickyCta } from "@/components/sections/sticky-cta-visibility";
 import { isTextEntry, quoteOutcomeKey, shouldRevealResult } from "@/lib/hero/hero-visibility";
 import { useTranslations } from "next-intl";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
+import { journeyStateFor, journeyTransition, type JourneyState } from "@/lib/horizon/journey-line-state";
+import {
+  JOURNEY_RUN_MS,
+  priceRevealed,
+  resultBusy,
+  SENTENCE_DEFAULT_PASSENGERS,
+  SENTENCE_PASSENGERS,
+  sentencePassengers,
+} from "@/lib/hero/sentence-reveal";
+
+/*
+ * Booking sentence 2.0 — desktop (Experience 2.0 PR 2.1, masterplan §6.1–6.4, 6.6).
+ * Vanaf 768px: interactieve tekst (booking-sentence.css), passagiers in de zin,
+ * JourneyLine onder de zin en de prijsreveal na de reis. Onder 768px blijft de
+ * zin zoals hij was; de mobiele zin (sheet) is PR 2.6.
+ */
+const DESKTOP_QUERY = "(min-width: 768px)";
+function subscribeDesktop(onChange: () => void) {
+  const mq = window.matchMedia(DESKTOP_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+/** Desktop-breedte (≥ 768px); server en eerste render: false (mobiel gedrag). */
+function useIsDesktop(): boolean {
+  return useSyncExternalStore(
+    subscribeDesktop,
+    () => window.matchMedia(DESKTOP_QUERY).matches,
+    () => false
+  );
+}
 
 
 /** De boekingszin óp de lijn: "Ik reis van ___ naar ___." — het antwoord is de
@@ -61,6 +93,9 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [luggage, setLuggage] = useState("");
+  // §6.2: passagiers in de zin (alleen zichtbaar vanaf 768px; daaronder 1, zoals
+  // vóór 2.1). Zelfde grens als /boeken; de server beslist over handmatige review.
+  const [passengers, setPassengers] = useState<number>(SENTENCE_DEFAULT_PASSENGERS);
 
   // Eén gedeelde suggestiebron voor het actieve veld.
   const activeQuery = activeField === "from" ? from : activeField === "to" ? to : "";
@@ -85,8 +120,28 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   const departureValid = Boolean(date) && Boolean(time) && isFutureAmsterdamDeparture(date, time);
   const addressesSet = Boolean(pickup && dropoff);
   const quoteReady = addressesSet && departureValid && Boolean(luggage);
-  const quote = useRouteQuote(pickup, dropoff, { date, time, luggage, ready: quoteReady });
+  const quote = useRouteQuote(pickup, dropoff, { date, time, luggage, passengers, ready: quoteReady });
   const reducedMotion = usePrefersReducedMotion();
+  const isDesktop = useIsDesktop();
+
+  // §6.3/§6.4: JourneyLine volgt pickup/dropoff/quote. `arrived` alleen bij een
+  // backend-bevestigde quote; de stap ernaartoe speelt één keer de reis (600ms),
+  // daarna pas de prijs. Reduced motion of smal scherm: direct de eindstaat.
+  const restState = journeyStateFor(quote, pickup, dropoff);
+  const animateJourney = isDesktop && !reducedMotion;
+  const [drawn, setDrawn] = useState<JourneyState>(restState);
+  const [seenRest, setSeenRest] = useState(restState);
+  if (restState !== seenRest) {
+    setSeenRest(restState);
+    setDrawn(journeyTransition(drawn, restState, { reducedMotion: !animateJourney }));
+  }
+  useEffect(() => {
+    if (drawn !== "travelling") return;
+    const id = window.setTimeout(() => setDrawn("arrived"), JOURNEY_RUN_MS);
+    return () => window.clearTimeout(id);
+  }, [drawn]);
+  const showPrice = priceRevealed(quote.status, drawn);
+  const busy = resultBusy(quote.status, drawn);
 
   // F-14: de zin draagt de boekingshandeling zelf. De mobiele StickyCta wijkt
   // alleen als de resultaatregel (prijs + "Bevestig") grotendeels in beeld is.
@@ -105,7 +160,14 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   // meldt, en vormen we de sleutel pas als die aanvraag geland is.
   const pickupLabel = pickup?.label ?? "";
   const dropoffLabel = dropoff?.label ?? "";
-  const requestedRide = useRef<{ pickup: string; dropoff: string; date: string; time: string; luggage: string } | null>(null);
+  const requestedRide = useRef<{
+    pickup: string;
+    dropoff: string;
+    date: string;
+    time: string;
+    luggage: string;
+    passengers: number;
+  } | null>(null);
   const lastHandledOutcome = useRef<string | null>(null);
   useEffect(() => {
     if (!quoteReady) {
@@ -113,7 +175,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
       return;
     }
     if (quote.status === "loading") {
-      requestedRide.current = { pickup: pickupLabel, dropoff: dropoffLabel, date, time, luggage };
+      requestedRide.current = { pickup: pickupLabel, dropoff: dropoffLabel, date, time, luggage, passengers };
       return;
     }
     const ride = requestedRide.current;
@@ -142,7 +204,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     });
     lastHandledOutcome.current = outcomeKey;
     if (reveal) result.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
-  }, [quote.status, quoteReady, pickupLabel, dropoffLabel, date, time, luggage, reducedMotion]);
+  }, [quote.status, quoteReady, pickupLabel, dropoffLabel, date, time, luggage, passengers, reducedMotion]);
 
   const href =
     quoteReady && pickup && dropoff
@@ -153,6 +215,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   // Zolang adressen al bekend zijn maar datum/tijd/bagage nog niet compleet zijn,
   // is "Bevestig" bewust niet-navigeerbaar — de klant moet de zin eerst afmaken.
   function onConfirmClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    // Handoff/URL (incl. passagiers) wijzigt pas in PR 2.3 (§7).
     if (addressesSet && !quoteReady) e.preventDefault();
   }
 
@@ -249,18 +312,18 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   );
 
   return (
-    <div ref={rootRef} className="border-t border-ink/30 pt-5">
+    <div ref={rootRef} className="hz-sentence border-t border-ink/30 pt-5">
       {/* Bewust een <div>, geen <p>: de invulvelden dragen een <ul>-listbox en
           een <ul> mag in HTML niet binnen een <p> (hydration-fout). */}
       {/* Onder md hangt de suggestielijst aan deze zin (F-15): volle zinsbreedte,
           verticaal direct onder de regel van het veld (statische positie, geen
           `top`), zodat hij op 375 niet buiten de viewport loopt. Vanaf md hangt
           hij weer aan het veld zelf. */}
-      <div className="relative font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink md:static">
+      <div className="hz-sentence-text relative font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink md:static">
         {t("voor")} {blank("from", from, setFrom, () => setFromResolved(""), t("phVertrek"), t("ariaVertrek"))} {t("tussen")}{" "}
         {blank("to", to, setTo, () => setToResolved(""), t("phBestemming"), t("ariaBestemming"))}.
       </div>
-      <div className="mt-2 font-display text-[clamp(15px,1.7vw,20px)] font-light leading-[1.6] text-ink/75">
+      <div className="hz-sentence-text mt-2 font-display text-[clamp(15px,1.7vw,20px)] font-light leading-[1.6] text-ink/75">
         {t("op")}{" "}
         <span className="hz-focus relative inline-block align-baseline">
           <input
@@ -284,6 +347,22 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
           />
         </span>{" "}
         {t("met")}{" "}
+        {/* §6.2: passagiers alleen vanaf 768px; mobiel blijft "met [bagage]" (PR 2.6). */}
+        <span className="hidden md:inline">
+          <span className="hz-focus relative inline-block align-baseline">
+            <select
+              className="hz-blank font-display font-medium"
+              value={passengers}
+              onChange={(e) => setPassengers(sentencePassengers(e.target.value))}
+              aria-label={t("ariaPassagiers")}
+            >
+              {SENTENCE_PASSENGERS.map((n) => (
+                <option key={n} value={n}>{t("passagiersAantal", { count: n })}</option>
+              ))}
+            </select>
+          </span>{" "}
+          {t("en")}{" "}
+        </span>
         <span className="hz-focus relative inline-block align-baseline">
           <select
             className="hz-blank font-display font-medium"
@@ -299,16 +378,28 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         </span>
         .
       </div>
+      {/* §6.3: JourneyLine onder de zin (desktop). Met twee adressen draagt hij
+          het route-label voor schermlezers; daarvoor is hij decoratief. */}
+      <div className="hz-sentence-journey mt-5 hidden md:block">
+        <JourneyLine
+          state={drawn}
+          from={pickup ? from.trim() || pickup.label : undefined}
+          to={dropoff ? to.trim() || dropoff.label : undefined}
+          fromMeta={pickup && time ? time : undefined}
+          decorative={!(pickup && dropoff)}
+          label={pickup && dropoff ? t("routeLabel", { from: from.trim() || pickup.label, to: to.trim() || dropoff.label }) : undefined}
+        />
+      </div>
       <div
         ref={resultRef}
         className="mt-4 flex scroll-mb-4 flex-wrap items-baseline gap-x-7 gap-y-3"
         aria-live="polite"
-        aria-busy={quote.status === "loading"}
+        aria-busy={busy}
       >
         <Stamp>
           {addressesSet && !quoteReady ? (
             <>{t("kiesDatumTijdBagage")}</>
-          ) : quote.status === "ready" ? (
+          ) : quote.status === "ready" && showPrice ? (
             <>
               {t("vastePrijs")}<Dash />
               <b className="font-semibold text-ink">
@@ -318,7 +409,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
               <Dash />
               {t("inclBtw")}
             </>
-          ) : quote.status === "loading" ? (
+          ) : busy ? (
             <>{t("berekenen")}</>
           ) : quote.status === "onrequest" ? (
             <>
@@ -336,16 +427,15 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
             </>
           )}
         </Stamp>
-        <Link
+        {/* §13e: primaire boekingsactie = Button v2 `primary` (gevuld). */}
+        <Button
           href={href}
+          variant="primary"
           onClick={onConfirmClick}
           aria-disabled={addressesSet && !quoteReady}
-          className={`hz-confirm-btn inline-flex min-h-11 items-center px-7 py-3 text-[12px] font-medium uppercase tracking-[0.14em] text-ink no-underline ${
-            addressesSet && !quoteReady ? "cursor-not-allowed opacity-40" : ""
-          }`}
         >
-          <span>{t("bevestig")}</span>
-        </Link>
+          {t("bevestig")}
+        </Button>
       </div>
     </div>
   );
