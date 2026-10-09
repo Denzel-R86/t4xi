@@ -206,9 +206,10 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     if (reveal) result.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
   }, [quote.status, quoteReady, pickupLabel, dropoffLabel, date, time, luggage, passengers, reducedMotion]);
 
+  // `persons` gaat mee, zodat /boeken dezelfde rit (en dus dezelfde prijs) toont als de zin.
   const href =
     quoteReady && pickup && dropoff
-      ? `/boeken?pickup=${encodeURIComponent(pickup.label)}&dropoff=${encodeURIComponent(dropoff.label)}&date=${date}&time=${time}&luggage=${encodeURIComponent(luggage)}`
+      ? `/boeken?pickup=${encodeURIComponent(pickup.label)}&dropoff=${encodeURIComponent(dropoff.label)}&date=${date}&time=${time}&luggage=${encodeURIComponent(luggage)}&persons=${passengers}`
       : pickup && dropoff
         ? `/boeken?pickup=${encodeURIComponent(pickup.label)}&dropoff=${encodeURIComponent(dropoff.label)}`
         : confirmHref;

@@ -32,5 +32,12 @@ test("§6.1: dimmen via :has() naar ink 65% (4,63:1 op fog), alleen ≥ 768px", 
 });
 
 test("geen handoff-wijziging in 2.1: href-vorm ongewijzigd (PR 2.3 vervangt die)", () => {
-  assert.match(src, /`\/boeken\?pickup=\$\{encodeURIComponent\(pickup\.label\)\}&dropoff=\$\{encodeURIComponent\(dropoff\.label\)\}&date=\$\{date\}&time=\$\{time\}&luggage=\$\{encodeURIComponent\(luggage\)\}`/);
+  assert.match(src, /`\/boeken\?pickup=\$\{encodeURIComponent\(pickup\.label\)\}&dropoff=\$\{encodeURIComponent\(dropoff\.label\)\}&date=\$\{date\}&time=\$\{time\}&luggage=\$\{encodeURIComponent\(luggage\)\}&persons=\$\{passengers\}`/);
+});
+
+test("de zin geeft het gekozen aantal passagiers mee naar /boeken", () => {
+  const src = readFileSync("components/booking-sentence/SentencePattern.tsx", "utf8");
+  assert.match(src, /&persons=\$\{passengers\}`/);
+  const page = readFileSync("app/[locale]/boeken/page.tsx", "utf8");
+  assert.match(page, /query\?\.persons/);
 });
