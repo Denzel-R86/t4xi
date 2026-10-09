@@ -1,18 +1,11 @@
 "use client";
 
 /**
- * HORIZON DESIGN LANGUAGE v1 — Motion Engine.
+ * HORIZON DESIGN LANGUAGE — Motion Engine (Reveal, Odometer, reduced motion).
  *
- * Alle beweging op de site komt uit dít systeem en is één van vijf werkwoorden:
- *
- *   Reveal  — content stijgt óp naar de lijn (enter-on-scroll)
- *   Travel  — iets beweegt langs/over de horizon (ambient; zie HorizonSpine)
- *   Guide   — richting bij hover/focus (CSS: .hz-guide-*)
- *   Focus   — aandacht bij interactie (CSS: .hz-focus)
- *   Confirm — een voltooide handeling bevestigt zich (Odometer, .hz-confirm-btn)
- *
- * Eén easing (chauffeur-curve), drie tempo's (immediate/composed/cinematic) —
- * vastgelegd in horizon.css. Een animatie die geen werkwoord is, bestaat niet.
+ * Regels, tokens en de vijf werkwoorden: docs/design-system/README.md §4 — de
+ * enige bron.
+ * Reviewregel: token of component gewijzigd → README in dezelfde PR bijwerken.
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -109,7 +102,11 @@ export function Odometer({ value, className = "" }: { value: number | null; clas
 
   if (formatted === null) return <span className={className}>—</span>;
   return (
-    <span className={`hz-confirm-roll${live ? " hz-live" : ""} ${className}`} aria-label={formatted}>
+    <span className={`hz-confirm-roll${live ? " hz-live" : ""} ${className}`}>
+      {/* Voorleesbare waarde als tekst (PR 2.1, §6.6): een aria-label op een
+          rolloze <span> is niet toegestaan (axe aria-prohibited-attr) en wordt in
+          een aria-live-regio niet betrouwbaar voorgelezen. */}
+      <span className="sr-only">{formatted}</span>
       {chars.map((ch, i) =>
         /[0-9]/.test(ch) ? (
           <span

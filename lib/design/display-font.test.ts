@@ -20,6 +20,8 @@ const TRANSACTIONAL_FILES = [
   "components/sections/StickyCta.tsx",
   "components/sections/StickyCtaBar.tsx",
   "components/ui/Button.tsx",
+  "components/booking-sentence/SentencePattern.tsx",
+  "components/booking-sentence/booking-sentence.css",
   "components/contact/ContactLeadForm.tsx",
   "components/producten/ProductForms.tsx",
   "components/partner/PartnerInteractive.tsx",
@@ -29,7 +31,8 @@ const TRANSACTIONAL_FILES = [
 /** `patterns.tsx` mengt Brand Mode en transactie; serif mag alleen in deze exports. */
 const PATTERNS_FILE = "components/horizon/patterns.tsx";
 const BRAND_MODE_EXPORTS = new Set(["NarrativePattern"]);
-const TRANSACTIONAL_EXPORTS = ["SentencePattern", "LedgerPattern"];
+// SentencePattern staat sinds PR 2.1 in components/booking-sentence/ (zie TRANSACTIONAL_FILES).
+const TRANSACTIONAL_EXPORTS = ["LedgerPattern"];
 
 function exportsOf(source: string): Map<string, string> {
   const parts = source.split(/^export function /m).slice(1);
@@ -69,8 +72,18 @@ test("B1: de hero-h1 (Brand Mode) is serif rechtop, de booking sentence niet", (
   const title = page.match(/titleClassName="([^"]*font-display-serif[^"]*)"/);
   assert.ok(title, "hero-h1 hoort font-display-serif te gebruiken");
   assert.doesNotMatch(title[1], /\bitalic\b/);
-  const min = [...title[1].matchAll(/clamp\((\d+)px/g)].map((m) => Number(m[1]));
-  assert.ok(min.length > 0 && min.every((px) => px >= 48), `ondergrens ≥ 48px, kreeg ${min.join(", ")}`);
+  // PR 1.4: grootte uit tokens (geen eigen clamp meer); beide tokens hebben ondergrens 48px.
+  assert.match(title[1], /(^| )text-display-serif md:text-display-serif-split( |$)/);
+  assert.doesNotMatch(title[1], /text-\[|leading-\[|tracking-\[/, "hero-h1 zonder losse grootte/leading/tracking");
+  const sizes = (config.theme?.extend as Record<string, Record<string, unknown>>).fontSize as Record<
+    string,
+    [string, { lineHeight?: string; letterSpacing?: string }]
+  >;
+  for (const token of ["display-serif", "display-serif-split"]) {
+    assert.match(sizes[token][0], /^clamp\(3rem, /, `${token}: ondergrens 48px`);
+    assert.equal(sizes[token][1].lineHeight, "1.04", `${token}: line-height §13f`);
+    assert.equal(sizes[token][1].letterSpacing, "-0.015em", `${token}: letterspacing §13f`);
+  }
 });
 
 test("B1: Playfair laadt alleen rechtop + latin, zonder extra varianten", () => {

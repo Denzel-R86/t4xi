@@ -218,3 +218,71 @@ test.describe("H-1 automatisch scrollen naar de prijs", () => {
     expect(g.resultBottom).toBeLessThanOrEqual(g.vh + 1);
   });
 });
+
+/**
+ * PR 2.1 (desktop ≥ 768px): passagiers in de zin en de JourneyLine. Draait alleen in
+ * het project chromium-1280 (tag @desktop); de mobiele zin heeft geen passagiersveld.
+ */
+const journey = (page: Page) => sentence(page).locator(".hz-jl");
+
+test.describe("PR 2.1 boekingszin desktop @desktop", () => {
+  test("passagiers wijzigen = nieuwe rit: nieuw verzoek met passengers en één reveal-scroll", async ({ page }) => {
+    await stabilize(page);
+    const gate = await delayedQuotes(page);
+    await recordScrolls(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    // Laag laptopvenster: alleen dan kan de resultaatregel onder de vouw vallen
+    // terwijl de bovenkant van de zin in beeld is (op 1280×800 past alles).
+    await page.setViewportSize({ width: 1280, height: 520 });
+    await open(page, "/");
+    await fillAll(page);
+    await expect.poll(() => gate.bodies.length).toBe(1);
+    expect((gate.bodies[0] as { passengers?: number }).passengers, "standaard 1 passagier").toBe(1);
+    await landAndSettle(page, gate, 0);
+
+    await placeResultBelowFold(page);
+    await resetScrolls(page);
+    const n = gate.bodies.length;
+    await page.getByLabel("Passagiers", { exact: true }).first().selectOption("3");
+    await blurActive(page);
+    const rel = await landAndSettle(page, gate, n);
+    expect((gate.bodies.at(-1) as { passengers?: number }).passengers).toBe(3);
+    const s = await scrolls(page);
+    expect(s, "ander aantal passagiers scrolt één keer").toHaveLength(1);
+    expect(s[0].t, "scroll pas bij binnenkomst van de prijs").toBeGreaterThanOrEqual(rel);
+    const g = await geometry(page);
+    expect(g.resultBottom).toBeLessThanOrEqual(g.vh + 1);
+  });
+
+  test("JourneyLine: empty → route → arrived bij ready (reduced motion direct)", async ({ page }) => {
+    await stabilize(page);
+    const gate = await delayedQuotes(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await open(page, "/");
+    await expect(journey(page)).toHaveAttribute("data-state", "empty");
+    await expect(journey(page)).toHaveAttribute("aria-hidden", "true");
+    await fillAll(page);
+    await expect.poll(() => gate.bodies.length).toBe(1);
+    await expect(journey(page)).toHaveAttribute("data-state", "route");
+    await landAndSettle(page, gate, 0);
+    await expect(journey(page)).toHaveAttribute("data-state", "arrived");
+    await expect(journey(page)).toHaveAttribute("role", "img");
+    await expect(journey(page)).toHaveAttribute("aria-label", "Route van Amsterdam Zuidas naar Schiphol");
+  });
+
+  test("prijsreveal: ready → travelling → prijs na de reis (zonder reduced motion)", async ({ page }) => {
+    await stabilize(page);
+    const gate = await delayedQuotes(page);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await open(page, "/");
+    await fillAll(page);
+    await expect.poll(() => gate.bodies.length).toBe(1);
+    await gate.release();
+    await expect(journey(page)).toHaveAttribute("data-state", "travelling");
+    await expect(stamp(page)).not.toContainText(/Uw vaste prijs/);
+    await expect(stamp(page)).toHaveAttribute("aria-busy", "true");
+    await expect(journey(page)).toHaveAttribute("data-state", "arrived", { timeout: 3000 });
+    await expect(stamp(page)).toContainText(/Uw vaste prijs/);
+    await expect(stamp(page)).toHaveAttribute("aria-busy", "false");
+  });
+});

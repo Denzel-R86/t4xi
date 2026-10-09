@@ -1,0 +1,57 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Booking sentence 2.0 — interactieve tekst (Experience 2.0 PR 2.1, §6.1)
+   ─────────────────────────────────────────────
+   Alleen vanaf 768px; de mobiele zin blijft ongewijzigd (PR 2.6).
+
+   · Focus (werkwoord Focus + Guide): het actieve invuldeel krijgt een
+     onderstreping die links → rechts tekent (--hz-micro, --hz-ease) over de
+     bestaande hairline van .hz-focus (horizon.css).
+   · Dimmen via :has(): zolang er een invuldeel focus heeft, zakt de rest van
+     de zin naar ink 65% — het actieve deel blijft ink. Browsers zonder :has()
+     dimmen niets (fallback: niets).
+   · Contrast (WCAG 2.x, ink #1F2730 met alpha op fog #F5F3F1):
+     55% → #7F8387 = 3,45:1 (te laag voor leestekst, masterplan §10),
+     65% → #6A6E74 = 4,63:1 (AA). Daarom 0.65, niet 0.55.
+   · Reduced motion: geen transitie, direct de eindstaat.
+   Geen serif (B1, §13f): de zin blijft font-display (Outfit).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 768px) {
+  .hz-sentence .hz-focus { position: relative; }
+  /* De hairline blijft licht; de guide tekent de nadruk. */
+  .hz-sentence .hz-focus:focus-within { border-color: var(--hz-line); }
+  .hz-sentence .hz-focus::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: #1f2730;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--hz-micro) var(--hz-ease);
+    pointer-events: none;
+  }
+  .hz-sentence .hz-focus:focus-within::after { transform: scaleX(1); }
+
+  .hz-sentence-text { transition: color var(--hz-micro) var(--hz-ease); }
+  .hz-sentence:has(.hz-focus:focus-within) .hz-sentence-text { color: rgb(31 39 48 / 0.65); }
+  .hz-sentence:has(.hz-focus:focus-within) .hz-focus:not(:focus-within) .hz-blank:not(:invalid) {
+    color: rgb(31 39 48 / 0.65);
+  }
+  .hz-sentence .hz-focus:focus-within .hz-blank { color: #1f2730; }
+
+  /* JourneyLine onder de zin: lange vrije adressen breken de regel niet. */
+  .hz-sentence-journey .hz-jl-name {
+    max-width: 22ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+  .hz-sentence .hz-focus::after,
+  .hz-sentence-text { transition: none; }
+}

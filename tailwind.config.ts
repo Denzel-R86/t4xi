@@ -66,6 +66,9 @@ const config: Config = {
         meta: ["0.6875rem", { lineHeight: "1.2", letterSpacing: "0.16em" }],
         // B1: serif-display, ondergrens 48px (3rem) — kleiner wordt nooit serif.
         "display-serif": ["clamp(3rem, 7.6vw, 6.75rem)", { lineHeight: "1.04", letterSpacing: "-0.015em" }],
+        // PR 1.4: zelfde serif-display voor de 48%-splitkolom van de hero (vanaf md),
+        // geschaald tegen de kolombreedte i.p.v. de viewport (hotfix 2026-08-19).
+        "display-serif-split": ["clamp(3rem, 5.4vw, 7rem)", { lineHeight: "1.04", letterSpacing: "-0.015em" }],
       },
       boxShadow: {
         card: "0 22px 60px rgba(31,39,48,0.08)",
