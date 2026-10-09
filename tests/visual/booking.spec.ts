@@ -1,14 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
-import { defaultMasks, HIDE_OVERLAYS, imagesReady, open, RIDE, settle, stabilize, type QuoteMode } from "./support/harness";
+import { blurActive, defaultMasks, HIDE_OVERLAYS, imagesReady, open, RIDE, settle, stabilize, type QuoteMode } from "./support/harness";
 
 /**
  * Booking (BookingSection) en de betaalstap op /boeken (§10b).
  *
- * De huidige UI is één formulier zonder echte stappen; de §10b-"stappen" zijn
- * hier de zichtbare toestanden van dat formulier:
- *   Route     → adressen ingevuld (deep-link), datum/bagage nog open
+ * Sinds PR 2.4 echte stappen (één formulier, één state; stappen = weergave):
+ *   Route     → adressen ingevuld (deep-link), via "Terug" naar stap 1
  *   Rit       → datum, tijd en bagage gekozen; vaste prijs ready
- *   Gegevens  → contactgegevens ingevuld, verzenden faalt met een foutmelding
+ *   Gegevens  → verzenden faalt op de servervalidatie; fout staat bij het telefoonveld
  *   Bevestigen→ boeking ontvangen + betaalstap (create-intent gemockt, Stripe uit)
  */
 
@@ -16,9 +15,13 @@ const ROUTE = `pickup=${encodeURIComponent("Amsterdam Zuidas")}&dropoff=Schiphol
 const FULL = `${ROUTE}&date=${RIDE.date}&time=${RIDE.time}&luggage=1-2-koffers`;
 
 const submitButton = (page: Page) => page.getByRole("button", { name: "Boeking bevestigen" });
-/** De boekingskaart: ouder van het boekingsformulier (de betaalstap heeft een eigen form). */
-const card = (page: Page) => submitButton(page).locator("xpath=ancestor::form/..");
+/** Het boekingsformulier (de betaalstap heeft een eigen form). Niet via de
+ *  verzendknop: die staat sinds PR 2.4 alleen in de (zichtbare) stap Bevestigen. */
+const bookingForm = (page: Page) => page.locator("form").filter({ has: page.locator("#f-name") });
+/** De boekingskaart: ouder van het boekingsformulier. */
+const card = (page: Page) => bookingForm(page).locator("xpath=..");
 const price = (page: Page) => page.getByRole("region", { name: "Geschatte prijs" });
+const nextButton = (page: Page) => page.getByRole("button", { name: "Volgende" });
 
 async function openBooking(
   page: Page,
@@ -32,10 +35,18 @@ async function openBooking(
 }
 
 async function fillContact(page: Page, phone = "+31 6 00000000") {
-  const form = submitButton(page).locator("xpath=ancestor::form");
-  await form.getByLabel("Naam", { exact: true }).fill("Visual Test");
+  const form = bookingForm(page);
+  await form.getByRole("textbox", { name: "Naam", exact: true }).fill("Visual Test");
   await form.getByLabel(/^Telefoon/).fill(phone);
   await form.getByLabel(/^E-mail/).fill("visual@example.test");
+}
+
+/** Rit → Gegevens → contact invullen → Bevestigen. */
+async function toConfirm(page: Page, phone?: string) {
+  await nextButton(page).click();
+  await fillContact(page, phone);
+  await nextButton(page).click();
+  await expect(submitButton(page)).toBeVisible();
 }
 
 async function cardShot(page: Page, name: string) {
@@ -48,6 +59,9 @@ test.describe("Booking (BookingSection)", () => {
   test("stap Route", async ({ page }) => {
     await openBooking(page, ROUTE);
     await expect(price(page)).toContainText(/datum|tijd|bagage/i);
+    // Deep-link met beide adressen start op Rit; terug naar Route voor de opname.
+    await page.getByRole("button", { name: "Terug" }).click();
+    await expect(page.getByRole("combobox", { name: "Van" })).toBeVisible();
     await cardShot(page, "booking-1-route.png");
   });
 
@@ -59,21 +73,21 @@ test.describe("Booking (BookingSection)", () => {
   });
 
   test("stap Gegevens met validatiefout", async ({ page }) => {
-    // Lege verplichte velden geven alleen de native browserballon (niet in een
-    // screenshot), en zonder geldige prijs is de knop disabled. De zichtbare
-    // validatiefout is daarom de servervalidatie op een te kort telefoonnummer.
+    // Servervalidatie op een te kort telefoonnummer: sinds PR 2.4 terug naar
+    // Gegevens, met de fout bij het veld (F-13) en de focus erop.
     await openBooking(page, FULL, "ready", "invalid-phone");
     await expect(price(page)).toContainText("89");
-    await fillContact(page, "123");
+    await toConfirm(page, "123");
     await submitButton(page).click();
-    await expect(card(page).getByRole("alert")).toBeVisible();
+    await expect(page.locator("#f-phone-error")).toBeVisible();
+    await blurActive(page);
     await cardShot(page, "booking-3-gegevens-fout.png");
   });
 
   test("stap Bevestigen + betaalstap", async ({ page }) => {
     await openBooking(page, FULL);
     await expect(price(page)).toContainText("89");
-    await fillContact(page);
+    await toConfirm(page);
     const intent = page.waitForResponse(/\/api\/payments\/create-intent/);
     await submitButton(page).click();
     await intent;

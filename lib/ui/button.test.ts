@@ -146,12 +146,17 @@ test("Button v2: polymorf — interne href via i18n-Link, schema/anker via <a>, 
   assert.match(button, /disabled=\{inactive\}/);
 });
 
-// Scope-lock: PR 1.3 adopteerde niets; PR 2.1 adopteert Button v2 en JourneyLine
-// uitsluitend in de hero-boekingszin. Elke volgende adoptie breidt deze lijst
-// bewust uit in de eigen PR.
-const ADOPTERS = new Set([join("components", "booking-sentence", "SentencePattern.tsx")]);
+// Scope-lock: PR 1.3 adopteerde niets. Adopters per PR — elke volgende adoptie breidt
+// deze lijst bewust uit in de eigen PR:
+//   PR 2.1: hero-boekingszin (Button v2 + JourneyLine)
+//   PR 2.4: BookingSection-stappen (Button)
+const ADOPTERS = new Set([
+  join("components", "booking-sentence", "SentencePattern.tsx"),
+  join("components", "booking", "BookingSection.tsx"),
+  join("components", "booking", "steps", "ConfirmStep.tsx"),
+]);
 
-test("adoptie Button/JourneyLine: alleen de hero-boekingszin (PR 2.1)", () => {
+test("adoptie Button/JourneyLine: alleen de expliciet toegestane bestanden (PR 2.1, 2.4)", () => {
   const own = new Set([
     join("components", "ui", "Button.tsx"),
     join("components", "ui", "button-styles.ts"),
@@ -161,7 +166,7 @@ test("adoptie Button/JourneyLine: alleen de hero-boekingszin (PR 2.1)", () => {
     .filter((f) => !own.has(f))
     .filter((f) => /components\/ui\/Button|ui\/button-styles|horizon\/JourneyLine|journey-line\.css|["']\.\/(Button|JourneyLine)["']/.test(readFileSync(f, "utf8")));
   assert.deepEqual(users.filter((f) => !ADOPTERS.has(f)), [], "onverwachte adoptie");
-  assert.deepEqual(users.sort(), [...ADOPTERS].sort(), "hero-boekingszin gebruikt Button en JourneyLine");
+  assert.deepEqual(users.sort(), [...ADOPTERS].sort(), "precies de toegestane adopters gebruiken Button/JourneyLine");
 });
 
 test("Button als link: aria-disabled geeft de inactieve vorm (§13e)", () => {

@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readBookingFormSource } from "@/lib/booking/form-source";
 
-const bookingSource = readFileSync("components/booking/BookingSection.tsx", "utf8");
+const bookingSource = readBookingFormSource();
 const footerSource = readFileSync("components/sections/Footer.tsx", "utf8");
 const iconSource = readFileSync("components/ui/Icon.tsx", "utf8");
 const layoutSource = readFileSync("app/[locale]/layout.tsx", "utf8");

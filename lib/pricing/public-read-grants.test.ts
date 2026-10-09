@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readBookingFormSource } from "@/lib/booking/form-source";
 
 /**
  * Regressie — publieke read-grants + pricing-blocker fix (Sprint 7.5).
@@ -11,7 +12,7 @@ import { readFileSync } from "node:fs";
 
 const grantSql = readFileSync("supabase/migrations/20260725100000_grant_public_read_access.sql", "utf8");
 const pricingSql = readFileSync("supabase/migrations/20260705230000_pricing_engine_integrated.sql", "utf8");
-const bookingSrc = readFileSync("components/booking/BookingSection.tsx", "utf8");
+const bookingSrc = readBookingFormSource();
 const nl = JSON.parse(readFileSync("messages/nl.json", "utf8")) as Record<string, Record<string, string>>;
 const en = JSON.parse(readFileSync("messages/en.json", "utf8")) as Record<string, Record<string, string>>;
 

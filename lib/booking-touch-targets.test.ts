@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { readBookingFormSource } from "@/lib/booking/form-source";
 
-const booking = readFileSync("components/booking/BookingSection.tsx", "utf8");
+const booking = readBookingFormSource();
 const addressAutocomplete = readFileSync("components/shared/AddressAutocomplete.tsx", "utf8");
 const sentence = readFileSync("components/booking-sentence/SentencePattern.tsx", "utf8");
 const horizonCss = readFileSync("components/horizon/horizon.css", "utf8");
