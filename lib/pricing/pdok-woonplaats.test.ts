@@ -4,6 +4,7 @@
 // onderscheid kunnen maken (zie service.ts's indeterminate-pad).
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { settleOnFakeClock } from "./fake-timeout-clock";
 import { lookupOfficialWoonplaats, PdokLookupError, PDOK_ZONE_LOOKUP_TIMEOUT_MS } from "./pdok-woonplaats";
 
 function withFakeFetch<T>(impl: typeof fetch, run: () => Promise<T>): Promise<T> {
@@ -108,9 +109,10 @@ test("lookupOfficialWoonplaats: ongeldige JSON → gooit PdokLookupError, NOOIT 
   );
 });
 
-test("lookupOfficialWoonplaats: hangende fetch → begrensd door PDOK_ZONE_LOOKUP_TIMEOUT_MS, gooit PdokLookupError, geen onbeperkt wachten", async () => {
-  const start = Date.now();
-  await assert.rejects(
+test("lookupOfficialWoonplaats: hangende fetch → begrensd door PDOK_ZONE_LOOKUP_TIMEOUT_MS, gooit PdokLookupError, geen onbeperkt wachten", async (t) => {
+  // Nep-klok i.p.v. Date.now()-delta met marge — zie lib/pricing/fake-timeout-clock.ts.
+  const { settledAtMs, result } = await settleOnFakeClock(
+    t,
     () =>
       withFakeFetch(
         (_url, init) =>
@@ -120,9 +122,9 @@ test("lookupOfficialWoonplaats: hangende fetch → begrensd door PDOK_ZONE_LOOKU
           }),
         () => lookupOfficialWoonplaats("Eindhoven")
       ),
-    PdokLookupError
+    PDOK_ZONE_LOOKUP_TIMEOUT_MS + 100
   );
-  const elapsedMs = Date.now() - start;
-  assert.ok(elapsedMs >= PDOK_ZONE_LOOKUP_TIMEOUT_MS - 20, `timeout ging te vroeg af: ${elapsedMs}ms`);
-  assert.ok(elapsedMs < PDOK_ZONE_LOOKUP_TIMEOUT_MS + 300, `verwacht ~${PDOK_ZONE_LOOKUP_TIMEOUT_MS}ms, duurde ${elapsedMs}ms`);
+  assert.equal(result.status, "rejected");
+  if (result.status === "rejected") assert.ok(result.reason instanceof PdokLookupError, `verwacht PdokLookupError, kreeg ${String(result.reason)}`);
+  assert.equal(settledAtMs, PDOK_ZONE_LOOKUP_TIMEOUT_MS, `verwacht exact ${PDOK_ZONE_LOOKUP_TIMEOUT_MS}ms, settelde op ${settledAtMs}ms`);
 });
