@@ -110,7 +110,7 @@ visuele check via `npm run dev:staging` (nooit `npm run dev` — live Stripe-key
 ### Homepage (`app/[locale]/page.tsx`, 610 regels → opsplitsen)
 | Sectie | Actie | Wat |
 |---|---|---|
-| Arrival (hero) | MODIFY | Eyebrow + "Van voordeur / tot vertrekhal." + één subregel + SentencePattern + trustline. Choreografie §5. Content blijft boven de vouw zichtbaar zonder JS (`Reveal immediate` gedrag behouden: startstaat alleen onder `html.js`). |
+| Arrival (hero) | MODIFY | Eyebrow + "Van voordeur / tot vertrekhal." + één subregel + SentencePattern + trustline. Choreografie §5. Content blijft boven de vouw zichtbaar zonder JS (generieke Reveal: startstaat alleen onder `html.js`; hero-cascade: alleen onder `scripting: enabled`, zie §5). |
 | `SentencePattern` (`patterns.tsx:272`) | MODIFY | Zie §6. Uit `patterns.tsx` (674 r.) naar `components/horizon/sentence/*` om onder 500 regels te blijven. |
 | Recognition (4 vows, donker blok) | MODIFY | Wordt §11 "Service principles": typografisch, genummerd, hairlines i.p.v. kaarten. |
 | — | NEW | "Quiet proof": drie regels + verticale JourneyLine, tussen hero en principles. Regels alleen uit *Approved* claims (§0c) — nu: "Uw prijs staat vast." + twee regels die de eigenaar kiest uit wat operationeel waar is. "Uw vlucht wordt gevolgd" / "Uw chauffeur wacht" pas na B7 en activatie flight monitoring. |
@@ -123,7 +123,7 @@ visuele check via `npm run dev:staging` (nooit `npm run dev` — live Stripe-key
 ### Booking & prijs
 | Bestand | Actie | Wat |
 |---|---|---|
-| `components/shared/AddressAutocomplete.tsx` | MODIFY | Suggestie-"sheet" (titel + adresregel + type-label `Recent`/`Airport`/`Station`) — presentatie, zelfde `/api/places`-keten. ARIA combobox-patroon controleren. |
+| `components/shared/AddressAutocomplete.tsx` | MODIFY | Suggestie-"sheet" (titel + adresregel + type-label `Airport`/`Station`; **`Recent` niet bouwen** — besloten 09-10, botst met §7 (geen adressen bewaren)) — presentatie, zelfde `/api/places`-keten. ARIA combobox-patroon controleren. |
 | `components/booking/BookingSection.tsx` (624 r.) | MODIFY + split | Stappen Route → Rit → Gegevens → Bevestigen als *weergave* van dezelfde state; `handleSubmit` ongewijzigd. Opsplitsen in `booking/steps/*`. Na validatiefout focus naar eerste fout (nu alleen melding). |
 | `app/[locale]/boeken/page.tsx` | MODIFY | Handoff-contract §7 lezen; bestaande query-params blijven werken (ledger, RouteFinder, SEO-links). |
 | `components/tarieven/RouteFinder.tsx` (621 r.) | MODIFY + split | Resultaat transformeert naar "UW RIT"-kaart + JourneyLine + prijs + "Reserveer deze rit →" (handoff, geen herinvoer). Retour-meerprijs alleen tonen als de engine hem levert. |
@@ -178,7 +178,7 @@ type JourneyLineProps = {
 | Cinematic | `--hz-cinematic` | 1100ms | alleen spine-draw en bevestiging |
 | Ambient | `--hz-ambient` | ≥ 6s | vloot-drift, spine; onmerkbaar |
 
-**Hero-choreografie** (alleen `html.js` + `prefers-reduced-motion: no-preference`; totaal < 1s):
+**Hero-choreografie** (alleen met scripting actief — `@media (scripting: enabled)` — én `prefers-reduced-motion: no-preference`; totaal < 1s). **Besloten 09-10:** `scripting: enabled` i.p.v. `html.js`, omdat `html.js` in de App Router pas ná de eerste paint gezet wordt (hero zou flitsen en LCP herstarten). **Zichtbare inhoud is de standaard:** zonder scripting, of in een browser die de mediaquery niet ondersteunt, staat alles direct in de eindstaat; bij reduced motion geen animatie.
 eyebrow 100ms · regel 1 180ms (translateY 20px) · regel 2 280ms · subcopy 430ms ·
 booking 550ms · trustline 700ms. Via CSS `animation-delay` op klassen — geen
 IntersectionObserver boven de vouw, geen hydratie-afhankelijkheid.
@@ -417,7 +417,7 @@ bestand in `docs/experience-2.0/baseline/` of groene test in de repo. 0.4b hoort
 - 2.4 BookingSection-stappenweergave + focus-na-fout + split; StickyCta contextueel.
 - 2.5 Bevestigingsmoment (§8).
 - 2.6 Mobiel: gestapelde zin + bottom sheet.
-- 2.7 RouteFinder-resultaat → "UW RIT" + handoff.
+- 2.7 RouteFinder-resultaat → "UW RIT" + handoff. **Incl. prijsopbouw:** de claim "U betaalt … minder (…%)" verdwijnt (F-28); de objectieve vergelijking met het wettelijke maximumtarief en server-side pricing blijven.
 
 **Fase 3 — Homepage editorial**
 - 3.1 Quiet proof + service principles (vervangt donkere vows-sectie).
