@@ -15,6 +15,16 @@
   --hz-composed: 700ms;
   --hz-cinematic: 1100ms;
   --hz-ambient: 6000ms;
+  /* Hero-cascade (§5, PR 1.4): starttijden en stijghoogtes, alleen voor .hz-hero-*.
+     De generieke Reveal (26px, hz-d1..3 = 90/180/270ms) blijft tot Fase 4. */
+  --hz-hero-eyebrow: 100ms;
+  --hz-hero-line1: 180ms;
+  --hz-hero-line2: 280ms;
+  --hz-hero-sub: 430ms;
+  --hz-hero-booking: 550ms;
+  --hz-hero-trust: 700ms;
+  --hz-rise-editorial: 20px;
+  --hz-rise-ui: 12px;
   --hz-line: rgba(31, 39, 48, 0.28);
   --hz-line-soft: rgba(31, 39, 48, 0.12);
   --hz-y: 62svh; /* de horizon */
@@ -70,6 +80,58 @@ html.js .hz-reveal.hz-in {
 html.js .hz-reveal.hz-d1.hz-in { transition-delay: 90ms; }
 html.js .hz-reveal.hz-d2.hz-in { transition-delay: 180ms; }
 html.js .hz-reveal.hz-d3.hz-in { transition-delay: 270ms; }
+
+/* ── Hero-choreografie (Experience 2.0 §5, PR 1.4) ──
+   Eenmalige cascade boven de vouw, puur CSS (`animation-delay` op klassen):
+   geen IntersectionObserver, geen hydratie, geen JS-animatielib. Alleen opacity
+   en transform, dus geen layout of CLS. Alles is binnen 1s klaar:
+     eyebrow 100ms · regel 1 180ms · regel 2 280ms (composed; regels 20px)
+     subcopy 430ms · booking 550ms · trustline 700ms (ui, 12px)
+   Starttijden en afstanden staan als --hz-hero-* / --hz-rise-* in :root.
+   Poort: `scripting: enabled` + `prefers-reduced-motion: no-preference`.
+   Waarom niet `html.js`: die klasse zet de Next-runtime (beforeInteractive in de
+   App Router = `self.__next_s`), dus pas ná de eerste paint. Dan zou de hero
+   eerst zichtbaar staan en daarna opnieuw van 0 inklappen. `scripting` geldt
+   al bij de eerste paint; browsers zonder deze media feature krijgen niets.
+   LCP-regel: de kopregels starten op opacity .01 (nooit 0), zodat de h1 al bij
+   de eerste paint als LCP-kandidaat telt. De boekingszin blijft bedienbaar
+   (opacity laat focus en klikken door) en springt bij focus direct op 1.
+   Zonder animatie (reduced motion, oude browser) blijven de regels inline:
+   pixel-gelijk aan de situatie vóór 1.4. */
+@keyframes hz-hero-rise {
+  from {
+    opacity: var(--hz-hero-from, 0);
+    transform: translateY(var(--hz-hero-y, var(--hz-rise-ui)));
+  }
+}
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .hz-hero-eyebrow,
+  .hz-hero-line1,
+  .hz-hero-line2,
+  .hz-hero-sub,
+  .hz-hero-booking,
+  .hz-hero-trust {
+    animation: hz-hero-rise var(--hz-ui) var(--hz-ease) both;
+  }
+  .hz-hero-eyebrow { animation-duration: var(--hz-composed); animation-delay: var(--hz-hero-eyebrow); }
+  .hz-hero-line1,
+  .hz-hero-line2 {
+    display: inline-block; /* transform werkt niet op inline; regels staan al los (<br>) */
+    --hz-hero-from: 0.01;
+    --hz-hero-y: var(--hz-rise-editorial);
+    animation-duration: var(--hz-composed);
+  }
+  .hz-hero-line1 { animation-delay: var(--hz-hero-line1); }
+  .hz-hero-line2 { animation-delay: var(--hz-hero-line2); }
+  .hz-hero-sub { animation-delay: var(--hz-hero-sub); }
+  .hz-hero-booking { animation-delay: var(--hz-hero-booking); }
+  .hz-hero-trust { animation-delay: var(--hz-hero-trust); }
+  /* Invoer wacht nooit op de animatie: wie de zin aanraakt, ziet hem meteen.
+     Niet via `animation: none` — die herstart de animatie bij blur (de zin
+     verdween dan weer). `!important` wint van de animatiewaarden, terwijl de
+     tijdlijn gewoon doorloopt en daarna op de eindstaat blijft (fill: both). */
+  .hz-hero-booking:focus-within { opacity: 1 !important; transform: none !important; }
+}
 
 /* ── Guide ── */
 .hz-guide-line { position: relative; }
@@ -209,6 +271,8 @@ input.hz-time::-webkit-datetime-edit-ampm-field {
 @media (prefers-reduced-motion: reduce) {
   html.js .hz-reveal, html.js .hz-reveal.hz-in { opacity: 1; transform: none; transition: none; }
   .hz-reveal { opacity: 1; transform: none; transition: none; }
+  .hz-hero-eyebrow, .hz-hero-line1, .hz-hero-line2, .hz-hero-sub,
+  .hz-hero-booking, .hz-hero-trust { animation: none; }
   .hz-spine { transform: scaleX(1); transition: none; }
   .hz-spine .hz-travel-tick { display: none; }
   .hz-confirm-roll.hz-live .hz-col { transition: none; }

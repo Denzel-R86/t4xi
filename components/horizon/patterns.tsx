@@ -166,6 +166,7 @@ export function NarrativePattern({
   titleClassName,
   echoClassName,
   immediate = false,
+  cascade = false,
 }: {
   kicker: string;
   voice: string;
@@ -186,11 +187,19 @@ export function NarrativePattern({
   echoClassName?: string;
   /** Sla de reveal-startstaat over voor direct zichtbare inhoud boven de vouw. */
   immediate?: boolean;
+  /**
+   * Hero-choreografie (Experience 2.0 §5, PR 1.4): zet de cascadeklassen
+   * (`.hz-hero-*` in horizon.css) op kicker, beide kopregels en de steunregel.
+   * Pure CSS (`animation-delay`), geen hydratie-afhankelijkheid; onder
+   * reduced motion of zonder `html.js` gebeurt er niets.
+   */
+  cascade?: boolean;
 }) {
+  const hc = (name: string) => (cascade ? ` hz-hero-${name}` : "");
   return (
     <div>
       <Reveal immediate={immediate}>
-        <p className="flex items-center gap-3.5 text-[11px] font-medium uppercase tracking-[0.16em] text-secondary">
+        <p className={`flex items-center gap-3.5 text-[11px] font-medium uppercase tracking-[0.16em] text-secondary${hc("eyebrow")}`}>
           <span aria-hidden="true" className="h-px w-8 bg-ink" />
           {kicker}
         </p>
@@ -199,18 +208,18 @@ export function NarrativePattern({
         {/* B1 (08-10): de standaardkop is een Brand Mode-statement → serif-display
             (design-specs §13f). De hero-h1 geeft eigen klassen mee, ook in serif. */}
         <Tag className={titleClassName ?? "mt-6 font-display-serif text-display-serif font-semibold text-ink"}>
-          {voice}
+          {cascade ? <span className="hz-hero-line1">{voice}</span> : voice}
           {echo && (
             <>
               <br />
-              <span className={echoClassName ?? "font-normal text-stone-text"}>{echo}</span>
+              <span className={`${echoClassName ?? "font-normal text-stone-text"}${hc("line2")}`}>{echo}</span>
             </>
           )}
         </Tag>
       </Reveal>
       {note && (
         <Reveal delay={2} immediate={immediate}>
-          <p className="mt-6 max-w-md text-[15px] leading-relaxed text-secondary">{note}</p>
+          <p className={`mt-6 max-w-md text-[15px] leading-relaxed text-secondary${hc("sub")}`}>{note}</p>
         </Reveal>
       )}
     </div>

@@ -1,0 +1,319 @@
+{
+ "protocol": {
+  "lighthouse": "13.5.0",
+  "throttlingMethod": "devtools",
+  "throttling": {
+   "mobile": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "cpuSlowdownMultiplier": 4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675
+   }
+  },
+  "cache": "cold",
+  "runsPerCell": 15,
+  "maxLoad": 4,
+  "pages": [
+   "/"
+  ],
+  "formFactors": [
+   "mobile"
+  ],
+  "variants": [
+   {
+    "name": "basis",
+    "origin": "http://localhost:3141",
+    "blocked": []
+   },
+   {
+    "name": "kandidaat",
+    "origin": "http://localhost:3142",
+    "blocked": []
+   }
+  ],
+  "startedAt": "2026-10-08T22:59:10.564Z",
+  "consistent": true,
+  "benchmarkIndexMedian": 2901,
+  "finishedAt": "2026-10-08T23:12:45.578Z"
+ },
+ "summary": [
+  {
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "okRuns": 15,
+   "failedRuns": 0,
+   "excludedRuns": 0,
+   "lcpMs": {
+    "n": 15,
+    "median": 1673.591,
+    "p75": 1697.212,
+    "p25": 1652.3020000000001,
+    "iqr": 44.909999999999854,
+    "min": 1633.466,
+    "max": 1841.236,
+    "cv": 0.029980495761587483,
+    "bimodal": false,
+    "modes": []
+   },
+   "fcpMs": {
+    "n": 15,
+    "median": 1647.362,
+    "p75": 1661.061,
+    "p25": 1630.8629999999998,
+    "iqr": 30.198000000000093,
+    "min": 1596.91,
+    "max": 1725.534,
+    "cv": 0.01912825634694524,
+    "bimodal": false,
+    "modes": []
+   },
+   "siMs": {
+    "n": 15,
+    "median": 1667,
+    "p75": 1685.5,
+    "p25": 1649.5,
+    "iqr": 36,
+    "min": 1628,
+    "max": 1751,
+    "cv": 0.018396092745383983,
+    "bimodal": false,
+    "modes": []
+   },
+   "tbtMs": {
+    "n": 15,
+    "median": 15.932000000000244,
+    "p75": 16.704999999999927,
+    "p25": 14.13650000000007,
+    "iqr": 2.568499999999858,
+    "min": 10.515000000000327,
+    "max": 141.913,
+    "cv": 1.3641103685356004,
+    "bimodal": false,
+    "modes": []
+   },
+   "cls": {
+    "n": 15,
+    "median": 0.002687211404785906,
+    "p75": 0.002687211404785906,
+    "p25": 0.002687211404785906,
+    "iqr": 0,
+    "min": 0.002687211404785906,
+    "max": 0.29741312192980407,
+    "cv": 1.979934791273296,
+    "bimodal": true,
+    "split": 0.15005016666729498,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 12,
+      "share": 0.8,
+      "median": 0.002687211404785906,
+      "min": 0.002687211404785906,
+      "max": 0.002687211404785906
+     },
+     {
+      "name": "traag",
+      "n": 3,
+      "share": 0.2,
+      "median": 0.29741312192980407,
+      "min": 0.29741312192980407,
+      "max": 0.29741312192980407
+     }
+    ]
+   },
+   "performance": {
+    "n": 15,
+    "median": 0.99,
+    "p75": 0.99,
+    "p25": 0.99,
+    "iqr": 0,
+    "min": 0.82,
+    "max": 0.99,
+    "cv": 0.06781587543329566,
+    "bimodal": false,
+    "modes": []
+   },
+   "observedFcpMs": {
+    "n": 15,
+    "median": 1647,
+    "p75": 1661,
+    "p25": 1630.5,
+    "iqr": 30.5,
+    "min": 1597,
+    "max": 1726,
+    "cv": 0.019164887811262268,
+    "bimodal": false,
+    "modes": []
+   },
+   "lcpElements": {
+    "main#content > section.grid > figure.relative > img.object-cover": {
+     "n": 15,
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst"
+    }
+   }
+  },
+  {
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "okRuns": 15,
+   "failedRuns": 0,
+   "excludedRuns": 0,
+   "lcpMs": {
+    "n": 15,
+    "median": 1682.135,
+    "p75": 1703.143,
+    "p25": 1669.2804999999998,
+    "iqr": 33.86250000000018,
+    "min": 1652.173,
+    "max": 1758.128,
+    "cv": 0.015808580679815522,
+    "bimodal": false,
+    "modes": []
+   },
+   "fcpMs": {
+    "n": 15,
+    "median": 1652.173,
+    "p75": 1665.6799999999998,
+    "p25": 1626.4144999999999,
+    "iqr": 39.265499999999975,
+    "min": 1616.466,
+    "max": 1690.03,
+    "cv": 0.01358995246460358,
+    "bimodal": false,
+    "modes": []
+   },
+   "siMs": {
+    "n": 15,
+    "median": 1737,
+    "p75": 1758.5,
+    "p25": 1729.5,
+    "iqr": 29,
+    "min": 1709,
+    "max": 1789,
+    "cv": 0.013215549170432734,
+    "bimodal": false,
+    "modes": []
+   },
+   "tbtMs": {
+    "n": 15,
+    "median": 14.346000000000004,
+    "p75": 21.854499998092933,
+    "p25": 11.955499999999802,
+    "iqr": 9.898999998093132,
+    "min": 10.83600000000024,
+    "max": 349.81199999999967,
+    "cv": 2.2247070860016662,
+    "bimodal": false,
+    "modes": []
+   },
+   "cls": {
+    "n": 15,
+    "median": 0,
+    "p75": 0,
+    "p25": 0,
+    "iqr": 0,
+    "min": 0,
+    "max": 0.2947259105250182,
+    "cv": 2.0701966780270626,
+    "bimodal": true,
+    "split": 0.1473629552625091,
+    "modes": [
+     {
+      "name": "snel",
+      "n": 12,
+      "share": 0.8,
+      "median": 0,
+      "min": 0,
+      "max": 0
+     },
+     {
+      "name": "traag",
+      "n": 3,
+      "share": 0.2,
+      "median": 0.2947259105250182,
+      "min": 0.2947259105250182,
+      "max": 0.2947259105250182
+     }
+    ]
+   },
+   "performance": {
+    "n": 15,
+    "median": 0.99,
+    "p75": 0.99,
+    "p25": 0.99,
+    "iqr": 0,
+    "min": 0.76,
+    "max": 0.99,
+    "cv": 0.07877232937610956,
+    "bimodal": false,
+    "modes": []
+   },
+   "observedFcpMs": {
+    "n": 15,
+    "median": 1652,
+    "p75": 1665.5,
+    "p25": 1626.5,
+    "iqr": 39,
+    "min": 1616,
+    "max": 1690,
+    "cv": 0.01360163760991782,
+    "bimodal": false,
+    "modes": []
+   },
+   "lcpElements": {
+    "main#content > section.grid > figure.relative > img.object-cover": {
+     "n": 15,
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst"
+    }
+   }
+  }
+ ],
+ "gates": [
+  {
+   "cell": "`/` mobile",
+   "metric": "lcpMs",
+   "a": "basis",
+   "b": "kandidaat",
+   "verdict": "geen-regressie",
+   "passed": true,
+   "nA": 15,
+   "nB": 15,
+   "medianA": 1673.591,
+   "medianB": 1682.135,
+   "p75A": 1697.212,
+   "p75B": 1703.143,
+   "ratio": 1.003494554598954,
+   "ratioCI95": {
+    "lo": 0.9881548239887077,
+    "hi": 1.0199306274054156
+   },
+   "pWorse": 0.08507013794523277,
+   "pBetter": 0.9211447020834461
+  },
+  {
+   "cell": "`/` mobile",
+   "metric": "fcpMs",
+   "a": "basis",
+   "b": "kandidaat",
+   "verdict": "geen-regressie",
+   "passed": true,
+   "nA": 15,
+   "nB": 15,
+   "medianA": 1647.362,
+   "medianB": 1652.173,
+   "p75A": 1661.061,
+   "p75B": 1665.6799999999998,
+   "ratio": 1.0027807527839134,
+   "ratioCI95": {
+    "lo": 0.9852282460941897,
+    "hi": 1.011293290872208
+   },
+   "pWorse": 0.32033429339721187,
+   "pBetter": 0.696220824562578
+  }
+ ]
+}
