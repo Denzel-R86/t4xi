@@ -102,7 +102,11 @@ export function Odometer({ value, className = "" }: { value: number | null; clas
 
   if (formatted === null) return <span className={className}>—</span>;
   return (
-    <span className={`hz-confirm-roll${live ? " hz-live" : ""} ${className}`} aria-label={formatted}>
+    <span className={`hz-confirm-roll${live ? " hz-live" : ""} ${className}`}>
+      {/* Voorleesbare waarde als tekst (PR 2.1, §6.6): een aria-label op een
+          rolloze <span> is niet toegestaan (axe aria-prohibited-attr) en wordt in
+          een aria-live-regio niet betrouwbaar voorgelezen. */}
+      <span className="sr-only">{formatted}</span>
       {chars.map((ch, i) =>
         /[0-9]/.test(ch) ? (
           <span
