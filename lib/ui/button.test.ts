@@ -158,3 +158,8 @@ test("1.3 adopteert niets: geen bestaande pagina/component gebruikt Button of Jo
     .filter((f) => /components\/ui\/Button|ui\/button-styles|horizon\/JourneyLine|journey-line\.css|["']\.\/(Button|JourneyLine)["']/.test(readFileSync(f, "utf8")));
   assert.deepEqual(offenders, []);
 });
+
+test("Button als link: aria-disabled geeft de inactieve vorm (§13e)", () => {
+  assert.match(button, /const inactive = ariaDisabled === true \|\| ariaDisabled === "true";/);
+  assert.match(button, /buttonClassName\(\{ variant, size, fullWidth, inactive, className \}\)/);
+});
