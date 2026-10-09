@@ -1,0 +1,1963 @@
+{
+ "protocol": {
+  "lighthouse": "13.5.0",
+  "throttlingMethod": "devtools",
+  "throttling": {
+   "mobile": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "cpuSlowdownMultiplier": 4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675
+   }
+  },
+  "cache": "cold",
+  "runsPerCell": 15,
+  "maxLoad": 4,
+  "pages": [
+   "/"
+  ],
+  "formFactors": [
+   "mobile"
+  ],
+  "variants": [
+   {
+    "name": "basis",
+    "origin": "http://localhost:3141",
+    "blocked": []
+   },
+   {
+    "name": "kandidaat",
+    "origin": "http://localhost:3142",
+    "blocked": []
+   }
+  ],
+  "startedAt": "2026-10-08T22:59:10.564Z",
+  "consistent": true,
+  "benchmarkIndexMedian": 2901,
+  "finishedAt": "2026-10-08T23:12:45.578Z"
+ },
+ "runs": [
+  {
+   "run": 1,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 2.4091796875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T22:59:13.834Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2883,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1666.003,
+   "fcpMs": 1666.003,
+   "siMs": 1767,
+   "tbtMs": 10.83600000000024,
+   "cls": 0,
+   "ttfbMs": 29,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1666,
+    "lcpMs": 1666,
+    "loadMs": 3875,
+    "dclMs": 1526
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 31,
+     "resourceLoadDelay": 568,
+     "resourceLoadDuration": 989,
+     "elementRenderDelay": 78
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 1,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 2.67333984375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T22:59:40.764Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2907,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1653.461,
+   "fcpMs": 1653.461,
+   "siMs": 1688,
+   "tbtMs": 10.515000000000327,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 39,
+   "totalBytes": 493054,
+   "observed": {
+    "fcpMs": 1653,
+    "lcpMs": 1653,
+    "loadMs": 4737,
+    "dclMs": 1506
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 41,
+     "resourceLoadDelay": 555,
+     "resourceLoadDuration": 982,
+     "elementRenderDelay": 75
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 2.49560546875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:00:07.335Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2906,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.82,
+   "lcpMs": 1841.236,
+   "fcpMs": 1725.534,
+   "siMs": 1751,
+   "tbtMs": 141.913,
+   "cls": 0.29741312192980407,
+   "ttfbMs": 31,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1726,
+    "lcpMs": 1841,
+    "loadMs": 3903,
+    "dclMs": 1822
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 46,
+     "resourceLoadDelay": 588,
+     "resourceLoadDuration": 964,
+     "elementRenderDelay": 243
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 2,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 2.48681640625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:00:35.703Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2915.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1690.03,
+   "fcpMs": 1690.03,
+   "siMs": 1789,
+   "tbtMs": 11.541999999999916,
+   "cls": 0,
+   "ttfbMs": 48,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1690,
+    "lcpMs": 1690,
+    "loadMs": 3852,
+    "dclMs": 1525
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 50,
+     "resourceLoadDelay": 557,
+     "resourceLoadDuration": 980,
+     "elementRenderDelay": 103
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 3,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 2.29248046875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:01:03.052Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2903.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1699.304,
+   "fcpMs": 1644.604,
+   "siMs": 1719,
+   "tbtMs": 13.525000000000091,
+   "cls": 0,
+   "ttfbMs": 29,
+   "totalBytes": 493404,
+   "observed": {
+    "fcpMs": 1645,
+    "lcpMs": 1699,
+    "loadMs": 3890,
+    "dclMs": 1683
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 32,
+     "resourceLoadDelay": 587,
+     "resourceLoadDuration": 965,
+     "elementRenderDelay": 116
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 3,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 1.77783203125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:01:30.652Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2898.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1673.591,
+   "fcpMs": 1628.26,
+   "siMs": 1637,
+   "tbtMs": 16.329999999999927,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 38,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1628,
+    "lcpMs": 1674,
+    "loadMs": 3875,
+    "dclMs": 1652
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 40,
+     "resourceLoadDelay": 575,
+     "resourceLoadDuration": 969,
+     "elementRenderDelay": 90
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 4,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 2.78271484375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:01:57.796Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2908.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1677.337,
+   "fcpMs": 1660.965,
+   "siMs": 1698,
+   "tbtMs": 13.239000000000033,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 32,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1661,
+    "lcpMs": 1677,
+    "loadMs": 3881,
+    "dclMs": 1664
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 34,
+     "resourceLoadDelay": 578,
+     "resourceLoadDuration": 984,
+     "elementRenderDelay": 82
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 4,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 2.81201171875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:02:24.536Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2904,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1652.173,
+   "fcpMs": 1652.173,
+   "siMs": 1758,
+   "tbtMs": 16.174999999999727,
+   "cls": 0,
+   "ttfbMs": 28,
+   "totalBytes": 494480,
+   "observed": {
+    "fcpMs": 1652,
+    "lcpMs": 1652,
+    "loadMs": 3871,
+    "dclMs": 1513
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 29,
+     "resourceLoadDelay": 565,
+     "resourceLoadDuration": 985,
+     "elementRenderDelay": 72
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 5,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 2.77685546875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:02:51.180Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2832.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.84,
+   "lcpMs": 1703.949,
+   "fcpMs": 1622.685,
+   "siMs": 1732,
+   "tbtMs": 22.17300000000023,
+   "cls": 0.2947259105250182,
+   "ttfbMs": 31,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1623,
+    "lcpMs": 1704,
+    "loadMs": 4766,
+    "dclMs": 1700
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 32,
+     "resourceLoadDelay": 598,
+     "resourceLoadDuration": 964,
+     "elementRenderDelay": 110
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 5,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 2.4892578125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:03:18.108Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2936.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1661.157,
+   "fcpMs": 1661.157,
+   "siMs": 1693,
+   "tbtMs": 11.193000000000211,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 35,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1661,
+    "lcpMs": 1661,
+    "loadMs": 4758,
+    "dclMs": 1523
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 36,
+     "resourceLoadDelay": 567,
+     "resourceLoadDuration": 983,
+     "elementRenderDelay": 74
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 6,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 3.21484375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:03:44.950Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2913.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1636.269,
+   "fcpMs": 1636.269,
+   "siMs": 1671,
+   "tbtMs": 15.469000000000051,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 32,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1636,
+    "lcpMs": 1636,
+    "loadMs": 3872,
+    "dclMs": 1512
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 34,
+     "resourceLoadDelay": 566,
+     "resourceLoadDuration": 988,
+     "elementRenderDelay": 49
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 6,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 2.59228515625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:04:11.650Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2901,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1664.995,
+   "fcpMs": 1616.466,
+   "siMs": 1737,
+   "tbtMs": 11.657999999999902,
+   "cls": 0,
+   "ttfbMs": 35,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1616,
+    "lcpMs": 1665,
+    "loadMs": 3879,
+    "dclMs": 1648
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 38,
+     "resourceLoadDelay": 569,
+     "resourceLoadDuration": 988,
+     "elementRenderDelay": 71
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 7,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 2.52294921875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:04:38.707Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2877,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1680.211,
+   "fcpMs": 1667.134,
+   "siMs": 1711,
+   "tbtMs": 11.336999999999989,
+   "cls": 0,
+   "ttfbMs": 32,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1667,
+    "lcpMs": 1680,
+    "loadMs": 4735,
+    "dclMs": 1647
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 34,
+     "resourceLoadDelay": 582,
+     "resourceLoadDuration": 967,
+     "elementRenderDelay": 98
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 7,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 2.71240234375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:05:06.365Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2905.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1651.143,
+   "fcpMs": 1651.143,
+   "siMs": 1683,
+   "tbtMs": 15.173999999999978,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 41,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1651,
+    "lcpMs": 1651,
+    "loadMs": 4734,
+    "dclMs": 1515
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 44,
+     "resourceLoadDelay": 551,
+     "resourceLoadDuration": 982,
+     "elementRenderDelay": 74
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 8,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 2.2421875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:05:33.403Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2880,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1699.916,
+   "fcpMs": 1688.222,
+   "siMs": 1666,
+   "tbtMs": 20.674000000000433,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 28,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1688,
+    "lcpMs": 1700,
+    "loadMs": 4761,
+    "dclMs": 1669
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 37,
+     "resourceLoadDelay": 589,
+     "resourceLoadDuration": 973,
+     "elementRenderDelay": 101
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 8,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 3.64404296875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:06:00.871Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2905,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1678.875,
+   "fcpMs": 1665.357,
+   "siMs": 1768,
+   "tbtMs": 34.5630000000001,
+   "cls": 0,
+   "ttfbMs": 36,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1665,
+    "lcpMs": 1679,
+    "loadMs": 3868,
+    "dclMs": 1649
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 38,
+     "resourceLoadDelay": 563,
+     "resourceLoadDuration": 984,
+     "elementRenderDelay": 94
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 9,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 2.681640625,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:06:28.711Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2899,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1682.135,
+   "fcpMs": 1617.305,
+   "siMs": 1747,
+   "tbtMs": 14.346000000000004,
+   "cls": 0,
+   "ttfbMs": 29,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1617,
+    "lcpMs": 1682,
+    "loadMs": 3873,
+    "dclMs": 1667
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 31,
+     "resourceLoadDelay": 576,
+     "resourceLoadDuration": 978,
+     "elementRenderDelay": 97
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 9,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 2.921875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:06:55.970Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2882,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.84,
+   "lcpMs": 1662.11,
+   "fcpMs": 1596.91,
+   "siMs": 1628,
+   "tbtMs": 16.48299999999972,
+   "cls": 0.29741312192980407,
+   "ttfbMs": 33,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1597,
+    "lcpMs": 1662,
+    "loadMs": 4752,
+    "dclMs": 1649
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 35,
+     "resourceLoadDelay": 578,
+     "resourceLoadDuration": 973,
+     "elementRenderDelay": 75
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 10,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 3.00732421875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:07:23.103Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2907,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1702.735,
+   "fcpMs": 1645.297,
+   "siMs": 1651,
+   "tbtMs": 15.932000000000244,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 35,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1645,
+    "lcpMs": 1703,
+    "loadMs": 4772,
+    "dclMs": 1680
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 38,
+     "resourceLoadDelay": 585,
+     "resourceLoadDuration": 977,
+     "elementRenderDelay": 102
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 10,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 3.158203125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:07:50.774Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2849.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.84,
+   "lcpMs": 1707.114,
+   "fcpMs": 1630.144,
+   "siMs": 1733,
+   "tbtMs": 23.513000000000147,
+   "cls": 0.2947259105250182,
+   "ttfbMs": 50,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1630,
+    "lcpMs": 1707,
+    "loadMs": 3891,
+    "dclMs": 1718
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 53,
+     "resourceLoadDelay": 573,
+     "resourceLoadDuration": 963,
+     "elementRenderDelay": 118
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 11,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 2.57177734375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:08:18.157Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2899.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1705.727,
+   "fcpMs": 1659.691,
+   "siMs": 1732,
+   "tbtMs": 21.535999996185637,
+   "cls": 0,
+   "ttfbMs": 42,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1660,
+    "lcpMs": 1706,
+    "loadMs": 3876,
+    "dclMs": 1684
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 45,
+     "resourceLoadDelay": 585,
+     "resourceLoadDuration": 957,
+     "elementRenderDelay": 119
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 11,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 2.373046875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:08:45.455Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2897,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1713.676,
+   "fcpMs": 1661.211,
+   "siMs": 1659,
+   "tbtMs": 14.686999999999898,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 35,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1661,
+    "lcpMs": 1714,
+    "loadMs": 4762,
+    "dclMs": 1687
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 40,
+     "resourceLoadDelay": 582,
+     "resourceLoadDuration": 968,
+     "elementRenderDelay": 124
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 12,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 2.0126953125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:09:12.519Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2924.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1647.362,
+   "fcpMs": 1647.362,
+   "siMs": 1681,
+   "tbtMs": 16.927000000000135,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 31,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1647,
+    "lcpMs": 1647,
+    "loadMs": 3867,
+    "dclMs": 1517
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 33,
+     "resourceLoadDelay": 568,
+     "resourceLoadDuration": 980,
+     "elementRenderDelay": 67
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 12,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 1.9404296875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:09:39.704Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2886.5,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1702.337,
+   "fcpMs": 1647.783,
+   "siMs": 1727,
+   "tbtMs": 12.252999999999702,
+   "cls": 0,
+   "ttfbMs": 37,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1648,
+    "lcpMs": 1702,
+    "loadMs": 3863,
+    "dclMs": 1684
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 41,
+     "resourceLoadDelay": 584,
+     "resourceLoadDuration": 956,
+     "elementRenderDelay": 122
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 13,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 1.65185546875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:10:06.574Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2901,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1655.357,
+   "fcpMs": 1655.357,
+   "siMs": 1758,
+   "tbtMs": 12.735000000000127,
+   "cls": 0,
+   "ttfbMs": 25,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1655,
+    "lcpMs": 1655,
+    "loadMs": 3887,
+    "dclMs": 1515
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 28,
+     "resourceLoadDelay": 577,
+     "resourceLoadDuration": 985,
+     "elementRenderDelay": 66
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 13,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 1.91455078125,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:10:33.537Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2899,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1694.508,
+   "fcpMs": 1622.238,
+   "siMs": 1648,
+   "tbtMs": 13.58600000000024,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 29,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1622,
+    "lcpMs": 1695,
+    "loadMs": 3874,
+    "dclMs": 1678
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 32,
+     "resourceLoadDelay": 591,
+     "resourceLoadDuration": 962,
+     "elementRenderDelay": 109
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 14,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 2.03466796875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:11:00.520Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2922,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1633.466,
+   "fcpMs": 1633.466,
+   "siMs": 1667,
+   "tbtMs": 16.2800000000002,
+   "cls": 0.002687211404785906,
+   "ttfbMs": 30,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1633,
+    "lcpMs": 1633,
+    "loadMs": 3854,
+    "dclMs": 1507
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 33,
+     "resourceLoadDelay": 564,
+     "resourceLoadDuration": 984,
+     "elementRenderDelay": 52
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 14,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 3.6162109375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:11:27.373Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2888,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.99,
+   "lcpMs": 1672.558,
+   "fcpMs": 1620.15,
+   "siMs": 1709,
+   "tbtMs": 15.775000000000091,
+   "cls": 0,
+   "ttfbMs": 38,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1620,
+    "lcpMs": 1673,
+    "loadMs": 3891,
+    "dclMs": 1655
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 42,
+     "resourceLoadDelay": 575,
+     "resourceLoadDuration": 984,
+     "elementRenderDelay": 71
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 15,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "kandidaat",
+   "origin": "http://localhost:3142",
+   "blocked": [],
+   "env": {
+    "load1": 3.02490234375,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:11:54.903Z",
+   "finalUrl": "http://localhost:3142/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2882,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.76,
+   "lcpMs": 1758.128,
+   "fcpMs": 1667.344,
+   "siMs": 1759,
+   "tbtMs": 349.81199999999967,
+   "cls": 0.2947259105250182,
+   "ttfbMs": 32,
+   "totalBytes": 493188,
+   "observed": {
+    "fcpMs": 1667,
+    "lcpMs": 1758,
+    "loadMs": 3875,
+    "dclMs": 1755
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 36,
+     "resourceLoadDelay": 578,
+     "resourceLoadDuration": 972,
+     "elementRenderDelay": 173
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  },
+  {
+   "run": 15,
+   "page": "/",
+   "formFactor": "mobile",
+   "variant": "basis",
+   "origin": "http://localhost:3141",
+   "blocked": [],
+   "env": {
+    "load1": 3.26904296875,
+    "cores": 8,
+    "foreignSlots": [],
+    "quiet": true
+   },
+   "fetchTime": "2026-10-08T23:12:22.188Z",
+   "finalUrl": "http://localhost:3141/",
+   "lighthouseVersion": "13.5.0",
+   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+   "benchmarkIndex": 2901,
+   "throttlingMethod": "devtools",
+   "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.56,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+   },
+   "runWarnings": [],
+   "runtimeError": null,
+   "performance": 0.84,
+   "lcpMs": 1683.353,
+   "fcpMs": 1606.703,
+   "siMs": 1640,
+   "tbtMs": 21.73900000000026,
+   "cls": 0.29741312192980407,
+   "ttfbMs": 42,
+   "totalBytes": 492839,
+   "observed": {
+    "fcpMs": 1607,
+    "lcpMs": 1683,
+    "loadMs": 3878,
+    "dclMs": 1674
+   },
+   "lcp": {
+    "element": {
+     "selector": "main#content > section.grid > figure.relative > img.object-cover",
+     "label": "Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst",
+     "snippet": "<img alt=\"Passagier ontspannen op de achterbank, chauffeur staat klaar bij aankomst\" decoding=\"async\" data-nimg=\"fill\" class=\"object-cover object-[62%_center] s"
+    },
+    "observedSubparts": {
+     "timeToFirstByte": 46,
+     "resourceLoadDelay": 582,
+     "resourceLoadDuration": 974,
+     "elementRenderDelay": 81
+    }
+   },
+   "thirdParties": [
+    {
+     "entity": "sanity.io",
+     "bytes": 117,
+     "mainThreadMs": 0
+    }
+   ]
+  }
+ ]
+}
