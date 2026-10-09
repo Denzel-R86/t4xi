@@ -51,11 +51,13 @@ export type QuoteOutcome = {
   date: string;
   time: string;
   luggage: string;
+  /** Aantal passagiers (PR 2.1: in de zin); ontbreekt → 1, zoals useRouteQuote. */
+  passengers?: number;
 };
 
 /**
  * Sleutel van een geland quote-resultaat: de identiteit van de rit (van, naar,
- * datum, tijd, bagage) plus de uitkomststatus. Een andere rit met dezelfde prijs
+ * datum, tijd, bagage, passagiers) plus de uitkomststatus. Een andere rit met dezelfde prijs
  * is dus nieuw; een dubbele response voor dezelfde rit niet.
  *
  * Bewust niet de quoteId: elke quote-aanvraag krijgt een nieuwe prijslock, dus
@@ -64,7 +66,7 @@ export type QuoteOutcome = {
  */
 export function quoteOutcomeKey(o: QuoteOutcome): string | null {
   if (o.status !== "ready" && o.status !== "onrequest" && o.status !== "error") return null;
-  return JSON.stringify([o.status, o.pickup, o.dropoff, o.date, o.time, o.luggage]);
+  return JSON.stringify([o.status, o.pickup, o.dropoff, o.date, o.time, o.luggage, o.passengers ?? 1]);
 }
 
 /** Minimale vorm van het element met focus (testbaar zonder DOM). */
