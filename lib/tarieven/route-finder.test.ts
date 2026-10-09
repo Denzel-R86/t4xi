@@ -217,7 +217,7 @@ test("alle drie useRouteQuote-aanroepen geven 'luggage' door — geen enkele op 
   const consumers = [
     "components/tarieven/RouteFinder.tsx",
     "components/booking/BookingSection.tsx",
-    "components/horizon/patterns.tsx",
+    "components/booking-sentence/SentencePattern.tsx",
   ];
   for (const file of consumers) {
     const src = readFileSync(resolve(process.cwd(), file), "utf8");

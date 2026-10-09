@@ -19,6 +19,7 @@ const TRANSACTIONAL_FILES = [
   "components/sections/StickyCta.tsx",
   "components/sections/StickyCtaBar.tsx",
   "components/ui/Button.tsx",
+  "components/booking-sentence/SentencePattern.tsx",
   "components/contact/ContactLeadForm.tsx",
   "components/producten/ProductForms.tsx",
   "components/partner/PartnerInteractive.tsx",
@@ -28,7 +29,8 @@ const TRANSACTIONAL_FILES = [
 /** `patterns.tsx` mengt Brand Mode en transactie; serif mag alleen in deze exports. */
 const PATTERNS_FILE = "components/horizon/patterns.tsx";
 const BRAND_MODE_EXPORTS = new Set(["NarrativePattern"]);
-const TRANSACTIONAL_EXPORTS = ["SentencePattern", "LedgerPattern"];
+// SentencePattern staat sinds PR 2.1 in components/booking-sentence/ (zie TRANSACTIONAL_FILES).
+const TRANSACTIONAL_EXPORTS = ["LedgerPattern"];
 
 function exportsOf(source: string): Map<string, string> {
   const parts = source.split(/^export function /m).slice(1);
