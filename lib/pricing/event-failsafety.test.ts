@@ -13,6 +13,7 @@ import {
   SHADOW_LOG_TIMEOUT_MS,
   type EventShadowObservation,
 } from "@/lib/pricing/event-shadow-log";
+import { settleOnFakeClock } from "@/lib/pricing/fake-timeout-clock";
 import { NO_AIRPORT, withRetryOnce, type PricingQuoteResult } from "@/lib/pricing/service";
 import { eurosToCents } from "@/lib/payments/create-intent";
 import type { EventPricingData } from "@/lib/pricing/event-store";
@@ -214,35 +215,41 @@ test("lege eventtabellen in shadow leveren geen toeslag", async () => {
 
 // ── Begrensde wachttijd ──────────────────────────────────────────────────────
 
-test("een hangende load wordt begrensd door withRetryOnce en gaat niet oneindig door", async () => {
+test("een hangende load wordt begrensd door withRetryOnce en gaat niet oneindig door", async (t) => {
   // De productieloader (`loadCachedEventPricingData`) wikkelt elke poging in
   // withRetryOnce(800, 800). Dit bewijst dat een promise die NOOIT resolvet
   // toch binnen twee begrensde pogingen wordt afgebroken — het scenario waar
   // een try/catch alleen niet tegen beschermt.
-  const start = Date.now();
-  await assert.rejects(
-    withRetryOnce(() => new Promise<never>(() => {}), 40, 40),
-    /exceeded/
+  // Nep-klok i.p.v. Date.now()-delta — zie lib/pricing/fake-timeout-clock.ts.
+  const { settledAtMs, result } = await settleOnFakeClock(
+    t,
+    () => withRetryOnce(() => new Promise<never>(() => {}), 40, 40),
+    1000
   );
-  const verstreken = Date.now() - start;
-  assert.ok(verstreken >= 80, `verwacht twee pogingen van 40ms, kreeg ${verstreken}ms`);
-  assert.ok(verstreken < 1000, `mag niet blijven hangen, kreeg ${verstreken}ms`);
+  assert.equal(result.status, "rejected");
+  if (result.status === "rejected") assert.match(String(result.reason), /exceeded/);
+  assert.equal(settledAtMs, 80, `verwacht exact twee pogingen van 40ms, settelde op ${settledAtMs}ms`);
 });
 
 // ── Shadow-insert: begrensde wachttijd ───────────────────────────────────────
 
-test("een shadow-insert die NOOIT resolvet wordt afgekapt en breekt de offerte niet", async () => {
+test("een shadow-insert die NOOIT resolvet wordt afgekapt en breekt de offerte niet", async (t) => {
   // Het scenario waar een try/catch alleen niet tegen beschermt: geen fout,
   // maar een verbinding die blijft hangen. Zonder deadline zou de offerte
   // hierop blijven wachten.
-  const start = Date.now();
-  await recordEventShadowLog([observation()], {
-    write: () => new Promise<never>(() => {}),
-    timeoutMs: 40,
-  });
-  const verstreken = Date.now() - start;
-  assert.ok(verstreken >= 40, `moet de deadline afwachten, kreeg ${verstreken}ms`);
-  assert.ok(verstreken < 1000, `mag niet blijven hangen, kreeg ${verstreken}ms`);
+  // Nep-klok i.p.v. Date.now()-delta (CI: "kreeg 39ms") — zie
+  // lib/pricing/fake-timeout-clock.ts.
+  const { settledAtMs, result } = await settleOnFakeClock(
+    t,
+    () =>
+      recordEventShadowLog([observation()], {
+        write: () => new Promise<never>(() => {}),
+        timeoutMs: 40,
+      }),
+    1000
+  );
+  assert.equal(result.status, "fulfilled", "de afgekapte insert mag de aanroeper niet laten falen");
+  assert.equal(settledAtMs, 40, `moet exact de deadline afwachten, settelde op ${settledAtMs}ms`);
 });
 
 test("een shadow-insert die verwerpt wordt ingeslikt", async () => {
@@ -265,22 +272,28 @@ test("de deadline dekt ook het opbouwen van de client, niet alleen de insert", a
   );
 });
 
-test("een hangende shadow-insert laat de quoteprijs volledig ongemoeid", async () => {
+test("een hangende shadow-insert laat de quoteprijs volledig ongemoeid", async (t) => {
   const q = quoteFixed(100);
   const ref = await baseline(q);
-  const start = Date.now();
-  const res = await price(
-    q,
-    async () => ({ ...dataOffButMatching(), config: { ...dataOffButMatching().config, mode: "shadow" } }),
-    () => new Promise<void>(() => {})
+  // Nep-klok i.p.v. Date.now()-delta — zie lib/pricing/fake-timeout-clock.ts.
+  const { settledAtMs, result } = await settleOnFakeClock(
+    t,
+    () =>
+      price(
+        q,
+        async () => ({ ...dataOffButMatching(), config: { ...dataOffButMatching().config, mode: "shadow" } }),
+        () => new Promise<void>(() => {})
+      ),
+    SHADOW_LOG_TIMEOUT_MS + 2_000
   );
+  assert.equal(result.status, "fulfilled");
+  if (result.status !== "fulfilled") return;
+  const res = result.value;
   assert.equal(res.quote.available, true);
   assert.equal(res.snapshot?.totalCents, ref.snapshot?.totalCents);
   assert.deepEqual(eventAdjustments(res.snapshot), []);
   // De engine-seam begrenst zelf, met SHADOW_LOG_TIMEOUT_MS. Een recorder die
   // NOOIT terugkeert houdt de offerte dus hooguit dat budget op. Zonder die
   // grens zou deze test oneindig blijven hangen.
-  const verstreken = Date.now() - start;
-  assert.ok(verstreken >= SHADOW_LOG_TIMEOUT_MS, `moet de deadline afwachten, kreeg ${verstreken}ms`);
-  assert.ok(verstreken < SHADOW_LOG_TIMEOUT_MS + 2_000, `moet begrensd zijn, kreeg ${verstreken}ms`);
+  assert.equal(settledAtMs, SHADOW_LOG_TIMEOUT_MS, `moet exact de deadline afwachten, settelde op ${settledAtMs}ms`);
 });

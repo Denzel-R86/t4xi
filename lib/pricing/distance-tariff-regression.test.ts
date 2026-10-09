@@ -21,6 +21,7 @@ import {
 } from "@/lib/pricing/service";
 import type { DeadheadConfig } from "@/lib/pricing/deadhead-shadow";
 import type { PricingSupabaseClient } from "@/lib/supabase/server";
+import { settleOnFakeClock } from "@/lib/pricing/fake-timeout-clock";
 import { neutralPickupApproachDeps, wrapGetRouteWithNeutralApproach } from "@/lib/pricing/pickup-approach-fake";
 
 /** De computed (niet-overgeslagen) variant van ShadowLogEntry, voor test-asserties. */
@@ -477,10 +478,11 @@ test("high-demand-zones-loader gooit → zelfde bescherming (reason load_error),
   assert.deepEqual(shadow, { shadowSkipped: true, reason: "load_error", basePrice: 158, finalPrice: 158 });
 });
 
-test("hangende loader (rauwe test-fake, geen eigen retry) → begrensd door het SHADOW_LOAD_OUTER_TIMEOUT_MS-veiligheidsnet, geen onbeperkt wachten, price ongewijzigd", async () => {
+test("hangende loader (rauwe test-fake, geen eigen retry) → begrensd door het SHADOW_LOAD_OUTER_TIMEOUT_MS-veiligheidsnet, geen onbeperkt wachten, price ongewijzigd", async (t) => {
   let shadow: ShadowLogEntry | null = null;
-  const start = Date.now();
-  const res = await resolveQuoteWith(
+  // Nep-klok i.p.v. Date.now()-delta: zie lib/pricing/fake-timeout-clock.ts
+  // (Date.now() vs. de gecachete libuv-timerklok gaf in CI "899ms < 900ms").
+  const { settledAtMs, result } = await settleOnFakeClock(t, () => resolveQuoteWith(
     input(),
     makeDeps({
       // Lost nooit op — bewijst dat de quote NIET onbeperkt op deze dependency wacht.
@@ -494,20 +496,18 @@ test("hangende loader (rauwe test-fake, geen eigen retry) → begrensd door het 
         shadow = e;
       },
     })
-  );
-  const elapsedMs = Date.now() - start;
-  assert.equal(res.available, true);
-  if (res.available) assert.equal(res.price, 158);
+  ), SHADOW_LOAD_OUTER_TIMEOUT_MS + 100);
+  assert.equal(result.status, "fulfilled");
+  const res = result.status === "fulfilled" ? result.value : null;
+  assert.equal(res?.available, true);
+  if (res?.available) assert.equal(res.price, 158);
   assert.deepEqual(shadow, { shadowSkipped: true, reason: "timeout", basePrice: 158, finalPrice: 158 });
-  // Begrensd: niet te vroeg (timeout moet echt gelden) en niet te laat (ruime
-  // marge voor test-jitter, maar bewijst dat er geen onbeperkt wachten is).
-  assert.ok(
-    elapsedMs >= SHADOW_LOAD_OUTER_TIMEOUT_MS,
-    `timeout ging te vroeg af: ${elapsedMs}ms < ${SHADOW_LOAD_OUTER_TIMEOUT_MS}ms`
-  );
-  assert.ok(
-    elapsedMs < SHADOW_LOAD_OUTER_TIMEOUT_MS + 300,
-    `verwacht ~${SHADOW_LOAD_OUTER_TIMEOUT_MS}ms, duurde ${elapsedMs}ms — geen bovengrens op de wachttijd?`
+  // Exact op de deadline: op 899 virtuele ms wachtte de offerte nog (timeout
+  // geldt echt), op 900 is hij klaar (geen onbeperkt wachten).
+  assert.equal(
+    settledAtMs,
+    SHADOW_LOAD_OUTER_TIMEOUT_MS,
+    `offerte settelde op ${settledAtMs} virtuele ms, verwacht exact ${SHADOW_LOAD_OUTER_TIMEOUT_MS}ms`
   );
 });
 
