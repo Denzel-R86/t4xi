@@ -37,25 +37,25 @@ Bron: `tailwind.config.ts` (`theme.extend`) en `components/horizon/horizon.css` 
 
 | Token | Waarde | Rol | Bron |
 |---|---|---|---|
-| `fog` | #F5F3F1 | canvas (bg-base) | `tailwind.config.ts:19` |
-| `overlay` | #EEEAE5 | bg-overlay; hover-vulling secondary; inactieve primary | `tailwind.config.ts:20` |
-| `subtle` | #E6E2DC | bg-subtle | `tailwind.config.ts:21` |
-| `field` | #F9F7F4 | formuliervelden | `tailwind.config.ts:22` |
-| `card` | #FFFFFF | cards / bg-raised | `tailwind.config.ts:23` |
-| `ink.DEFAULT` | #1F2730 | primaire tekst, donkere footer, primary-vulling | `tailwind.config.ts:25` |
-| `ink.soft` | #28313B | zachte ink | `tailwind.config.ts:26` |
-| `accent.DEFAULT` | #28313B | CTA / actieve states / prijzen | `tailwind.config.ts:29` |
-| `accent.hover` | #1F2730 | hover van accent | `tailwind.config.ts:30` |
-| `accent.light` | #3A4652 | hover-vulling primary | `tailwind.config.ts:31` |
-| `stone.text` | #5F666D | secundaire tekst — het toegankelijke grijs (F-11) | `tailwind.config.ts:37` |
-| `stone.DEFAULT` | #999694 | alleen borders, decoratie, `aria-hidden`-tekens — **nooit tekst** (F-11) | `tailwind.config.ts:38` |
-| `stone.subtle` | #CBC8C4 | decoratie | `tailwind.config.ts:39` |
-| `line.DEFAULT` | rgba(31,39,48,0.10) | hairline | `tailwind.config.ts:42` |
-| `line.strong` | rgba(31,39,48,0.18) | sterkere hairline, inactief kader | `tailwind.config.ts:43` |
-| `secondary` | #5F666D | legacy-alias, zelfde waarde als `stone.text` | `tailwind.config.ts:45` |
-| `whatsapp` | #25d366 | uitsluitend WhatsApp-merkkleur | `tailwind.config.ts:46` |
-| `--hz-line` | rgba(31, 39, 48, 0.28) | Horizon-lijn (spine, focus-onderlijn) | `horizon.css:18` |
-| `--hz-line-soft` | rgba(31, 39, 48, 0.12) | zachte Horizon-lijn (ledger, frame, JourneyLine-spoor) | `horizon.css:19` |
+| `fog` | #F5F3F1 | canvas (bg-base) | ``tailwind.config.ts:19`` |
+| `overlay` | #EEEAE5 | bg-overlay; hover-vulling secondary; inactieve primary | ``tailwind.config.ts:20`` |
+| `subtle` | #E6E2DC | bg-subtle | ``tailwind.config.ts:21`` |
+| `field` | #F9F7F4 | formuliervelden | ``tailwind.config.ts:22`` |
+| `card` | #FFFFFF | cards / bg-raised | ``tailwind.config.ts:23`` |
+| `ink.DEFAULT` | #1F2730 | primaire tekst, donkere footer, primary-vulling | ``tailwind.config.ts:25`` |
+| `ink.soft` | #28313B | zachte ink | ``tailwind.config.ts:26`` |
+| `accent.DEFAULT` | #28313B | CTA / actieve states / prijzen | ``tailwind.config.ts:29`` |
+| `accent.hover` | #1F2730 | hover van accent | ``tailwind.config.ts:30`` |
+| `accent.light` | #3A4652 | hover-vulling primary | ``tailwind.config.ts:31`` |
+| `stone.text` | #5F666D | secundaire tekst — het toegankelijke grijs (F-11) | `tailwind.config.ts:34` |
+| `stone.DEFAULT` | #999694 | alleen borders, decoratie, `aria-hidden`-tekens — **nooit tekst** (F-11) | `tailwind.config.ts:35` |
+| `stone.subtle` | #CBC8C4 | decoratie | ``tailwind.config.ts:39`` |
+| `line.DEFAULT` | rgba(31,39,48,0.10) | hairline | ``tailwind.config.ts:42`` |
+| `line.strong` | rgba(31,39,48,0.18) | sterkere hairline, inactief kader | ``tailwind.config.ts:43`` |
+| `secondary` | #5F666D | legacy-alias, zelfde waarde als `stone.text` | ``tailwind.config.ts:45`` |
+| `whatsapp` | #25d366 | uitsluitend WhatsApp-merkkleur | ``tailwind.config.ts:46`` |
+| `--hz-line` | rgba(31, 39, 48, 0.28) | Horizon-lijn (spine, focus-onderlijn) | `horizon.css:28` |
+| `--hz-line-soft` | rgba(31, 39, 48, 0.12) | zachte Horizon-lijn (ledger, frame, JourneyLine-spoor) | `horizon.css:29` |
 
 CTA-kleuren alleen uit `accent`/`ink` (masterplan §5b).
 
@@ -89,10 +89,10 @@ Drie families, maximaal (B1, bewaakt door `lib/design/display-font.test.ts`):
 
 | Token | Stack | Rol | Bron |
 |---|---|---|---|
-| `font-display` | `var(--font-outfit)`, system-ui, sans-serif | UI-display, booking sentence | `tailwind.config.ts:49`; Outfit `app/[locale]/layout.tsx:25` |
-| `font-body` | `var(--font-inter)`, system-ui, sans-serif | UI en lopende tekst | `tailwind.config.ts:50`; Inter `layout.tsx:31` |
-| `font-display-serif` | `var(--font-playfair)`, Georgia, serif | **alleen Brand Mode-display ≥ 48px** | `tailwind.config.ts:12,52`; Playfair `layout.tsx:41` |
-| `font-playfair` | idem | legacy-alias voor `/dagtochten` (migreert fase 5) | `tailwind.config.ts:54` |
+| `font-display` | `var(--font-outfit)`, system-ui, sans-serif | UI-display, booking sentence | ``tailwind.config.ts:49``; Outfit `app/[locale]/layout.tsx:25` |
+| `font-body` | `var(--font-inter)`, system-ui, sans-serif | UI en lopende tekst | ``tailwind.config.ts:50``; Inter `layout.tsx:31` |
+| `font-display-serif` | `var(--font-playfair)`, Georgia, serif | **alleen Brand Mode-display ≥ 48px** | ``tailwind.config.ts:12,52``; Playfair `layout.tsx:41` |
+| `font-playfair` | idem | legacy-alias voor `/dagtochten` (migreert fase 5) | ``tailwind.config.ts:54`` |
 
 Alle drie via `next/font` met `display: "swap"`; Playfair alleen `latin`, `style: "normal"`,
 geen `weight` (variabel, één bestand) — `layout.tsx:41-46`.
@@ -110,6 +110,7 @@ geen `weight` (variabel, één bestand) — `layout.tsx:41-46`.
 | `text-body-lg` | clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem) | 1.6 | — | §3, nog niet geadopteerd |
 | `text-meta` | 0.6875rem | 1.2 | 0.16em | §3 |
 | `text-display-serif` | clamp(3rem, 7.6vw, 6.75rem) | 1.04 | -0.015em | B1, Brand Mode |
+| `text-display-serif-split` | clamp(3rem, 5.4vw, 7rem) | 1.04 | -0.015em | B1, hero-h1 in de 48%-splitkolom (PR 1.4) |
 
 **Display-serif-regel (B1, design-specs §13f).** *Brand Mode* = niet-transactionele
 merk- en redactionele koppen. Serif wél: hero-h1 "Van voordeur tot vertrekhal."
@@ -128,7 +129,7 @@ draagstem 600 (`font-semibold`), echostem 400 (`font-normal text-stone-text`), o
 | Maximale breedte | `max-w-site` = 75rem | `tailwind.config.ts:83` |
 | Zijmarge | `px-[5vw]` op alle viewports | `components/horizon/patterns.tsx:137` (`Viewport`), o.a. `app/[locale]/tarieven/page.tsx` |
 | Kolommen | 12 (`lg:grid-cols-12`), geen token | enig gebruik `app/[locale]/page.tsx:160` |
-| Horizon-lijn | `--hz-y` 62svh, ≤ 768px 56svh | `horizon.css:20,23` |
+| Horizon-lijn | `--hz-y` 62svh, ≤ 768px 56svh | `horizon.css:30,33` |
 
 Spec (§13a) noemt een mobiele gutter van 16px; die bestaat niet in code — zie §6.
 
@@ -143,10 +144,10 @@ tussen statements: `Breath` = 22svh (`patterns.tsx:152`).
 
 | Token | Waarde | Gebruik | Bron |
 |---|---|---|---|
-| `rounded-field` | 14px | formuliervelden | `tailwind.config.ts:81` |
-| `rounded-card` | 24px | cards | `tailwind.config.ts:78` |
-| `rounded-card-lg` | 30px | legacy (1 gebruik) | `tailwind.config.ts:79` |
-| `rounded-fleet` | 34px | legacy vlootkaarten (2 gebruiken) | `tailwind.config.ts:80` |
+| `rounded-field` | 14px | formuliervelden | `tailwind.config.ts:84` |
+| `rounded-card` | 24px | cards | `tailwind.config.ts:81` |
+| `rounded-card-lg` | 30px | legacy (1 gebruik) | `tailwind.config.ts:82` |
+| `rounded-fleet` | 34px | legacy vlootkaarten (2 gebruiken) | `tailwind.config.ts:83` |
 
 Geen nieuwe radii (§13a). Button v2 en JourneyLine hebben geen radius (behalve de punten).
 
@@ -160,11 +161,11 @@ voorbehouden aan Button `primary`/`secondary` (`components/ui/button-styles.ts:3
 
 | Token | Waarde | Bron |
 |---|---|---|
-| `shadow-card` | 0 22px 60px rgba(31,39,48,0.08) | `tailwind.config.ts:71` |
-| `shadow-cta` | 0 18px 34px rgba(31,39,48,0.18) | `tailwind.config.ts:74` |
-| `shadow-card-lg` | 0 28px 90px rgba(31,39,48,0.10) | `tailwind.config.ts:72` (legacy) |
-| `shadow-hero-card` | 0 30px 90px rgba(31,39,48,0.14) | `tailwind.config.ts:73` (legacy) |
-| `shadow-nav` | 0 12px 34px rgba(31,39,48,0.08) | `tailwind.config.ts:75` (legacy) |
+| `shadow-card` | 0 22px 60px rgba(31,39,48,0.08) | `tailwind.config.ts:74` |
+| `shadow-cta` | 0 18px 34px rgba(31,39,48,0.18) | `tailwind.config.ts:77` |
+| `shadow-card-lg` | 0 28px 90px rgba(31,39,48,0.10) | `tailwind.config.ts:75` (legacy) |
+| `shadow-hero-card` | 0 30px 90px rgba(31,39,48,0.14) | `tailwind.config.ts:76` (legacy) |
+| `shadow-nav` | 0 12px 34px rgba(31,39,48,0.08) | `tailwind.config.ts:78` (legacy) |
 
 Doel §13a: maximaal twee niveaus, `card` en `cta`. De drie overige bestaan en zijn in
 gebruik — zie §6. Geen schaduw-stapels (§5b). Button v2 heeft geen schaduw.
@@ -186,7 +187,7 @@ Alleen wat in code bestaat heeft een contract. Status per component uit §13a:
 | Button (incl. Link/TextAction als `variant="text"`) | **gebouwd** (v2), nog nergens geadopteerd | `components/ui/Button.tsx`, `button-styles.ts` |
 | JourneyLine | **gebouwd**, nog nergens geadopteerd | `components/horizon/JourneyLine.tsx` |
 | AddressAutocomplete | bestaat (v14), nog geen 2.0-contract; ARIA-combobox | `components/shared/AddressAutocomplete.tsx:270` |
-| Input / Select (boekingszin) | bestaat als CSS (`.hz-blank`, `.hz-time`, `.hz-focus`), geen component | `horizon.css:102-154` |
+| Input / Select (boekingszin) | bestaat als CSS (`.hz-blank`, `.hz-time`, `.hz-focus`), geen component | `horizon.css:164-216` |
 | PriceDisplay | nog niet gebouwd; prijs nu via `Odometer` | `components/horizon/motion.tsx:87` |
 | Header | bestaat (v14); 2.0-spec §13c nog niet gebouwd | `components/sections/Header.tsx:19` |
 | Footer | bestaat (v14); 2.0-spec §13c nog niet gebouwd | `components/sections/Footer.tsx:30` |
@@ -278,9 +279,9 @@ geen reizend punt (`journey-line.css:173-177`).
 | Empty | nog niet vastgelegd | — |
 | Loading (skeleton, geen spinner op prijs) | nog niet gebouwd; Button `loading` = `aria-busy` zonder spinner | — |
 | Dashboard (utility, geen editorial motion) | `components/dashboard/` | v14 |
-| Ledger | `LedgerPattern` — `patterns.tsx:593`, CSS `horizon.css:190-191` | in gebruik |
+| Ledger | `LedgerPattern` — `patterns.tsx:593`, CSS `horizon.css:252-253` | in gebruik |
 | Narrative | `NarrativePattern` — `patterns.tsx:160` | in gebruik |
-| Editorial figure | `EditorialFigure` — `patterns.tsx:643`, `.hz-frame` `horizon.css:194-206` | in gebruik |
+| Editorial figure | `EditorialFigure` — `patterns.tsx:643`, `.hz-frame` `horizon.css:256-268` | in gebruik |
 | Viewport / Breath / Spine | `patterns.tsx:109,152,65` | in gebruik |
 | Vows / Proof | `patterns.tsx:694,718` | in gebruik; Vows wordt "Service principles" (PR 3.1) |
 
@@ -294,23 +295,31 @@ wordt niet gebouwd. Geen motion-dependency (masterplan §10).
 
 | Werkwoord | Betekenis | Code |
 |---|---|---|
-| Reveal | content stijgt op naar de lijn (enter) | `Reveal` (`motion.tsx:27`), `.hz-reveal` (`horizon.css:59-72`) |
-| Travel | iets beweegt langs de horizon (ambient) | `.hz-spine`, `.hz-travel-*` (`horizon.css:27-52`); JourneyLine |
-| Guide | richting bij hover/focus | `.hz-guide-line`, `.hz-guide-arrow`, `.hz-guide-space` (`horizon.css:75-99`); Button `text` |
-| Focus | aandacht bij interactie | `.hz-focus` (`horizon.css:102-106`) |
-| Confirm | voltooide handeling bevestigt zich | `Odometer` (`motion.tsx:87`), `.hz-confirm-*` (`horizon.css:157-187`) |
+| Reveal | content stijgt op naar de lijn (enter) | `Reveal` (`motion.tsx:27`), `.hz-reveal` (`horizon.css:69-82`) |
+| Travel | iets beweegt langs de horizon (ambient) | `.hz-spine`, `.hz-travel-*` (`horizon.css:37-62`); JourneyLine |
+| Guide | richting bij hover/focus | `.hz-guide-line`, `.hz-guide-arrow`, `.hz-guide-space` (`horizon.css:137-161`); Button `text` |
+| Focus | aandacht bij interactie | `.hz-focus` (`horizon.css:164-168`) |
+| Confirm | voltooide handeling bevestigt zich | `Odometer` (`motion.tsx:87`), `.hz-confirm-*` (`horizon.css:219-249`) |
 
 **Tokens.** Eén easing, vijf tempo's (§5) plus één bestaande alias:
 
 | Token | Waarde | Gebruik | Bron |
 |---|---|---|---|
-| `--hz-ease` | cubic-bezier(0.22, 1, 0.36, 1) | de enige easing (chauffeur-curve) | `horizon.css:11` |
-| `--hz-micro` | 160ms | hover, underline, pijl, toggles | `horizon.css:12` |
-| `--hz-ui` | 280ms | sheets, stapwissel, header-shrink; Button-vulling | `horizon.css:13` |
-| `--hz-immediate` | 240ms | bestaande Guide/Focus-klassen; staat niet in §5 | `horizon.css:14` |
-| `--hz-composed` | 700ms | koppen, foto-reveal | `horizon.css:15` |
-| `--hz-cinematic` | 1100ms | alleen spine-draw en bevestiging | `horizon.css:16` |
-| `--hz-ambient` | 6000ms | vloot-drift, spine; onmerkbaar | `horizon.css:17` |
+| `--hz-ease` | cubic-bezier(0.22, 1, 0.36, 1) | de enige easing (chauffeur-curve) | ``horizon.css:11`` |
+| `--hz-micro` | 160ms | hover, underline, pijl, toggles | ``horizon.css:12`` |
+| `--hz-ui` | 280ms | sheets, stapwissel, header-shrink; Button-vulling | ``horizon.css:13`` |
+| `--hz-immediate` | 240ms | bestaande Guide/Focus-klassen; staat niet in §5 | ``horizon.css:14`` |
+| `--hz-composed` | 700ms | koppen, foto-reveal | ``horizon.css:15`` |
+| `--hz-cinematic` | 1100ms | alleen spine-draw en bevestiging | ``horizon.css:16`` |
+| `--hz-ambient` | 6000ms | vloot-drift, spine; onmerkbaar | ``horizon.css:17`` |
+| `--hz-hero-eyebrow` | 100ms | hero-cascade: eyebrow (PR 1.4) | `horizon.css:20` |
+| `--hz-hero-line1` | 180ms | hero-cascade: kopregel 1 (PR 1.4) | `horizon.css:21` |
+| `--hz-hero-line2` | 280ms | hero-cascade: kopregel 2 (PR 1.4) | `horizon.css:22` |
+| `--hz-hero-sub` | 430ms | hero-cascade: subcopy (PR 1.4) | `horizon.css:23` |
+| `--hz-hero-booking` | 550ms | hero-cascade: boekingszin (direct zichtbaar bij focus) (PR 1.4) | `horizon.css:24` |
+| `--hz-hero-trust` | 700ms | hero-cascade: trustline (PR 1.4) | `horizon.css:25` |
+| `--hz-rise-editorial` | 20px | stijghoogte kopregels (alleen hero-cascade) (PR 1.4) | `horizon.css:26` |
+| `--hz-rise-ui` | 12px | stijghoogte overige hero-delen (PR 1.4) | `horizon.css:27` |
 
 Tailwind-alias met dezelfde fallback (`tailwind.config.ts:87-96`): `ease-premium`,
 `duration-micro`, `duration-ui`, `duration-composed`, `duration-cinematic`,
@@ -319,11 +328,11 @@ de gelijkheid. Componentvariabelen: JourneyLine `--jl-run` 600ms (§4,
 `journey-line.css:25`).
 
 **Reduced motion per component.** Reveal, spine, Travel-tick, odometer, guide-line,
-guide-arrow, confirm-btn: direct eindstaat (`horizon.css:209-216`); `Odometer` slaat de
+guide-arrow, confirm-btn: direct eindstaat (`horizon.css:271-280`); `Odometer` slaat de
 rol over (`motion.tsx:95`); Button: `motion-reduce:transition-none`
 (`button-styles.ts:31,44,55,63,86`); JourneyLine: eindstaat zonder reiziger
 (`journey-line.css:173-177`). Zonder JavaScript is alle content zichtbaar: de
-Reveal-startstaat geldt alleen onder `html.js` (`horizon.css:54-62`); `Reveal immediate`
+Reveal-startstaat geldt alleen onder `html.js` (`horizon.css:64-72`); `Reveal immediate`
 voor inhoud boven de vouw (`motion.tsx:37-42`).
 
 **Nog niet gebouwd** (spec §3/§5): `Reveal`-prop `distance` (12/20/26px), `useStagger`,
@@ -398,34 +407,36 @@ in masterplan/design-specs leidend.
    headercommentaar van `Icon.tsx:2` zegt "stroke 2".
     → **Oppakken:** Fase 4 (afronding) als losse kleine PR; besluit 1,5 vs. 1,75.
 7. **Hardgecodeerde duren in `horizon.css`** buiten de tokens: travel-tick 160ms linear
-   (`:50`), guide-line 420ms (`:84`), guide-space 300ms (`:98`), odometer 850ms (`:167`),
-   confirm-btn 350ms (`:177,184`), reveal-vertraging 90/180/270ms (`:70-72`). Spec §5
+   (`:60`), guide-line 420ms (`:146`), guide-space 300ms (`:160`), odometer 850ms (`:229`),
+   confirm-btn 350ms (`:239,246`), reveal-vertraging 90/180/270ms (`:80-82`). Spec §5
    zegt "vijf tempo's".
-    → **Oppakken:** Hero-cascade (reveal-vertragingen): PR 1.4. Overige (Guide, Odometer, confirm-btn, travel-tick): Fase 4.
+    → **Oppakken:** Hero-cascade: **opgelost in PR 1.4** (eigen tokens `--hz-hero-*`, tijdlijn §5). De generieke Reveal-vertragingen 90/180/270 ms en overige (Guide, Odometer, confirm-btn, travel-tick): Fase 4.
 8. **Reveal-afstand.** §5: foto-reveal 12–20px; §3: `distance` 12/20/26px. Code: vast 26px
-   (`horizon.css:61`), geen `distance`-prop.
-    → **Oppakken:** Hero: PR 1.4 (§5-cascade). Overige Reveal-gebruik: Fase 4 (ScrollReveal → Reveal).
+   (`horizon.css:71`), geen `distance`-prop.
+    → **Oppakken:** Hero: **opgelost in PR 1.4** (`--hz-rise-editorial` 20px, `--hz-rise-ui` 12px). Overige Reveal-gebruik (26px): Fase 4 (ScrollReveal → Reveal).
 9. **`--hz-immediate` (240ms)** staat niet in §5 en wordt nog door Guide/Focus gebruikt;
    §3 noemt het een alias, maar het is een eigen waarde (tussen micro en ui).
     → **Oppakken:** Besloten 08-10: blijft 240 ms. Specs aanvullen (§5) in Fase 4; geen codewijziging.
 10. **Button-vulling en `.hz-confirm-btn`.** §3: primary "hergebruik `.hz-confirm-btn`,
     richting links→rechts". Code: Button v2 heeft een eigen `scaleX`-vulling
     (`button-styles.ts:38-45`); `.hz-confirm-btn` vult nog van onder (`scaleY`,
-    `horizon.css:172-187`) en wordt in geen enkele `.tsx` gebruikt.
+    `horizon.css:234-249`) en wordt in geen enkele `.tsx` gebruikt.
     → **Oppakken:** Fase 2.1 (adoptie Button v2; `.hz-confirm-btn` opruimen of gelijktrekken).
 11. **Hover-tempo Button.** §5 koppelt hover aan `--hz-micro`; de primary/secondary-
     hovervulling loopt op `--hz-ui` 280ms (`button-styles.ts:41,52`). §13e noemt geen duur.
     → **Oppakken:** Fase 2.1 (bij adoptie); besluit micro vs. ui-tempo voor de vulling.
-12. **Hero-h1: tokenverwijzing ontbreekt, font is correct.** Op `main` (na #62) gebruikt de
-    hero-h1 het familie-token `font-display-serif` (Playfair Display, rechtop, 600/400,
-    ≥ 48px) — conform B1. Alleen de **grootte** komt niet uit `text-display-serif`: de hero
-    zet een eigen clamp (48→108px, md 48→112px) met `leading-[1.02]` i.p.v. 1.04
-    (`app/[locale]/page.tsx:306`), omdat hij in de 48%-splitkolom staat. B1 staat niet ter
-    discussie; het gaat om een ontbrekende tokenvariant voor de splitkolom.
-    → **Oppakken:** PR 1.4 (hero).
+12. ~~**Hero-h1: tokenverwijzing ontbrak.**~~ **Opgelost in PR 1.4:** de hero-h1 gebruikt
+    `text-display-serif md:text-display-serif-split` (nieuw token voor de 48%-splitkolom);
+    line-height nu 1.04 conform §13f. Het font was al correct (B1).
 13. ~~**Verouderde verwijzing.**~~ Opgelost in PR 1.5: `app/[locale]/layout.tsx:37` verwijst
     nu naar design-specs §13f.
 14. **Dubbele kleurwaarden.** `accent.DEFAULT` = `ink.soft` (#28313B), `accent.hover` =
     `ink.DEFAULT` (#1F2730), `secondary` = `stone.text` (#5F666D). Geen fout, wel drie
     namen voor twee waarden.
     → **Oppakken:** Fase 4 (tokenopschoning); geen functioneel effect.
+15. **Hero-cascade-poort.** §5: animaties alleen onder `html.js`. PR 1.4 gebruikt
+    `@media (scripting: enabled)`, omdat `html.js` in de App Router pas ná de eerste paint
+    gezet wordt (gemeten ~2,2 s vs. ~1,0 s) en de hero dan zou flitsen en LCP herstarten.
+    Zelfde bedoeling (zonder JS geen animatie).
+    → **Oppakken:** besluit eigenaar (aanbevolen: §5 aanpassen naar "alleen met scripting
+    actief; `html.js` of `scripting: enabled`").
