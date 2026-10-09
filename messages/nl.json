@@ -173,7 +173,7 @@
     "typeBestemming": "Bestemming",
     "typeAdres": "Adres",
     "aantal": "{count, plural, one {# suggestie} other {# suggesties}} beschikbaar. Gebruik de pijltjestoetsen om te kiezen.",
-    "lijstLabel": "Suggesties voor {label}"
+    "lijstLabel": "Adressuggesties"
   },
   "tarieven": {
     "kicker": "Vaste tarieven — geen taxameter, geen verrassing",

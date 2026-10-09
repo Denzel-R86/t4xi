@@ -173,7 +173,7 @@
     "typeBestemming": "Destination",
     "typeAdres": "Address",
     "aantal": "{count, plural, one {# suggestion} other {# suggestions}} available. Use the arrow keys to choose.",
-    "lijstLabel": "Suggestions for {label}"
+    "lijstLabel": "Address suggestions"
   },
   "tarieven": {
     "kicker": "Fixed fares — no meter, no surprises",
