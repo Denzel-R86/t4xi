@@ -31,6 +31,33 @@ async function openBooking(page: Page, query: string) {
 }
 
 test.describe("BookingSection-stappen (PR 2.4)", () => {
+  test("na een geslaagde boeking: geen tweede inzending en geen wijzigacties meer", async ({ page }) => {
+    await stabilize(page, { quote: "ready", booking: "ok" });
+    let posts = 0;
+    page.on("request", (r) => {
+      if (r.method() === "POST" && r.url().includes("/api/bookings")) posts += 1;
+    });
+    await open(page, `/boeken?${FULL}`);
+    await next(page).click();
+    await page.getByRole("textbox", { name: "Naam", exact: true }).fill("Behaviour Test");
+    await page.getByRole("textbox", { name: "Telefoon", exact: true }).fill("+31612345678");
+    await page.getByRole("textbox", { name: "E-mail", exact: true }).fill("behaviour@example.test");
+    await next(page).click();
+    await page.getByRole("button", { name: "Boeking bevestigen" }).click();
+
+    const status = page.getByRole("status").filter({ hasText: /T4X-VISUAL-0001/ });
+    await expect(status).toBeVisible();
+    await expect(status).toBeFocused();
+    // Stappen, wijzigacties en verzendknop zijn weg; de betaalstap blijft.
+    await expect(page.getByRole("button", { name: "Boeking bevestigen" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Terug" })).toHaveCount(0);
+    await expect(progress(page)).toBeHidden();
+    // Enter in de pagina kan geen tweede boeking meer versturen.
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(300);
+    expect(posts).toBe(1);
+  });
+
   test("ongeldig telefoonnummer: focus, aria-invalid en gekoppelde melding op het telefoonveld", async ({ page }) => {
     const bodies = await openBooking(page, FULL);
 

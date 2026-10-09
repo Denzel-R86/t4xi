@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import PaymentStep from "@/components/booking/PaymentStep";
@@ -120,6 +120,10 @@ export default function BookingSection({
     | { status: "error"; message: string; kind: GeneralErrorKind };
   const [submit, setSubmit] = useState<SubmitState>({ status: "idle" });
   const loading = submit.status === "loading";
+  // Na een geslaagde boeking is het formulier afgesloten: geen tweede inzending en geen
+  // twijfel over welke gegevens bij de betaling horen. Alleen bevestiging + betaalstap.
+  const booked = submit.status === "success";
+  const successRef = useRef<HTMLDivElement>(null);
 
   // ── Stappenweergave (PR 2.4): alleen presentatie, geen invloed op payload ──
   const [contact, setContact] = useState<ContactSummary>({ name: "", phone: "", email: "" });
@@ -158,9 +162,14 @@ export default function BookingSection({
     if (submit.status === "success") clearHandoff();
   }, [submit.status]);
 
+  // Focus naar de bevestiging zodra de boeking is aangemaakt (het formulier verdwijnt).
+  useEffect(() => {
+    if (booked) successRef.current?.focus();
+  }, [booked]);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (loading) return; // geen dubbele submit
+    if (loading || booked) return; // geen dubbele submit, ook niet na een geslaagde boeking
     if (!quoteAllowsBooking) {
       setSubmit({ status: "error", kind: "price", message: t("prijsFout") });
       return;
@@ -375,7 +384,7 @@ export default function BookingSection({
 
       {submit.status === "success" && (
         <div className="mb-5">
-          <div className="rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700" role="status" aria-live="polite">
+          <div ref={successRef} tabIndex={-1} className="rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700 focus:outline-none" role="status" aria-live="polite">
             <div className="flex items-center justify-center gap-2 font-semibold">
               <Icon name="check" size={16} />
               {t("succesRef")} {submit.bookingRef}
@@ -406,9 +415,13 @@ export default function BookingSection({
 
       {handoff && <HandoffRouteLine pickup={pickup} dropoff={dropoff} quote={quote} />}
 
-      <StepProgress current={step} onGoTo={goTo} />
+      {/* Na boeken verborgen (niet ontkoppeld): state en anti-stale-logica blijven intact,
+          maar de stappen, wijzigacties en de verzendknop zijn niet meer bereikbaar. */}
+      <div hidden={booked} inert={booked || undefined}>
+        <StepProgress current={step} onGoTo={goTo} />
+      </div>
 
-      <form ref={formRef} onSubmit={handleSubmit} onInput={clearFieldErrorOnInput} onKeyDown={onFormKeyDown}>
+      <form ref={formRef} hidden={booked} inert={booked || undefined} onSubmit={handleSubmit} onInput={clearFieldErrorOnInput} onKeyDown={onFormKeyDown}>
         {/* Honeypot — verborgen voor mensen, zichtbaar voor bots. Blijft leeg bij
             echte gebruikers; als het gevuld is blokkeert /api/bookings stil. */}
         <div aria-hidden="true" style={{ display: "none" }}>
