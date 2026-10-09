@@ -7,7 +7,9 @@ import {
   HANDOFF_KEY,
   HANDOFF_TTL_MS,
   parseHandoff,
-  priceWhileVerifying,
+  handoffRideUnchanged,
+  priceWasUpdated,
+  provisionalPrice,
   readHandoff,
   rememberShownPrice,
   shownPriceFor,
@@ -130,28 +132,73 @@ test("clearHandoff verwijdert de rit", () => {
   assert.equal(readHandoff({ storage, now: T0 }), null);
 });
 
-test("prijs in geheugen alleen voor exact dezelfde quoteId", () => {
-  rememberShownPrice("q_abc-123", 89);
-  assert.equal(shownPriceFor("q_abc-123"), 89);
-  assert.equal(shownPriceFor("q_other"), null);
-  assert.equal(shownPriceFor(null), null);
-  rememberShownPrice("q_x", Number.NaN);
-  assert.equal(shownPriceFor("q_x"), null);
+test("prijs in geheugen alleen voor exact dezelfde quoteId en binnen de quote-TTL", () => {
+  rememberShownPrice("q_abc-123", 89, T0);
+  assert.deepEqual(shownPriceFor("q_abc-123", T0 + 1000), { price: 89, expiresAt: T0 + HANDOFF_TTL_MS });
+  assert.equal(shownPriceFor("q_abc-123", T0 + HANDOFF_TTL_MS), null, "verlopen quote");
+  assert.equal(shownPriceFor("q_other", T0), null);
+  assert.equal(shownPriceFor(null, T0), null);
+  rememberShownPrice("q_x", Number.NaN, T0);
+  assert.equal(shownPriceFor("q_x", T0), null);
 });
 
-test("prijs tijdens verificatie: alleen ongewijzigde enkele rit en alleen tot de hook antwoordt", () => {
+test("rit ongewijzigd: alleen exact de hero-rit, enkele rit", () => {
   const initial = { pickup: RIDE.pickup, dropoff: RIDE.dropoff, date: RIDE.date, time: RIDE.time, persons: 2, luggage: RIDE.luggage };
   const current = { ...initial, returnTrip: false };
-  assert.equal(priceWhileVerifying({ price: 89, initial, current, quoteStatus: "loading" }), 89);
-  assert.equal(priceWhileVerifying({ price: 89, initial, current, quoteStatus: "idle" }), 89);
-  for (const status of ["ready", "onrequest", "error"]) {
-    assert.equal(priceWhileVerifying({ price: 89, initial, current, quoteStatus: status }), null, status);
+  assert.equal(handoffRideUnchanged(initial, current), true);
+  assert.equal(handoffRideUnchanged(initial, { ...current, persons: 3 }), false);
+  assert.equal(handoffRideUnchanged(initial, { ...current, time: "14:31" }), false);
+  assert.equal(handoffRideUnchanged(initial, { ...current, returnTrip: true }), false);
+  assert.equal(handoffRideUnchanged({}, {}), false, "gewone deep-link: nooit");
+});
+
+test("voorlopige prijs (besluit #70): alleen zolang de server nog niet antwoordde", () => {
+  const shown = { price: 89, expiresAt: T0 + HANDOFF_TTL_MS };
+  const base = { shown, now: T0, settled: false, rideUnchanged: true };
+  assert.equal(provisionalPrice({ ...base, quote: { status: "idle" } }), 89);
+  assert.equal(provisionalPrice({ ...base, quote: { status: "loading" } }), 89);
+  // vervalt direct bij elke serveruitkomst
+  assert.equal(provisionalPrice({ ...base, quote: { status: "ready", price: 89 } }), null);
+  assert.equal(provisionalPrice({ ...base, quote: { status: "ready", price: 97 } }), null, "gewijzigd bedrag");
+  assert.equal(provisionalPrice({ ...base, quote: { status: "error" } }), null, "error");
+  assert.equal(provisionalPrice({ ...base, quote: { status: "onrequest" } }), null, "onrequest");
+  // verlopen quote
+  assert.equal(provisionalPrice({ ...base, now: T0 + HANDOFF_TTL_MS, quote: { status: "loading" } }), null, "verlopen");
+  // ooit al een uitkomst gehad (bv. error, daarna opnieuw laden) → komt nooit terug
+  assert.equal(provisionalPrice({ ...base, settled: true, quote: { status: "loading" } }), null, "settled");
+  // rit gewijzigd of geen onthouden prijs
+  assert.equal(provisionalPrice({ ...base, rideUnchanged: false, quote: { status: "loading" } }), null);
+  assert.equal(provisionalPrice({ ...base, shown: null, quote: { status: "loading" } }), null);
+});
+
+test("melding 'prijs bijgewerkt' alleen bij een ánder serverbedrag voor dezelfde rit", () => {
+  const shown = { price: 89, expiresAt: T0 + HANDOFF_TTL_MS };
+  assert.equal(priceWasUpdated({ shown, rideUnchanged: true, quote: { status: "ready", price: 97 } }), true);
+  assert.equal(priceWasUpdated({ shown, rideUnchanged: true, quote: { status: "ready", price: 89 } }), false);
+  assert.equal(priceWasUpdated({ shown, rideUnchanged: true, quote: { status: "loading" } }), false);
+  assert.equal(priceWasUpdated({ shown, rideUnchanged: true, quote: { status: "error" } }), false);
+  assert.equal(priceWasUpdated({ shown, rideUnchanged: false, quote: { status: "ready", price: 97 } }), false);
+  assert.equal(priceWasUpdated({ shown: null, rideUnchanged: true, quote: { status: "ready", price: 97 } }), false);
+});
+
+test("lock: boeken uitsluitend op de quote van de hook; voorlopige prijs nooit in payload of als vaste prijs", () => {
+  const section = readFileSync("components/booking/BookingSection.tsx", "utf8");
+  const submit = section.slice(section.indexOf("async function handleSubmit"), section.indexOf("const meta = useMemo"));
+  assert.match(submit, /quoteId: quote\.status === "ready" \? quote\.quoteId : null,/);
+  assert.doesNotMatch(submit, /handoff|provisional|shown/i);
+  // Volgende vanuit Rit (en dus Gegevens/Bevestigen) pas na een serveruitkomst.
+  assert.match(section, /if \(step === "rit" && !quoteAllowsBooking\) \{\s*if \(quote\.status === "loading"\) return;/);
+  assert.match(section, /disabled=\{loading \|\| !quoteReady \|\| !quoteAllowsBooking\}/);
+  assert.match(section, /\(quote\.status === "ready" && quote\.quoteId\.length > 0\) \|\| quote\.status === "onrequest"/);
+  const preview = readFileSync("components/booking/steps/PricePreview.tsx", "utf8");
+  assert.match(preview, /const priceNote = provisional\s*\? t\("prijsVerifieren"\)/);
+  assert.match(preview, /aria-busy=\{provisional \|\| quote\.status === "loading"\}/);
+  assert.match(preview, /provisional \? "font-semibold text-secondary" : "font-bold text-accent"/);
+  for (const lang of ["nl", "en"]) {
+    const m = JSON.parse(readFileSync(`messages/${lang}.json`, "utf8")).booking;
+    assert.match(m.prijsVerifieren, lang === "nl" ? /^Voorlopige prijs/ : /^Provisional price/);
+    assert.doesNotMatch(m.prijsVerifieren + m.prijsBijgewerkt, /vast|fixed|bevestig|confirm|garantie|guarantee/i);
   }
-  assert.equal(priceWhileVerifying({ price: 89, initial, current: { ...current, persons: 3 }, quoteStatus: "loading" }), null);
-  assert.equal(priceWhileVerifying({ price: 89, initial, current: { ...current, returnTrip: true }, quoteStatus: "loading" }), null);
-  assert.equal(priceWhileVerifying({ price: null, initial, current, quoteStatus: "loading" }), null);
-  // Zonder handoff-beginwaarden (gewone deep-link) nooit een prijs
-  assert.equal(priceWhileVerifying({ price: 89, initial: {}, current: {}, quoteStatus: "loading" }), null);
 });
 
 test("lock: SentencePattern zet geen vrij adres meer in de href", () => {

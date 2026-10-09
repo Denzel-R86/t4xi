@@ -152,38 +152,69 @@ export function handoffSnapshot(): HandoffRide | null {
   return cachedRide;
 }
 
-/* ── Prijs in het geheugen (géén storage) ─────────────────────────────────────
+/* ── Voorlopige prijs in het geheugen (géén storage) ──────────────────────────
  * Bij een client-side navigatie hero → /boeken leeft dezelfde JS-context door. De
- * hero onthoudt daarom de prijs die de server zojuist voor `quoteId` gaf, zodat
- * /boeken dezelfde prijs direct kan tonen terwijl de hook verifiërend herrekent.
- * Niets hiervan komt uit storage: na een herlaadactie is het geheugen leeg en
- * wacht /boeken gewoon op de server. Boeken kan alleen op de quote van de hook. */
-let shown: { quoteId: string; price: number } | null = null;
+ * hero onthoudt de prijs die de server zojuist voor `quoteId` gaf; /boeken mag die
+ * als VOORLOPIG tonen terwijl de hook verifiërend herrekent (besluit eigenaar, #70).
+ * Niets hiervan komt uit storage: na een herlaadactie is het geheugen leeg en wacht
+ * /boeken gewoon op de server. Boeken kan alleen op de quote van de hook. */
+export type ShownPrice = { price: number; expiresAt: number };
+let shown: ({ quoteId: string } & ShownPrice) | null = null;
 
-export function rememberShownPrice(quoteId: string, price: number): void {
-  shown = Number.isFinite(price) && price > 0 ? { quoteId, price } : null;
+/** `now` = moment waarop de server de prijs gaf; de quote verloopt na de quote-TTL. */
+export function rememberShownPrice(quoteId: string, price: number, now: number = Date.now()): void {
+  shown = Number.isFinite(price) && price > 0 ? { quoteId, price, expiresAt: now + HANDOFF_TTL_MS } : null;
 }
 
-export function shownPriceFor(quoteId: string | null): number | null {
-  return quoteId && shown?.quoteId === quoteId ? shown.price : null;
+export function shownPriceFor(quoteId: string | null, now: number = Date.now()): ShownPrice | null {
+  if (!quoteId || shown?.quoteId !== quoteId || now >= shown.expiresAt) return null;
+  return { price: shown.price, expiresAt: shown.expiresAt };
 }
 
 type RideFields = Omit<HandoffRide, "quoteId"> & { returnTrip: boolean };
 
-/**
- * Welke prijs /boeken mag tonen vóórdat de hook geantwoord heeft: de onthouden
- * server-prijs, maar alléén zolang de rit exact die uit de hero is (enkel, zelfde
- * velden) en de hook nog idle/loading is. Anders `null` → alleen de hook telt.
- */
-export function priceWhileVerifying(opts: {
-  price: number | null | undefined;
-  initial: Partial<Omit<RideFields, "returnTrip">>;
-  current: Partial<RideFields>;
-  quoteStatus: string;
-}): number | null {
-  const { price, initial, current, quoteStatus } = opts;
-  if (price == null || (quoteStatus !== "idle" && quoteStatus !== "loading")) return null;
-  if (current.returnTrip) return null;
+/** Is de rit nog exact die uit de hero (enkele rit, zelfde velden)? */
+export function handoffRideUnchanged(
+  initial: Partial<Omit<RideFields, "returnTrip">>,
+  current: Partial<RideFields>
+): boolean {
+  if (current.returnTrip) return false;
   const keys = ["pickup", "dropoff", "date", "time", "persons", "luggage"] as const;
-  return keys.every((k) => initial[k] !== undefined && initial[k] === current[k]) ? price : null;
+  return keys.every((k) => initial[k] !== undefined && initial[k] === current[k]);
+}
+
+export type QuoteOutcome =
+  | { status: "idle" | "loading" }
+  | { status: "ready"; price: number }
+  | { status: "onrequest" | "error" };
+
+/**
+ * Voorlopige prijs: alléén zolang de server voor deze rit nog níét geantwoord heeft
+ * (`settled` = de hook gaf al ooit een uitkomst — ready, onrequest of error — sinds
+ * /boeken opende), de rit ongewijzigd is en de onthouden quote niet verlopen is.
+ * Eenmaal vervallen komt hij nooit terug. Anders `null`: alleen de server telt.
+ */
+export function provisionalPrice(opts: {
+  shown: ShownPrice | null | undefined;
+  now: number;
+  settled: boolean;
+  rideUnchanged: boolean;
+  quote: QuoteOutcome;
+}): number | null {
+  const { shown: s, now, settled, rideUnchanged, quote } = opts;
+  if (!s || settled || !rideUnchanged || now >= s.expiresAt) return null;
+  return quote.status === "idle" || quote.status === "loading" ? s.price : null;
+}
+
+/**
+ * Melding "prijs bijgewerkt": de server antwoordde voor dezelfde rit met een ánder
+ * bedrag dan de hero toonde. De getoonde prijs is dan al die van de server.
+ */
+export function priceWasUpdated(opts: {
+  shown: ShownPrice | null | undefined;
+  rideUnchanged: boolean;
+  quote: QuoteOutcome;
+}): boolean {
+  const { shown: s, rideUnchanged, quote } = opts;
+  return s != null && rideUnchanged && quote.status === "ready" && quote.price !== s.price;
 }

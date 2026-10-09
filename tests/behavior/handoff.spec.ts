@@ -67,6 +67,63 @@ test.describe("Handoff hero → /boeken (PR 2.3)", () => {
     expect(decodeURIComponent(page.url())).not.toMatch(/voorbeeldstraat|pickup=|dropoff=/i);
   });
 
+  test("besluit #70: afwijkende serverprijs — eerst voorlopig, dan nieuw bedrag + melding; bevestigen pas daarna", async ({ page }) => {
+    await stabilize(page, { quote: "ready" });
+    const bookings: Record<string, unknown>[] = [];
+    await page.route("**/api/bookings", (route) => {
+      bookings.push(JSON.parse(route.request().postData() ?? "{}"));
+      return route.fulfill({ status: 400, contentType: "application/json", body: '{"ok":false,"message":"stop"}' });
+    });
+    await open(page, "/");
+    await fillSentence(page);
+
+    const held: Route[] = [];
+    await page.route("**/api/pricing/quote", (route) => void held.push(route));
+    await sentence(page).getByRole("link", { name: "Bekijk mijn vaste prijs" }).click();
+    await expect(page).toHaveURL(/\/boeken\?h=1$/);
+    await expect.poll(() => held.length).toBeGreaterThan(0);
+
+    // Voorlopig: gemarkeerd (tekst, aria-busy), géén vaste-prijslabel; doorgaan kan niet.
+    const region = priceRegion(page);
+    await expect(region).toHaveAttribute("data-price-state", "provisional");
+    await expect(region).toHaveAttribute("aria-busy", "true");
+    await expect(region).toContainText("Voorlopige prijs uit uw zoekopdracht");
+    await expect(region).toContainText("Voorlopig:");
+    await expect(region).toContainText("89,00");
+    await expect(region).not.toContainText(/Vaste prijs|Uw vaste prijs/);
+    const next = page.getByRole("button", { name: "Volgende" });
+    await expect(next).toBeDisabled();
+    await expect(currentStep(page)).toContainText("Rit");
+    await expect(page.getByRole("button", { name: "Boeking bevestigen" })).toHaveCount(0);
+
+    // Server antwoordt met een ánder bedrag.
+    const changed = { ...JSON.parse(fixture("quote-ready")), price: 97, quoteId: "behavior-changed-quote" };
+    for (const r of held.splice(0)) {
+      await r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(changed) }).catch(() => {});
+    }
+    await expect(region).toHaveAttribute("data-price-state", "ready");
+    await expect(region).toHaveAttribute("aria-busy", "false");
+    await expect(region).toContainText("97,00");
+    await expect(region).not.toContainText("89,00");
+    await expect(region).not.toContainText("Voorlopig");
+    await expect(page.getByRole("status").filter({ hasText: "De prijs is bijgewerkt naar de actuele berekening." })).toBeVisible();
+
+    // Pas nu verder; in Bevestigen staat het nieuwe bedrag en boekt de hook-quote.
+    await expect(next).toBeEnabled();
+    await next.click();
+    await expect(currentStep(page)).toContainText("Gegevens");
+    await page.getByRole("textbox", { name: "Naam", exact: true }).fill("Behaviour Test");
+    await page.getByRole("textbox", { name: "Telefoon", exact: true }).fill("+31612345678");
+    await page.getByRole("textbox", { name: "E-mail", exact: true }).fill("behaviour@example.test");
+    await next.click();
+    await expect(currentStep(page)).toContainText("Bevestigen");
+    await expect(region).toContainText("97,00");
+    await page.getByRole("button", { name: "Boeking bevestigen" }).click();
+    await expect.poll(() => bookings.length).toBe(1);
+    expect(bookings[0].quoteId).toBe("behavior-changed-quote");
+    expect(JSON.stringify(bookings[0])).not.toMatch(/"price"/);
+  });
+
   test("publieke deep-link blijft werken", async ({ page }) => {
     await stabilize(page, { quote: "ready" });
     await open(page, `/boeken?pickup=${encodeURIComponent("Almere Poort")}&dropoff=Schiphol&date=${RIDE.date}&time=${RIDE.time}&luggage=1-2-koffers`);

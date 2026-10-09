@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore, type ComponentProps } from "react";
 import BookingSection from "@/components/booking/BookingSection";
-import { handoffSnapshot, shownPriceFor, type HandoffRide } from "@/lib/booking-handoff";
+import { handoffSnapshot, shownPriceFor, type HandoffRide, type ShownPrice } from "@/lib/booking-handoff";
 
 type SectionProps = NonNullable<ComponentProps<typeof BookingSection>>;
 
@@ -10,7 +10,7 @@ const noSubscribe = () => () => {};
 const serverSnapshot = () => null;
 
 /** Handoff → beginwaarden van het formulier; de prijs komt nooit uit storage. */
-export function handoffSectionProps(ride: HandoffRide, knownPrice: number | null): SectionProps {
+export function handoffSectionProps(ride: HandoffRide, shown: ShownPrice | null): SectionProps {
   return {
     initialPickup: ride.pickup,
     initialDropoff: ride.dropoff,
@@ -18,7 +18,7 @@ export function handoffSectionProps(ride: HandoffRide, knownPrice: number | null
     initialDate: ride.date,
     initialTime: ride.time,
     initialLuggage: ride.luggage,
-    handoff: { price: knownPrice },
+    handoff: { shown },
   };
 }
 

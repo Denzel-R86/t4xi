@@ -212,6 +212,13 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     if (reveal) result.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
   }, [quote.status, quoteReady, pickupLabel, dropoffLabel, date, time, luggage, passengers, reducedMotion]);
 
+  // Moment waarop de server deze quote gaf: de voorlopige prijs op /boeken
+  // verloopt met de quote, niet met het klikmoment.
+  const quoteReadyAt = useRef(0);
+  useEffect(() => {
+    if (quote.status === "ready") quoteReadyAt.current = Date.now();
+  }, [quote]);
+
   // §7 (PR 2.3): nooit een adres in de href. Is de zin compleet, dan gaat de rit
   // via de handoff (sessionStorage) naar /boeken?h=1; anders de publieke route.
   // Zonder JS bestaat er geen ingevulde zin, dus ook geen adres om te lekken.
@@ -236,7 +243,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     });
     // Storage geweigerd: /boeken?h=1 opent dan een leeg formulier (geen adres in de URL).
     if (!written) return;
-    if (quote.status === "ready") rememberShownPrice(quote.quoteId, quote.price);
+    if (quote.status === "ready") rememberShownPrice(quote.quoteId, quote.price, quoteReadyAt.current || Date.now());
     // Nieuw tabblad/venster (modifier of middelklik): gewone link-navigatie.
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
