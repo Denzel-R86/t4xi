@@ -395,9 +395,10 @@ export default function BookingSection({
       {/* Na boeken verborgen (niet ontkoppeld): state en anti-stale-logica blijven intact,
           maar de stappen, wijzigacties en de verzendknop zijn niet meer bereikbaar. */}
       <div hidden={booked} inert={booked || undefined}>
-      <StepProgress current={step} onGoTo={goTo} />
+        <StepProgress current={step} onGoTo={goTo} />
+      </div>
 
-      <form ref={formRef} onSubmit={handleSubmit} onInput={clearFieldErrorOnInput} onKeyDown={onFormKeyDown}>
+      <form ref={formRef} hidden={booked} inert={booked || undefined} onSubmit={handleSubmit} onInput={clearFieldErrorOnInput} onKeyDown={onFormKeyDown}>
         {/* Honeypot — verborgen voor mensen, zichtbaar voor bots. Blijft leeg bij
             echte gebruikers; als het gevuld is blokkeert /api/bookings stil. */}
         <div aria-hidden="true" style={{ display: "none" }}>
@@ -539,7 +540,6 @@ export default function BookingSection({
           </a>
         </p>
       </form>
-      </div>
     </div>
   );
 }
