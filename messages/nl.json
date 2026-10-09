@@ -172,7 +172,8 @@
     "typeStation": "Station",
     "typeBestemming": "Bestemming",
     "typeAdres": "Adres",
-    "aantal": "{count, plural, one {# suggestie} other {# suggesties}} beschikbaar. Gebruik de pijltjestoetsen om te kiezen."
+    "aantal": "{count, plural, one {# suggestie} other {# suggesties}} beschikbaar. Gebruik de pijltjestoetsen om te kiezen.",
+    "lijstLabel": "Suggesties voor {label}"
   },
   "tarieven": {
     "kicker": "Vaste tarieven — geen taxameter, geen verrassing",

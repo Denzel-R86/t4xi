@@ -172,7 +172,8 @@
     "typeStation": "Station",
     "typeBestemming": "Destination",
     "typeAdres": "Address",
-    "aantal": "{count, plural, one {# suggestion} other {# suggestions}} available. Use the arrow keys to choose."
+    "aantal": "{count, plural, one {# suggestion} other {# suggestions}} available. Use the arrow keys to choose.",
+    "lijstLabel": "Suggestions for {label}"
   },
   "tarieven": {
     "kicker": "Fixed fares — no meter, no surprises",

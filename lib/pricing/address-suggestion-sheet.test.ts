@@ -146,3 +146,10 @@ test("mobiel: lijst begrensd tot de viewport, opties ≥ 44px", () => {
 test("transactioneel: geen serif in de suggestielijst (design-specs §13f)", () => {
   assert.doesNotMatch(src, /font-display-serif|font-playfair/);
 });
+
+test("listbox heeft een eigen toegankelijke naam, niet die van het invoerveld", () => {
+  const src = readFileSync("components/shared/AddressAutocomplete.tsx", "utf8");
+  const listbox = src.slice(src.indexOf('role="listbox"'), src.indexOf('role="listbox"') + 200);
+  assert.doesNotMatch(listbox, /aria-label=\{label\}/);
+  assert.match(listbox, /aria-label=\{t\("lijstLabel"/);
+});

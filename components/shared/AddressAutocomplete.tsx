@@ -453,7 +453,7 @@ export default function AddressAutocomplete({
         id={listId}
         ref={listRef}
         role="listbox"
-        aria-label={label}
+        aria-label={t("lijstLabel", { label })}
         hidden={!expanded}
         className="absolute z-20 mt-2 max-h-[min(22rem,55svh)] w-full overflow-y-auto overscroll-contain rounded-field border border-line bg-card py-1 shadow-card"
       >
