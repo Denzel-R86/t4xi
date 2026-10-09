@@ -66,6 +66,13 @@ test("sleutel = rit + status: verandert met route, datum, tijd, bagage en status
   assert.notEqual(quoteOutcomeKey({ ...RIDE, status: "onrequest" }), k);
 });
 
+test("PR 2.1: ander aantal passagiers = nieuwe rit; ontbrekend telt als 1", () => {
+  const k = quoteOutcomeKey(RIDE);
+  assert.equal(quoteOutcomeKey({ ...RIDE, passengers: 1 }), k);
+  assert.notEqual(quoteOutcomeKey({ ...RIDE, passengers: 3 }), k);
+  assert.notEqual(quoteOutcomeKey({ ...RIDE, passengers: 3 }), quoteOutcomeKey({ ...RIDE, passengers: 4 }));
+});
+
 test("dubbele response voor dezelfde rit → geen scroll", () => {
   const key = quoteOutcomeKey(RIDE);
   assert.equal(reveal({ key, lastHandledKey: key }), false);

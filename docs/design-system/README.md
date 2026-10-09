@@ -80,8 +80,16 @@ transparantie). AA tekst = 4,5:1.
 | `stone.DEFAULT` op `fog` | 2,66:1 | alleen decoratie | **nee** |
 | `stone.DEFAULT` op `card` | 2,94:1 | alleen decoratie | **nee** |
 
-Opaciteitsvarianten (`text-ink/55` e.d.) zijn niet gemeten; masterplan §10 eist een
-controle (anders `/65`) bij adoptie.
+Opaciteitsvarianten (PR 2.1, gemengd op `fog`; masterplan §10):
+
+| Voorgrond op achtergrond | Effectief | Ratio | Gebruik | AA tekst |
+|---|---|---|---|---|
+| `ink` 55% op `fog` | #7F8387 | 3,45:1 | — (niet gebruiken voor leestekst) | **nee** |
+| `ink` 65% op `fog` | #6A6E74 | 4,63:1 | gedimde rest van de boekingszin bij focus (`booking-sentence.css`) | ja |
+| `ink` 75% op `fog` | #545A60 | 6,31:1 | tweede regel boekingszin (`text-ink/75`) | ja |
+
+§6.1 noemt `text-ink/55`; die haalt 4,5:1 niet, dus gebruikt de zin 65% (de in §10
+genoemde terugvalwaarde).
 
 ### 1.2 Typografie
 
@@ -184,10 +192,10 @@ Alleen wat in code bestaat heeft een contract. Status per component uit §13a:
 
 | Component | Status | Waar |
 |---|---|---|
-| Button (incl. Link/TextAction als `variant="text"`) | **gebouwd** (v2), nog nergens geadopteerd | `components/ui/Button.tsx`, `button-styles.ts` |
-| JourneyLine | **gebouwd**, nog nergens geadopteerd | `components/horizon/JourneyLine.tsx` |
+| Button (incl. Link/TextAction als `variant="text"`) | **gebouwd** (v2); geadopteerd in de hero-boekingszin (PR 2.1) | `components/ui/Button.tsx`, `button-styles.ts` |
+| JourneyLine | **gebouwd**; geadopteerd onder de hero-boekingszin, ≥ 768px (PR 2.1) | `components/horizon/JourneyLine.tsx` |
 | AddressAutocomplete | bestaat (v14), nog geen 2.0-contract; ARIA-combobox | `components/shared/AddressAutocomplete.tsx:270` |
-| Input / Select (boekingszin) | bestaat als CSS (`.hz-blank`, `.hz-time`, `.hz-focus`), geen component | `horizon.css:164-216` |
+| Input / Select (boekingszin) | bestaat als CSS (`.hz-blank`, `.hz-time`, `.hz-focus`), geen component; 2.0-focusgedrag ≥ 768px in `booking-sentence.css` | `horizon.css:164-216` |
 | PriceDisplay | nog niet gebouwd; prijs nu via `Odometer` | `components/horizon/motion.tsx:87` |
 | Header | bestaat (v14); 2.0-spec §13c nog niet gebouwd | `components/sections/Header.tsx:19` |
 | Footer | bestaat (v14); 2.0-spec §13c nog niet gebouwd | `components/sections/Footer.tsx:30` |
@@ -222,7 +230,9 @@ Bron: `button-styles.ts:34-65,85-86`.
 en loading vervangen de variantklassen: primary `bg-overlay text-stone-text` + kader
 `line-strong` (4,86:1); secondary/text `text-stone-text` (5,26:1); nooit `text-stone`
 (`button-styles.ts:78-82`). Loading = `disabled` + `aria-busy`, label blijft, geen spinner
-(`Button.tsx:92-97`). Er is geen error-state.
+(`Button.tsx:96-101`). Als link kan Button niet `disabled` zijn: `aria-disabled` geeft
+de inactieve vorm, de aanroeper voorkomt de navigatie (`Button.tsx:62-66`, PR 2.1). Er is
+geen error-state.
 
 **Maten** (`button-styles.ts:67-72`): `md` `px-7 py-3 text-[12px]`; `lg` `min-h-[52px] px-10
 py-4 text-[13px]`; `text` `px-1`. Alle varianten `min-h-11` (44px).
@@ -271,8 +281,8 @@ geen reizend punt (`journey-line.css:173-177`).
 
 | Pattern | Implementatie | Status |
 |---|---|---|
-| Booking sentence | `SentencePattern` — `components/horizon/patterns.tsx:276` | v1; 2.0 in PR 2.1 / 2.6 |
-| Price calculation | `useRouteQuote` (`components/shared/useRouteQuote.ts`) → `/api/pricing/quote`; weergave `Odometer` (`patterns.tsx:542`) | v1; quote-lock is invariant (masterplan §1) |
+| Booking sentence | `SentencePattern` — `components/booking-sentence/SentencePattern.tsx:82` (opnieuw geëxporteerd door `patterns.tsx`) | 2.0 desktop (PR 2.1): interactieve tekst, passagiers, JourneyLine, prijsreveal; mobiel PR 2.6, handoff PR 2.3 |
+| Price calculation | `useRouteQuote` (`components/shared/useRouteQuote.ts`) → `/api/pricing/quote`; weergave `Odometer` (`SentencePattern.tsx:407`) | quote-lock is invariant (masterplan §1); prijs verschijnt ≥ 768px pas na de JourneyLine-reis (600ms, `lib/hero/sentence-reveal.ts`) |
 | Checkout | `components/booking/BookingSection.tsx`, `PaymentStep.tsx` | v1; stappenweergave PR 2.4 |
 | Confirmation | nog niet gebouwd (PR 2.5, masterplan §8); statusbron `lib/bookings/lifecycle.ts` (`BOOKING_STATUSES`) | — |
 | Error (inline, focus naar eerste fout) | nog niet gebouwd als patroon (PR 2.4) | — |
@@ -306,8 +316,8 @@ wordt niet gebouwd. Geen motion-dependency (masterplan §10).
 | Token | Waarde | Gebruik | Bron |
 |---|---|---|---|
 | `--hz-ease` | cubic-bezier(0.22, 1, 0.36, 1) | de enige easing (chauffeur-curve) | ``horizon.css:11`` |
-| `--hz-micro` | 160ms | hover, underline, pijl, toggles | ``horizon.css:12`` |
-| `--hz-ui` | 280ms | sheets, stapwissel, header-shrink; Button-vulling | ``horizon.css:13`` |
+| `--hz-micro` | 160ms | hover, underline, pijl, toggles; Button-vulling | ``horizon.css:12`` |
+| `--hz-ui` | 280ms | sheets, stapwissel, header-shrink | ``horizon.css:13`` |
 | `--hz-immediate` | 240ms | bestaande Guide/Focus-klassen; staat niet in §5 | ``horizon.css:14`` |
 | `--hz-composed` | 700ms | koppen, foto-reveal | ``horizon.css:15`` |
 | `--hz-cinematic` | 1100ms | alleen spine-draw en bevestiging | ``horizon.css:16`` |
@@ -420,11 +430,12 @@ in masterplan/design-specs leidend.
 10. **Button-vulling en `.hz-confirm-btn`.** §3: primary "hergebruik `.hz-confirm-btn`,
     richting links→rechts". Code: Button v2 heeft een eigen `scaleX`-vulling
     (`button-styles.ts:38-45`); `.hz-confirm-btn` vult nog van onder (`scaleY`,
-    `horizon.css:234-249`) en wordt in geen enkele `.tsx` gebruikt.
-    → **Oppakken:** Fase 2.1 (adoptie Button v2; `.hz-confirm-btn` opruimen of gelijktrekken).
-11. **Hover-tempo Button.** §5 koppelt hover aan `--hz-micro`; de primary/secondary-
-    hovervulling loopt op `--hz-ui` 280ms (`button-styles.ts:41,52`). §13e noemt geen duur.
-    → **Oppakken:** Fase 2.1 (bij adoptie); besluit micro vs. ui-tempo voor de vulling.
+    `horizon.css:234-249`).
+    → **Stand PR 2.1:** de hero-CTA is Button v2 `primary` (gevuld, `scaleX`); daarmee
+    gebruikt geen enkele `.tsx` `.hz-confirm-btn` meer. De CSS blijft staan.
+    → **Oppakken:** Fase 4 (opruimen van `.hz-confirm-btn` in `horizon.css`).
+11. ~~**Hover-tempo Button.**~~ **Opgelost in PR 2.1:** de primary/secondary-hovervulling
+    loopt nu op `--hz-micro` 160ms (`button-styles.ts:41,52`), conform §5 (hover = micro).
 12. ~~**Hero-h1: tokenverwijzing ontbrak.**~~ **Opgelost in PR 1.4:** de hero-h1 gebruikt
     `text-display-serif md:text-display-serif-split` (nieuw token voor de 48%-splitkolom);
     line-height nu 1.04 conform §13f. Het font was al correct (B1).

@@ -17,7 +17,7 @@ import {
  * (onderstreping + optionele pijl). Klassen: `./button-styles.ts`; welke actie
  * welke variant krijgt: docs/experience-2.0/design-specs.md §13e.
  *
- * Nog nergens geadopteerd (PR 1.3); adoptie per pagina in latere PR's.
+ * Geadopteerd: hero-boekingszin (PR 2.1, components/booking-sentence/).
  */
 
 type CommonProps = {
@@ -59,7 +59,11 @@ function Content({ children, arrow }: { children: ReactNode; arrow: boolean }) {
 export default function Button(props: ButtonProps) {
   if (props.href !== undefined) {
     const { children, variant = "primary", size = "md", fullWidth, arrow, className, href, ...rest } = props;
-    const classes = buttonClassName({ variant, size, fullWidth, className });
+    // Een link kan niet `disabled` zijn; `aria-disabled` geeft hem de inactieve
+    // vorm (§13e). De aanroeper voorkomt zelf de navigatie (onClick).
+    const ariaDisabled = rest["aria-disabled"];
+    const inactive = ariaDisabled === true || ariaDisabled === "true";
+    const classes = buttonClassName({ variant, size, fullWidth, inactive, className });
     const content = <Content arrow={arrow ?? variant === "text"}>{children}</Content>;
     if (isPlainHref(href)) {
       return (

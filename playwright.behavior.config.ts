@@ -28,14 +28,29 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "webkit-iphone13", use: { ...devices["iPhone 13"], locale: "nl-NL", reducedMotion: "reduce" } },
+    {
+      name: "webkit-iphone13",
+      grepInvert: /@desktop/,
+      use: { ...devices["iPhone 13"], locale: "nl-NL", reducedMotion: "reduce" },
+    },
     {
       name: "chromium-375",
+      grepInvert: /@desktop/,
       use: {
         browserName: "chromium",
         viewport: { width: 375, height: 812 },
         isMobile: true,
         hasTouch: true,
+        launchOptions: { args: ["--lang=nl-NL"] },
+      },
+    },
+    // PR 2.1: passagiers en JourneyLine staan alleen in de desktopzin (≥ 768px).
+    {
+      name: "chromium-1280",
+      grep: /@desktop/,
+      use: {
+        browserName: "chromium",
+        viewport: { width: 1280, height: 800 },
         launchOptions: { args: ["--lang=nl-NL"] },
       },
     },

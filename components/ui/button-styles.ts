@@ -9,7 +9,7 @@
  * - Geen `hover:-translate-y`, geen `scale` (§3, §5b).
  * - Primary is GEVULD in rust (ink, fog-tekst); omlijnd is alleen secondary
  *   (besluit eigenaar, PR #60). Vulling bij hover/focus horizontaal (links →
- *   rechts) via `scaleX`, 280ms (`--hz-ui`) op `--hz-ease`.
+ *   rechts) via `scaleX`, 160ms (`--hz-micro`, hover-tempo §5) op `--hz-ease`.
  * - Kleuren alleen tokens (ink/fog/overlay/accent-light/line-strong); tekst
  *   nooit `text-stone` (F-11). Mapping actie → variant:
  *   docs/experience-2.0/design-specs.md § "Button-varianten".
@@ -25,7 +25,7 @@ const EASE = "ease-[var(--hz-ease,cubic-bezier(0.22,1,0.36,1))]";
 const BASE = [
   "group relative isolate inline-flex min-h-11 items-center justify-center gap-2",
   "font-medium uppercase tracking-[0.14em] no-underline",
-  "transition-colors duration-[var(--hz-ui,280ms)]",
+  "transition-colors duration-[var(--hz-micro,160ms)]",
   EASE,
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
   "motion-reduce:transition-none",
@@ -38,7 +38,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   primary: [
     "overflow-hidden border border-ink bg-ink text-fog",
     "before:absolute before:inset-0 before:-z-10 before:origin-left before:scale-x-0 before:bg-accent-light",
-    "before:transition-transform before:duration-[var(--hz-ui,280ms)]",
+    "before:transition-transform before:duration-[var(--hz-micro,160ms)]",
     "before:ease-[var(--hz-ease,cubic-bezier(0.22,1,0.36,1))]",
     "hover:before:scale-x-100 focus-visible:before:scale-x-100 active:before:scale-x-100",
     "motion-reduce:before:transition-none",
@@ -49,7 +49,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   secondary: [
     "overflow-hidden border border-ink text-ink",
     "before:absolute before:inset-0 before:-z-10 before:origin-left before:scale-x-0 before:bg-overlay",
-    "before:transition-transform before:duration-[var(--hz-ui,280ms)]",
+    "before:transition-transform before:duration-[var(--hz-micro,160ms)]",
     "before:ease-[var(--hz-ease,cubic-bezier(0.22,1,0.36,1))]",
     "hover:before:scale-x-100 focus-visible:before:scale-x-100 active:before:scale-x-100",
     "motion-reduce:before:transition-none",
