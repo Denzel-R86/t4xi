@@ -1,24 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   HORIZON DESIGN LANGUAGE v1 — motion & pattern styles
-   ─────────────────────────────────────────────────────
-   Alle beweging op de site is één van vijf werkwoorden uit de Motion Engine:
-
-     Reveal   .hz-reveal    — content stijgt óp naar de lijn (enter)
-     Travel   .hz-travel-*  — iets beweegt langs/over de horizon (ambient)
-     Guide    .hz-guide-*   — richting bij hover/focus (underline, arrow)
-     Focus    .hz-focus     — aandacht bij interactie (invoer, prijs)
-     Confirm  .hz-confirm-* — een voltooide handeling bevestigt zich (odometer)
-
-   Eén easing (chauffeur-curve), vijf tempo's (Experience 2.0 §5):
-     --hz-micro      160ms   hover, underline, pijl, toggles
-     --hz-ui         280ms   sheets, stapwissel, header-shrink
-     --hz-composed   700ms   koppen, foto-reveal
-     --hz-cinematic 1100ms   alleen spine-draw en bevestiging
-     --hz-ambient   6000ms   vloot-drift, spine; onmerkbaar
-   --hz-immediate  240ms   bestaande klassen (staat niet in §5; ongewijzigd).
-   Tailwind spiegelt deze tokens als `ease-premium` / `duration-{micro,ui,…}`
-   (tailwind.config.ts); lib/design/tokens.test.ts bewaakt dat ze gelijk blijven.
-   Nieuwe animaties bestaan niet: wie beweging nodig heeft, kiest een werkwoord.
+   HORIZON DESIGN LANGUAGE — motion & pattern styles
+   ─────────────────────────────────────────────────
+   Regels, tokens en werkwoorden (Reveal/Travel/Guide/Focus/Confirm):
+   docs/design-system/README.md (§1 Foundations, §4 Motion) — de enige bron.
+   Reviewregel: token of component gewijzigd → README in dezelfde PR bijwerken
+   (lib/design/design-system-readme.test.ts, lib/design/tokens.test.ts).
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {

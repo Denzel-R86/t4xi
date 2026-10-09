@@ -34,7 +34,7 @@ const inter = Inter({
   display: "swap",
 });
 
-// Playfair Display: Brand Mode-display (B1, besloten 08-10-2026; design-specs §13e)
+// Playfair Display: Brand Mode-display (B1, besloten 08-10-2026; design-specs §13f)
 // + legacy routenamen op dagtochten. Alleen rechtop, alleen latin, variabel
 // gewicht = één bestand. Geen italic of extra subsets bijladen
 // (lib/design/display-font.test.ts).

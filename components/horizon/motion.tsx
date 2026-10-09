@@ -1,18 +1,11 @@
 "use client";
 
 /**
- * HORIZON DESIGN LANGUAGE v1 — Motion Engine.
+ * HORIZON DESIGN LANGUAGE — Motion Engine (Reveal, Odometer, reduced motion).
  *
- * Alle beweging op de site komt uit dít systeem en is één van vijf werkwoorden:
- *
- *   Reveal  — content stijgt óp naar de lijn (enter-on-scroll)
- *   Travel  — iets beweegt langs/over de horizon (ambient; zie HorizonSpine)
- *   Guide   — richting bij hover/focus (CSS: .hz-guide-*)
- *   Focus   — aandacht bij interactie (CSS: .hz-focus)
- *   Confirm — een voltooide handeling bevestigt zich (Odometer, .hz-confirm-btn)
- *
- * Eén easing (chauffeur-curve), drie tempo's (immediate/composed/cinematic) —
- * vastgelegd in horizon.css. Een animatie die geen werkwoord is, bestaat niet.
+ * Regels, tokens en de vijf werkwoorden: docs/design-system/README.md §4 — de
+ * enige bron.
+ * Reviewregel: token of component gewijzigd → README in dezelfde PR bijwerken.
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
