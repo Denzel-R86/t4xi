@@ -316,8 +316,8 @@ wordt niet gebouwd. Geen motion-dependency (masterplan §10).
 | Token | Waarde | Gebruik | Bron |
 |---|---|---|---|
 | `--hz-ease` | cubic-bezier(0.22, 1, 0.36, 1) | de enige easing (chauffeur-curve) | ``horizon.css:11`` |
-| `--hz-micro` | 160ms | hover, underline, pijl, toggles | ``horizon.css:12`` |
-| `--hz-ui` | 280ms | sheets, stapwissel, header-shrink; Button-vulling | ``horizon.css:13`` |
+| `--hz-micro` | 160ms | hover, underline, pijl, toggles; Button-vulling | ``horizon.css:12`` |
+| `--hz-ui` | 280ms | sheets, stapwissel, header-shrink | ``horizon.css:13`` |
 | `--hz-immediate` | 240ms | bestaande Guide/Focus-klassen; staat niet in §5 | ``horizon.css:14`` |
 | `--hz-composed` | 700ms | koppen, foto-reveal | ``horizon.css:15`` |
 | `--hz-cinematic` | 1100ms | alleen spine-draw en bevestiging | ``horizon.css:16`` |
@@ -434,13 +434,8 @@ in masterplan/design-specs leidend.
     → **Stand PR 2.1:** de hero-CTA is Button v2 `primary` (gevuld, `scaleX`); daarmee
     gebruikt geen enkele `.tsx` `.hz-confirm-btn` meer. De CSS blijft staan.
     → **Oppakken:** Fase 4 (opruimen van `.hz-confirm-btn` in `horizon.css`).
-11. **Hover-tempo Button.** §5 koppelt hover aan `--hz-micro`; de primary/secondary-
-    hovervulling loopt op `--hz-ui` 280ms (`button-styles.ts:41,52`). §13e noemt geen duur.
-    → **Stand PR 2.1:** bij de adoptie ongewijzigd gelaten (`--hz-ui`): de vulling is een
-    vlakverandering (UI-tempo), onderstreping en pijl blijven `--hz-micro`. Dit is een
-    voorstel, geen besluit.
-    → **Oppakken:** besluit eigenaar (micro vs. ui voor de vulling); uitvoering in één regel
-    `button-styles.ts`.
+11. ~~**Hover-tempo Button.**~~ **Opgelost in PR 2.1:** de primary/secondary-hovervulling
+    loopt nu op `--hz-micro` 160ms (`button-styles.ts:41,52`), conform §5 (hover = micro).
 12. ~~**Hero-h1: tokenverwijzing ontbrak.**~~ **Opgelost in PR 1.4:** de hero-h1 gebruikt
     `text-display-serif md:text-display-serif-split` (nieuw token voor de 48%-splitkolom);
     line-height nu 1.04 conform §13f. Het font was al correct (B1).
