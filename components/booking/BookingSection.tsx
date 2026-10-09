@@ -31,6 +31,8 @@ import PricePreview from "./steps/PricePreview";
 import StepPanel from "./steps/StepPanel";
 import StepProgress from "./steps/StepProgress";
 import { useStepFlow } from "./steps/useStepFlow";
+import HandoffRouteLine from "./handoff/HandoffRouteLine";
+import { clearHandoff, priceWhileVerifying } from "@/lib/booking-handoff";
 
 /**
  * 2026-08-19 (audit-correctie): toetst het VOLLEDIGE vertrekmoment (datum +
@@ -63,6 +65,7 @@ export default function BookingSection({
   initialReturnDate,
   initialReturnTime,
   initialLuggage,
+  handoff,
 }: {
   /** Deep-link (?pickup=…): veld vooraf gevuld, prijs rekent direct. */
   initialPickup?: string;
@@ -79,6 +82,12 @@ export default function BookingSection({
   initialReturnTime?: string;
   /** Deep-link (?luggage=…): vooraf gevuld vanuit de homepagehero, uitsluitend bekende categorieën. */
   initialLuggage?: string;
+  /**
+   * Rit uit de hero-handoff (PR 2.3, §7): toont de route-lijn en, zolang de rit
+   * ongewijzigd is en de hook nog verifieert, de prijs die de server in de hero
+   * gaf (alleen uit het geheugen, nooit uit storage).
+   */
+  handoff?: { price: number | null };
 } = {}) {
   const t = useTranslations("booking");
   const locale = useLocale();
@@ -143,6 +152,11 @@ export default function BookingSection({
     flightNumber,
     returnFlightNumber,
   ]);
+
+  // Geslaagde boeking: de rit hoeft niet langer in sessionStorage te staan.
+  useEffect(() => {
+    if (submit.status === "success") clearHandoff();
+  }, [submit.status]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -254,6 +268,13 @@ export default function BookingSection({
   // Verzenden mag pas nadat de prijsflow een bindbare, opgeslagen quote-lock
   // oplevert, of expliciet heeft vastgesteld dat dit een offerte-op-aanvraag is.
   // Idle/loading/error mogen nooit stil via het no-lock-pad worden geboekt.
+  // Handoff-prijs alleen voor exact de rit uit de hero en alleen tot de hook antwoordt.
+  const pendingPrice = priceWhileVerifying({
+    price: handoff?.price,
+    initial: { pickup: initialPickup, dropoff: initialDropoff, date: initialDate, time: initialTime, persons: initialPersons, luggage: initialLuggage },
+    current: { pickup: pickup?.label, dropoff: dropoff?.label, date, time, persons, luggage, returnTrip: tab === "retour" },
+    quoteStatus: quote.status,
+  });
   const quoteAllowsBooking =
     (quote.status === "ready" && quote.quoteId.length > 0) || quote.status === "onrequest";
   // Het vluchtnummerveld verschijnt zodra de engine zegt dat één zijde een
@@ -383,6 +404,8 @@ export default function BookingSection({
         </div>
       )}
 
+      {handoff && <HandoffRouteLine pickup={pickup} dropoff={dropoff} quote={quote} />}
+
       <StepProgress current={step} onGoTo={goTo} />
 
       <form ref={formRef} onSubmit={handleSubmit} onInput={clearFieldErrorOnInput} onKeyDown={onFormKeyDown}>
@@ -466,7 +489,7 @@ export default function BookingSection({
           />
         )}
 
-        <PricePreview quote={quote} ready={Boolean(ready)} quoteReady={quoteReady} />
+        <PricePreview quote={quote} ready={Boolean(ready)} quoteReady={quoteReady} pendingPrice={pendingPrice} handoff={Boolean(handoff)} />
 
         {/* Algemene melding — alleen voor fouten die niet bij één veld horen
             (prijs, verbinding, server); het icoon volgt het soort fout (F-13). Direct

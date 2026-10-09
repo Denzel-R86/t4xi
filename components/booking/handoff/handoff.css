@@ -1,0 +1,33 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Handoff-overgang hero → /boeken (Experience 2.0 PR 2.3, masterplan §7).
+   Gedeelde namen op JourneyLine en prijs; 250ms met de enige easing (--hz-ease).
+   Alleen bij ondersteuning (@supports) en zonder reduced motion. Er verandert
+   geen layout: view-transition-name maakt alleen een eigen opnamelaag.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  @supports (view-transition-name: none) {
+    :root {
+      --hx-handoff: 250ms;
+    }
+    .hx-handoff-journey { view-transition-name: t4xi-handoff-journey; }
+    .hx-handoff-price { view-transition-name: t4xi-handoff-price; }
+
+    ::view-transition-group(root),
+    ::view-transition-group(t4xi-handoff-journey),
+    ::view-transition-group(t4xi-handoff-price),
+    ::view-transition-old(root),
+    ::view-transition-new(root),
+    ::view-transition-old(t4xi-handoff-journey),
+    ::view-transition-new(t4xi-handoff-journey),
+    ::view-transition-old(t4xi-handoff-price),
+    ::view-transition-new(t4xi-handoff-price) {
+      animation-duration: var(--hx-handoff);
+      animation-timing-function: var(--hz-ease, cubic-bezier(0.22, 1, 0.36, 1));
+    }
+  }
+}

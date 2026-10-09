@@ -281,7 +281,7 @@ geen reizend punt (`journey-line.css:173-177`).
 
 | Pattern | Implementatie | Status |
 |---|---|---|
-| Booking sentence | `SentencePattern` — `components/booking-sentence/SentencePattern.tsx:82` (opnieuw geëxporteerd door `patterns.tsx`) | 2.0 desktop (PR 2.1): interactieve tekst, passagiers, JourneyLine, prijsreveal; mobiel PR 2.6, handoff PR 2.3 |
+| Booking sentence | `SentencePattern` — `components/booking-sentence/SentencePattern.tsx:87` (opnieuw geëxporteerd door `patterns.tsx`) | 2.0 desktop (PR 2.1): interactieve tekst, passagiers, JourneyLine, prijsreveal; handoff naar `/boeken?h=1` zonder adres in de URL (PR 2.3, `lib/booking-handoff.ts`); mobiel PR 2.6 |
 | Price calculation | `useRouteQuote` (`components/shared/useRouteQuote.ts`) → `/api/pricing/quote`; weergave `Odometer` (`SentencePattern.tsx:407`) | quote-lock is invariant (masterplan §1); prijs verschijnt ≥ 768px pas na de JourneyLine-reis (600ms, `lib/hero/sentence-reveal.ts`) |
 | Checkout | `components/booking/BookingSection.tsx`, `PaymentStep.tsx` | v1; stappenweergave PR 2.4 |
 | Confirmation | nog niet gebouwd (PR 2.5, masterplan §8); statusbron `lib/bookings/lifecycle.ts` (`BOOKING_STATUSES`) | — |
@@ -335,7 +335,9 @@ Tailwind-alias met dezelfde fallback (`tailwind.config.ts:87-96`): `ease-premium
 `duration-micro`, `duration-ui`, `duration-composed`, `duration-cinematic`,
 `duration-ambient` (geen alias voor `--hz-immediate`). `lib/design/tokens.test.ts` bewaakt
 de gelijkheid. Componentvariabelen: JourneyLine `--jl-run` 600ms (§4,
-`journey-line.css:25`).
+`journey-line.css:25`); handoff-overgang hero → /boeken `--hx-handoff` 250ms met gedeelde
+`view-transition-name` op JourneyLine en prijs, alleen bij `@supports` en zonder reduced
+motion (`components/booking/handoff/handoff.css`, PR 2.3).
 
 **Reduced motion per component.** Reveal, spine, Travel-tick, odometer, guide-line,
 guide-arrow, confirm-btn: direct eindstaat (`horizon.css:271-280`); `Odometer` slaat de
