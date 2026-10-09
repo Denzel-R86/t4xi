@@ -1,40 +1,36 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import AddressAutocomplete, {
-  type AddressSuggestion,
-} from "@/components/shared/AddressAutocomplete";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import PaymentStep from "@/components/booking/PaymentStep";
-import FlightCard from "@/components/booking/FlightCard";
+import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
-import { inferAddressMeta, type RitType } from "@/lib/booking-meta";
-import { Link } from "@/i18n/navigation";
+import { inferAddressMeta } from "@/lib/booking-meta";
+import {
+  BOOKING_STEPS,
+  blocksStep,
+  firstBookingFieldError,
+  generalErrorIcon,
+  initialBookingStep,
+  nextStep,
+  previousStep,
+  serverFieldError,
+  type BookingStep,
+  type FieldMessageKey,
+  type GeneralErrorKind,
+} from "@/lib/booking/steps";
 import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
-
-type BookableRideType = Extract<RitType, "enkel" | "retour">;
-
-const TABS: { key: BookableRideType; labelKey: "tabEnkel" | "tabRetour" }[] = [
-  { key: "enkel", labelKey: "tabEnkel" },
-  { key: "retour", labelKey: "tabRetour" },
-];
-
-const LUGGAGE = [
-  { value: "geen-bagage", labelKey: "bagageGeen" },
-  { value: "handbagage", labelKey: "bagageHand" },
-  { value: "1-2-koffers", labelKey: "bagage12" },
-  { value: "3-koffers", labelKey: "bagage3" },
-  { value: "overleg", labelKey: "bagageOverleg" },
-] as const;
-
-/** ISO-datum van vandaag (lokale tijd) — uitsluitend voor de `min`-grens van het HTML-datumveld (dat werkt alleen op dagniveau). */
-function todayISO(): string {
-  const d = new Date();
-  const tzOffsetMs = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 10);
-}
+import RouteStep, { type BookableRideType } from "./steps/RouteStep";
+import RideStep from "./steps/RideStep";
+import DetailsStep from "./steps/DetailsStep";
+import ConfirmStep, { type ContactSummary } from "./steps/ConfirmStep";
+import PricePreview from "./steps/PricePreview";
+import StepPanel from "./steps/StepPanel";
+import StepProgress from "./steps/StepProgress";
+import { useStepFlow } from "./steps/useStepFlow";
 
 /**
  * 2026-08-19 (audit-correctie): toetst het VOLLEDIGE vertrekmoment (datum +
@@ -51,14 +47,11 @@ function isFutureAmsterdamDeparture(date: string, time: string): boolean {
   return iso !== null && new Date(iso).getTime() >= Date.now();
 }
 
-const inputCls =
-  "min-h-[52px] w-full rounded-field border border-[rgba(31,39,48,0.14)] bg-field px-4 text-[15px] font-medium text-ink placeholder:font-normal placeholder:text-stone focus:border-accent focus:bg-white focus:shadow-[0_0_0_4px_rgba(40,49,59,0.10)] focus:outline-none";
-const labelCls = "mb-1.5 block text-xs font-bold text-secondary";
-
 /**
- * Volledig boekingsformulier uit het v14-bronbestand (#boeken):
- * rit-type tabs, adressen met PDOK-autocomplete, datum/tijd/passagiers/
- * bagage, adresdetectie-pillen, live richtprijs en contactvelden.
+ * Boekingsformulier (#boeken) als stappen Route → Rit → Gegevens → Bevestigen
+ * (Experience 2.0 PR 2.4). De stappen zijn uitsluitend een WEERGAVE: één state,
+ * één `<form>`, alle velden blijven gemount (inactieve stappen `hidden`), dus
+ * FormData, payload en validatie zijn dezelfde als vóór de split.
  */
 export default function BookingSection({
   initialPickup,
@@ -115,9 +108,20 @@ export default function BookingSection({
   type SubmitState =
     | { status: "idle" | "loading" }
     | { status: "success"; bookingRef: string; bookingId: string | null; quoteOnRequest: boolean; price: number | null }
-    | { status: "error"; message: string };
+    | { status: "error"; message: string; kind: GeneralErrorKind };
   const [submit, setSubmit] = useState<SubmitState>({ status: "idle" });
   const loading = submit.status === "loading";
+
+  // ── Stappenweergave (PR 2.4): alleen presentatie, geen invloed op payload ──
+  const [contact, setContact] = useState<ContactSummary>({ name: "", phone: "", email: "" });
+  const translate = useCallback((key: FieldMessageKey) => t(key), [t]);
+  const clearGeneralError = useCallback(() => setSubmit((s) => (s.status === "error" ? { status: "idle" } : s)), []);
+  const flow = useStepFlow({
+    initialStep: initialBookingStep({ hasPickup: Boolean(initialPickup), hasDropoff: Boolean(initialDropoff) }),
+    translate,
+    onFieldError: clearGeneralError,
+  });
+  const { step, fieldError, showFieldError, goTo, formRef, panelRefs, headingRefs, clearFieldErrorOnInput, stepControlsValid } = flow;
 
   // Anti-stale betaling: zodra rit- of contactbepalende data wijzigt ná een geslaagde
   // boeking, is de aangemaakte boeking (bookingRef) én de betaalstap verouderd.
@@ -144,33 +148,17 @@ export default function BookingSection({
     e.preventDefault();
     if (loading) return; // geen dubbele submit
     if (!quoteAllowsBooking) {
-      setSubmit({ status: "error", message: t("prijsFout") });
+      setSubmit({ status: "error", kind: "price", message: t("prijsFout") });
       return;
     }
-    if (!pickup || !dropoff) {
-      setSubmit({ status: "error", message: t("valAdres") });
+    // Zelfde checks, zelfde volgorde en meldingen als vóór PR 2.4
+    // (lib/booking/steps.ts); nu met het veld erbij voor focus-na-fout.
+    const invalid = firstBookingFieldError(validationInput);
+    if (invalid) {
+      showFieldError(invalid.field, t(invalid.messageKey));
       return;
     }
-    if (!date || !time || !isFutureAmsterdamDeparture(date, time)) {
-      setSubmit({ status: "error", message: t("valDatumTijd") });
-      return;
-    }
-    if (!luggage) {
-      setSubmit({ status: "error", message: t("valBagage") });
-      return;
-    }
-    if (flightRequired && flightNumber.trim() === "") {
-      setSubmit({ status: "error", message: t("valVluchtAankomst") });
-      return;
-    }
-    if (tab === "retour" && (!returnDate || !returnTime)) {
-      setSubmit({ status: "error", message: t("valRetourMoment") });
-      return;
-    }
-    if (returnFlightRequired && returnFlightNumber.trim() === "") {
-      setSubmit({ status: "error", message: t("valVluchtRetourAankomst") });
-      return;
-    }
+    if (!pickup || !dropoff) return; // al afgevangen hierboven; versmalt het type
 
     const form = new FormData(e.currentTarget);
     const payload = {
@@ -215,14 +203,23 @@ export default function BookingSection({
           price: typeof data.price === "number" ? data.price : null,
         });
       } else {
-        setSubmit({
-          status: "error",
-          message: data.message ?? t("foutFallback"),
-        });
+        // Servervalidatie van een contactveld → fout bij dat veld (F-13);
+        // al het andere blijft een algemene melding met de servertekst.
+        const serverField = serverFieldError(data.message);
+        if (serverField) {
+          showFieldError(serverField.field, t(serverField.messageKey));
+        } else {
+          setSubmit({
+            status: "error",
+            kind: res.status === 429 ? "rate" : "server",
+            message: data.message ?? t("foutFallback"),
+          });
+        }
       }
     } catch {
       setSubmit({
         status: "error",
+        kind: "network",
         message: t("foutVerbinding"),
       });
     }
@@ -274,30 +271,79 @@ export default function BookingSection({
   const flightRequired = needsFlight && isArrival;
   const returnFlightRequired = needsFlight && tab === "retour" && returnDirection === "arrival";
 
-  const priceNote =
-    quote.status === "idle"
-      ? ready && !quoteReady
-        ? t("prijsKiesDatumTijdBagage")
-        : t("prijsIdle")
-      : quote.status === "loading"
-        ? t("prijsLaden")
-        : quote.status === "ready"
-          ? t(quote.returnApplied ? "prijsRetour" : "prijsVast")
-          : quote.status === "onrequest"
-            ? t("prijsOpAanvraag")
-            : quote.status === "error" && quote.reason === "rate_limited"
-              ? t("prijsRateLimited")
-              : t("prijsFout");
-  const priceAmount =
-    quote.status === "ready"
-      ? quote.amount
-      : quote.status === "loading"
-        ? "…"
-        : quote.status === "onrequest"
-          ? t("opAanvraag")
-          : "—";
-  const priceBig = quote.status === "ready" || quote.status === "idle" || quote.status === "error";
+  const validationInput = {
+    hasPickup: Boolean(pickup),
+    hasDropoff: Boolean(dropoff),
+    date,
+    time,
+    luggage,
+    rideType: tab,
+    returnDate,
+    returnTime,
+    flightRequired,
+    flightNumber,
+    returnFlightRequired,
+    returnFlightNumber,
+    isFutureDeparture: isFutureAmsterdamDeparture,
+  };
+
+  /**
+   * Volgende stap: dezelfde regels als `handleSubmit`, maar alleen die van de
+   * huidige en eerdere stappen, plus de native constraints van de huidige stap.
+   */
+  function goNext() {
+    const invalid = firstBookingFieldError(validationInput);
+    if (invalid && blocksStep(invalid, step)) {
+      showFieldError(invalid.field, t(invalid.messageKey));
+      return;
+    }
+    if (!stepControlsValid(step)) return;
+    if (step === "rit" && !quoteAllowsBooking) {
+      if (quote.status === "loading") return;
+      setSubmit({ status: "error", kind: "price", message: t("prijsFout") });
+      return;
+    }
+    if (step === "gegevens" && formRef.current) {
+      const form = new FormData(formRef.current);
+      setContact({
+        name: String(form.get("naam") ?? ""),
+        phone: String(form.get("telefoon") ?? ""),
+        email: String(form.get("email") ?? ""),
+      });
+    }
+    clearGeneralError();
+    goTo(nextStep(step));
+  }
+
+  /** Enter in een veld = volgende stap (pas in Bevestigen echt verzenden). */
+  function onFormKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    if (e.key !== "Enter" || e.defaultPrevented || step === "bevestigen") return;
+    if (!(e.target instanceof HTMLInputElement)) return;
+    e.preventDefault();
+    goNext();
+  }
+
   const bookingWhatsappHref = `https://wa.me/31634744522?text=${encodeURIComponent(t("whatsappBericht"))}`;
+  const stepNumber = BOOKING_STEPS.indexOf(step) + 1;
+
+  function panel(target: BookingStep, children: React.ReactNode) {
+    return (
+      <StepPanel
+        key={target}
+        step={target}
+        active={target === step}
+        animate={flow.animate}
+        panelRef={(el) => {
+          panelRefs.current[target] = el;
+        }}
+        headingRef={(el) => {
+          headingRefs.current[target] = el;
+        }}
+      >
+        {children}
+      </StepPanel>
+    );
+  }
 
   return (
     <div className="relative overflow-hidden rounded-[28px] border border-line bg-card p-6 shadow-hero-card md:p-7">
@@ -337,44 +383,9 @@ export default function BookingSection({
         </div>
       )}
 
-      {submit.status === "error" && (
-        <div className="mb-5 flex items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-center text-sm text-red-600" role="alert" aria-live="assertive">
-          <Icon name="phone" size={16} />
-          {submit.message}
-        </div>
-      )}
+      <StepProgress current={step} onGoTo={goTo} />
 
-      {/* Ritsoort: luchthaven is geen los type maar wordt uit de adressen herkend.
-          Dagtochten hebben een eigen aanvraagflow en horen niet in een transferformulier. */}
-      <fieldset className="mb-5">
-        <legend className="sr-only">{t("ritType")}</legend>
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("ritType")}>
-          {TABS.map((x) => (
-            <button
-              key={x.key}
-              type="button"
-              role="radio"
-              aria-checked={tab === x.key}
-              onClick={() => setTab(x.key)}
-              className={`min-h-11 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                tab === x.key
-                  ? "border-accent bg-accent text-white"
-                  : "border-line bg-[#F4F1EB] text-[#4E565E] hover:text-ink"
-              }`}
-            >
-              {t(x.labelKey)}
-            </button>
-          ))}
-        </div>
-        <p className="mt-2.5 text-xs leading-relaxed text-secondary">
-          {t("airportHint")} {" "}
-          <Link href="/dagtochten#aanvragen" className="inline-flex min-h-6 items-center font-medium text-accent underline underline-offset-2">
-            {t("dayTripLink")}
-          </Link>
-        </p>
-      </fieldset>
-
-      <form onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit} onInput={clearFieldErrorOnInput} onKeyDown={onFormKeyDown}>
         {/* Honeypot — verborgen voor mensen, zichtbaar voor bots. Blijft leeg bij
             echte gebruikers; als het gevuld is blokkeert /api/bookings stil. */}
         <div aria-hidden="true" style={{ display: "none" }}>
@@ -388,223 +399,120 @@ export default function BookingSection({
             defaultValue=""
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2 grid gap-1 sm:grid-cols-2 sm:gap-4">
-            <AddressAutocomplete label={t("van")} placeholder={t("vertrekadresPh")} onSelect={setPickup} initialValue={initialPickup} autoCompleteSection="booking-pickup" />
-            <AddressAutocomplete label={t("naar")} placeholder={t("bestemmingPh")} onSelect={setDropoff} initialValue={initialDropoff} autoCompleteSection="booking-dropoff" />
-          </div>
-          <div>
-            <label htmlFor="f-date" className={labelCls}>{t("datum")}</label>
-            <input id="f-date" name="datum" type="date" required min={todayISO()} className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          <div>
-            <label htmlFor="f-time" className={labelCls}>{t("tijd")}</label>
-            <input id="f-time" name="tijd" type="time" required className={inputCls} value={time} onChange={(e) => setTime(e.target.value)} />
-          </div>
-          {tab === "retour" && (
-            <>
-              <div>
-                <label htmlFor="f-return-date" className={labelCls}>{t("retourDatum")}</label>
-                <input
-                  id="f-return-date"
-                  type="date"
-                  required
-                  className={inputCls}
-                  value={returnDate}
-                  min={date || undefined}
-                  onChange={(e) => setReturnDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="f-return-time" className={labelCls}>{t("retourTijd")}</label>
-                <input
-                  id="f-return-time"
-                  type="time"
-                  required
-                  className={inputCls}
-                  value={returnTime}
-                  onChange={(e) => setReturnTime(e.target.value)}
-                />
-              </div>
-            </>
-          )}
-          <div>
-            <label htmlFor="f-persons" className={labelCls}>{t("passagiers")}</label>
-            <input
-              id="f-persons"
-              type="number"
-              min={1}
-              max={4}
-              value={persons}
-              onChange={(e) => setPersons(Number(e.target.value) || 1)}
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label htmlFor="f-luggage" className={labelCls}>{t("bagage")}</label>
-            <select
-              id="f-luggage"
-              value={luggage}
-              required
-              onChange={(e) => setLuggage(e.target.value)}
-              className={inputCls}
-            >
-              <option value="" disabled>{t("bagageKies")}</option>
-              {LUGGAGE.map((l) => (
-                <option key={l.value} value={l.value}>{t(l.labelKey)}</option>
-              ))}
-            </select>
-          </div>
 
-          {/*
-            Vluchtnummer — verschijnt uitsluitend bij luchthavenritten, zodra de
-            prijsengine heeft bevestigd dat herkomst of bestemming een luchthaven is.
-            Bij ophalen na een aankomende vlucht is het nummer verplicht om de
-            vluchtstatus te volgen; bij wegbrengen naar de luchthaven is het optioneel.
-          */}
-          {needsFlight && (
-            <div className="sm:col-span-2">
-              <label htmlFor="f-flight" className={labelCls}>
-                {isArrival ? t("vluchtAankomend") : t("vluchtVertrekkend")}{" "}
-                <span className={flightRequired ? "text-accent" : "text-stone"}>
-                  {flightRequired ? t("verplicht") : t("optioneel")}
-                </span>
-              </label>
-              <input
-                id="f-flight"
-                name="vluchtnummer"
-                value={flightNumber}
-                onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
-                placeholder="KL1234"
-                autoComplete="off"
-                spellCheck={false}
-                maxLength={8}
-                required={flightRequired}
-                aria-describedby="f-flight-help"
-                className={inputCls}
-              />
-              <p id="f-flight-help" className="mt-1.5 text-[12px] text-secondary">
-                {isArrival ? t("vluchtHelpAankomst") : t("vluchtHelpVertrek")}
-              </p>
+        <p className="mb-4 text-[12px] text-secondary">
+          <span aria-hidden="true" className="text-accent">*</span> {t("verplichtUitleg")}
+        </p>
 
-              {/* Live vluchtkaart (7.9A): debounced check op /api/flights/* zodra
-                  een vluchtnummer is ingevoerd. Richting meegeven zodat het JUISTE
-                  ritdeel (vertrek vs aankomst) van hetzelfde vluchtnummer wordt getoond. */}
-              <FlightCard flightNumber={flightNumber} direction={outboundDirection} />
-
-              {tab === "retour" && (
-                <div className="mt-4 border-t border-line pt-4">
-                  <label htmlFor="f-return-flight" className={labelCls}>
-                    {t("retourVlucht")} — {isArrival ? t("vluchtVertrekkend") : t("vluchtAankomend")}{" "}
-                    <span className={returnFlightRequired ? "text-accent" : "text-stone"}>
-                      {returnFlightRequired ? t("verplicht") : t("optioneel")}
-                    </span>
-                  </label>
-                  <input
-                    id="f-return-flight"
-                    value={returnFlightNumber}
-                    onChange={(e) => setReturnFlightNumber(e.target.value.toUpperCase())}
-                    placeholder="KL1234"
-                    autoComplete="off"
-                    spellCheck={false}
-                    maxLength={8}
-                    required={returnFlightRequired}
-                    className={inputCls}
-                  />
-                  <FlightCard flightNumber={returnFlightNumber} direction={returnDirection} />
-                </div>
-              )}
-
-              {/*
-                Airport Arrival Service — uitsluitend bij een OPHALING. De klant ziet
-                wat inbegrepen is, niet waaruit de kosten bestaan: geen parkeerbedrag
-                en geen aparte toeslagregel. Het prijsmodel is nog niet vastgesteld,
-                dus hier staan bewust geen bedragen.
-              */}
-              {isArrival && (
-                <div className="mt-3 rounded-field border border-line bg-fog px-4 py-3">
-                  <p className="text-xs font-bold text-ink">{t("aasKop")}</p>
-                  <ul className="mt-2 flex flex-col gap-1.5 text-[12px] text-secondary">
-                    {(["aas1", "aas2", "aas3"] as const).map((k) => (
-                      <li key={k} className="flex items-start gap-2">
-                        <Icon name="check" size={13} className="mt-0.5 shrink-0 text-accent" />
-                        {t(k)}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-2.5 border-t border-line pt-2.5 text-[12px] text-secondary">
-                    {t("aasNa")}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Adresdetectie */}
-        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3" aria-label={t("adresDetectie")}>
-          {[
-            { key: t("postcode"), value: meta?.postcode },
-            { key: t("stad"), value: meta?.city },
-            { key: t("stadsdeel"), value: meta?.district },
-          ].map((pill) => (
-            <div key={pill.key} className="rounded-xl border border-line bg-fog px-3 py-2.5">
-              <small className="block text-[10px] uppercase tracking-[0.12em] text-stone">{pill.key}</small>
-              <b className={`block truncate text-[13px] ${pill.value && pill.value !== "—" ? "text-accent" : "font-semibold text-stone"}`}>
-                {pill.value ?? "—"}
-              </b>
-            </div>
-          ))}
-        </div>
-
-        {/* Prijsvoorbeeld — bron: autoritatieve Pricing Engine (/api/pricing/quote) */}
-        <div
-          className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-[rgba(31,39,48,0.12)] bg-[linear-gradient(135deg,#FFFFFF,#F3F0EA)] p-4"
-          role="region"
-          aria-live="polite"
-          aria-busy={quote.status === "loading"}
-          aria-label={t("geschattePrijs")}
-        >
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-stone">{t("geschattePrijs")}</div>
-            <div className="mt-0.5 text-xs text-secondary">{priceNote}</div>
-          </div>
-          <div className={`shrink-0 font-display font-bold text-accent ${priceBig ? "text-[28px]" : "text-base"}`}>
-            {priceAmount}
-          </div>
-        </div>
-
-        {ready && (
-          <p className="mt-3 rounded-xl border border-line bg-fog px-4 py-3 text-xs leading-relaxed text-secondary" aria-live="polite">
-            <strong className="text-ink">{t("inclusiefKop")}</strong> {t("inclusiefTekst")}
-          </p>
+        {panel(
+          "route",
+          <RouteStep
+            tab={tab}
+            onTab={setTab}
+            onPickup={setPickup}
+            onDropoff={setDropoff}
+            initialPickup={initialPickup}
+            initialDropoff={initialDropoff}
+            meta={meta}
+            error={fieldError}
+          />
+        )}
+        {panel(
+          "rit",
+          <RideStep
+            retour={tab === "retour"}
+            date={date}
+            onDate={setDate}
+            time={time}
+            onTime={setTime}
+            returnDate={returnDate}
+            onReturnDate={setReturnDate}
+            returnTime={returnTime}
+            onReturnTime={setReturnTime}
+            persons={persons}
+            onPersons={setPersons}
+            luggage={luggage}
+            onLuggage={setLuggage}
+            needsFlight={needsFlight}
+            isArrival={isArrival}
+            flightRequired={flightRequired}
+            returnFlightRequired={returnFlightRequired}
+            outboundDirection={outboundDirection}
+            returnDirection={returnDirection}
+            flightNumber={flightNumber}
+            onFlightNumber={setFlightNumber}
+            returnFlightNumber={returnFlightNumber}
+            onReturnFlightNumber={setReturnFlightNumber}
+            error={fieldError}
+          />
+        )}
+        {panel("gegevens", <DetailsStep error={fieldError} />)}
+        {panel(
+          "bevestigen",
+          <ConfirmStep
+            pickup={pickup?.label ?? ""}
+            dropoff={dropoff?.label ?? ""}
+            retour={tab === "retour"}
+            date={date}
+            time={time}
+            returnDate={returnDate}
+            returnTime={returnTime}
+            persons={persons}
+            luggage={luggage}
+            flightNumber={needsFlight ? flightNumber : ""}
+            returnFlightNumber={needsFlight ? returnFlightNumber : ""}
+            contact={contact}
+            onEdit={goTo}
+          />
         )}
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="f-name" className={labelCls}>{t("naam")}</label>
-            <input id="f-name" name="naam" placeholder={t("naamPh")} autoComplete="name" required className={inputCls} />
-          </div>
-          <div>
-            <label htmlFor="f-phone" className={labelCls}>{t("telefoon")} <span aria-hidden="true" className="text-accent">*</span></label>
-            <input id="f-phone" name="telefoon" type="tel" placeholder="+31 6 ..." autoComplete="tel" required className={inputCls} />
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="f-email" className={labelCls}>{t("email")} <span aria-hidden="true" className="text-accent">*</span></label>
-            <input id="f-email" name="email" type="email" placeholder={t("emailPh")} autoComplete="email" required className={inputCls} />
-          </div>
-        </div>
+        <PricePreview quote={quote} ready={Boolean(ready)} quoteReady={quoteReady} />
 
-        <button
-          type="submit"
-          disabled={loading || !quoteReady || !quoteAllowsBooking}
-          aria-busy={loading}
-          className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-all hover:-translate-y-0.5 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
-          aria-label={t("verzenden")}
-        >
-          <Icon name="calendar-check" size={18} />
-          {loading ? t("bezig") : t("verzenden")}
-        </button>
+        {/* Algemene melding — alleen voor fouten die niet bij één veld horen
+            (prijs, verbinding, server); het icoon volgt het soort fout (F-13). Direct
+            boven de actiebalk, dus in beeld bij de knop die de fout opleverde. */}
+        {submit.status === "error" && (
+          <div className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-center text-sm text-red-700" role="alert" aria-live="assertive">
+            <Icon name={generalErrorIcon(submit.kind)} size={16} className="shrink-0" />
+            {submit.message}
+          </div>
+        )}
+
+        {/* Actiebalk: precies één primaire actie per stap (§13e); terug is secundair. */}
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {stepNumber > 1 ? (
+            <Button variant="secondary" size="lg" className="w-full sm:w-auto" onClick={() => goTo(previousStep(step))}>
+              {t("terug")}
+            </Button>
+          ) : (
+            <span aria-hidden="true" className="hidden sm:block" />
+          )}
+          {step === "bevestigen" ? (
+            <Button
+              key="submit"
+              type="submit"
+              size="lg"
+              className="w-full sm:w-auto"
+              disabled={loading || !quoteReady || !quoteAllowsBooking}
+              loading={loading}
+              aria-label={t("verzenden")}
+            >
+              {loading ? t("bezig") : t("verzenden")}
+            </Button>
+          ) : (
+            // Eigen key: anders hergebruikt React dezelfde <button> en wordt de klik op
+            // "Volgende" na de stapwissel als submit afgehandeld.
+            <Button
+              key="next"
+              size="lg"
+              className="w-full sm:w-auto"
+              loading={step === "rit" && quote.status === "loading"}
+              onClick={goNext}
+            >
+              {t("volgende")}
+            </Button>
+          )}
+        </div>
         <p className="mt-3 text-center text-[13px] text-secondary">
           {t("ofWhatsapp")}{" "}
           <a

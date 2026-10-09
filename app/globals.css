@@ -72,3 +72,17 @@ footer {
     transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.3s;
   }
 }
+
+/* Boekingsstappen (PR 2.4): stapwissel op --hz-ui (§5). Alleen na een echte
+   stapwissel (data-animate), nooit bij het laden; reduced motion = direct. */
+@keyframes booking-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .booking-step[data-animate]:not([hidden]) {
+    animation: booking-step-in var(--hz-ui, 280ms) var(--hz-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  }
+}

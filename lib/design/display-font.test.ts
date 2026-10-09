@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import config from "../../tailwind.config";
+import { BOOKING_FORM_FILES } from "@/lib/booking/form-source";
 
 // Experience 2.0 PR 1.2 — besluit B1 (08-10-2026, masterplan §2, design-specs §13f):
 // Playfair Display, rechtop, alleen Brand Mode-display ≥ 48px. Nooit serif in
@@ -11,7 +12,7 @@ const SERIF = /font-display-serif|text-display-serif|font-playfair|--font-playfa
 
 /** Volledig transactionele bestanden: hier mag geen enkele serif-klasse of -variabele staan. */
 const TRANSACTIONAL_FILES = [
-  "components/booking/BookingSection.tsx",
+  ...BOOKING_FORM_FILES,
   "components/booking/PaymentStep.tsx",
   "components/booking/FlightCard.tsx",
   "components/tarieven/RouteFinder.tsx",

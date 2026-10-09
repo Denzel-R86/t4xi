@@ -146,12 +146,16 @@ test("Button v2: polymorf — interne href via i18n-Link, schema/anker via <a>, 
   assert.match(button, /disabled=\{inactive\}/);
 });
 
-// Scope-lock voor PR 1.3; verwijderen in de eerste adoptie-PR (2.1 e.v.).
-test("1.3 adopteert niets: geen bestaande pagina/component gebruikt Button of JourneyLine", () => {
+// Scope-lock sinds PR 1.3: adoptie alleen in bewust toegevoegde bestanden.
+// PR 2.4 (BookingSection-stappen) is de eerste adopter van Button.
+test("Button/JourneyLine worden alleen geadopteerd waar een PR dat expliciet toestaat", () => {
   const own = new Set([
     join("components", "ui", "Button.tsx"),
     join("components", "ui", "button-styles.ts"),
     join("components", "horizon", "JourneyLine.tsx"),
+    // PR 2.4
+    join("components", "booking", "BookingSection.tsx"),
+    join("components", "booking", "steps", "ConfirmStep.tsx"),
   ]);
   const offenders = [...sourceFiles("app"), ...sourceFiles("components")]
     .filter((f) => !own.has(f))

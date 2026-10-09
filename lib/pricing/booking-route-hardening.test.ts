@@ -4,9 +4,10 @@ import { readFileSync } from "node:fs";
 import { POST as book } from "@/app/api/bookings/route";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 import { quoteFingerprint } from "@/lib/pricing/service";
+import { readBookingFormSource } from "@/lib/booking/form-source";
 
 const bookingSource = readFileSync("app/api/bookings/route.ts", "utf8");
-const formSource = readFileSync("components/booking/BookingSection.tsx", "utf8");
+const formSource = readBookingFormSource();
 const migrationSource = readFileSync(
   "supabase/migrations/20260809090000_add_return_trip_details.sql",
   "utf8"
