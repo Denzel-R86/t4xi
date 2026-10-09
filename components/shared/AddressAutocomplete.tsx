@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   addressLabelFor,
@@ -8,6 +8,12 @@ import {
   searchLocalLocations,
   type LocalLocation,
 } from "@/lib/pricing/local-locations";
+import {
+  prioritizeKnownPlaces,
+  suggestionKind,
+  suggestionParts,
+  type SuggestionKind,
+} from "@/components/shared/address-suggestions";
 
 /**
  * DE gedeelde adres-autocomplete — homepagehero, boekingsformulier en
@@ -191,7 +197,9 @@ export function useAddressSuggestions(query: string, enabled = true) {
     if (!enabled) return [];
     const trimmed = query.trim();
     if (trimmed.length < MIN_LOCAL_QUERY_LENGTH) return [];
-    return searchLocalLocations(trimmed).map(toLocalSuggestion);
+    // Bekende luchthavens/stations staan alleen lokaal; omdat lokale matches
+    // altijd vóór PDOK/Google staan, volstaat de F-16-voorrang hier.
+    return prioritizeKnownPlaces(trimmed, searchLocalLocations(trimmed).map(toLocalSuggestion));
   }, [query, enabled]);
 
   const search = useCallback(async (q: string, local: AddressSuggestion[]) => {
@@ -267,6 +275,23 @@ export function useAddressSuggestions(query: string, enabled = true) {
   return { status, suggestions, clear };
 }
 
+const KIND_LABEL_KEY: Record<SuggestionKind, "typeLuchthaven" | "typeStation" | "typeBestemming" | "typeAdres"> = {
+  airport: "typeLuchthaven",
+  station: "typeStation",
+  destination: "typeBestemming",
+  address: "typeAdres",
+};
+
+/**
+ * Veld + suggestielijst volgens het WAI-ARIA 1.2 combobox-patroon (list
+ * autocomplete): focus blijft altijd op het invoerveld, de actieve optie loopt
+ * via `aria-activedescendant`. Pijlen bewegen (en openen een gesloten lijst),
+ * Enter kiest, Escape sluit, Tab sluit zonder te kiezen. De lijst en de
+ * zoekstatus zijn alleen zichtbaar zolang het veld focus heeft, zodat er na
+ * het verlaten van het veld geen "Geen adressen gevonden" onder een
+ * geaccepteerd adres blijft staan (F-17) en een laat antwoord de lijst niet
+ * heropent (F-18).
+ */
 export default function AddressAutocomplete({
   label,
   placeholder,
@@ -290,17 +315,27 @@ export default function AddressAutocomplete({
   const [hasSelection, setHasSelection] = useState(Boolean(initialValue));
   // Pas zoeken nadat de gebruiker zelf typt — nooit voor de deep-link-prefill.
   const [dirty, setDirty] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [openList, setOpenList] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const listId = `${label.toLowerCase().replace(/\s/g, "-")}-listbox`;
+  const listId = `${useId()}-listbox`;
+  const listRef = useRef<HTMLUListElement>(null);
   const t = useTranslations("autocomplete");
 
   const { status, suggestions, clear } = useAddressSuggestions(query, dirty);
+  const expanded = focused && openList && suggestions.length > 0;
 
   useEffect(() => {
     setOpenList(suggestions.length > 0);
     setActiveIndex(-1);
   }, [suggestions]);
+
+  // Houd de actieve optie in beeld in een scrollende lijst (toetsenbord).
+  useEffect(() => {
+    if (!expanded || activeIndex < 0) return;
+    const el = listRef.current?.children[activeIndex] as HTMLElement | undefined;
+    el?.scrollIntoView?.({ block: "nearest" });
+  }, [expanded, activeIndex]);
 
   // Deep-link-prefill telt als volwaardige invoer: de resolver server-side
   // bepaalt de prijs, precies zoals bij handmatig getypte vrije tekst.
@@ -323,19 +358,30 @@ export default function AddressAutocomplete({
     onTextChange?.(s.label);
   }
 
-  function onKeyDown(e: React.KeyboardEvent) {
-    if (!openList) return;
-    if (e.key === "ArrowDown") {
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (suggestions.length === 0) return;
       e.preventDefault();
-      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
-    } else if (e.key === "ArrowUp") {
+      if (!expanded) {
+        setOpenList(true);
+        if (!e.altKey) setActiveIndex(e.key === "ArrowDown" ? 0 : suggestions.length - 1);
+        return;
+      }
+      const last = suggestions.length - 1;
+      setActiveIndex((i) =>
+        e.key === "ArrowDown" ? (i >= last ? 0 : i + 1) : i <= 0 ? last : i - 1
+      );
+    } else if (e.key === "Enter" && expanded && activeIndex >= 0) {
       e.preventDefault();
-      setActiveIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && activeIndex >= 0) {
+      const s = suggestions[activeIndex];
+      if (s) choose(s);
+    } else if (e.key === "Escape" && expanded) {
       e.preventDefault();
-      choose(suggestions[activeIndex]);
-    } else if (e.key === "Escape") {
       setOpenList(false);
+      setActiveIndex(-1);
+    } else if (e.key === "Tab") {
+      setOpenList(false);
+      setActiveIndex(-1);
     }
   }
 
@@ -351,6 +397,7 @@ export default function AddressAutocomplete({
           onChange={(e) => {
             setQuery(e.target.value);
             setDirty(true);
+            setOpenList(true);
             onTextChange?.(e.target.value);
             if (hasSelection) {
               setHasSelection(false);
@@ -358,27 +405,32 @@ export default function AddressAutocomplete({
             }
           }}
           onKeyDown={onKeyDown}
-          onBlur={() => setTimeout(() => setOpenList(false), 150)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setFocused(false);
+            setActiveIndex(-1);
+          }}
           role="combobox"
-          aria-expanded={openList}
+          aria-expanded={expanded}
           aria-controls={listId}
           aria-autocomplete="list"
-          aria-activedescendant={activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined}
+          aria-activedescendant={expanded && activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined}
           className="mt-1.5 min-h-[52px] w-full rounded-field border border-[rgba(31,39,48,0.14)] bg-field px-4 text-[15px] font-medium text-ink placeholder:font-normal placeholder:text-stone focus:border-accent focus:bg-white focus:shadow-[0_0_0_4px_rgba(40,49,59,0.10)] focus:outline-none"
         />
       </label>
 
       <p className="mt-1 min-h-[1rem] text-xs text-secondary" aria-live="polite">
-        {status === "loading" && t("zoeken")}
-        {status === "empty" && t("leeg")}
-        {status === "error" && t("fout")}
+        {focused && status === "loading" && t("zoeken")}
+        {focused && status === "empty" && t("leeg")}
+        {focused && status === "error" && t("fout")}
+        {expanded && status !== "loading" && <span className="sr-only">{t("aantal", { count: suggestions.length })}</span>}
       </p>
 
       {/* Skeleton tijdens de eerste zoekopdracht: premium laadgevoel i.p.v. een
           lege sprong. Alleen als er nog geen (verouderde) lijst staat, zodat de
           skeleton nooit over echte suggesties valt. De aria-live <p> hierboven
           doet de schermlezer-aankondiging; de skeleton is puur visueel. */}
-      {status === "loading" && !openList && (
+      {focused && status === "loading" && !expanded && (
         <div
           className="absolute z-20 mt-2 w-full overflow-hidden rounded-field border border-line bg-card shadow-card"
           aria-hidden="true"
@@ -394,39 +446,47 @@ export default function AddressAutocomplete({
         </div>
       )}
 
-      {openList && suggestions.length > 0 && (
-        <ul
-          id={listId}
-          role="listbox"
-          className="absolute z-20 mt-2 w-full overflow-hidden rounded-field border border-line bg-card shadow-card"
-        >
-          {suggestions.map((s, i) => (
-            <li
-              key={s.id}
-              id={`${listId}-option-${i}`}
-              role="option"
-              aria-selected={i === activeIndex}
-              onMouseDown={(e) => e.preventDefault()}
-              onMouseEnter={() => setActiveIndex(i)}
-              onClick={() => choose(s)}
-              className={`flex min-h-11 cursor-pointer items-center px-4 py-3 text-left text-sm transition-colors ${
-                i === activeIndex ? "bg-accent text-white" : "text-ink hover:bg-fog"
-              }`}
-            >
-              {s.displayLabel ? (
-                <span className="block">
-                  <span className="block font-medium">{s.displayLabel}</span>
-                  <span className={`block text-xs ${i === activeIndex ? "text-white/80" : "text-secondary"}`}>
-                    {s.location?.address}
-                  </span>
+      {/* Altijd in de DOM (leeg als dicht), zodat aria-controls nooit naar een
+          ontbrekend id wijst. Hoogte begrensd tot de zichtbare viewport, zodat
+          de lijst op 375px nooit onder de vouw of het toetsenbord verdwijnt. */}
+      <ul
+        id={listId}
+        ref={listRef}
+        role="listbox"
+        aria-label={t("lijstLabel")}
+        hidden={!expanded}
+        className="absolute z-20 mt-2 max-h-[min(22rem,55svh)] w-full overflow-y-auto overscroll-contain rounded-field border border-line bg-card py-1 shadow-card"
+      >
+        {expanded &&
+          suggestions.map((s, i) => {
+            const active = i === activeIndex;
+            const { title, detail } = suggestionParts(s);
+            return (
+              <li
+                key={s.id}
+                id={`${listId}-option-${i}`}
+                role="option"
+                aria-selected={active}
+                onMouseDown={(e) => e.preventDefault()}
+                onMouseEnter={() => setActiveIndex(i)}
+                onClick={() => choose(s)}
+                className={`flex min-h-11 cursor-pointer flex-col justify-center px-4 py-2.5 text-left transition-colors duration-150 motion-reduce:transition-none ${
+                  active ? "bg-accent text-white" : "text-ink hover:bg-fog"
+                }`}
+              >
+                <span className={`block text-meta font-semibold uppercase ${active ? "text-white/80" : "text-stone-text"}`}>
+                  {t(KIND_LABEL_KEY[suggestionKind(s)])}
                 </span>
-              ) : (
-                s.label
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+                <span className="mt-1 block break-words text-sm font-medium">{title}</span>
+                {detail && (
+                  <span className={`mt-0.5 block break-words text-xs ${active ? "text-white/80" : "text-stone-text"}`}>
+                    {detail}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+      </ul>
     </div>
   );
 }
