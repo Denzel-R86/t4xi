@@ -10,6 +10,7 @@ import Icon from "@/components/ui/Icon";
 import TariffComparison from "@/components/tarieven/TariffComparison";
 import { useTranslations } from "next-intl";
 import { track } from "@/lib/analytics";
+import { usePrefersReducedMotion } from "@/components/horizon/motion";
 import {
   buildBookingHref,
   buildMailtoHref,
@@ -183,6 +184,8 @@ export default function RouteFinder() {
 
   // Analytics op het getoonde resultaat (geen adressen — alleen kenmerken).
   const reported = useRef<string>("");
+  // Reduced motion: het resultaat springt in beeld, zonder scrollanimatie (§5).
+  const reducedMotion = usePrefersReducedMotion();
   useEffect(() => {
     if (view !== "ready" && view !== "onrequest") return;
     const key = `${view}-${quote.status}-${hasStops}`;
@@ -190,8 +193,8 @@ export default function RouteFinder() {
     reported.current = key;
     if (view === "ready") track("prijs_gevonden", { airport: needsFlight, stops: resolvedStops.length });
     else track("prijs_op_aanvraag", { airport: needsFlight, stops: resolvedStops.length });
-    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [view, quote.status, hasStops, needsFlight, resolvedStops.length]);
+    resultRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "nearest" });
+  }, [view, quote.status, hasStops, needsFlight, resolvedStops.length, reducedMotion]);
 
   // 2026-08-19 (hotfix): dezelfde, ÉNE bewuste bagagekeuze — vertaald naar een
   // leesbaar label — voor zowel de resultaatkaart als de offerteaanvraagtekst.
