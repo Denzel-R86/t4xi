@@ -20,6 +20,7 @@ const GRANTED = ["locations", "vehicle_classes", "fixed_route_prices", "cities"]
 const NOT_GRANTED = [
   "districts", "airports", "vehicles", "pricing_rules", "price_adjustments",
   "addresses", "popular_locations", "address_search_cache", "bookings", "pricing_quote_logs",
+  "pricing_airport_arrival_surcharge",
 ];
 
 // 1. anon/authenticated krijgen SELECT op de vereiste publieke pricing-tabellen
