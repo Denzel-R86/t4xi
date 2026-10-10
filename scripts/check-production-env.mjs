@@ -74,6 +74,32 @@ function stateOf(key, { validator = () => true } = {}) {
   return validator(v) ? "PASS" : "FAIL";
 }
 
+/**
+ * CONTROL_REQUIRE_AAL2 — omgekeerde semantiek ten opzichte van elke andere check.
+ *
+ * `lib/control/auth.ts` dwingt MFA af zolang de waarde niet exact "false" is:
+ *
+ *   if (process.env.CONTROL_REQUIRE_AAL2 !== "false" && aal !== "aal2") → mfa_required
+ *
+ * Ontbrekend is hier dus VEILIG, en een expliciete "false" is het enige wat de
+ * gate opent. Dat is geen theoretisch risico: de database kent geen AAL —
+ * `control_authorize` geeft een AAL1-sessie gewoon toegang — dus deze ene
+ * variabele is de volledige barriere tussen een wachtwoord-only sessie en
+ * Control.
+ *
+ * Daarom fail-closed bij een onleesbare waarde, anders dan de rest van dit
+ * script: een Sensitive-waarde zou "false" kunnen zijn, en in tegenstelling tot
+ * de secrets hier wordt deze variabele door geen enkele boot-guard nagekeken.
+ * Niemand zou hem in productie moeten zetten; staat hij er, dan hoort dat
+ * expliciet verantwoord te worden.
+ */
+function controlMfaState() {
+  if (!("CONTROL_REQUIRE_AAL2" in env)) return "PASS"; // ongezet → MFA afgedwongen
+  const v = (env.CONTROL_REQUIRE_AAL2 ?? "").trim();
+  if (v === "" || v === "[SENSITIVE]" || v === "Encrypted") return "FAIL";
+  return v === "false" ? "FAIL" : "PASS";
+}
+
 const checks = [
   ["APP_ENV = production",                          stateOf("APP_ENV", { validator: (v) => v.toLowerCase() === "production" })],
   ["STRIPE_SECRET_KEY = sk_live_",                  stateOf("STRIPE_SECRET_KEY", { validator: (v) => v.startsWith("sk_live_") })],
@@ -83,6 +109,7 @@ const checks = [
   ["NEXT_PUBLIC_SUPABASE_URL != staging-ref",       stateOf("NEXT_PUBLIC_SUPABASE_URL", { validator: (v) => supabaseRef(v) !== STAGING_SUPABASE_REF })],
   ["NEXT_PUBLIC_SUPABASE_ANON_KEY present",         stateOf("NEXT_PUBLIC_SUPABASE_ANON_KEY")],
   ["SUPABASE_SERVICE_ROLE_KEY present",             stateOf("SUPABASE_SERVICE_ROLE_KEY")],
+  ["CONTROL_REQUIRE_AAL2 != false (MFA-gate)",      controlMfaState()],
 ];
 
 const SYM = { PASS: "✓", FAIL: "✗", UNVERIFIABLE: "⚠" };
@@ -113,6 +140,10 @@ if (result === "UNVERIFIABLE") {
   console.log("  Geen FAIL — enkel Sensitive-secrets niet uitleesbaar; de boot-guard verifieert bij runtime. Merge is toegestaan.");
 } else if (result === "FAIL") {
   console.log("  Eén of meer vars ontbreken/onjuist — corrigeer in Vercel vóór de merge.");
+  if (controlMfaState() === "FAIL") {
+    console.log("  CONTROL_REQUIRE_AAL2: verwijder de variabele uit deze omgeving, of zet hem op true.");
+    console.log("  'false' schakelt de MFA-gate van /admin volledig uit.");
+  }
 }
 console.log("");
 process.exit(exitCode);
