@@ -49,6 +49,11 @@ jobs:
       APP_ENV: development
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
+      # Nep-publishable key (geen account, geen geheim): laat de betaalstap Stripe
+      # proberen te laden. De harness blokkeert js.stripe.com, dus snapshots zien
+      # hetzelfde als zonder key; alleen tests/behavior/confirmation.spec.ts zet een
+      # offline nep-Stripe neer om het bevestigingsmoment (PR 2.5) te bereiken.
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_offline_fixture_not_a_real_key
       HOME: /root
       # Chromium op Linux negeert --lang voor native date/time-velden en volgt
       # de omgeving; zonder dit tonen de baselines mm/dd/yyyy en AM/PM.
