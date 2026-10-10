@@ -80,9 +80,9 @@ export default function RideResult({
     >
       {/* ── UW RIT: route, serverprijs, één primaire actie ── */}
       <div className="px-6 pb-6 pt-5 md:px-8 md:pb-7">
-        <h3 id="uw-rit-kop" className="text-meta font-semibold uppercase text-accent">
+        <h2 id="uw-rit-kop" className="text-meta font-semibold uppercase text-accent">
           {t("kaartKop")}
-        </h3>
+        </h2>
         <div className="hx-handoff-journey mt-4">
           <JourneyLine state={journey} from={short(pickup)} to={short(dropoff)} fromMeta={time || undefined} decorative />
         </div>
