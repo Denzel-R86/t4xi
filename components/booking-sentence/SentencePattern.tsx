@@ -280,12 +280,15 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     setActiveField(field);
     setSheetField(field);
   }
-  const onSheetClosed = useCallback(() => {
-    setSheetField(null);
-    setActiveField(null);
-    setActiveIndex(-1);
-    clear();
-  }, [clear]);
+  // De native 'close' komt asynchroon: is intussen de andere sheet geopend,
+  // dan mag deze melding die niet sluiten.
+  const onSheetClosed = useCallback(
+    (field: "from" | "to") => {
+      setSheetField((f) => (f === field ? null : f));
+      setActiveField((f) => (f === field ? null : f));
+    },
+    []
+  );
   // Wordt het venster breder dan 768px terwijl de sheet open is: sluiten.
   if (isDesktop && sheetField !== null) setSheetField(null);
 
@@ -470,7 +473,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
           }}
           onKeyDown={onKeyDown}
           onChoose={choose}
-          onClosed={onSheetClosed}
+          onClosed={() => onSheetClosed(field)}
           returnFocusRef={field === "from" ? fromTriggerRef : toTriggerRef}
         />
       ))}
