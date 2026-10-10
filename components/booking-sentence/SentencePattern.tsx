@@ -3,7 +3,7 @@
 import "@/components/horizon/horizon.css";
 import "./booking-sentence.css";
 import "@/components/booking/handoff/handoff.css";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 import JourneyLine from "@/components/horizon/JourneyLine";
 import { Odometer, usePrefersReducedMotion } from "@/components/horizon/motion";
@@ -18,7 +18,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { HANDOFF_HREF, rememberShownPrice, writeHandoff } from "@/lib/booking-handoff";
 import { navigateWithHandoffTransition } from "@/components/booking/handoff/view-transition";
-import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
+import { isFutureAmsterdamDeparture, todayISO, useIsDesktop } from "./sentence-env";
 import { journeyStateFor, journeyTransition, type JourneyState } from "@/lib/horizon/journey-line-state";
 import {
   JOURNEY_RUN_MS,
@@ -35,50 +35,13 @@ import {
  * JourneyLine onder de zin en de prijsreveal na de reis. Onder 768px (PR 2.6,
  * §6.5): gestapelde "Van / Naar"-regels die een bottom sheet met de gedeelde
  * suggesties openen (AddressSheet.tsx); passagiers staan ook daar in de zin.
- */
-const DESKTOP_QUERY = "(min-width: 768px)";
-function subscribeDesktop(onChange: () => void) {
-  const mq = window.matchMedia(DESKTOP_QUERY);
-  mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
-}
-/** Desktop-breedte (≥ 768px); server en eerste render: false (mobiel gedrag). */
-function useIsDesktop(): boolean {
-  return useSyncExternalStore(
-    subscribeDesktop,
-    () => window.matchMedia(DESKTOP_QUERY).matches,
-    () => false
-  );
-}
-
-
-/** De boekingszin óp de lijn: "Ik reis van ___ naar ___." — het antwoord is de
+ * De boekingszin óp de lijn: "Ik reis van ___ naar ___." — het antwoord is de
  *  vaste prijs uit de echte Pricing Engine. Confirm leidt naar de volledige
  *  boekingsflow mét de ingevulde rit via de handoff (§7, lib/booking-handoff.ts):
  *  de adressen gaan via sessionStorage, nooit via de URL.
- *
  *  Suggesties en prijs komen uit de GEDEELDE bronnen (useAddressSuggestions,
  *  useRouteQuote): dit is dezelfde keten als het boekingsformulier, alleen in
  *  zin-presentatie. Vrije tekst blijft toegestaan. */
-/** ISO-datum van vandaag (lokale tijd) — uitsluitend voor de `min`-grens van het HTML-datumveld (dat werkt alleen op dagniveau). */
-function todayISO(): string {
-  const d = new Date();
-  const tzOffsetMs = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 10);
-}
-
-/**
- * 2026-08-19 (audit-correctie): toetst het VOLLEDIGE vertrekmoment (datum +
- * tijd) in Europe/Amsterdam, niet alleen de datum. Hergebruikt uitsluitend
- * `amsterdamDepartureIso` (dezelfde helper als de server in
- * app/api/pricing/quote/route.ts en components/booking/BookingSection.tsx) —
- * geen tweede tijdzone-implementatie.
- */
-function isFutureAmsterdamDeparture(date: string, time: string): boolean {
-  const iso = amsterdamDepartureIso(date, time);
-  return iso !== null && new Date(iso).getTime() >= Date.now();
-}
-
 const HERO_LUGGAGE = [
   { value: "geen-bagage", labelKey: "bagageGeen" },
   { value: "handbagage", labelKey: "bagageHand" },
@@ -462,13 +425,8 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
           suggestions={sheetField === field ? suggestions : []}
           activeIndex={sheetField === field ? activeIndex : -1}
           onInput={(text) => {
-            if (field === "from") {
-              setFrom(text);
-              setFromResolved("");
-            } else {
-              setTo(text);
-              setToResolved("");
-            }
+            (field === "from" ? setFrom : setTo)(text);
+            (field === "from" ? setFromResolved : setToResolved)("");
             setActiveIndex(-1);
           }}
           onKeyDown={onKeyDown}
