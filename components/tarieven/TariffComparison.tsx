@@ -48,25 +48,25 @@ export default function TariffComparison({
       <dl className="mt-4 space-y-2 text-sm">
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-secondary">{t("tariefStarttarief")}</dt>
-          <dd className="text-right font-medium text-ink [font-variant-numeric:tabular-nums]">
+          <dd className="whitespace-nowrap text-right font-medium text-ink [font-variant-numeric:tabular-nums]">
             {euro(tariff.starttarief)}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-secondary">{t("tariefAfstandRegel", { km, tarief: money.format(tariff.kilometertarief) })}</dt>
-          <dd className="text-right font-medium text-ink [font-variant-numeric:tabular-nums]">
+          <dd className="whitespace-nowrap text-right font-medium text-ink [font-variant-numeric:tabular-nums]">
             {euro(km * tariff.kilometertarief)}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-secondary">{t("tariefTijdRegel", { min, tarief: money.format(tariff.minuuttarief) })}</dt>
-          <dd className="text-right font-medium text-ink [font-variant-numeric:tabular-nums]">
+          <dd className="whitespace-nowrap text-right font-medium text-ink [font-variant-numeric:tabular-nums]">
             {euro(min * tariff.minuuttarief)}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-3 border-t border-line pt-2">
           <dt className="font-medium text-ink">{t("tariefMaximum")}</dt>
-          <dd className="text-right font-semibold text-ink [font-variant-numeric:tabular-nums]">
+          <dd className="whitespace-nowrap text-right font-semibold text-ink [font-variant-numeric:tabular-nums]">
             {euro(c.taxameterMaximum)}
           </dd>
         </div>
@@ -75,7 +75,7 @@ export default function TariffComparison({
       {/* Neutraal naast elkaar: geen voordeelclaim (F-28, §0c) — alleen de twee bedragen. */}
       <div className="mt-3 flex items-baseline justify-between gap-3 rounded-field border border-line bg-fog p-3 text-sm">
         <p className="text-secondary">{t("tariefVastePrijsLabel")}</p>
-        <p className="text-right font-semibold text-ink [font-variant-numeric:tabular-nums]">{euro(price)}</p>
+        <p className="whitespace-nowrap text-right font-semibold text-ink [font-variant-numeric:tabular-nums]">{euro(price)}</p>
       </div>
 
       <p className="mt-3 text-[11px] leading-relaxed text-secondary">
