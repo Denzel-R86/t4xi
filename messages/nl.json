@@ -1365,7 +1365,6 @@
     "voorwaardenDesc": "De voorwaarden waaronder T4XI vervoer levert: vaste prijzen, luchthavenbeleid bij vluchtvertraging, bagage en aansprakelijkheid."
   },
   "betaling": {
-    "pendingKop": "Betaling ontvangen",
     "pending": "We controleren de bevestiging.",
     "formulierLaden": "Betaalformulier laden…",
     "opnieuw": "Opnieuw proberen",
@@ -1409,10 +1408,7 @@
     "agenda": "Voeg toe aan agenda",
     "whatsapp": "WhatsApp T4XI",
     "whatsappAria": "WhatsApp T4XI over deze aanvraag (opent in een nieuw tabblad)",
-    "whatsappBericht": "Hallo T4XI, ik heb een vraag over mijn aanvraag {ref}.",
-    "agendaTitel": "T4XI-rit: {from} → {to}",
-    "agendaTitelTerug": "T4XI-terugrit: {from} → {to}",
-    "agendaOmschrijving": "Referentie: {ref}. {status}"
+    "whatsappBericht": "Hallo T4XI, ik heb een vraag over mijn aanvraag {ref}."
   },
   "routezoeker": {
     "van": "Waar mogen wij u ophalen?",
