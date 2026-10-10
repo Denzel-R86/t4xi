@@ -2,6 +2,7 @@
 
 import "@/components/horizon/horizon.css";
 import "./booking-sentence.css";
+import "@/components/booking/handoff/handoff.css";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Button from "@/components/ui/Button";
 import JourneyLine from "@/components/horizon/JourneyLine";
@@ -12,6 +13,9 @@ import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import { useHidesStickyCta } from "@/components/sections/sticky-cta-visibility";
 import { isTextEntry, quoteOutcomeKey, shouldRevealResult } from "@/lib/hero/hero-visibility";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
+import { HANDOFF_HREF, rememberShownPrice, writeHandoff } from "@/lib/booking-handoff";
+import { navigateWithHandoffTransition } from "@/components/booking/handoff/view-transition";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 import { journeyStateFor, journeyTransition, type JourneyState } from "@/lib/horizon/journey-line-state";
 import {
@@ -47,7 +51,8 @@ function useIsDesktop(): boolean {
 
 /** De boekingszin óp de lijn: "Ik reis van ___ naar ___." — het antwoord is de
  *  vaste prijs uit de echte Pricing Engine. Confirm leidt naar de volledige
- *  boekingsflow mét de ingevulde adressen (deep-link — nooit opnieuw zoeken).
+ *  boekingsflow mét de ingevulde rit via de handoff (§7, lib/booking-handoff.ts):
+ *  de adressen gaan via sessionStorage, nooit via de URL.
  *
  *  Suggesties en prijs komen uit de GEDEELDE bronnen (useAddressSuggestions,
  *  useRouteQuote): dit is dezelfde keten als het boekingsformulier, alleen in
@@ -81,6 +86,7 @@ const HERO_LUGGAGE = [
 
 export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: string }) {
   const t = useTranslations("zin");
+  const router = useRouter();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [fromResolved, setFromResolved] = useState("");
@@ -206,18 +212,42 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     if (reveal) result.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
   }, [quote.status, quoteReady, pickupLabel, dropoffLabel, date, time, luggage, passengers, reducedMotion]);
 
-  // `persons` gaat mee, zodat /boeken dezelfde rit (en dus dezelfde prijs) toont als de zin.
-  const href =
-    quoteReady && pickup && dropoff
-      ? `/boeken?pickup=${encodeURIComponent(pickup.label)}&dropoff=${encodeURIComponent(dropoff.label)}&date=${date}&time=${time}&luggage=${encodeURIComponent(luggage)}&persons=${passengers}`
-      : pickup && dropoff
-        ? `/boeken?pickup=${encodeURIComponent(pickup.label)}&dropoff=${encodeURIComponent(dropoff.label)}`
-        : confirmHref;
+  // Moment waarop de server deze quote gaf: de voorlopige prijs op /boeken
+  // verloopt met de quote, niet met het klikmoment.
+  const quoteReadyAt = useRef(0);
+  useEffect(() => {
+    if (quote.status === "ready") quoteReadyAt.current = Date.now();
+  }, [quote]);
+
+  // §7 (PR 2.3): nooit een adres in de href. Is de zin compleet, dan gaat de rit
+  // via de handoff (sessionStorage) naar /boeken?h=1; anders de publieke route.
+  // Zonder JS bestaat er geen ingevulde zin, dus ook geen adres om te lekken.
+  const href = quoteReady && pickup && dropoff ? HANDOFF_HREF : confirmHref;
   // Zolang adressen al bekend zijn maar datum/tijd/bagage nog niet compleet zijn,
   // is "Bevestig" bewust niet-navigeerbaar — de klant moet de zin eerst afmaken.
   function onConfirmClick(e: React.MouseEvent<HTMLAnchorElement>) {
-    // Handoff/URL (incl. passagiers) wijzigt pas in PR 2.3 (§7).
-    if (addressesSet && !quoteReady) e.preventDefault();
+    if (addressesSet && !quoteReady) {
+      e.preventDefault();
+      return;
+    }
+    if (!quoteReady || !pickup || !dropoff) return;
+    const quoteId = quote.status === "ready" ? quote.quoteId : null;
+    const written = writeHandoff({
+      pickup: pickup.label,
+      dropoff: dropoff.label,
+      date,
+      time,
+      persons: passengers,
+      luggage,
+      quoteId,
+    });
+    // Storage geweigerd: /boeken?h=1 opent dan een leeg formulier (geen adres in de URL).
+    if (!written) return;
+    if (quote.status === "ready") rememberShownPrice(quote.quoteId, quote.price, quoteReadyAt.current || Date.now());
+    // Nieuw tabblad/venster (modifier of middelklik): gewone link-navigatie.
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    navigateWithHandoffTransition(() => router.push(HANDOFF_HREF));
   }
 
   function choose(s: AddressSuggestion) {
@@ -381,7 +411,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
       </div>
       {/* §6.3: JourneyLine onder de zin (desktop). Met twee adressen draagt hij
           het route-label voor schermlezers; daarvoor is hij decoratief. */}
-      <div className="hz-sentence-journey mt-5 hidden md:block">
+      <div className="hz-sentence-journey hx-handoff-journey mt-5 hidden md:block">
         <JourneyLine
           state={drawn}
           from={pickup ? from.trim() || pickup.label : undefined}
@@ -403,7 +433,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
           ) : quote.status === "ready" && showPrice ? (
             <>
               {t("vastePrijs")}<Dash />
-              <b className="font-semibold text-ink">
+              <b className="hx-handoff-price font-semibold text-ink">
                 €&nbsp;
                 <Odometer value={quote.price} />
               </b>

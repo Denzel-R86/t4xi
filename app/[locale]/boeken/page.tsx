@@ -1,5 +1,5 @@
 import { pageMetadata } from "@/lib/seo-locale";
-import BookingSection from "@/components/booking/BookingSection";
+import BookingEntry from "@/components/booking/handoff/BookingEntry";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import Icon from "@/components/ui/Icon";
 import ScrollReveal from "@/components/ui/ScrollReveal";
@@ -23,6 +23,8 @@ const FEATURES = [
  * rekent direct de vaste prijs en toont waar nodig het vluchtnummerveld.
  * Homepage-hero, tarievenpagina, SEO-pagina's en advertenties gebruiken zo
  * exact dezelfde boekingsflow. `van`/`naar` blijven als aliassen werken.
+ * Uitsluitend publieke plaatsnamen horen in zo'n link; de hero-zin (vrije adressen)
+ * gebruikt `?h=1` + sessionStorage-handoff (PR 2.3, §7, lib/booking-handoff.ts).
  */
 export default async function BoekenPage({
   params,
@@ -78,7 +80,8 @@ export default async function BoekenPage({
         </ul>
       </div>
       <ScrollReveal>
-        <BookingSection
+        <BookingEntry
+          fromHandoff={first(query?.h) === "1"}
           initialPickup={initialPickup}
           initialDropoff={initialDropoff}
           initialReturn={initialReturn}

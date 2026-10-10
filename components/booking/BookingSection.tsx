@@ -31,6 +31,9 @@ import PricePreview from "./steps/PricePreview";
 import StepPanel from "./steps/StepPanel";
 import StepProgress from "./steps/StepProgress";
 import { useStepFlow } from "./steps/useStepFlow";
+import HandoffRouteLine from "./handoff/HandoffRouteLine";
+import { clearHandoff, handoffRideUnchanged, type ShownPrice } from "@/lib/booking-handoff";
+import { useHandoffPrice } from "./handoff/useHandoffPrice";
 
 /**
  * 2026-08-19 (audit-correctie): toetst het VOLLEDIGE vertrekmoment (datum +
@@ -63,6 +66,7 @@ export default function BookingSection({
   initialReturnDate,
   initialReturnTime,
   initialLuggage,
+  handoff,
 }: {
   /** Deep-link (?pickup=…): veld vooraf gevuld, prijs rekent direct. */
   initialPickup?: string;
@@ -79,6 +83,12 @@ export default function BookingSection({
   initialReturnTime?: string;
   /** Deep-link (?luggage=…): vooraf gevuld vanuit de homepagehero, uitsluitend bekende categorieën. */
   initialLuggage?: string;
+  /**
+   * Rit uit de hero-handoff (PR 2.3, §7): toont de route-lijn en, zolang de server
+   * nog niet antwoordde, de prijs uit de hero als VOORLOPIG (alleen uit het
+   * geheugen, nooit uit storage; boeken uitsluitend op de quote van de hook).
+   */
+  handoff?: { shown: ShownPrice | null };
 } = {}) {
   const t = useTranslations("booking");
   const locale = useLocale();
@@ -147,6 +157,11 @@ export default function BookingSection({
     flightNumber,
     returnFlightNumber,
   ]);
+
+  // Geslaagde boeking: de rit hoeft niet langer in sessionStorage te staan.
+  useEffect(() => {
+    if (submit.status === "success") clearHandoff();
+  }, [submit.status]);
 
   // Focus naar de bevestiging zodra de boeking is aangemaakt (het formulier verdwijnt).
   useEffect(() => {
@@ -263,6 +278,15 @@ export default function BookingSection({
   // Verzenden mag pas nadat de prijsflow een bindbare, opgeslagen quote-lock
   // oplevert, of expliciet heeft vastgesteld dat dit een offerte-op-aanvraag is.
   // Idle/loading/error mogen nooit stil via het no-lock-pad worden geboekt.
+  // Voorlopige handoff-prijs (besluit #70): vervalt bij elke serveruitkomst, verlopen quote of ritwijziging.
+  const handoffPrice = useHandoffPrice(
+    handoff?.shown,
+    quote,
+    handoffRideUnchanged(
+      { pickup: initialPickup, dropoff: initialDropoff, date: initialDate, time: initialTime, persons: initialPersons, luggage: initialLuggage },
+      { pickup: pickup?.label, dropoff: dropoff?.label, date, time, persons, luggage, returnTrip: tab === "retour" }
+    )
+  );
   const quoteAllowsBooking =
     (quote.status === "ready" && quote.quoteId.length > 0) || quote.status === "onrequest";
   // Het vluchtnummerveld verschijnt zodra de engine zegt dat één zijde een
@@ -392,6 +416,8 @@ export default function BookingSection({
         </div>
       )}
 
+      {handoff && <HandoffRouteLine pickup={pickup} dropoff={dropoff} quote={quote} />}
+
       {/* Na boeken verborgen (niet ontkoppeld): state en anti-stale-logica blijven intact,
           maar de stappen, wijzigacties en de verzendknop zijn niet meer bereikbaar. */}
       <div hidden={booked} inert={booked || undefined}>
@@ -479,7 +505,7 @@ export default function BookingSection({
           />
         )}
 
-        <PricePreview quote={quote} ready={Boolean(ready)} quoteReady={quoteReady} />
+        <PricePreview quote={quote} ready={Boolean(ready)} quoteReady={quoteReady} provisionalPrice={handoffPrice.provisional} priceUpdated={handoffPrice.updated} handoff={Boolean(handoff)} />
 
         {/* Algemene melding — alleen voor fouten die niet bij één veld horen
             (prijs, verbinding, server); het icoon volgt het soort fout (F-13). Direct
