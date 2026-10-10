@@ -20,6 +20,7 @@ import {
   type DeadheadZoneAllowlist,
 } from "@/lib/pricing/service";
 import type { DeadheadConfig } from "@/lib/pricing/deadhead-shadow";
+import { settleOnFakeClock } from "@/lib/pricing/fake-timeout-clock";
 import { neutralPickupApproachDeps, wrapGetRouteWithNeutralApproach } from "@/lib/pricing/pickup-approach-fake";
 
 // ── Laag 1: withRetryOnce ────────────────────────────────────────────────────
@@ -56,22 +57,28 @@ test("withRetryOnce: beide pogingen falen → verwerpt met de fout van de TWEEDE
   assert.equal(calls, 2);
 });
 
-test("withRetryOnce: eerste poging hangt langer dan timeoutMs → retry start op tijd, geen onbeperkt wachten", async () => {
+test("withRetryOnce: eerste poging hangt langer dan timeoutMs → retry start op tijd, geen onbeperkt wachten", async (t) => {
   let calls = 0;
-  const start = Date.now();
-  const result = await withRetryOnce(
-    async () => {
-      calls += 1;
-      if (calls === 1) return new Promise(() => {}); // hangt voor altijd
-      return "ok-na-retry";
-    },
-    100,
-    100
+  // Nep-klok i.p.v. Date.now()-delta — zie lib/pricing/fake-timeout-clock.ts.
+  const { settledAtMs, result } = await settleOnFakeClock(
+    t,
+    () =>
+      withRetryOnce(
+        async () => {
+          calls += 1;
+          if (calls === 1) return new Promise(() => {}); // hangt voor altijd
+          return "ok-na-retry";
+        },
+        100,
+        100
+      ),
+    1000
   );
-  const elapsedMs = Date.now() - start;
-  assert.equal(result, "ok-na-retry");
+  assert.deepEqual(result, { status: "fulfilled", value: "ok-na-retry" });
   assert.equal(calls, 2);
-  assert.ok(elapsedMs < 100 + 100 + 200, `verwacht ~200ms, duurde ${elapsedMs}ms`);
+  // Retry start precies wanneer de eerste poging (100ms) verloopt, en de
+  // snelle tweede poging levert direct — dus exact 100ms, niet 200.
+  assert.equal(settledAtMs, 100, `retry moet op 100ms starten, settelde op ${settledAtMs}ms`);
 });
 
 // ── Laag 1: cachedLoader ──────────────────────────────────────────────────────
