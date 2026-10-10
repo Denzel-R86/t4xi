@@ -53,9 +53,8 @@ test("pending-copy (mapping én betaalstap) zegt nooit confirm/bevestig", () => 
   }
   assert.equal(en.betaling.pending, "Your payment is being processed.");
   assert.doesNotMatch(en.betaling.pending, /confirm/i);
-  // NL ongewijzigd op verzoek van de eigenaar ("We controleren de bevestiging."):
-  // geen claim dat iets bevestigd ís; het woorddeel "bevestig" staat er wel in.
-  assert.doesNotMatch(nl.betaling.pending, /bevestigd|staat klaar|staat gepland/i);
+  assert.equal(nl.betaling.pending, "We controleren uw betaling.");
+  assert.doesNotMatch(nl.betaling.pending, /bevestig|staat klaar|staat gepland/i);
 });
 
 test("de legacy-respons 'pending' van /api/bookings is een aanvraag; voorstel-statussen bereiken het scherm niet", () => {
