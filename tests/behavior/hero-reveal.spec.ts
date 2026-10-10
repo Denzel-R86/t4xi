@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { fixture, open, RIDE, stabilize } from "../visual/support/harness";
+import { fillAddress, openAddress, sentenceRoot } from "../visual/support/sentence";
 
 /**
  * Gedragscheck H-1 (F-14): automatisch scrollen naar de prijsregel in de hero, met een
@@ -13,7 +14,7 @@ import { fixture, open, RIDE, stabilize } from "../visual/support/harness";
  */
 
 const sentence = (page: Page) =>
-  page.locator("div.border-t").filter({ has: page.getByRole("combobox", { name: "Vertrek" }) }).first();
+  sentenceRoot(page);
 const stamp = (page: Page) => sentence(page).locator('[aria-live="polite"]');
 
 type Gate = { pending: Route[]; bodies: Record<string, unknown>[]; release(): Promise<void> };
@@ -94,10 +95,9 @@ async function blurActive(page: Page) {
 }
 
 async function fillAll(page: Page, from = "Amsterdam Zuidas") {
-  await page.getByRole("combobox", { name: "Vertrek" }).fill(from);
-  const to = page.getByRole("combobox", { name: "Bestemming" });
-  await to.fill("Schiphol");
-  await to.blur();
+  await fillAddress(page, "Vertrek", from);
+  await fillAddress(page, "Bestemming", "Schiphol");
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await expect(page.getByRole("listbox")).toHaveCount(0);
   await page.getByLabel("Datum", { exact: true }).first().fill(RIDE.date);
   await page.getByLabel("Tijd", { exact: true }).first().fill(RIDE.time);
@@ -163,9 +163,8 @@ test.describe("H-1 automatisch scrollen naar de prijs", () => {
     await placeResultBelowFold(page);
     await resetScrolls(page);
     const n3 = gate.bodies.length;
-    const from = page.getByRole("combobox", { name: "Vertrek" });
-    await from.fill("Almere Poort");
-    await from.blur();
+    await fillAddress(page, "Vertrek", "Almere Poort");
+    await blurActive(page);
     await expect(page.getByRole("listbox")).toHaveCount(0);
     const rel3 = await landAndSettle(page, gate, n3);
     expect((gate.bodies.at(-1) as { pickup?: string }).pickup).toBe("Almere Poort");
@@ -186,8 +185,11 @@ test.describe("H-1 automatisch scrollen naar de prijs", () => {
     await fillAll(page);
     await expect.poll(() => gate.bodies.length).toBe(1);
     await placeResultBelowFold(page);
-    // Klant gaat terug naar het adresveld terwijl de prijs nog laadt.
-    await page.getByRole("combobox", { name: "Vertrek" }).focus();
+    // Klant gaat terug naar het adresveld terwijl de prijs nog laadt
+    // (< 768px: de sheet opent; openen mag de pagina niet verschuiven).
+    const scrollBeforeOpen = await page.evaluate(() => window.scrollY);
+    await openAddress(page, "Vertrek");
+    expect(await page.evaluate(() => window.scrollY), "invoer openen verschuift de pagina niet").toBe(scrollBeforeOpen);
     await resetScrolls(page);
     const before = await geometry(page);
     expect(before.active).toBe("Vertrek");
