@@ -31,6 +31,8 @@ import PricePreview from "./steps/PricePreview";
 import StepPanel from "./steps/StepPanel";
 import StepProgress from "./steps/StepProgress";
 import { useStepFlow } from "./steps/useStepFlow";
+import { bookingStatusFromResponse } from "@/lib/bookings/customer-status-copy";
+import type { ConfirmationDetails } from "@/lib/bookings/confirmation-details";
 import HandoffRouteLine from "./handoff/HandoffRouteLine";
 import { clearHandoff, handoffRideUnchanged, type ShownPrice } from "@/lib/booking-handoff";
 import { useHandoffPrice } from "./handoff/useHandoffPrice";
@@ -117,7 +119,15 @@ export default function BookingSection({
 
   type SubmitState =
     | { status: "idle" | "loading" }
-    | { status: "success"; bookingRef: string; bookingId: string | null; quoteOnRequest: boolean; price: number | null }
+    | {
+        status: "success";
+        bookingRef: string;
+        bookingId: string | null;
+        quoteOnRequest: boolean;
+        price: number | null;
+        /** De rit zoals verstuurd en door de server geaccepteerd (§8, alleen weergave). */
+        details: ConfirmationDetails;
+      }
     | { status: "error"; message: string; kind: GeneralErrorKind };
   const [submit, setSubmit] = useState<SubmitState>({ status: "idle" });
   const loading = submit.status === "loading";
@@ -125,6 +135,10 @@ export default function BookingSection({
   // twijfel over welke gegevens bij de betaling horen. Alleen bevestiging + betaalstap.
   const booked = submit.status === "success";
   const successRef = useRef<HTMLDivElement>(null);
+  // Referentie waarvan de betaling server-side bevestigd is; afgeleid, dus een
+  // nieuwe/gereste boeking toont automatisch weer de gewone melding.
+  const [paidRef, setPaidRef] = useState<string | null>(null);
+  const paymentConfirmed = submit.status === "success" && paidRef === submit.bookingRef;
 
   // ── Stappenweergave (PR 2.4): alleen presentatie, geen invloed op payload ──
   const [contact, setContact] = useState<ContactSummary>({ name: "", phone: "", email: "" });
@@ -225,6 +239,21 @@ export default function BookingSection({
           bookingId: typeof data.bookingId === "string" ? data.bookingId : null,
           quoteOnRequest: Boolean(data.quoteOnRequest),
           price: typeof data.price === "number" ? data.price : null,
+          details: {
+            bookingRef: data.bookingRef,
+            bookingStatus: bookingStatusFromResponse(data.status),
+            date: payload.date,
+            time: payload.time,
+            pickup: payload.pickup,
+            dropoff: payload.dropoff,
+            returnTrip: payload.rideType === "retour",
+            returnDate: payload.returnDate,
+            returnTime: payload.returnTime,
+            passengers: payload.persons,
+            flightNumber: payload.flightNumber,
+            returnFlightNumber: payload.returnFlightNumber,
+            email: payload.customerEmail,
+          },
         });
       } else {
         // Servervalidatie van een contactveld → fout bij dat veld (F-13);
@@ -387,20 +416,23 @@ export default function BookingSection({
 
       {submit.status === "success" && (
         <div className="mb-5">
-          <div ref={successRef} tabIndex={-1} className="rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700 focus:outline-none" role="status" aria-live="polite">
-            <div className="flex items-center justify-center gap-2 font-semibold">
-              <Icon name="check" size={16} />
-              {t("succesRef")} {submit.bookingRef}
+          {/* Na de server-bevestigde betaling neemt BookingConfirmation (in PaymentStep) het over. */}
+          {!paymentConfirmed && (
+            <div ref={successRef} tabIndex={-1} className="rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700 focus:outline-none" role="status" aria-live="polite">
+              <div className="flex items-center justify-center gap-2 font-semibold">
+                <Icon name="check" size={16} />
+                {t("succesRef")} {submit.bookingRef}
+              </div>
+              <p className="mt-1 text-green-700/90">
+                {submit.quoteOnRequest ? t("succesOpAanvraag") : t("succesBetaalIntro")}
+              </p>
             </div>
-            <p className="mt-1 text-green-700/90">
-              {submit.quoteOnRequest ? t("succesOpAanvraag") : t("succesBetaalIntro")}
-            </p>
-          </div>
+          )}
 
           {/* Betaalstap — alleen bij een vaste prijs. De prijsautoriteit blijft
               server-side: PaymentStep haalt het bedrag op via create-intent. */}
           {!submit.quoteOnRequest && submit.price !== null && submit.bookingId && pickup && dropoff && (
-            <div className="mt-4">
+            <div className={paymentConfirmed ? undefined : "mt-4"}>
               <PaymentStep
                 ride={{
                   pickup: pickup.label,
@@ -410,13 +442,15 @@ export default function BookingSection({
                   locale: locale as Locale,
                   bookingId: submit.bookingId,
                 }}
+                confirmation={submit.details}
+                onConfirmed={() => setPaidRef(submit.bookingRef)}
               />
             </div>
           )}
         </div>
       )}
 
-      {handoff && <HandoffRouteLine pickup={pickup} dropoff={dropoff} quote={quote} />}
+      {handoff && !paymentConfirmed && <HandoffRouteLine pickup={pickup} dropoff={dropoff} quote={quote} />}
 
       {/* Na boeken verborgen (niet ontkoppeld): state en anti-stale-logica blijven intact,
           maar de stappen, wijzigacties en de verzendknop zijn niet meer bereikbaar. */}

@@ -5,6 +5,8 @@ import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-
 import type { Appearance, StripePaymentElementOptions } from "@stripe/stripe-js";
 import { useTranslations } from "next-intl";
 import Icon from "@/components/ui/Icon";
+import BookingConfirmation from "@/components/booking/BookingConfirmation";
+import type { ConfirmationDetails } from "@/lib/bookings/confirmation-details";
 import { getStripe } from "@/lib/payments/stripe-client";
 import {
   buildCreateIntentBody,
@@ -50,7 +52,17 @@ const APPEARANCE: Appearance = {
 
 const PE_OPTIONS: StripePaymentElementOptions = { layout: "tabs" };
 
-export default function PaymentStep({ ride }: { ride: PaymentRide }) {
+export default function PaymentStep({
+  ride,
+  confirmation,
+  onConfirmed,
+}: {
+  ride: PaymentRide;
+  /** De geaccepteerde rit voor de bevestigingsweergave (§8); alleen presentatie. */
+  confirmation: ConfirmationDetails;
+  /** Meldt de server-bevestigde betaling aan de ouder (die zijn eigen melding dan weghaalt). */
+  onConfirmed?: () => void;
+}) {
   const t = useTranslations("betaling");
   const [state, dispatch] = useReducer(paymentReducer, initialPaymentState);
   // Eén Stripe-promise per component-instantie; loadStripe zelf is al gememoïseerd.
@@ -134,20 +146,25 @@ export default function PaymentStep({ ride }: { ride: PaymentRide }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status]);
 
+  // Alleen een melding naar boven; de state machine zelf blijft ongewijzigd.
+  const confirmed = state.status === "confirmed";
+  useEffect(() => {
+    if (confirmed) onConfirmed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmed]);
+
   // ── render ───────────────────────────────────────────────────────────────
   // Server-gereconcilieerde eindtoestanden. ALLEEN 'confirmed' toont een
   // definitieve betaalclaim (payment ≠ transport confirmation).
+  // §8: de kop volgt de bookingstatus (nooit "bevestigd" vóór een CONFIRMED-status);
+  // het betaalde bedrag komt uit de server-intent, niet uit clientdata.
   if (state.status === "confirmed") {
     return (
-      <div className="rounded-lg border border-green-600/40 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700" role="status" aria-live="polite">
-        <div className="flex items-center justify-center gap-2 font-semibold">
-          <Icon name="check" size={16} />
-          {t("confirmedKop")}
-        </div>
-        <p className="mt-1 text-green-700/90">
-          {t("confirmedBody", { amount: formatAmount(state.intent?.amount ?? 0, state.intent?.currency ?? "eur", ride.locale) })}
-        </p>
-      </div>
+      <BookingConfirmation
+        details={confirmation}
+        paidLabel={state.intent ? formatAmount(state.intent.amount, state.intent.currency, ride.locale) : null}
+        locale={ride.locale}
+      />
     );
   }
 

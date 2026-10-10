@@ -238,13 +238,15 @@ test("R4 · polling is begrensd (geen oneindige polling)", () => {
 });
 
 test("R5 · alleen 'confirmed' toont een definitieve betaalclaim in de UI", () => {
-  // de confirmed-copy verschijnt uitsluitend in de status==='confirmed'-tak
-  assert.match(paymentStepSrc, /state\.status === "confirmed"[\s\S]{0,400}confirmedKop/);
+  // de bevestigingsweergave verschijnt uitsluitend in de status==='confirmed'-tak
+  assert.match(paymentStepSrc, /state\.status === "confirmed"[\s\S]{0,400}<BookingConfirmation/);
+  assert.equal((paymentStepSrc.match(/<BookingConfirmation/g) ?? []).length, 1);
   // pending blijft neutraal (geen definitieve claim)
   assert.doesNotMatch(nl.pending, /\bbevestigd\b/i);
   assert.doesNotMatch(en.pending, /\bconfirmed\b/i);
-  // confirmed-copy bestaat in beide talen
-  assert.ok(nl.confirmedKop && en.confirmedKop && nl.confirmedBody.includes("{amount}") && en.confirmedBody.includes("{amount}"));
+  // §8: geen "Betaling bevestigd" meer — de kop komt uit lib/bookings/customer-status-copy.ts
+  assert.equal(nl.confirmedKop, undefined);
+  assert.equal(en.confirmedKop, undefined);
 });
 
 test("R6 · geen Stripe redirect-params als autoriteit; server-status wordt gepolld", () => {
@@ -253,8 +255,8 @@ test("R6 · geen Stripe redirect-params als autoriteit; server-status wordt gepo
 });
 
 test("R7 · getoond bedrag komt uit de server-intent (geen clientbedrag)", () => {
-  // confirmedBody interpoleert het serverbedrag uit state.intent
-  assert.match(paymentStepSrc, /confirmedBody",\s*\{ amount: formatAmount\(state\.intent/);
+  // het betaalde bedrag is het serverbedrag uit state.intent (create-intent-respons)
+  assert.match(paymentStepSrc, /paidLabel=\{state\.intent \? formatAmount\(state\.intent\.amount, state\.intent\.currency/);
   const norm = (v: string) => v.replace(/\s/g, "");
   assert.equal(norm(formatAmount(7900, "eur", "nl")), "€79,00");
   assert.equal(norm(formatAmount(7900, "eur", "en")), "€79.00");
