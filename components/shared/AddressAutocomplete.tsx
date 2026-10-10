@@ -299,6 +299,7 @@ export default function AddressAutocomplete({
   onTextChange,
   initialValue,
   autoCompleteSection,
+  accepted = false,
 }: {
   label: string;
   placeholder: string;
@@ -310,6 +311,12 @@ export default function AddressAutocomplete({
   initialValue?: string;
   /** Unieke browser-autofillgroep, zonder de `section-` prefix. */
   autoCompleteSection: string;
+  /**
+   * De aanroeper heeft deze invoer al geaccepteerd en geprijsd (RouteFinder,
+   * PR 2.7): dan geen "Geen adressen gevonden" onder het adres (F-17), ook niet
+   * bij opnieuw focussen. Standaard uit: andere aanroepers ongewijzigd.
+   */
+  accepted?: boolean;
 }) {
   const [query, setQuery] = useState(initialValue ?? "");
   const [hasSelection, setHasSelection] = useState(Boolean(initialValue));
@@ -421,7 +428,7 @@ export default function AddressAutocomplete({
 
       <p className="mt-1 min-h-[1rem] text-xs text-secondary" aria-live="polite">
         {focused && status === "loading" && t("zoeken")}
-        {focused && status === "empty" && t("leeg")}
+        {focused && status === "empty" && !accepted && t("leeg")}
         {focused && status === "error" && t("fout")}
         {expanded && status !== "loading" && <span className="sr-only">{t("aantal", { count: suggestions.length })}</span>}
       </p>
