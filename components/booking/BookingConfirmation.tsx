@@ -120,7 +120,7 @@ export default function BookingConfirmation({
         {confirmationFields(details, payment).map((field) => (
           <div key={field} className="contents" data-field={field}>
             <dt className="text-secondary">{rows[field][0]}</dt>
-            <dd className="mb-2.5 break-words font-medium text-ink last:mb-0 sm:mb-0">{rows[field][1]}</dd>
+            <dd className="mb-2.5 break-words font-medium text-ink sm:mb-0">{rows[field][1]}</dd>
           </div>
         ))}
       </dl>
