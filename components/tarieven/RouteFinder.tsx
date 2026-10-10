@@ -1,22 +1,26 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import AddressAutocomplete, {
   type AddressSuggestion,
 } from "@/components/shared/AddressAutocomplete";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import Icon from "@/components/ui/Icon";
-import TariffComparison from "@/components/tarieven/TariffComparison";
+import RideResult from "@/components/tarieven/RideResult";
+import OnRequestCard from "@/components/tarieven/OnRequestCard";
 import { useTranslations } from "next-intl";
 import { track } from "@/lib/analytics";
 import { usePrefersReducedMotion } from "@/components/horizon/motion";
+import { HANDOFF_HREF, rememberShownPrice, writeHandoff } from "@/lib/booking-handoff";
+import { navigateWithHandoffTransition } from "@/components/booking/handoff/view-transition";
+import { routeFinderHandoff } from "@/lib/tarieven/ride-result";
+import { journeyStateFor } from "@/lib/horizon/journey-line-state";
 import {
   buildBookingHref,
   buildMailtoHref,
   buildQuoteRequestText,
   buildWhatsappHref,
-  formatDuration,
   isRouteFinderDetailsComplete,
   matchSchipholRoute,
   resolveRouteFinderView,
@@ -31,8 +35,10 @@ import {
  * (components/shared/useRouteQuote → /api/pricing/quote → fixed_route_prices).
  * Er is GEEN client-side of tweede prijsberekening. Tussenstops en niet-vaste
  * routes kennen (in v1) geen automatisch tarief; die lopen bewust via een
- * offerteaanvraag, niet via een verzonnen bedrag. "Boek deze rit" deep-linkt
- * naar /boeken, waar de server de prijs altijd opnieuw valideert.
+ * offerteaanvraag, niet via een verzonnen bedrag. "Boek deze rit" (PR 2.7) gaat
+ * via de handoff (lib/booking-handoff.ts) naar /boeken?h=1 — geen adres in de URL;
+ * /boeken rekent verifiërend. Een retour past niet in het handoff-formaat en houdt
+ * de bestaande deep-link naar /boeken.
  */
 
 const MAX_STOPS = 3;
@@ -76,6 +82,7 @@ const newStop = (): StopState => ({ id: `stop-${stopSeq++}`, selection: null, te
 export default function RouteFinder() {
   const t = useTranslations("routezoeker");
   const ids = useId();
+  const router = useRouter();
 
   const [pickupSel, setPickupSel] = useState<AddressSuggestion | null>(null);
   const [pickupText, setPickupText] = useState("");
@@ -139,6 +146,12 @@ export default function RouteFinder() {
   const airport = quote.airport;
   const needsFlight = Boolean(airport?.isTransfer);
   const isArrival = airport?.direction === "arrival";
+  // Moment waarop de server deze quote gaf: de voorlopige prijs op /boeken
+  // verloopt met de quote, niet met het klikmoment (zelfde regel als de hero).
+  const quoteReadyAt = useRef(0);
+  useEffect(() => {
+    if (quote.status === "ready") quoteReadyAt.current = Date.now();
+  }, [quote]);
 
   // Prijswijzigende invoer maakt een eerder resultaat verouderd: opnieuw berekenen.
   useEffect(() => {
@@ -182,6 +195,10 @@ export default function RouteFinder() {
     hasStops,
   });
 
+  // F-17: een geprijsd adres (resultaat "ready" voor exact deze invoer — elke
+  // wijziging zet `submitted` terug) krijgt nooit "Geen adressen gevonden" eronder.
+  const pricedRoute = view === "ready";
+
   // Analytics op het getoonde resultaat (geen adressen — alleen kenmerken).
   const reported = useRef<string>("");
   // Reduced motion: het resultaat springt in beeld, zonder scrollanimatie (§5).
@@ -216,6 +233,36 @@ export default function RouteFinder() {
   const summary = routeSummary(pickup?.label ?? "", resolvedStops, dropoff?.label ?? "");
   const schipholRoute = airport?.direction === "departure" ? matchSchipholRoute(pickup?.label ?? "") : null;
 
+  // §7 / PR 2.3-mechanisme: alleen gevalideerde velden naar sessionStorage, nooit
+  // een prijs. Retour/tussenstops passen niet in het formaat → `null` → deep-link.
+  const handoffRide =
+    view === "ready" && quote.status === "ready"
+      ? routeFinderHandoff({
+          pickup: pickup?.label,
+          dropoff: dropoff?.label,
+          date,
+          time,
+          passengers,
+          luggage,
+          returnTrip,
+          hasStops,
+          quoteId: quote.quoteId,
+        })
+      : null;
+
+  function onBook(e: React.MouseEvent<HTMLAnchorElement>) {
+    track("boeking_geklikt", { airport: needsFlight, stops: resolvedStops.length });
+    if (!handoffRide || quote.status !== "ready") return;
+    // Storage geweigerd: /boeken?h=1 opent dan een leeg formulier (geen adres in de URL).
+    if (!writeHandoff(handoffRide)) return;
+    // Alleen in het geheugen (besluit #70): /boeken mag hem voorlopig tonen tot de server antwoordt.
+    rememberShownPrice(quote.quoteId, quote.price, quoteReadyAt.current || Date.now());
+    // Nieuw tabblad/venster (modifier of middelklik): gewone link-navigatie.
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    navigateWithHandoffTransition(() => router.push(HANDOFF_HREF));
+  }
+
   return (
     <div>
       {/* ── Zoekmodule: alleen ophalen + bestemming + primaire knop ── */}
@@ -227,6 +274,7 @@ export default function RouteFinder() {
             onSelect={setPickupSel}
             onTextChange={setPickupText}
             autoCompleteSection="route-pickup"
+            accepted={pricedRoute}
           />
           <AddressAutocomplete
             label={t("naar")}
@@ -234,6 +282,7 @@ export default function RouteFinder() {
             onSelect={setDropoffSel}
             onTextChange={setDropoffText}
             autoCompleteSection="route-dropoff"
+            accepted={pricedRoute}
           />
           {/* 2026-08-19 (hotfix, herzien): datum, tijd én bagage zijn alle drie
               verplicht vóór een prijs (zie detailsComplete hieronder) — daarom
@@ -443,21 +492,21 @@ export default function RouteFinder() {
           </div>
         )}
 
-        {view === "ready" && quote.status === "ready" && (
-          <ResultCard
+        {view === "ready" && quote.status === "ready" && pickup && dropoff && (
+          <RideResult
+            pickup={pickup.label}
+            dropoff={dropoff.label}
             summary={summary}
-            price={quote.price}
-            returnApplied={quote.returnApplied}
-            distanceKm={quote.distanceKm}
-            durationMin={quote.estimatedDurationMin}
+            quote={quote}
+            journey={journeyStateFor(quote, pickup, dropoff)}
+            time={time}
             passengers={passengers}
             luggageLabel={tripForRequest.luggage}
-            stopsCount={resolvedStops.length}
-            needsFlight={needsFlight}
             isArrival={isArrival}
-            bookingHref={buildBookingHref({
-              pickup: pickup!.label,
-              dropoff: dropoff!.label,
+            needsFlight={needsFlight}
+            bookingHref={handoffRide ? HANDOFF_HREF : buildBookingHref({
+              pickup: pickup.label,
+              dropoff: dropoff.label,
               returnTrip,
               passengers,
               date: date || undefined,
@@ -467,7 +516,7 @@ export default function RouteFinder() {
               luggage,
             })}
             schipholRoute={schipholRoute}
-            onBook={() => track("boeking_geklikt", { airport: needsFlight, stops: resolvedStops.length })}
+            onBook={onBook}
           />
         )}
 
@@ -481,144 +530,6 @@ export default function RouteFinder() {
           />
         )}
       </div>
-    </div>
-  );
-}
-
-/* ── Prijsresultaat: premium ritkaart ── */
-function ResultCard({
-  summary, price, returnApplied, distanceKm, durationMin, passengers, luggageLabel, stopsCount,
-  needsFlight, isArrival, bookingHref, schipholRoute, onBook,
-}: {
-  summary: string;
-  price: number;
-  returnApplied: boolean;
-  distanceKm: number;
-  durationMin: number;
-  passengers: number;
-  /** 2026-08-19 (hotfix): de al-vertaalde, daadwerkelijk gekozen bagagecategorie — nooit een generieke, losstaande capaciteitsvermelding. */
-  luggageLabel: string;
-  stopsCount: number;
-  needsFlight: boolean;
-  isArrival: boolean;
-  bookingHref: string;
-  schipholRoute: { slug: string; naam: string } | null;
-  onBook: () => void;
-}) {
-  const t = useTranslations("routezoeker");
-  const facts: { label: string; value: string }[] = [
-    { label: t("factReistijd"), value: formatDuration(durationMin) || "—" },
-    { label: t("factAfstand"), value: distanceKm > 0 ? `${distanceKm} km` : "—" },
-    { label: t("factVoertuig"), value: t("voertuigKlasse") },
-    { label: t("factPassagiers"), value: t("passagiersMax", { max: 4, gekozen: passengers }) },
-    { label: t("factBagage"), value: luggageLabel || "—" },
-    { label: t("factWachttijd"), value: isArrival ? t("wachttijdLucht") : t("wachttijdStandaard") },
-  ];
-  if (stopsCount > 0) facts.push({ label: t("factTussenstops"), value: String(stopsCount) });
-
-  const proofs = [
-    "bewijsVaste", "bewijsChauffeur", "bewijsVoertuig", "bewijsBagage",
-    ...(needsFlight ? (["bewijsVlucht"] as const) : []), "bewijsGeenVerrassing",
-  ] as const;
-
-  return (
-    <div className="hz-reveal hz-in overflow-hidden rounded-[28px] border border-line-strong bg-card shadow-card-lg">
-      <div className="border-b border-line bg-fog px-6 py-5 md:px-8">
-        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">{t("kaartKop")}</p>
-        <p className="mt-2 font-display text-lg font-semibold leading-snug text-ink md:text-xl">{summary}</p>
-      </div>
-      <div className="px-6 py-6 md:px-8">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="font-display text-[40px] font-extrabold leading-none text-ink [font-variant-numeric:tabular-nums] md:text-[52px]">
-            € {price}
-          </span>
-          <span className="text-sm text-secondary">
-            {returnApplied ? t("vastRetour") : t("vastEnkel")} · {t("inclBtw")} · {t("geenSurge")}
-          </span>
-        </div>
-
-        <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
-          {facts.map((f) => (
-            <div key={f.label} className="border-t border-line pt-3">
-              <dt className="text-[10px] uppercase tracking-[0.12em] text-stone">{f.label}</dt>
-              <dd className="mt-0.5 text-sm font-semibold text-ink [font-variant-numeric:tabular-nums]">{f.value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        <TariffComparison distanceKm={distanceKm} durationMin={durationMin} price={price} />
-
-        <ul className="mt-6 grid gap-2 sm:grid-cols-2">
-          {proofs.map((k) => (
-            <li key={k} className="flex items-start gap-2 text-[13px] text-secondary">
-              <Icon name="circle-check" size={15} className="mt-0.5 shrink-0 text-accent" />
-              {t(k)}
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Link
-            href={bookingHref}
-            onClick={onBook}
-            className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-all hover:-translate-y-0.5 hover:bg-accent-hover"
-          >
-            <Icon name="calendar-check" size={18} /> {t("boekDezeRit")}
-          </Link>
-          {schipholRoute && (
-            <Link
-              href={`/${schipholRoute.slug}`}
-              className="inline-flex min-h-[52px] items-center justify-center gap-1.5 rounded-md border border-line-strong bg-white px-6 font-display text-sm font-medium text-ink transition-colors hover:bg-fog"
-            >
-              {t("bekijkRoute", { stad: schipholRoute.naam })} <span aria-hidden="true">→</span>
-            </Link>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Geen automatisch tarief: bruikbare aanvraagflow ── */
-function OnRequestCard({
-  summary, whatsappHref, mailtoHref, needsFlight, hasStops,
-}: {
-  summary: string;
-  whatsappHref: string;
-  mailtoHref: string;
-  needsFlight: boolean;
-  hasStops: boolean;
-}) {
-  const t = useTranslations("routezoeker");
-  return (
-    <div className="hz-reveal hz-in rounded-[28px] border border-line-strong bg-card p-6 shadow-card md:p-8">
-      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-accent">{t("kaartKop")}</p>
-      <p className="mt-2 font-display text-lg font-semibold leading-snug text-ink">{summary}</p>
-      <p className="mt-4 max-w-xl text-secondary">
-        {t("opAanvraagUitleg")}
-        {hasStops ? ` ${t("opAanvraagStops")}` : ""}
-        {needsFlight ? ` ${t("opAanvraagVlucht")}` : ""}
-      </p>
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <a
-          href={whatsappHref}
-          target="_blank"
-          rel="noopener"
-          className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-md bg-accent px-8 font-display text-base font-medium text-white shadow-cta transition-all hover:-translate-y-0.5 hover:bg-accent-hover"
-        >
-          <Icon name="whatsapp" size={18} /> {t("vraagWhatsapp")}
-        </a>
-        <a
-          href={mailtoHref}
-          className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-md border border-line-strong bg-white px-8 font-display text-base font-medium text-ink transition-colors hover:bg-fog"
-        >
-          <Icon name="message-check" size={18} /> {t("vraagEmail")}
-        </a>
-      </div>
-      <p className="mt-4 text-center text-[13px] text-secondary">
-        {t("ofBel")}{" "}
-        <a href="tel:+31634744522" className="inline-flex min-h-6 items-center text-accent hover:underline">+31 6 34 74 45 22</a>
-      </p>
     </div>
   );
 }

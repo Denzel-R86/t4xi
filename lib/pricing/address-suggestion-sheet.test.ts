@@ -134,7 +134,7 @@ test("combobox-contract: toetsen pijlen, Enter, Escape, Tab", () => {
 
 test("F-17/F-18: lijst en zoekstatus alleen zichtbaar zolang het veld focus heeft", () => {
   assert.match(src, /const expanded = focused && openList && suggestions\.length > 0/);
-  assert.match(src, /\{focused && status === "empty" && t\("leeg"\)\}/);
+  assert.match(src, /\{focused && status === "empty" && !accepted && t\("leeg"\)\}/);
 });
 
 test("mobiel: lijst begrensd tot de viewport, opties ≥ 44px", () => {
