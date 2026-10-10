@@ -116,11 +116,11 @@ export default function BookingConfirmation({
         className="hz-jl--cinematic my-5"
       />
 
-      <dl className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] gap-x-3 gap-y-2 text-[13px] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)]">
+      <dl className="grid grid-cols-1 text-[13px] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] sm:gap-x-3 sm:gap-y-2">
         {confirmationFields(details, payment).map((field) => (
           <div key={field} className="contents" data-field={field}>
             <dt className="text-secondary">{rows[field][0]}</dt>
-            <dd className="break-words font-medium text-ink">{rows[field][1]}</dd>
+            <dd className="mb-2.5 break-words font-medium text-ink last:mb-0 sm:mb-0">{rows[field][1]}</dd>
           </div>
         ))}
       </dl>
