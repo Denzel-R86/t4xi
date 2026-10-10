@@ -50,5 +50,8 @@ export async function fillAddress(page: Page, field: AddressField, value: string
   if (mobile) {
     await input.press("Enter");
     await expect(addressSheet(page, field)).toBeHidden();
+    // De focus keert asynchroon (native 'close'-event) terug naar de regel;
+    // wacht daarop, anders valt een latere blur() ervóór.
+    await expect(sheetTrigger(page, field)).toBeFocused();
   }
 }

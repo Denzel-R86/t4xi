@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { defaultMasks, HIDE_OVERLAYS, open, settle, stabilize } from "./support/harness";
-import { fillAddress, openAddress, sentenceRoot } from "./support/sentence";
+import { fillAddress, openAddress, sentenceRoot, sheetTrigger } from "./support/sentence";
 
 /**
  * PR 2.6 (masterplan §6.5): gestapelde mobiele zin en adres-sheet, alleen op 375.
@@ -24,8 +24,14 @@ test.describe("Mobiele zin (375)", () => {
     await fillAddress(page, "Vertrek", "Amsterdam Zuidas");
     const to = await openAddress(page, "Bestemming");
     await to.pressSequentially("Schiphol");
-    await page.getByRole("listbox").getByRole("option").first().click();
+    const first = page.getByRole("listbox").getByRole("option").first();
+    await expect(first).toContainText("Amsterdam Airport Schiphol (AMS)");
+    await first.click();
+    await expect(sheetTrigger(page, "Bestemming")).toBeFocused();
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    // Vaste uitgangspositie: kiezen/sluiten laat de pagina op een wisselende
+    // (fractionele) scrollpositie, wat de hairlines per run 1px laat verspringen.
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
     await settle(page);
     await expect(sentenceRoot(page)).toHaveScreenshot("mobiel-zin-luchthaven.png", { stylePath: HIDE_OVERLAYS });
   });
