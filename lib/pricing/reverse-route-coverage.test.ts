@@ -32,14 +32,37 @@ test("de spiegelmigratie bestaat en voegt de tegenrichting toe", () => {
   assert.equal(spiegel.length, 1, "precies één spiegelmigratie verwacht");
 });
 
-test("de spiegelmigratie faalt hard wanneer er routes zonder tegenrichting overblijven", () => {
+test("de guard werkt op een EXPLICIETE eligible bronset, niet op een globale bewering", () => {
   const sql = leesMigratie("20261010120500_reverse_fixed_routes.sql");
+  assert.match(sql, /create temporary table _eligible/i, "de eligible bronset moet expliciet bepaald worden");
   assert.match(
     sql,
-    /raise exception '[^']*zonder tegenrichting/i,
-    "de controle op resterende eenrichtingsroutes moet blijven bestaan"
+    /raise exception '[^']*eligible bronroutes zonder tegenrichting/i,
+    "controle op ontbrekende tegenrichting binnen de eligible set"
   );
-  assert.match(sql, /if resterend <> 0 then/, "de controle moet op exact nul blijven staan");
+});
+
+test("de guard controleert PRECIES één tegenrichting per bronroute", () => {
+  const sql = leesMigratie("20261010120500_reverse_fixed_routes.sql");
+  assert.match(sql, /if zonder_tegen <> 0 then/, "geen enkele bronroute mag er nul hebben");
+  assert.match(sql, /if dubbele_tegen <> 0 then/, "en geen enkele meer dan één");
+});
+
+test("de guard verwerpt een onverwachte tegenrichting zonder bronroute", () => {
+  const sql = leesMigratie("20261010120500_reverse_fixed_routes.sql");
+  assert.match(sql, /if onverwacht <> 0 then/);
+  assert.match(sql, /zonder eligible bronroute/i);
+});
+
+test("de guard bewijst dat Antwerpen/Brussel NIET gespiegeld zijn", () => {
+  const sql = leesMigratie("20261010120500_reverse_fixed_routes.sql");
+  assert.match(sql, /if uitgesloten_fout <> 0 then/);
+  assert.match(sql, /ten onrechte gespiegeld/i);
+});
+
+test("de guard bewaakt de vier bestaande symmetrische paren", () => {
+  const sql = leesMigratie("20261010120500_reverse_fixed_routes.sql");
+  assert.match(sql, /if symmetrisch_nu <> 8 then/, "4 paren x 2 richtingen = 8 rijen");
 });
 
 test("de spiegelmigratie borgt het verwachte aantal nieuwe rijen", () => {
@@ -71,4 +94,42 @@ test("de toeslagconfiguratie is service-role-only, zonder publieke policy", () =
 test("hoogstens één actieve toeslag per luchthaven", () => {
   const sql = leesMigratie("20261010120000_airport_arrival_surcharge.sql");
   assert.match(sql, /create unique index[\s\S]*?airport_location_id\)\s*\n\s*where active/i);
+});
+
+test("geen SECURITY DEFINER om rechten te omzeilen", () => {
+  for (const f of ["20261010120000_airport_arrival_surcharge.sql", "20261010120500_reverse_fixed_routes.sql"]) {
+    assert.doesNotMatch(leesMigratie(f), /security\s+definer/i, `${f} mag geen SECURITY DEFINER bevatten`);
+  }
+});
+
+test("geen CASCADE in beide migraties", () => {
+  for (const f of ["20261010120000_airport_arrival_surcharge.sql", "20261010120500_reverse_fixed_routes.sql"]) {
+    assert.doesNotMatch(leesMigratie(f), /\bcascade\b/i, `${f} mag geen CASCADE bevatten`);
+  }
+});
+
+test("bedrag is begrensd en niet-negatief", () => {
+  const sql = leesMigratie("20261010120000_airport_arrival_surcharge.sql");
+  assert.match(sql, /check \(surcharge_cents >= 0/, "niet-negatief");
+  assert.match(sql, /surcharge_cents <= 10000/, "bovengrens tegen een typefout van een factor 100");
+});
+
+test("conflictguard: identiek bestaand = no-op, afwijkend = exception", () => {
+  const sql = leesMigratie("20261010120000_airport_arrival_surcharge.sql");
+  // Commentaar strippen: de kop legt juist UIT dat "on conflict do nothing"
+  // bewust niet wordt gebruikt, en die toelichting mag de scan niet vervuilen.
+  const code = sql
+    .split(/\r?\n/)
+    .filter((l) => !l.trim().startsWith("--"))
+    .join("\n");
+  assert.doesNotMatch(code, /on conflict do nothing/i, "een afwijking mag niet stil genegeerd worden");
+  assert.match(code, /elsif bestaand <> seed\.surcharge_cents then[\s\S]*?raise exception/i);
+});
+
+test("de toeslagtabel krijgt geen publieke read-grant", () => {
+  const grant = readFileSync(
+    new URL("20260725100000_grant_public_read_access.sql", MIGRATIES),
+    "utf8"
+  );
+  assert.doesNotMatch(grant, /pricing_airport_arrival_surcharge/);
 });

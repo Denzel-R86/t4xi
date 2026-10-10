@@ -106,7 +106,21 @@ export type UnavailableReason =
   | "unknown_location"
   | "route_not_fixed"
   | "capacity_exceeded"
-  | "data_unavailable";
+  | "data_unavailable"
+  /**
+   * Luchthaven-pickup zonder actieve toeslagconfiguratie (2026-10-10). De
+   * gespiegelde basisprijs is BEWUST niet de terugvaloptie: die zou de rit te
+   * goedkoop bindend maken. INTERNE reden — de publieke response toont
+   * uitsluitend "Offerte op aanvraag".
+   */
+  | "airport_arrival_surcharge_missing"
+  /**
+   * Luchthaven-pickup waarbij de toeslagconfiguratie niet gelezen KON worden:
+   * queryfout, timeout, of een ontbrekende service-role-client. Zelfde
+   * fail-closed gedrag, andere oorzaak — onderscheiden zodat een storing in de
+   * logs niet op een ontbrekende configuratie lijkt.
+   */
+  | "airport_arrival_surcharge_unavailable";
 
 /** Richting van de vlucht bij een luchthavenrit. */
 export type FlightDirection = "arrival" | "departure";
@@ -918,36 +932,76 @@ export async function resolveQuoteWith(
       // blijft hier altijd `null`, en resolvePickupApproach() wordt hier nooit
       // aangeroepen (dat gebeurt uitsluitend in tryDistanceTariff hieronder).
       const wantReturn = input.returnTrip === true;
+      const returnIsPriced = fixed.return_price !== null;
+      const bookedAsReturn = wantReturn && returnIsPriced;
 
-      // Aankomsttoeslag (2026-10-10): een rit die OP een luchthaven begint
-      // krijgt een vaste, per luchthaven geconfigureerde toeslag bovenop de
-      // gespiegelde heenprijs. EXACT ÉÉNMAAL — ook bij een retour, want een
-      // retour vanaf de luchthaven bevat precies één aankomst (de terugrit
-      // eindigt er juist). Ontbreekt de dep of de configuratierij, dan geen
-      // toeslag; nooit een stilzwijgende default.
+      // ── Aankomsttoeslag (2026-10-10, retoursemantiek vastgelegd) ────────────
+      //
+      // De toeslag hoort bij het RITDEEL DAT VANAF EEN LUCHTHAVEN VERTREKT, en
+      // geldt exact ÉÉNMAAL per boeking:
+      //
+      //   stad -> luchthaven, enkel     geen toeslag (niets vertrekt er)
+      //   luchthaven -> stad, enkel     eenmaal  (het heenritdeel)
+      //   stad -> luchthaven -> stad    eenmaal  (het TERUGritdeel vertrekt er)
+      //   luchthaven -> stad -> luchthaven  eenmaal  (het HEENritdeel vertrekt er)
+      //
+      // Daarom: bij een enkele reis telt alleen de pickup; bij een geboekte
+      // retour telt ook een luchthaven-DROPOFF, want dan vertrekt de terugrit
+      // daar. De toeslag wordt nooit met de retourfactor vermenigvuldigd — hij
+      // komt één keer boven op de (al bestaande) retourprijs.
+      const arrivalAirportId = airport.pickupIsAirport
+        ? pickup.id
+        : bookedAsReturn && airport.dropoffIsAirport
+          ? dropoff.id
+          : null;
+
       let arrival: AirportArrivalSurcharge | null = null;
-      if (airport.pickupIsAirport && deps.loadArrivalSurcharge) {
-        try {
-          arrival = resolveArrivalSurcharge({
-            pickupIsAirport: true,
-            config: await deps.loadArrivalSurcharge(pickup.id),
-          });
-        } catch {
-          // Fail-closed op de TOESLAG, niet op de offerte: een storing in de
-          // configuratietabel mag een geldige vaste prijs niet blokkeren.
-          arrival = null;
+      if (arrivalAirportId !== null) {
+        let config: AirportArrivalSurchargeConfig | null = null;
+        let leesfout = false;
+        if (!deps.loadArrivalSurcharge) {
+          // Geen service-role-client/dep beschikbaar: niet te onderscheiden van
+          // een storing, en dus even fail-closed behandeld wanneer de toeslag
+          // verplicht is (zie hieronder).
+          leesfout = true;
+        } else {
+          try {
+            config = await deps.loadArrivalSurcharge(arrivalAirportId);
+          } catch {
+            leesfout = true;
+          }
         }
+
+        arrival = resolveArrivalSurcharge({ pickupIsAirport: true, config });
+
+        if (arrival === null && airport.pickupIsAirport) {
+          // FAIL-CLOSED — uitsluitend wanneer de rit OP een luchthaven BEGINT.
+          // Dat is precies de richting die zonder toeslag te goedkoop bindend
+          // zou worden; de gespiegelde basisprijs mag daar nooit stilzwijgend
+          // de terugvaloptie zijn.
+          return unavailable(
+            leesfout ? "airport_arrival_surcharge_unavailable" : "airport_arrival_surcharge_missing",
+            airport
+          );
+        }
+        // Een luchthaven-DROPOFF bij een retour valt bewust NIET fail-closed:
+        // dat is een bestaande, vandaag al verkochte vertrekroute (Almere ->
+        // Schiphol -> Almere). Zonder toeslagconfiguratie blijft die exact zijn
+        // huidige prijs houden — zo verandert een code-deploy vóór de
+        // migraties geen enkele bestaande prijs. Zie het uitrolplan in de PR.
       }
 
       const withSurcharge = applyArrivalSurcharge({
         singleCents: eurosToCents(fixed.price),
         returnCents: fixed.return_price === null ? null : eurosToCents(fixed.return_price),
         surcharge: arrival,
+        // Alleen een luchthaven-PICKUP maakt het heenritdeel toeslagplichtig.
+        appliesToSingle: airport.pickupIsAirport,
       });
 
       const returnPrice =
         withSurcharge.returnCents === null ? null : Math.round(withSurcharge.returnCents / 100);
-      const returnApplied = wantReturn && withSurcharge.returnCents !== null;
+      const returnApplied = bookedAsReturn;
       const singlePrice = Math.round(withSurcharge.singleCents / 100);
       const price = returnApplied ? (returnPrice as number) : singlePrice;
       const priceCents = returnApplied

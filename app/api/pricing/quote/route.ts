@@ -88,6 +88,12 @@ function statusForReason(reason: UnavailableReason): 400 | 404 | 422 | 500 {
       return 422;
     case "unknown_location":
     case "route_not_fixed":
+    // Luchthaven-pickup zonder bruikbare toeslagconfiguratie: functioneel
+    // identiek aan een route zonder vaste prijs — "Offerte op aanvraag", 404.
+    // Bewust GEEN 500: het is geen storing voor de klant, en de interne reden
+    // (ontbrekende configuratie versus leesfout) blijft binnen de server.
+    case "airport_arrival_surcharge_missing":
+    case "airport_arrival_surcharge_unavailable":
       return 404;
     case "data_unavailable":
       return 500;

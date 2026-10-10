@@ -92,13 +92,28 @@ export function applyArrivalSurcharge(params: {
   singleCents: number;
   returnCents: number | null;
   surcharge: AirportArrivalSurcharge | null;
+  /**
+   * Vertrekt het HEENritdeel vanaf de luchthaven? Alleen dan hoort de toeslag
+   * ook bij de enkele-reisprijs.
+   *
+   * Bij `stad -> luchthaven -> stad` is dit `false`: de enkele reis naar de
+   * luchthaven blijft onveranderd (Almere -> Schiphol = EUR 102), terwijl de
+   * RETOUR de toeslag wél krijgt omdat de terugrit vanaf de luchthaven
+   * vertrekt (EUR 184 + EUR 15 = EUR 199).
+   */
+  appliesToSingle: boolean;
 }): { singleCents: number; returnCents: number | null } {
   const { surcharge } = params;
   if (!surcharge) {
     return { singleCents: params.singleCents, returnCents: params.returnCents };
   }
   return {
-    singleCents: params.singleCents + surcharge.surchargeCents,
+    singleCents: params.appliesToSingle
+      ? params.singleCents + surcharge.surchargeCents
+      : params.singleCents,
+    // De retourprijs bevat altijd precies één luchthavenvertrek zodra er
+    // überhaupt een toeslag van toepassing is — dus altijd eenmaal optellen,
+    // nooit vermenigvuldigen met de retourfactor.
     returnCents: params.returnCents === null ? null : params.returnCents + surcharge.surchargeCents,
   };
 }

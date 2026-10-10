@@ -63,6 +63,12 @@ create unique index if not exists pricing_airport_arrival_surcharge_airport_acti
   on public.pricing_airport_arrival_surcharge (airport_location_id)
   where active;
 
+-- Dekkende index voor de foreign key. De partiële unique index hierboven dekt
+-- hem NIET (hij geldt alleen voor active-rijen), en zonder deze index verschijnt
+-- de tabel in de Supabase-advisor `unindexed_foreign_keys`.
+create index if not exists pricing_airport_arrival_surcharge_airport_location_id_idx
+  on public.pricing_airport_arrival_surcharge (airport_location_id);
+
 comment on table public.pricing_airport_arrival_surcharge is
   'Vaste aankomsttoeslag per luchthaven, toegepast wanneer een rit OP die luchthaven begint. Eenmaal per rit, ook bij retour. Zie lib/pricing/airport-arrival-surcharge.ts.';
 comment on column public.pricing_airport_arrival_surcharge.surcharge_cents is
