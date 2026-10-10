@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useReducer, useRef } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import type { Appearance, StripePaymentElementOptions } from "@stripe/stripe-js";
 import { useTranslations } from "next-intl";
 import Icon from "@/components/ui/Icon";
+import BookingConfirmation from "@/components/booking/BookingConfirmation";
+import type { ConfirmationDetails } from "@/lib/bookings/confirmation-details";
+import { serverPaidProof, type ServerPaidProof } from "@/lib/payments/server-paid";
 import { getStripe } from "@/lib/payments/stripe-client";
 import {
   buildCreateIntentBody,
@@ -50,13 +53,26 @@ const APPEARANCE: Appearance = {
 
 const PE_OPTIONS: StripePaymentElementOptions = { layout: "tabs" };
 
-export default function PaymentStep({ ride }: { ride: PaymentRide }) {
+export default function PaymentStep({
+  ride,
+  confirmation,
+  onSummaryShown,
+}: {
+  ride: PaymentRide;
+  /** De geaccepteerde rit voor de bevestigingsweergave (§8); alleen presentatie. */
+  confirmation: ConfirmationDetails;
+  /** Meldt dat het rit-overzicht (pending of betaald) staat; de ouder haalt dan zijn eigen melding weg. */
+  onSummaryShown?: () => void;
+}) {
   const t = useTranslations("betaling");
   const [state, dispatch] = useReducer(paymentReducer, initialPaymentState);
   // Eén Stripe-promise per component-instantie; loadStripe zelf is al gememoïseerd.
   // .catch voorkomt een unhandled rejection wanneer de key in dev ontbreekt.
   const stripePromise = useMemo(() => getStripe().catch(() => null), []);
   const startedRef = useRef(false);
+  // Server-bewijs van betaling (§8-guard). Alleen gezet uit een `paid`-statusrespons;
+  // zonder dit bewijs toont de weergave nooit "Betaling ontvangen" of "€X betaald".
+  const [paidProof, setPaidProof] = useState<ServerPaidProof | null>(null);
 
   async function startIntent() {
     dispatch({ type: "createStart" });
@@ -115,7 +131,10 @@ export default function PaymentStep({ ride }: { ride: PaymentRide }) {
         if (res.ok) {
           const data = await res.json().catch(() => ({}));
           const mapped = mapServerStatus(String(data?.status ?? ""));
-          if (mapped === "confirmed") return void dispatch({ type: "serverConfirmed" });
+          if (mapped === "confirmed") {
+            setPaidProof(serverPaidProof(data, state.intent));
+            return void dispatch({ type: "serverConfirmed" });
+          }
           if (mapped === "failed") return void dispatch({ type: "serverFailed" });
           if (mapped === "canceled") return void dispatch({ type: "serverCanceled" });
         }
@@ -134,20 +153,27 @@ export default function PaymentStep({ ride }: { ride: PaymentRide }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status]);
 
+  // Alleen een melding naar boven; de state machine zelf blijft ongewijzigd.
+  const summaryShown = state.status === "pending" || state.status === "confirmed";
+  useEffect(() => {
+    if (summaryShown) onSummaryShown?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summaryShown]);
+
   // ── render ───────────────────────────────────────────────────────────────
   // Server-gereconcilieerde eindtoestanden. ALLEEN 'confirmed' toont een
   // definitieve betaalclaim (payment ≠ transport confirmation).
-  if (state.status === "confirmed") {
+  // §8: de kop volgt de bookingstatus (nooit "bevestigd" vóór een CONFIRMED-status).
+  // Pending en confirmed renderen dezelfde weergave op dezelfde plek (geen hermount,
+  // de JourneyLine reist één keer). Alleen `confirmed` geeft het server-bewijs mee;
+  // pending krijgt `null` → pending-kop, geen bedrag, geen agenda.
+  if (state.status === "confirmed" || state.status === "pending") {
     return (
-      <div className="rounded-lg border border-green-600/40 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700" role="status" aria-live="polite">
-        <div className="flex items-center justify-center gap-2 font-semibold">
-          <Icon name="check" size={16} />
-          {t("confirmedKop")}
-        </div>
-        <p className="mt-1 text-green-700/90">
-          {t("confirmedBody", { amount: formatAmount(state.intent?.amount ?? 0, state.intent?.currency ?? "eur", ride.locale) })}
-        </p>
-      </div>
+      <BookingConfirmation
+        details={confirmation}
+        payment={state.status === "confirmed" ? paidProof : null}
+        locale={ride.locale}
+      />
     );
   }
 
@@ -185,18 +211,6 @@ export default function PaymentStep({ ride }: { ride: PaymentRide }) {
       </div>
     );
   }
-  if (state.status === "pending") {
-    return (
-      <div className="rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700" role="status" aria-live="polite">
-        <div className="flex items-center justify-center gap-2 font-semibold">
-          <Icon name="check" size={16} />
-          {t("pendingKop")}
-        </div>
-        <p className="mt-1 text-green-700/90">{t("pending")}</p>
-      </div>
-    );
-  }
-
   if (state.status === "creatingIntent") {
     return (
       <div className="rounded-2xl border border-line bg-fog px-5 py-6 text-center text-sm text-secondary" role="status" aria-live="polite" aria-busy="true">

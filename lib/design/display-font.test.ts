@@ -14,6 +14,7 @@ const SERIF = /font-display-serif|text-display-serif|font-playfair|--font-playfa
 const TRANSACTIONAL_FILES = [
   ...BOOKING_FORM_FILES,
   "components/booking/PaymentStep.tsx",
+  "components/booking/BookingConfirmation.tsx",
   "components/booking/FlightCard.tsx",
   "components/tarieven/RouteFinder.tsx",
   "components/shared/AddressAutocomplete.tsx",

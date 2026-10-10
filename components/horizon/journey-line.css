@@ -33,6 +33,8 @@
 }
 .hz-jl--micro { --jl-dot: 6px; --jl-span: 1.5rem; grid-template-columns: minmax(var(--jl-span), 1fr); column-gap: 0; }
 .hz-jl--display { --jl-dot: 9px; --jl-span: 5rem; column-gap: 1.25rem; }
+/* Bevestigingsmoment (§8): de reis één keer in cinematic-tempo (§5: alleen spine-draw en bevestiging). */
+.hz-jl--cinematic { --jl-run: var(--hz-cinematic, 1100ms); }
 
 /* ── eindpunten (tekst); vaste kolommen, ook als een plaats ontbreekt ── */
 .hz-jl-end--from { grid-column: 1; }

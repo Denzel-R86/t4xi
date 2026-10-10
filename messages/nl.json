@@ -1365,8 +1365,7 @@
     "voorwaardenDesc": "De voorwaarden waaronder T4XI vervoer levert: vaste prijzen, luchthavenbeleid bij vluchtvertraging, bagage en aansprakelijkheid."
   },
   "betaling": {
-    "pendingKop": "Betaling ontvangen",
-    "pending": "We controleren de bevestiging.",
+    "pending": "We controleren uw betaling.",
     "formulierLaden": "Betaalformulier laden…",
     "opnieuw": "Opnieuw proberen",
     "opnieuwZin": "Probeer het opnieuw.",
@@ -1386,13 +1385,30 @@
     "rateLimited": "Te veel pogingen. Probeer het over een paar minuten opnieuw.",
     "unavailable": "Betalen is tijdelijk niet beschikbaar.",
     "kop": "Betaling",
-    "confirmedKop": "Betaling bevestigd",
-    "confirmedBody": "Uw betaling van {amount} is bevestigd. We ronden uw boeking af.",
     "failedKop": "Betaling mislukt",
     "failedBody": "De betaling is niet gelukt. Probeer het opnieuw of gebruik een andere betaalmethode.",
     "canceledKop": "Betaling geannuleerd",
     "canceledBody": "De betaling is geannuleerd.",
     "unconfirmedBody": "De betaling wordt nog verwerkt. U ontvangt de definitieve bevestiging per e-mail."
+  },
+  "bevestiging": {
+    "datumTijd": "Datum en ophaaltijd",
+    "terugrit": "Terugrit",
+    "ophaallocatie": "Ophaallocatie",
+    "bestemming": "Bestemming",
+    "referentie": "Referentie",
+    "contact": "Contact",
+    "passagiers": "Passagiers",
+    "vluchtnummer": "Vluchtnummer",
+    "retourVlucht": "Vluchtnummer terugrit",
+    "voertuig": "Voertuig",
+    "voertuigklasse": "Premium voertuigklasse",
+    "betaling": "Betaling",
+    "betaald": "{amount} betaald",
+    "agenda": "Voeg toe aan agenda",
+    "whatsapp": "WhatsApp T4XI",
+    "whatsappAria": "WhatsApp T4XI over deze aanvraag (opent in een nieuw tabblad)",
+    "whatsappBericht": "Hallo T4XI, ik heb een vraag over mijn aanvraag {ref}."
   },
   "routezoeker": {
     "van": "Waar mogen wij u ophalen?",
