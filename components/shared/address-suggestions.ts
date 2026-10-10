@@ -72,3 +72,27 @@ export function prioritizeKnownPlaces(query: string, suggestions: AddressSuggest
   if (named.length === 0) return suggestions;
   return [...named, ...suggestions.filter((s) => !isNamedPlace(s))];
 }
+
+/** Vertaalsleutel (namespace `autocomplete`) van het type-label in de suggestielijst. */
+export const SUGGESTION_KIND_LABEL_KEY: Record<
+  SuggestionKind,
+  "typeLuchthaven" | "typeStation" | "typeBestemming" | "typeAdres"
+> = {
+  airport: "typeLuchthaven",
+  station: "typeStation",
+  destination: "typeBestemming",
+  address: "typeAdres",
+};
+
+/**
+ * F-16 (hero, PR 2.6): wat de boekingszin na een keuze in het veld TOONT.
+ * Een luchthaven, station of bekende bestemming staat er met zijn naam
+ * (`suggestionParts`-titel, bv. "Amsterdam Airport Schiphol (AMS)"), niet als
+ * straatadres. Een gewoon adres houdt de bestaande weergave: het deel vóór de
+ * eerste komma. Alleen presentatie: de volledige `label` gaat ongewijzigd naar
+ * de prijs-API en de handoff.
+ */
+export function sentenceDisplayLabel(s: AddressSuggestion): string {
+  if (suggestionKind(s) !== "address") return suggestionParts(s).title;
+  return s.label.split(",")[0]?.trim() || s.label;
+}

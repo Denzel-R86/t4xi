@@ -55,3 +55,55 @@
   .hz-sentence .hz-focus::after,
   .hz-sentence-text { transition: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobiele zin + adres-sheet (Experience 2.0 PR 2.6, §6.5) — alleen < 768px
+   ─────────────────────────────────────────────
+   · Gestapeld: "Van" / "Naar" als volle regels met hairline (SheetTrigger).
+   · Sheet: native <dialog> (showModal) onderaan, radius card (24) aan de
+     bovenkant, elevation `card`; backdrop ink 32% (geen gradient, §5b).
+   · Safe-area: onderpadding minstens env(safe-area-inset-bottom).
+   · Geen scrollsprong: de pagina scrolt niet mee zolang de sheet open is.
+   · Motion: slide-in op --hz-ui (280ms) met --hz-ease; bij reduced motion
+     géén slide, de sheet staat direct in de eindstaat.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  .hz-sheet-trigger { min-height: 44px; }
+  .hz-sheet-trigger:focus-visible {
+    outline: 2px solid #1f2730;
+    outline-offset: 2px;
+  }
+}
+
+.hz-sheet {
+  margin: 0;
+  inset: auto 0 0 0;
+  width: 100%;
+  max-width: 100%;
+  height: min(85svh, 44rem);
+  max-height: none;
+  box-sizing: border-box;
+  padding: 0.5rem 1rem max(1rem, env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: 24px 24px 0 0;
+  overflow: hidden;
+}
+.hz-sheet[open] { display: flex; flex-direction: column; }
+.hz-sheet::backdrop { background: rgb(31 39 48 / 0.32); }
+.hz-sheet-handle {
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  margin-bottom: 0.5rem;
+  border-radius: 2px;
+  background: #cbc8c4;
+}
+html:has(.hz-sheet[open]) { overflow: hidden; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .hz-sheet[open] { animation: hz-sheet-in var(--hz-ui) var(--hz-ease); }
+  .hz-sheet[open]::backdrop { animation: hz-sheet-fade var(--hz-ui) var(--hz-ease); }
+}
+@keyframes hz-sheet-in { from { transform: translateY(100%); } }
+@keyframes hz-sheet-fade { from { opacity: 0; } }

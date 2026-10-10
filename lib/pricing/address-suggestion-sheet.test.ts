@@ -153,3 +153,14 @@ test("listbox heeft een eigen toegankelijke naam, niet die van het invoerveld", 
   assert.doesNotMatch(listbox, /aria-label=\{label\}/);
   assert.match(listbox, /aria-label=\{t\("lijstLabel"/);
 });
+
+test("F-16 hero (PR 2.6): gekozen luchthaven toont de naam, niet het straatadres; label blijft het volledige adres", async () => {
+  const { sentenceDisplayLabel } = await import("@/components/shared/address-suggestions");
+  const airport = local("Schiphol");
+  assert.equal(airport.label, "Evert van de Beekstraat 202, 1118 CP Schiphol");
+  assert.equal(sentenceDisplayLabel(airport), "Amsterdam Airport Schiphol (AMS)");
+  assert.doesNotMatch(sentenceDisplayLabel(airport), /Beekstraat/);
+  // Gewoon adres: ongewijzigde weergave (deel vóór de eerste komma).
+  assert.equal(sentenceDisplayLabel(street), "Evert van de Beekstraat 202");
+  assert.equal(sentenceDisplayLabel(pdok("p", "Zonder komma")), "Zonder komma");
+});

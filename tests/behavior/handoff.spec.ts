@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { fixture, open, RIDE, stabilize } from "../visual/support/harness";
+import { fillAddress, sentenceRoot } from "../visual/support/sentence";
 
 /**
  * Gedragscheck PR 2.3 (masterplan §7): hero-zin → /boeken via sessionStorage-handoff.
@@ -11,16 +12,15 @@ import { fixture, open, RIDE, stabilize } from "../visual/support/harness";
 const ADDRESS = "Voorbeeldstraat 12, Almere";
 
 const sentence = (page: Page) =>
-  page.locator("div.border-t").filter({ has: page.getByRole("combobox", { name: "Vertrek" }) }).first();
+  sentenceRoot(page);
 const progress = (page: Page) => page.getByRole("navigation", { name: "Voortgang van uw boeking" });
 const currentStep = (page: Page) => progress(page).locator('[aria-current="step"]');
 const priceRegion = (page: Page) => page.getByRole("region", { name: "Geschatte prijs" });
 
 async function fillSentence(page: Page) {
-  await page.getByRole("combobox", { name: "Vertrek" }).fill(ADDRESS);
-  const to = page.getByRole("combobox", { name: "Bestemming" });
-  await to.fill("Schiphol");
-  await to.blur();
+  await fillAddress(page, "Vertrek", ADDRESS);
+  await fillAddress(page, "Bestemming", "Schiphol");
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await expect(page.getByRole("listbox")).toHaveCount(0);
   await page.getByLabel("Datum", { exact: true }).first().fill(RIDE.date);
   await page.getByLabel("Tijd", { exact: true }).first().fill(RIDE.time);

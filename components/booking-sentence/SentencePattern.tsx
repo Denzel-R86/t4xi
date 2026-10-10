@@ -3,12 +3,14 @@
 import "@/components/horizon/horizon.css";
 import "./booking-sentence.css";
 import "@/components/booking/handoff/handoff.css";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 import JourneyLine from "@/components/horizon/JourneyLine";
 import { Odometer, usePrefersReducedMotion } from "@/components/horizon/motion";
 import { Stamp, Dash } from "@/components/horizon/stamp";
 import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
+import { sentenceDisplayLabel } from "@/components/shared/address-suggestions";
+import { AddressSheet, SheetTrigger, SuggestionText } from "./AddressSheet";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import { useHidesStickyCta } from "@/components/sections/sticky-cta-visibility";
 import { isTextEntry, quoteOutcomeKey, shouldRevealResult } from "@/lib/hero/hero-visibility";
@@ -16,7 +18,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { HANDOFF_HREF, rememberShownPrice, writeHandoff } from "@/lib/booking-handoff";
 import { navigateWithHandoffTransition } from "@/components/booking/handoff/view-transition";
-import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
+import { isFutureAmsterdamDeparture, todayISO, useIsDesktop } from "./sentence-env";
 import { journeyStateFor, journeyTransition, type JourneyState } from "@/lib/horizon/journey-line-state";
 import {
   JOURNEY_RUN_MS,
@@ -30,52 +32,16 @@ import {
 /*
  * Booking sentence 2.0 — desktop (Experience 2.0 PR 2.1, masterplan §6.1–6.4, 6.6).
  * Vanaf 768px: interactieve tekst (booking-sentence.css), passagiers in de zin,
- * JourneyLine onder de zin en de prijsreveal na de reis. Onder 768px blijft de
- * zin zoals hij was; de mobiele zin (sheet) is PR 2.6.
- */
-const DESKTOP_QUERY = "(min-width: 768px)";
-function subscribeDesktop(onChange: () => void) {
-  const mq = window.matchMedia(DESKTOP_QUERY);
-  mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
-}
-/** Desktop-breedte (≥ 768px); server en eerste render: false (mobiel gedrag). */
-function useIsDesktop(): boolean {
-  return useSyncExternalStore(
-    subscribeDesktop,
-    () => window.matchMedia(DESKTOP_QUERY).matches,
-    () => false
-  );
-}
-
-
-/** De boekingszin óp de lijn: "Ik reis van ___ naar ___." — het antwoord is de
+ * JourneyLine onder de zin en de prijsreveal na de reis. Onder 768px (PR 2.6,
+ * §6.5): gestapelde "Van / Naar"-regels die een bottom sheet met de gedeelde
+ * suggesties openen (AddressSheet.tsx); passagiers staan ook daar in de zin.
+ * De boekingszin óp de lijn: "Ik reis van ___ naar ___." — het antwoord is de
  *  vaste prijs uit de echte Pricing Engine. Confirm leidt naar de volledige
  *  boekingsflow mét de ingevulde rit via de handoff (§7, lib/booking-handoff.ts):
  *  de adressen gaan via sessionStorage, nooit via de URL.
- *
  *  Suggesties en prijs komen uit de GEDEELDE bronnen (useAddressSuggestions,
  *  useRouteQuote): dit is dezelfde keten als het boekingsformulier, alleen in
  *  zin-presentatie. Vrije tekst blijft toegestaan. */
-/** ISO-datum van vandaag (lokale tijd) — uitsluitend voor de `min`-grens van het HTML-datumveld (dat werkt alleen op dagniveau). */
-function todayISO(): string {
-  const d = new Date();
-  const tzOffsetMs = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 10);
-}
-
-/**
- * 2026-08-19 (audit-correctie): toetst het VOLLEDIGE vertrekmoment (datum +
- * tijd) in Europe/Amsterdam, niet alleen de datum. Hergebruikt uitsluitend
- * `amsterdamDepartureIso` (dezelfde helper als de server in
- * app/api/pricing/quote/route.ts en components/booking/BookingSection.tsx) —
- * geen tweede tijdzone-implementatie.
- */
-function isFutureAmsterdamDeparture(date: string, time: string): boolean {
-  const iso = amsterdamDepartureIso(date, time);
-  return iso !== null && new Date(iso).getTime() >= Date.now();
-}
-
 const HERO_LUGGAGE = [
   { value: "geen-bagage", labelKey: "bagageGeen" },
   { value: "handbagage", labelKey: "bagageHand" },
@@ -86,6 +52,7 @@ const HERO_LUGGAGE = [
 
 export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: string }) {
   const t = useTranslations("zin");
+  const tb = useTranslations("booking");
   const router = useRouter();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -93,6 +60,10 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   const [toResolved, setToResolved] = useState("");
   const [activeField, setActiveField] = useState<"from" | "to" | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
+  // PR 2.6: welk adresveld de mobiele sheet nu toont (alleen < 768px).
+  const [sheetField, setSheetField] = useState<"from" | "to" | null>(null);
+  const fromTriggerRef = useRef<HTMLButtonElement>(null);
+  const toTriggerRef = useRef<HTMLButtonElement>(null);
   // 2026-08-19 (hotfix): datum, tijd en bagage zijn direct zichtbaar in de hero
   // (geen inklap-stap) en verplicht vóórdat er een prijs getoond of quote-API-
   // call gedaan wordt — zie components/shared/useRouteQuote.ts's `ready`-optie.
@@ -251,7 +222,9 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   }
 
   function choose(s: AddressSuggestion) {
-    const shortLabel = s.label.split(",")[0]?.trim() || s.label;
+    // F-16: de zin TOONT een bekende plek met zijn naam; de volledige `label`
+    // blijft de waarde voor quote en handoff (fromResolved/toResolved).
+    const shortLabel = sentenceDisplayLabel(s);
     if (activeField === "from") {
       setFrom(shortLabel);
       setFromResolved(s.label);
@@ -262,7 +235,25 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     clear();
     setActiveIndex(-1);
     setActiveField(null);
+    setSheetField(null);
   }
+
+  function openSheet(field: "from" | "to") {
+    setActiveIndex(-1);
+    setActiveField(field);
+    setSheetField(field);
+  }
+  // De native 'close' komt asynchroon: is intussen de andere sheet geopend,
+  // dan mag deze melding die niet sluiten.
+  const onSheetClosed = useCallback(
+    (field: "from" | "to") => {
+      setSheetField((f) => (f === field ? null : f));
+      setActiveField((f) => (f === field ? null : f));
+    },
+    []
+  );
+  // Wordt het venster breder dan 768px terwijl de sheet open is: sluiten.
+  if (isDesktop && sheetField !== null) setSheetField(null);
 
   function onKeyDown(e: React.KeyboardEvent) {
     if (suggestions.length === 0) return;
@@ -287,9 +278,11 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     set: (v: string) => void,
     clearResolved: () => void,
     placeholder: string,
-    label: string
+    label: string,
+    rowLabel: string
   ) => (
-    <span className="hz-focus inline-block align-baseline md:relative">
+    <>
+    <span className="hz-focus inline-block align-baseline max-md:hidden md:relative">
       <input
         className="hz-blank font-display font-medium"
         style={{
@@ -333,13 +326,24 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
                   i === activeIndex ? "bg-accent text-white" : "text-ink hover:bg-fog"
                 }`}
               >
-                {s.label}
+                <SuggestionText s={s} active={i === activeIndex} />
               </button>
             </li>
           ))}
         </ul>
       )}
     </span>
+    <SheetTrigger
+      id={`hero-${field}-trigger`}
+      label={rowLabel}
+      value={value}
+      placeholder={placeholder}
+      expanded={sheetField === field}
+      controls={`hero-${field}-sheet`}
+      onOpen={() => openSheet(field)}
+      triggerRef={field === "from" ? fromTriggerRef : toTriggerRef}
+    />
+    </>
   );
 
   return (
@@ -351,8 +355,8 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
           `top`), zodat hij op 375 niet buiten de viewport loopt. Vanaf md hangt
           hij weer aan het veld zelf. */}
       <div className="hz-sentence-text relative font-display text-[clamp(20px,2.6vw,30px)] font-light leading-[1.6] text-ink md:static">
-        {t("voor")} {blank("from", from, setFrom, () => setFromResolved(""), t("phVertrek"), t("ariaVertrek"))} {t("tussen")}{" "}
-        {blank("to", to, setTo, () => setToResolved(""), t("phBestemming"), t("ariaBestemming"))}.
+        <span className="max-md:hidden">{t("voor")}</span> {blank("from", from, setFrom, () => setFromResolved(""), t("phVertrek"), t("ariaVertrek"), tb("van"))} <span className="max-md:hidden">{t("tussen")}</span>{" "}
+        {blank("to", to, setTo, () => setToResolved(""), t("phBestemming"), t("ariaBestemming"), tb("naar"))}<span className="max-md:hidden">.</span>
       </div>
       <div className="hz-sentence-text mt-2 font-display text-[clamp(15px,1.7vw,20px)] font-light leading-[1.6] text-ink/75">
         {t("op")}{" "}
@@ -378,8 +382,8 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
           />
         </span>{" "}
         {t("met")}{" "}
-        {/* §6.2: passagiers alleen vanaf 768px; mobiel blijft "met [bagage]" (PR 2.6). */}
-        <span className="hidden md:inline">
+        {/* §6.2: passagiers in de zin, sinds PR 2.6 ook < 768px. */}
+        <span>
           <span className="hz-focus relative inline-block align-baseline">
             <select
               className="hz-blank font-display font-medium"
@@ -409,6 +413,28 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         </span>
         .
       </div>
+      {(["from", "to"] as const).map((field) => (
+        <AddressSheet
+          key={field}
+          id={`hero-${field}-sheet`}
+          open={sheetField === field}
+          title={field === "from" ? tb("van") : tb("naar")}
+          inputLabel={field === "from" ? t("ariaVertrek") : t("ariaBestemming")}
+          value={field === "from" ? from : to}
+          placeholder={field === "from" ? t("phVertrek") : t("phBestemming")}
+          suggestions={sheetField === field ? suggestions : []}
+          activeIndex={sheetField === field ? activeIndex : -1}
+          onInput={(text) => {
+            (field === "from" ? setFrom : setTo)(text);
+            (field === "from" ? setFromResolved : setToResolved)("");
+            setActiveIndex(-1);
+          }}
+          onKeyDown={onKeyDown}
+          onChoose={choose}
+          onClosed={() => onSheetClosed(field)}
+          returnFocusRef={field === "from" ? fromTriggerRef : toTriggerRef}
+        />
+      ))}
       {/* §6.3: JourneyLine onder de zin (desktop). Met twee adressen draagt hij
           het route-label voor schermlezers; daarvoor is hij decoratief. */}
       <div className="hz-sentence-journey hx-handoff-journey mt-5 hidden md:block">

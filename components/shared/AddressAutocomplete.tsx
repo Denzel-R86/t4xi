@@ -10,9 +10,9 @@ import {
 } from "@/lib/pricing/local-locations";
 import {
   prioritizeKnownPlaces,
+  SUGGESTION_KIND_LABEL_KEY,
   suggestionKind,
   suggestionParts,
-  type SuggestionKind,
 } from "@/components/shared/address-suggestions";
 
 /**
@@ -275,13 +275,6 @@ export function useAddressSuggestions(query: string, enabled = true) {
   return { status, suggestions, clear };
 }
 
-const KIND_LABEL_KEY: Record<SuggestionKind, "typeLuchthaven" | "typeStation" | "typeBestemming" | "typeAdres"> = {
-  airport: "typeLuchthaven",
-  station: "typeStation",
-  destination: "typeBestemming",
-  address: "typeAdres",
-};
-
 /**
  * Veld + suggestielijst volgens het WAI-ARIA 1.2 combobox-patroon (list
  * autocomplete): focus blijft altijd op het invoerveld, de actieve optie loopt
@@ -475,7 +468,7 @@ export default function AddressAutocomplete({
                 }`}
               >
                 <span className={`block text-meta font-semibold uppercase ${active ? "text-white/80" : "text-stone-text"}`}>
-                  {t(KIND_LABEL_KEY[suggestionKind(s)])}
+                  {t(SUGGESTION_KIND_LABEL_KEY[suggestionKind(s)])}
                 </span>
                 <span className="mt-1 block break-words text-sm font-medium">{title}</span>
                 {detail && (
