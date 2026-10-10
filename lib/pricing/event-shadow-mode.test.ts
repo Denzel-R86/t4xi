@@ -57,6 +57,7 @@ function availableFixed(price: number): AvailableQuote {
     fingerprint: "fp",
     pickupApproach: null,
     economicFloor: null,
+    airportArrival: null,
   };
 }
 

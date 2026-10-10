@@ -30,7 +30,7 @@ function availableQuote(price: number): AvailableQuote {
     route: { pickupSlug: "rotterdam", dropoffSlug: "schiphol", label: "RTM → AMS" },
     isAirportTransfer: true, airport: NO_AIRPORT, dataSource: "supabase",
     fingerprint: "rotterdam|schiphol|executive-ev|enkel",
-    pickupApproach: null, economicFloor: null,
+    pickupApproach: null, economicFloor: null, airportArrival: null,
   };
 }
 

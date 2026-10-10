@@ -54,6 +54,7 @@ function availableFixed(price: number): AvailableQuote {
     fingerprint: "rotterdam|schiphol|executive-ev|enkel",
     pickupApproach: null,
     economicFloor: null,
+    airportArrival: null,
   };
 }
 

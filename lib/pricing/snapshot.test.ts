@@ -46,6 +46,7 @@ function availableQuote(price: number, over: Partial<AvailableQuote> = {}): Avai
     fingerprint: "rotterdam|schiphol|executive-ev|enkel",
     pickupApproach: null,
     economicFloor: null,
+    airportArrival: null,
     ...over,
   };
   return {
