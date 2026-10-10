@@ -151,14 +151,16 @@ test("Button v2: polymorf — interne href via i18n-Link, schema/anker via <a>, 
 //   PR 2.1: hero-boekingszin (Button v2 + JourneyLine)
 //   PR 2.4: BookingSection-stappen (Button)
 //   PR 2.3: handoff-routelijn op /boeken (JourneyLine)
+//   PR 2.5: bevestigingsmoment (Button + JourneyLine)
 const ADOPTERS = new Set([
   join("components", "booking", "handoff", "HandoffRouteLine.tsx"),
   join("components", "booking-sentence", "SentencePattern.tsx"),
   join("components", "booking", "BookingSection.tsx"),
   join("components", "booking", "steps", "ConfirmStep.tsx"),
+  join("components", "booking", "BookingConfirmation.tsx"),
 ]);
 
-test("adoptie Button/JourneyLine: alleen de expliciet toegestane bestanden (PR 2.1, 2.3, 2.4)", () => {
+test("adoptie Button/JourneyLine: alleen de expliciet toegestane bestanden (PR 2.1, 2.3, 2.4, 2.5)", () => {
   const own = new Set([
     join("components", "ui", "Button.tsx"),
     join("components", "ui", "button-styles.ts"),

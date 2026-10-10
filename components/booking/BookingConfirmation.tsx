@@ -98,7 +98,7 @@ export default function BookingConfirmation({
   const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(t("whatsappBericht", { ref: details.bookingRef }))}`;
 
   return (
-    <section className="rounded-2xl border border-line bg-card p-5" aria-labelledby="bevestiging-kop" data-booking-status={details.bookingStatus}>
+    <section className="rounded-2xl border border-line bg-card p-4 sm:p-5" aria-labelledby="bevestiging-kop" data-booking-status={details.bookingStatus}>
       <h2 id="bevestiging-kop" ref={headingRef} tabIndex={-1} className="font-display text-lg font-semibold text-ink focus:outline-none">
         {headline}
       </h2>
@@ -113,7 +113,7 @@ export default function BookingConfirmation({
         className="hz-jl--cinematic my-5"
       />
 
-      <dl className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-x-3 gap-y-2 text-[13px]">
+      <dl className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-x-3 gap-y-2 text-[13px]">
         {confirmationFields(details)
           .filter((field) => field !== "paid" || paidLabel)
           .map((field) => (
@@ -124,9 +124,9 @@ export default function BookingConfirmation({
         ))}
       </dl>
 
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-5 flex flex-col gap-3">
         {ics ? (
-          <Button variant="secondary" fullWidth onClick={downloadIcs} className="sm:w-auto sm:flex-1">
+          <Button variant="secondary" fullWidth onClick={downloadIcs}>
             {t("agenda")}
           </Button>
         ) : null}
@@ -137,7 +137,7 @@ export default function BookingConfirmation({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t("whatsappAria")}
-          className="sm:w-auto sm:flex-1"
+         
         >
           {t("whatsapp")}
         </Button>
