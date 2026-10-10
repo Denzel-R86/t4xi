@@ -594,6 +594,44 @@ export type Database = {
           },
         ]
       }
+      pricing_airport_arrival_surcharge: {
+        Row: {
+          active: boolean
+          airport_location_id: string
+          created_at: string
+          id: string
+          surcharge_cents: number
+          updated_at: string
+          valid_from: string
+        }
+        Insert: {
+          active?: boolean
+          airport_location_id: string
+          created_at?: string
+          id?: string
+          surcharge_cents: number
+          updated_at?: string
+          valid_from?: string
+        }
+        Update: {
+          active?: boolean
+          airport_location_id?: string
+          created_at?: string
+          id?: string
+          surcharge_cents?: number
+          updated_at?: string
+          valid_from?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_airport_arrival_surcharge_airport_location_id_fkey"
+            columns: ["airport_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_approach_fee_config: {
         Row: {
           active: boolean

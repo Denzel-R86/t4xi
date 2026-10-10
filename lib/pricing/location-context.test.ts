@@ -96,6 +96,7 @@ function quoteFixed(price: number, slugs: { pickup: string; dropoff: string }): 
     fingerprint: "fp",
     pickupApproach: null,
     economicFloor: null,
+    airportArrival: null,
   };
 }
 

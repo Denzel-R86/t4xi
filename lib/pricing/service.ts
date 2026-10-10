@@ -37,6 +37,12 @@ import {
 } from "@/lib/pricing/approach-fee";
 import { isNightTariff } from "@/lib/pricing/departure-time";
 import {
+  resolveArrivalSurcharge,
+  applyArrivalSurcharge,
+  type AirportArrivalSurcharge,
+  type AirportArrivalSurchargeConfig,
+} from "@/lib/pricing/airport-arrival-surcharge";
+import {
   lookupOfficialGemeente as pdokLookupOfficialGemeente,
   PdokGemeenteLookupError,
   PDOK_GEMEENTE_LOOKUP_TIMEOUT_MS,
@@ -100,7 +106,21 @@ export type UnavailableReason =
   | "unknown_location"
   | "route_not_fixed"
   | "capacity_exceeded"
-  | "data_unavailable";
+  | "data_unavailable"
+  /**
+   * Luchthaven-pickup zonder actieve toeslagconfiguratie (2026-10-10). De
+   * gespiegelde basisprijs is BEWUST niet de terugvaloptie: die zou de rit te
+   * goedkoop bindend maken. INTERNE reden — de publieke response toont
+   * uitsluitend "Offerte op aanvraag".
+   */
+  | "airport_arrival_surcharge_missing"
+  /**
+   * Luchthaven-pickup waarbij de toeslagconfiguratie niet gelezen KON worden:
+   * queryfout, timeout, of een ontbrekende service-role-client. Zelfde
+   * fail-closed gedrag, andere oorzaak — onderscheiden zodat een storing in de
+   * logs niet op een ontbrekende configuratie lijkt.
+   */
+  | "airport_arrival_surcharge_unavailable";
 
 /** Richting van de vlucht bij een luchthavenrit. */
 export type FlightDirection = "arrival" | "departure";
@@ -297,6 +317,14 @@ export type PricingQuoteResult =
       pickupApproach: PickupApproachBreakdown | null;
       /** INTERN — zie PickupApproachEconomicFloor. Nooit in de publieke API-response opnemen. */
       economicFloor: PickupApproachEconomicFloor | null;
+      /**
+       * INTERN — de aankomsttoeslag die in `price`/`priceCents` is verwerkt
+       * (2026-10-10), of `null` wanneer de rit niet op een luchthaven begint.
+       * Nooit in de publieke API-response opnemen: de klant ziet uitsluitend
+       * één vast eindbedrag, geen losse toeslagregel. Valt BUITEN
+       * `rideOnlySinglePriceCents`, zodat de nachttoeslag hem nooit raakt.
+       */
+      airportArrival: AirportArrivalSurcharge | null;
     }
   | {
       available: false;
@@ -587,6 +615,13 @@ export type ResolveQuoteDeps = {
    * Optioneel: ontbreekt deze dep, dan wordt de shadow-berekening overgeslagen.
    */
   loadDeadheadConfig?: () => Promise<DeadheadConfig | null>;
+  /**
+   * Actieve aankomsttoeslag van de OPHAALLOCATIE (2026-10-10), of `null`
+   * wanneer die locatie geen luchthaven is of geen configuratierij heeft.
+   * Optioneel: ontbreekt deze dep, dan wordt er geen toeslag toegepast —
+   * nooit een stilzwijgende default. Zie lib/pricing/airport-arrival-surcharge.ts.
+   */
+  loadArrivalSurcharge?: (airportLocationId: string) => Promise<AirportArrivalSurchargeConfig | null>;
   /** SHADOW-ONLY. Geconfigureerde high-demand-bestemmingen (nooit "perifeer"). */
   loadHighDemandZones?: () => Promise<HighDemandZoneIds>;
   /**
@@ -747,6 +782,18 @@ const cachedLoadApproachFeeConfig = cachedLoader(SHADOW_CONFIG_CACHE_TTL_MS, () 
   )
 );
 
+const cachedLoadArrivalSurcharges = cachedLoader(SHADOW_CONFIG_CACHE_TTL_MS, () =>
+  withRetryOnce(
+    () => {
+      const client = createPricingLogClient();
+      if (!client) return Promise.reject(new NoServiceRoleClientError());
+      return loadArrivalSurcharges(client);
+    },
+    SHADOW_LOAD_TIMEOUT_MS,
+    SHADOW_LOAD_RETRY_TIMEOUT_MS
+  )
+);
+
 const cachedLoadOperationalBases = cachedLoader(SHADOW_CONFIG_CACHE_TTL_MS, () =>
   withRetryOnce(
     () => {
@@ -804,6 +851,10 @@ async function resolveQuote(input: PricingQuoteInput): Promise<{
     },
     // Pickup-aanrijmodel (2026-08-18) — zelfde service-role/cache/retry-patroon.
     loadApproachFeeConfig: cachedLoadApproachFeeConfig,
+    // Aankomsttoeslag (2026-10-10) — zelfde service-role/cache/retry-patroon.
+    // Eén gecachte query voor alle luchthavens; hier alleen de opzoeking.
+    loadArrivalSurcharge: async (airportLocationId) =>
+      (await cachedLoadArrivalSurcharges()).get(airportLocationId) ?? null,
     loadOperationalBases: cachedLoadOperationalBases,
     loadServiceAreaBaseSlugs: cachedLoadServiceAreaBaseSlugs,
     lookupOfficialGemeente: retryingLookupOfficialGemeente,
@@ -881,21 +932,96 @@ export async function resolveQuoteWith(
       // blijft hier altijd `null`, en resolvePickupApproach() wordt hier nooit
       // aangeroepen (dat gebeurt uitsluitend in tryDistanceTariff hieronder).
       const wantReturn = input.returnTrip === true;
-      const returnPrice = fixed.return_price ?? null;
-      const returnApplied = wantReturn && returnPrice !== null;
-      const price = returnApplied ? (returnPrice as number) : fixed.price;
+      const returnIsPriced = fixed.return_price !== null;
+      const bookedAsReturn = wantReturn && returnIsPriced;
+
+      // ── Aankomsttoeslag (2026-10-10, retoursemantiek vastgelegd) ────────────
+      //
+      // De toeslag hoort bij het RITDEEL DAT VANAF EEN LUCHTHAVEN VERTREKT, en
+      // geldt exact ÉÉNMAAL per boeking:
+      //
+      //   stad -> luchthaven, enkel     geen toeslag (niets vertrekt er)
+      //   luchthaven -> stad, enkel     eenmaal  (het heenritdeel)
+      //   stad -> luchthaven -> stad    eenmaal  (het TERUGritdeel vertrekt er)
+      //   luchthaven -> stad -> luchthaven  eenmaal  (het HEENritdeel vertrekt er)
+      //
+      // Daarom: bij een enkele reis telt alleen de pickup; bij een geboekte
+      // retour telt ook een luchthaven-DROPOFF, want dan vertrekt de terugrit
+      // daar. De toeslag wordt nooit met de retourfactor vermenigvuldigd — hij
+      // komt één keer boven op de (al bestaande) retourprijs.
+      const arrivalAirportId = airport.pickupIsAirport
+        ? pickup.id
+        : bookedAsReturn && airport.dropoffIsAirport
+          ? dropoff.id
+          : null;
+
+      let arrival: AirportArrivalSurcharge | null = null;
+      if (arrivalAirportId !== null) {
+        let config: AirportArrivalSurchargeConfig | null = null;
+        let leesfout = false;
+        if (!deps.loadArrivalSurcharge) {
+          // Geen service-role-client/dep beschikbaar: niet te onderscheiden van
+          // een storing, en dus even fail-closed behandeld wanneer de toeslag
+          // verplicht is (zie hieronder).
+          leesfout = true;
+        } else {
+          try {
+            config = await deps.loadArrivalSurcharge(arrivalAirportId);
+          } catch {
+            leesfout = true;
+          }
+        }
+
+        arrival = resolveArrivalSurcharge({ pickupIsAirport: true, config });
+
+        if (arrival === null && airport.pickupIsAirport) {
+          // FAIL-CLOSED — uitsluitend wanneer de rit OP een luchthaven BEGINT.
+          // Dat is precies de richting die zonder toeslag te goedkoop bindend
+          // zou worden; de gespiegelde basisprijs mag daar nooit stilzwijgend
+          // de terugvaloptie zijn.
+          return unavailable(
+            leesfout ? "airport_arrival_surcharge_unavailable" : "airport_arrival_surcharge_missing",
+            airport
+          );
+        }
+        // Een luchthaven-DROPOFF bij een retour valt bewust NIET fail-closed:
+        // dat is een bestaande, vandaag al verkochte vertrekroute (Almere ->
+        // Schiphol -> Almere). Zonder toeslagconfiguratie blijft die exact zijn
+        // huidige prijs houden — zo verandert een code-deploy vóór de
+        // migraties geen enkele bestaande prijs. Zie het uitrolplan in de PR.
+      }
+
+      const withSurcharge = applyArrivalSurcharge({
+        singleCents: eurosToCents(fixed.price),
+        returnCents: fixed.return_price === null ? null : eurosToCents(fixed.return_price),
+        surcharge: arrival,
+        // Alleen een luchthaven-PICKUP maakt het heenritdeel toeslagplichtig.
+        appliesToSingle: airport.pickupIsAirport,
+      });
+
+      const returnPrice =
+        withSurcharge.returnCents === null ? null : Math.round(withSurcharge.returnCents / 100);
+      const returnApplied = bookedAsReturn;
+      const singlePrice = Math.round(withSurcharge.singleCents / 100);
+      const price = returnApplied ? (returnPrice as number) : singlePrice;
+      const priceCents = returnApplied
+        ? (withSurcharge.returnCents as number)
+        : withSurcharge.singleCents;
 
       return {
         available: true,
         source: "fixed_route_prices",
         price,
-        singlePrice: fixed.price,
+        singlePrice,
         returnPrice,
         returnApplied,
-        priceCents: eurosToCents(price),
-        singlePriceCents: eurosToCents(fixed.price),
-        returnPriceCents: returnPrice !== null ? eurosToCents(returnPrice) : null,
-        // Vaste route: geen aanrijcomponent, dus gelijk aan singlePriceCents.
+        priceCents,
+        singlePriceCents: withSurcharge.singleCents,
+        returnPriceCents: withSurcharge.returnCents,
+        // Vaste route: geen aanrijcomponent. WEL exclusief de aankomsttoeslag —
+        // dit is de basis voor de nachttoeslag, en die mag de toeslag (parkeren,
+        // monitoring, wachttijd) nooit met 15% ophogen of bij een retour dubbel
+        // belasten. Zie airport-arrival-surcharge.ts, eigenschap 3.
         rideOnlySinglePriceCents: eurosToCents(fixed.price),
         currency: "EUR",
         vatRate: fixed.vat_rate,
@@ -913,6 +1039,7 @@ export async function resolveQuoteWith(
         fingerprint: quoteFingerprint(input),
         pickupApproach: null,
         economicFloor: null,
+        airportArrival: arrival,
       };
     }
   }
@@ -1080,6 +1207,12 @@ async function tryDistanceTariff(
     fingerprint: quoteFingerprint(input),
     pickupApproach: approach.breakdown,
     economicFloor,
+    // Afstand-tarief: een luchthaven-pickup bereikt deze tak vandaag nooit
+    // (resolvePickupApproach keert eerder terug met offer_on_request omdat
+    // Haarlemmermeer/Rotterdam-luchthaven buiten elk servicegebied valt). Blijft
+    // daarom bewust `null` — de aankomsttoeslag hoort uitsluitend bij een
+    // gespiegelde VASTE route, waar de basisprijs de heenprijs is.
+    airportArrival: null,
   };
 }
 
@@ -1596,6 +1729,46 @@ export async function loadDeadheadZoneAllowlist(
     byOfficialWoonplaats.set(normalizeOfficialWoonplaats(row.label), row.city_id);
   }
   return { cityIds, byOfficialWoonplaats };
+}
+
+// ── Aankomsttoeslag per luchthaven (2026-10-10) ──────────────────────────────
+
+/**
+ * Actieve aankomsttoeslag voor deze ophaallocatie. `null` wanneer er geen
+ * actieve rij is (dan geldt er geen toeslag — nooit een stilzwijgende default)
+ * of wanneer er onverhoopt meer dan één actieve rij staat. Dat laatste kan niet
+ * door de partial unique index, maar deze leescode gaat daar niet blind van uit.
+ */
+export async function loadArrivalSurcharges(
+  supabase: PricingSupabaseClient
+): Promise<Map<string, AirportArrivalSurchargeConfig>> {
+  const res = await supabase
+    .from("pricing_airport_arrival_surcharge")
+    .select("airport_location_id, surcharge_cents, airport:locations!inner ( slug )")
+    .eq("active", true);
+  if (res.error) throw res.error;
+
+  const out = new Map<string, AirportArrivalSurchargeConfig>();
+  for (const raw of res.data ?? []) {
+    const row = raw as unknown as {
+      airport_location_id: string;
+      surcharge_cents: number;
+      airport: { slug: string } | null;
+    };
+    if (!row.airport?.slug) continue;
+    // Defensief: twee actieve rijen voor dezelfde luchthaven kan niet door de
+    // partial unique index. Mocht het tóch gebeuren, dan geen willekeurige
+    // winnaar kiezen maar de luchthaven overslaan (fail-closed op de toeslag).
+    if (out.has(row.airport_location_id)) {
+      out.delete(row.airport_location_id);
+      continue;
+    }
+    out.set(row.airport_location_id, {
+      airportSlug: row.airport.slug,
+      surchargeCents: row.surcharge_cents,
+    });
+  }
+  return out;
 }
 
 // ── Pickup-aanrijmodel config (2026-08-18) ───────────────────────────────────
