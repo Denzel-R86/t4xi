@@ -144,7 +144,9 @@ test("15 · pending-copy is neutraal; definitieve claim alleen in de 'confirmed'
   assert.doesNotMatch(nl.pending, /bevestigd\b/i);
   assert.doesNotMatch(en.pending, /\bconfirmed\b/i);
   assert.match(nl.pending, /controleren/i);
-  assert.match(en.pending, /confirming/i);
+  // Besluit eigenaar #72: EN zegt alleen dat de betaling verwerkt wordt.
+  assert.equal(en.pending, "Your payment is being processed.");
+  assert.doesNotMatch(en.pending, /confirm/i);
   // "confirmed" komt in de component alleen voor als de server-gereconcilieerde
   // status (stap 7.5), niet als losse client-side claim.
   assert.doesNotMatch(paymentStepSrc, /definitief bevestigd/i);
@@ -254,9 +256,9 @@ test("R6 · geen Stripe redirect-params als autoriteit; server-status wordt gepo
   assert.doesNotMatch(paymentStepSrc, /redirect_status|payment_intent_client_secret|searchParams\.get\(/);
 });
 
-test("R7 · getoond bedrag komt uit de server-intent (geen clientbedrag)", () => {
-  // het betaalde bedrag is het serverbedrag uit state.intent (create-intent-respons)
-  assert.match(paymentStepSrc, /paidLabel=\{state\.intent \? formatAmount\(state\.intent\.amount, state\.intent\.currency/);
+test("R7 · getoond bedrag komt van de server (status 'paid' + intent), nooit uit clientdata", () => {
+  // het bewijs ontstaat alleen uit de status-respons, met de server-intent als terugval
+  assert.match(paymentStepSrc, /setPaidProof\(serverPaidProof\(data, state\.intent\)\)/);
   const norm = (v: string) => v.replace(/\s/g, "");
   assert.equal(norm(formatAmount(7900, "eur", "nl")), "€79,00");
   assert.equal(norm(formatAmount(7900, "eur", "en")), "€79.00");

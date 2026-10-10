@@ -31,7 +31,7 @@ import PricePreview from "./steps/PricePreview";
 import StepPanel from "./steps/StepPanel";
 import StepProgress from "./steps/StepProgress";
 import { useStepFlow } from "./steps/useStepFlow";
-import { bookingStatusFromResponse } from "@/lib/bookings/customer-status-copy";
+import { screenBookingStatus } from "@/lib/bookings/customer-status-copy";
 import type { ConfirmationDetails } from "@/lib/bookings/confirmation-details";
 import HandoffRouteLine from "./handoff/HandoffRouteLine";
 import { clearHandoff, handoffRideUnchanged, type ShownPrice } from "@/lib/booking-handoff";
@@ -135,10 +135,10 @@ export default function BookingSection({
   // twijfel over welke gegevens bij de betaling horen. Alleen bevestiging + betaalstap.
   const booked = submit.status === "success";
   const successRef = useRef<HTMLDivElement>(null);
-  // Referentie waarvan de betaling server-side bevestigd is; afgeleid, dus een
-  // nieuwe/gereste boeking toont automatisch weer de gewone melding.
-  const [paidRef, setPaidRef] = useState<string | null>(null);
-  const paymentConfirmed = submit.status === "success" && paidRef === submit.bookingRef;
+  // Referentie waarvoor PaymentStep het rit-overzicht toont (pending of betaald);
+  // afgeleid, dus een nieuwe/gereste boeking toont automatisch weer de gewone melding.
+  const [summaryRef, setSummaryRef] = useState<string | null>(null);
+  const summaryShown = submit.status === "success" && summaryRef === submit.bookingRef;
 
   // ── Stappenweergave (PR 2.4): alleen presentatie, geen invloed op payload ──
   const [contact, setContact] = useState<ContactSummary>({ name: "", phone: "", email: "" });
@@ -241,7 +241,7 @@ export default function BookingSection({
           price: typeof data.price === "number" ? data.price : null,
           details: {
             bookingRef: data.bookingRef,
-            bookingStatus: bookingStatusFromResponse(data.status),
+            bookingStatus: screenBookingStatus(data.status),
             date: payload.date,
             time: payload.time,
             pickup: payload.pickup,
@@ -416,8 +416,8 @@ export default function BookingSection({
 
       {submit.status === "success" && (
         <div className="mb-5">
-          {/* Na de server-bevestigde betaling neemt BookingConfirmation (in PaymentStep) het over. */}
-          {!paymentConfirmed && (
+          {/* Zodra PaymentStep het rit-overzicht toont (pending of betaald), neemt dat het over. */}
+          {!summaryShown && (
             <div ref={successRef} tabIndex={-1} className="rounded-lg border border-green-600/30 bg-green-600/10 px-5 py-4 text-center text-sm text-green-700 focus:outline-none" role="status" aria-live="polite">
               <div className="flex items-center justify-center gap-2 font-semibold">
                 <Icon name="check" size={16} />
@@ -432,7 +432,7 @@ export default function BookingSection({
           {/* Betaalstap — alleen bij een vaste prijs. De prijsautoriteit blijft
               server-side: PaymentStep haalt het bedrag op via create-intent. */}
           {!submit.quoteOnRequest && submit.price !== null && submit.bookingId && pickup && dropoff && (
-            <div className={paymentConfirmed ? undefined : "mt-4"}>
+            <div className={summaryShown ? undefined : "mt-4"}>
               <PaymentStep
                 ride={{
                   pickup: pickup.label,
@@ -443,14 +443,14 @@ export default function BookingSection({
                   bookingId: submit.bookingId,
                 }}
                 confirmation={submit.details}
-                onConfirmed={() => setPaidRef(submit.bookingRef)}
+                onSummaryShown={() => setSummaryRef(submit.bookingRef)}
               />
             </div>
           )}
         </div>
       )}
 
-      {handoff && !paymentConfirmed && <HandoffRouteLine pickup={pickup} dropoff={dropoff} quote={quote} />}
+      {handoff && !summaryShown && <HandoffRouteLine pickup={pickup} dropoff={dropoff} quote={quote} />}
 
       {/* Na boeken verborgen (niet ontkoppeld): state en anti-stale-logica blijven intact,
           maar de stappen, wijzigacties en de verzendknop zijn niet meer bereikbaar. */}
