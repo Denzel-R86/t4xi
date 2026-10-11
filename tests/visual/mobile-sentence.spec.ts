@@ -32,6 +32,7 @@ test.describe("Mobiele zin (375)", () => {
     // Vaste uitgangspositie: kiezen/sluiten laat de pagina op een wisselende
     // (fractionele) scrollpositie, wat de hairlines per run 1px laat verspringen.
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    await page.mouse.move(0, 0);
     await settle(page);
     await expect(sentenceRoot(page)).toHaveScreenshot("mobiel-zin-luchthaven.png", { stylePath: HIDE_OVERLAYS });
   });
