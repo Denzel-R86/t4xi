@@ -50,6 +50,38 @@ export function classifyQuoteFailure(
   return "unavailable";
 }
 
+/**
+ * De exacte JSON-body die de hook naar /api/pricing/quote stuurt — puur, zodat
+ * tests kunnen vastleggen wat een aanroeper (routezoeker, /boeken) verstuurt.
+ * Retourdatum/-tijd gaan alleen mee bij een retour met beide velden gevuld.
+ */
+export function buildQuoteRequestBody(
+  pickup: string,
+  dropoff: string,
+  o: {
+    returnTrip: boolean;
+    passengers: number;
+    date: string;
+    time: string;
+    luggage: string;
+    returnDate: string;
+    returnTime: string;
+  }
+) {
+  return {
+    pickup,
+    dropoff,
+    returnTrip: o.returnTrip,
+    passengers: o.passengers,
+    date: o.date,
+    time: o.time,
+    luggageCategory: o.luggage,
+    ...(o.returnTrip && o.returnDate && o.returnTime
+      ? { returnDate: o.returnDate, returnTime: o.returnTime }
+      : {}),
+  };
+}
+
 export function useRouteQuote(
   pickup: AddressSuggestion | null,
   dropoff: AddressSuggestion | null,
@@ -108,16 +140,17 @@ export function useRouteQuote(
         const res = await fetch("/api/pricing/quote", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            pickup: pickup.label,
-            dropoff: dropoff.label,
-            returnTrip,
-            passengers,
-            date,
-            time,
-            luggageCategory: luggage,
-            ...(returnTrip && returnDate && returnTime ? { returnDate, returnTime } : {}),
-          }),
+          body: JSON.stringify(
+            buildQuoteRequestBody(pickup.label, dropoff.label, {
+              returnTrip,
+              passengers,
+              date,
+              time,
+              luggage,
+              returnDate,
+              returnTime,
+            })
+          ),
           signal: controller.signal,
         });
         const data = await res.json().catch(() => ({}));
