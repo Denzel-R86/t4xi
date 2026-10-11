@@ -54,9 +54,37 @@ const PRICEABLE_STATUSES = ["expected", "confirmed", "changed"] as const;
  * en krapper dan de routing-call. Dankzij de cache raakt dit budget hooguit
  * één keer per TTL een verzoek; faalt het toch, dan is er simpelweg geen
  * evenemententarief.
+ *
+ * VERRUIMD VAN 800 NAAR 2500 ms OP 2026-10-11 — gemeten, niet geschat.
+ *
+ * Na de shadow-activatie op productie leverden 19 echte quotes NUL observaties
+ * op, bij een klantprijs die in drie gepaarde metingen exact gelijk bleef. Een
+ * diagnose binnen een ECHTE serverless-invocatie (vier metingen op een
+ * Vercel-deployment, Supabase in eu-west-1) wees dit budget aan als oorzaak:
+ *
+ *   createPricingLogClient      0–4 ms
+ *   loadEventPricingData      538 · 766 · 919 · 950 ms   ← 2 van 4 boven 800
+ *   recordEventShadowLog      101 · 117 · 305 · 319 ms   ← altijd binnen 400
+ *
+ * Het laden zat pal op de grens: twee van de vier metingen gingen eroverheen en
+ * een derde haalde het met 34 ms marge. Bij een overschrijding geeft de loader
+ * `null`, leest `eventFeesForQuote` dat als "geen evenemententarief", wordt de
+ * modus `off` en slaat `observeEventFees` alles over. Resultaat: geen enkele
+ * observatie, en — fail-open by design — geen enkel signaal dat er iets mis is.
+ *
+ * Het schrijfpad was NIET de oorzaak: dat bleef in alle metingen ruim binnen
+ * zijn 400 ms. Een eerdere poging om de schrijfactie met `after()` uit het
+ * verzoekpad te halen is daarom teruggedraaid — die loste een probleem op dat
+ * niet bestond.
+ *
+ * Waarom 2500 en niet hoger: dat is ~2,6× de hoogste meting, dus echte marge
+ * voor een koude verbinding, en nog steeds een harde bovengrens. De kosten voor
+ * de klant blijven begrensd doordat de cache dit budget hooguit één keer per
+ * 60 s raakt; bij een werkelijke storing valt de module nog steeds stil terug op
+ * "geen evenemententarief" in plaats van de offerte te blokkeren.
  */
-export const EVENT_LOAD_TIMEOUT_MS = 800;
-export const EVENT_LOAD_RETRY_TIMEOUT_MS = 800;
+export const EVENT_LOAD_TIMEOUT_MS = 2_500;
+export const EVENT_LOAD_RETRY_TIMEOUT_MS = 2_500;
 
 /**
  * Cache-TTL: 60 seconden, gelijk aan SHADOW_CONFIG_CACHE_TTL_MS voor de
