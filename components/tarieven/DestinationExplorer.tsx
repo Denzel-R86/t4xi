@@ -8,7 +8,8 @@ import AddressAutocomplete, {
 } from "@/components/shared/AddressAutocomplete";
 import type { RateEntry } from "@/lib/pricing/rate-card";
 import type { OriginDestinationGroup } from "@/lib/destinations";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { headlinePrice } from "@/lib/tarieven/ride-result";
 
 /**
  * Bestemmingskiezer per vertrekstad: Steden / Attracties & bezienswaardigheden /
@@ -42,6 +43,7 @@ export default function DestinationExplorer({
   intercity: RateEntry[];
 }) {
   const t = useTranslations("kiezer");
+  const locale = useLocale();
   const router = useRouter();
   const [segment, setSegment] = useState<Segment>("cities");
   const [other, setOther] = useState<AddressSuggestion | null>(null);
@@ -97,9 +99,9 @@ export default function DestinationExplorer({
                     href={bookingHref(o.searchValue)}
                     className="inline-flex min-h-11 items-center justify-end text-right font-display text-[15px] font-bold text-ink underline-offset-4 [font-variant-numeric:tabular-nums] hover:underline"
                   >
-                    € {fixed.single}
+                    {headlinePrice(fixed.single, locale)}
                     {fixed.retour !== null && (
-                      <span className="ml-2 text-sm font-normal text-secondary">{t("retour")} € {fixed.retour}</span>
+                      <span className="ml-2 text-sm font-normal text-secondary">{t("retour")} {headlinePrice(fixed.retour, locale)}</span>
                     )}
                   </Link>
                 ) : (

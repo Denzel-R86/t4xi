@@ -76,6 +76,20 @@ export function euroText(amount: string | number): string {
 }
 
 /**
+ * Grote prijs in het UW RIT-blok: hele euro's zonder decimalen (€ 102), anders
+ * altijd twee decimalen in de notatie van de locale (€ 199,30 / € 199.30).
+ * Voorheen stond hier het ruwe getal (`€ 199.3`).
+ */
+export function headlinePrice(amount: number, locale: string): string {
+  const whole = Number.isInteger(amount);
+  const fmt = new Intl.NumberFormat(locale === "nl" ? "nl-NL" : "en-GB", {
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
+  });
+  return euroText(fmt.format(amount));
+}
+
+/**
  * Vergelijking met het wettelijke maximumtarief alleen op dezelfde ritbasis: de
  * taxameterberekening gaat over één rit (serverafstand/-reistijd van de heenrit).
  * Een retourprijs daarnaast zetten vergelijkt appels met peren; tot er een

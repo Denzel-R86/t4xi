@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
-import { euroText, rideBuildUp, routeFinderHandoff, showLegalComparison } from "./ride-result";
+import { euroText, headlinePrice, rideBuildUp, routeFinderHandoff, showLegalComparison } from "./ride-result";
 
 /** PR 2.7 — RouteFinder "UW RIT": prijsopbouw, handoff, F-28 en F-17. */
 
@@ -188,4 +188,12 @@ test("euroteken en bedrag blijven samen: vaste spatie, nergens een gewone spatie
     const hits = Object.entries(usedRouteFinderCopy(locale)).filter(([, v]) => /€ /.test(v));
     assert.deepEqual(hits, [], `${locale}: gewone spatie na € in RouteFinder-tekst`);
   }
+});
+
+test("grote prijs: hele euro's zonder decimalen, anders twee decimalen in locale-notatie (nooit 199.3)", () => {
+  assert.equal(headlinePrice(102, "nl"), "€\u00a0102");
+  assert.equal(headlinePrice(199.3, "nl"), "€\u00a0199,30");
+  assert.equal(headlinePrice(199.3, "en"), "€\u00a0199.30");
+  assert.equal(headlinePrice(1234.5, "nl"), "€\u00a01.234,50");
+  assert.doesNotMatch(headlinePrice(199.3, "nl"), /199\.3(?!0)/);
 });
