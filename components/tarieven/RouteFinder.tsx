@@ -502,8 +502,6 @@ export default function RouteFinder() {
             time={time}
             passengers={passengers}
             luggageLabel={tripForRequest.luggage}
-            isArrival={isArrival}
-            needsFlight={needsFlight}
             bookingHref={handoffRide ? HANDOFF_HREF : buildBookingHref({
               pickup: pickup.label,
               dropoff: dropoff.label,

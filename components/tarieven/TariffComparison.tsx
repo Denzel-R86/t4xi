@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { computeTariffComparison, LEGAL_TAXI_TARIFF } from "@/lib/pricing/legal-tariff";
+import { euroText } from "@/lib/tarieven/ride-result";
 
 /**
  * Compact vergelijkingsblok binnen de ritprijskaart: de bindende vaste
@@ -35,7 +36,7 @@ export default function TariffComparison({
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const euro = (n: number) => `€ ${money.format(n)}`;
+  const euro = (n: number) => euroText(money.format(n));
   const { km, min } = c;
 
   return (

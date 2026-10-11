@@ -62,3 +62,23 @@ export function routeFinderHandoff(input: {
     quoteId: input.quoteId,
   });
 }
+
+/**
+ * Euroteken en bedrag nooit gescheiden over twee regels: vaste spatie (U+00A0).
+ * Alleen voor de RouteFinder-onderdelen (RideResult, TariffComparison); de
+ * gedeelde formatters in lib/format/currency.ts blijven ongewijzigd.
+ */
+export const EURO_PREFIX = "€\u00a0";
+export function euroText(amount: string | number): string {
+  return `${EURO_PREFIX}${amount}`;
+}
+
+/**
+ * Vergelijking met het wettelijke maximumtarief alleen op dezelfde ritbasis: de
+ * taxameterberekening gaat over één rit (serverafstand/-reistijd van de heenrit).
+ * Een retourprijs daarnaast zetten vergelijkt appels met peren; tot er een
+ * betrouwbare retourbasis is (geen verdubbeling, geen schatting) → verborgen.
+ */
+export function showLegalComparison(q: ServerQuoteFields): boolean {
+  return !q.returnApplied && q.distanceKm > 0 && q.estimatedDurationMin > 0 && q.price > 0;
+}

@@ -6,7 +6,7 @@ import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
 import JourneyLine from "@/components/horizon/JourneyLine";
 import TariffComparison from "@/components/tarieven/TariffComparison";
-import { rideBuildUp, type ServerQuoteFields } from "@/lib/tarieven/ride-result";
+import { euroText, rideBuildUp, showLegalComparison, type ServerQuoteFields } from "@/lib/tarieven/ride-result";
 import type { JourneyState } from "@/lib/horizon/journey-line-state";
 
 /** Korte plaatsnaam zoals in de hero-zin ("Amsterdam Zuidas, Amsterdam" → "Amsterdam Zuidas"). */
@@ -30,8 +30,6 @@ export default function RideResult({
   time,
   passengers,
   luggageLabel,
-  isArrival,
-  needsFlight,
   bookingHref,
   onBook,
   schipholRoute,
@@ -46,8 +44,6 @@ export default function RideResult({
   passengers: number;
   /** De al-vertaalde, daadwerkelijk gekozen bagagecategorie. */
   luggageLabel: string;
-  isArrival: boolean;
-  needsFlight: boolean;
   bookingHref: string;
   onBook: (e: React.MouseEvent<HTMLAnchorElement>) => void;
   schipholRoute: { slug: string; naam: string } | null;
@@ -64,12 +60,9 @@ export default function RideResult({
     { label: t("factVoertuig"), value: t("voertuigKlasse") },
     { label: t("factPassagiers"), value: t("passagiersMax", { max: 4, gekozen: passengers }) },
     { label: t("factBagage"), value: luggageLabel || "—" },
-    { label: t("factWachttijd"), value: isArrival ? t("wachttijdLucht") : t("wachttijdStandaard") },
   ];
-  const proofs = [
-    "bewijsVaste", "bewijsChauffeur", "bewijsVoertuig", "bewijsBagage",
-    ...(needsFlight ? (["bewijsVlucht"] as const) : []), "bewijsGeenVerrassing",
-  ] as const;
+  // PR 2.7 (besluit eigenaar): geen wachttijd- en vluchtmonitoringclaim (§0c).
+  const proofs = ["bewijsVaste", "bewijsChauffeur", "bewijsVoertuig", "bewijsBagage", "bewijsGeenVerrassing"] as const;
   const buildUp = rideBuildUp(quote);
 
   return (
@@ -81,7 +74,7 @@ export default function RideResult({
       {/* ── UW RIT: route, serverprijs, één primaire actie ── */}
       <div className="px-6 pb-6 pt-5 md:px-8 md:pb-7">
         <h2 id="uw-rit-kop" className="text-meta font-semibold uppercase text-accent">
-          {t("kaartKop")}
+          {t("uwRitKop")}
         </h2>
         <div className="hx-handoff-journey mt-4">
           <JourneyLine state={journey} from={short(pickup)} to={short(dropoff)} fromMeta={time || undefined} decorative />
@@ -90,7 +83,7 @@ export default function RideResult({
 
         <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-ink/30 pt-4">
           <span className="hx-handoff-price font-display text-[40px] font-semibold leading-none text-ink [font-variant-numeric:tabular-nums] md:text-[48px]">
-            € {price}
+            {euroText(price)}
           </span>
           <span className="text-sm text-secondary">
             {returnApplied ? t("vastRetour") : t("vastEnkel")} · {t("inclBtw")} · {t("geenSurge")}
@@ -112,7 +105,7 @@ export default function RideResult({
 
       {/* ── Details en prijsopbouw ── */}
       <div className="border-t border-line bg-fog/60 px-6 py-6 md:px-8">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
           {facts.map((f) => (
             <div key={f.label} className="border-t border-line pt-3">
               <dt className="text-[10px] uppercase tracking-[0.12em] text-stone-text">{f.label}</dt>
@@ -123,9 +116,8 @@ export default function RideResult({
 
         {buildUp.length > 0 && (
           <div className="mt-6" data-testid="prijsopbouw">
-            {/* Geen eigen kop: een nieuw label is een copyvoorstel (§0c) — de regels
-                dragen alleen bestaande labels bij serverwaarden. */}
-            <dl className="space-y-2 text-sm">
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-secondary">{t("prijsopbouwKop")}</h3>
+            <dl className="mt-3 space-y-2 text-sm">
               {buildUp.map((row) =>
                 row.kind === "fact" ? (
                   <div key={row.source} data-source={row.source} className="flex items-baseline justify-between gap-3">
@@ -141,8 +133,8 @@ export default function RideResult({
                     <dt className="font-medium text-ink first-letter:uppercase">
                       {t(row.labelKey)} · {t("inclBtw")}
                     </dt>
-                    <dd className="text-right font-semibold text-ink [font-variant-numeric:tabular-nums]">
-                      € {money.format(row.amount)}
+                    <dd className="whitespace-nowrap text-right font-semibold text-ink [font-variant-numeric:tabular-nums]">
+                      {euroText(money.format(row.amount))}
                     </dd>
                   </div>
                 )
@@ -151,7 +143,10 @@ export default function RideResult({
           </div>
         )}
 
-        <TariffComparison distanceKm={distanceKm} durationMin={estimatedDurationMin} price={price} />
+        {/* Alleen op dezelfde ritbasis (enkele rit); retour → geen vergelijking. */}
+        {showLegalComparison(quote) && (
+          <TariffComparison distanceKm={distanceKm} durationMin={estimatedDurationMin} price={price} />
+        )}
 
         <ul className="mt-6 grid gap-2 sm:grid-cols-2">
           {proofs.map((k) => (
