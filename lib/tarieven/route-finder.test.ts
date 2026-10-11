@@ -231,7 +231,8 @@ test("RouteFinder geeft de gevalideerde bagagekeuze door aan de boekings-deep-li
   const src = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
   assert.match(
     src,
-    /bookingHref=\{buildBookingHref\(\{[\s\S]*?\bluggage,\s*[\s\S]*?\}\)\}/,
+    // PR 2.7: enkele rit via de handoff; de deep-link (retour) houdt de bagagekeuze.
+    /bookingHref=\{handoffRide \? HANDOFF_HREF : buildBookingHref\(\{[\s\S]*?\bluggage,\s*[\s\S]*?\}\)\}/,
   );
 });
 
@@ -271,7 +272,10 @@ test("RouteFinder: bagage wordt nergens meer een tweede keer gevraagd (geen loss
   assert.equal(selectMatches.length, 1, "de bagagecategorieën worden op meer dan één plek gerenderd");
 });
 
-test("ResultCard's bagage-fact toont het daadwerkelijk gekozen label, geen generieke placeholder-tekst", () => {
-  const src = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
+test("UW RIT-bagage-fact toont het daadwerkelijk gekozen label, geen generieke placeholder-tekst", () => {
+  // PR 2.7: de resultaatkaart staat in RideResult; RouteFinder geeft het gekozen label door.
+  const finder = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
+  assert.match(finder, /luggageLabel=\{tripForRequest\.luggage\}/);
+  const src = readFileSync(resolve(process.cwd(), "components/tarieven/RideResult.tsx"), "utf8");
   assert.match(src, /value:\s*luggageLabel\s*\|\|\s*"—"/, "de bagage-fact leest niet uit de daadwerkelijke keuze (luggageLabel)");
 });
