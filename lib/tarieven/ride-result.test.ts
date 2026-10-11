@@ -20,8 +20,9 @@ test("prijsopbouw: alleen serverwaarden, elke regel noemt zijn serverveld", () =
 });
 
 test("prijsopbouw: retour volgt returnApplied van de server", () => {
-  const total = rideBuildUp({ ...SERVER, price: 170, returnApplied: true }).at(-1);
-  assert.deepEqual(total, { kind: "total", labelKey: "vastRetour", amount: 170, source: "price" });
+  const rows = rideBuildUp({ ...SERVER, price: 170, returnApplied: true });
+  // Afstand/reistijd zijn van één ritdeel: bij retour alleen het totaal (zelfde ritbasis).
+  assert.deepEqual(rows, [{ kind: "total", labelKey: "vastRetour", amount: 170, source: "price" }]);
 });
 
 test("prijsopbouw: wat de engine niet levert (0) wordt niet verzonnen", () => {
@@ -152,7 +153,7 @@ function usedRouteFinderCopy(locale: string): Record<string, string> {
   return Object.fromEntries([...keys].filter((k) => typeof ns[k] === "string").map((k) => [k, ns[k] as string]));
 }
 
-const UNCONFIRMED = /Inbegrepen wachttijd|Included waiting time|na de landing|after landing|min inbegrepen|min included|Vluchtmonitoring|Flight monitoring|24\/7/i;
+const UNCONFIRMED = /volgen uw vluchtstatus|volgen wij de vluchtstatus|track your flight|track the flight|Inbegrepen wachttijd|Included waiting time|na de landing|after landing|min inbegrepen|min included|Vluchtmonitoring|Flight monitoring|24\/7/i;
 
 test("§0c: geen wachttijd-, vluchtmonitoring- of 24/7-claim in de RouteFinder of zijn teksten", () => {
   for (const f of ROUTEFINDER_FILES) {
@@ -164,7 +165,7 @@ test("§0c: geen wachttijd-, vluchtmonitoring- of 24/7-claim in de RouteFinder o
     const hits = Object.entries(copy).filter(([, v]) => UNCONFIRMED.test(v));
     assert.deepEqual(hits, [], `${locale}: onbevestigde claim`);
     const ns = JSON.parse(readFileSync(`messages/${locale}.json`, "utf8")).routezoeker;
-    for (const k of ["factWachttijd", "wachttijdLucht", "wachttijdStandaard", "bewijsVlucht"]) assert.equal(ns[k], undefined, `${locale}.${k}`);
+    for (const k of ["factWachttijd", "wachttijdLucht", "wachttijdStandaard", "bewijsVlucht", "vluchtHelp", "opAanvraagVlucht"]) assert.equal(ns[k], undefined, `${locale}.${k}`);
   }
 });
 

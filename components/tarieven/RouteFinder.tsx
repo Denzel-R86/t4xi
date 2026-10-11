@@ -425,13 +425,8 @@ export default function RouteFinder() {
               autoComplete="off"
               spellCheck={false}
               maxLength={8}
-              aria-describedby={`${ids}-flight-help`}
               className={inputCls}
             />
-            <p id={`${ids}-flight-help`} className="mt-1.5 flex items-center gap-1.5 text-[12px] text-secondary">
-              <Icon name="plane" size={13} className="shrink-0 text-accent" />
-              {t("vluchtHelp")}
-            </p>
           </div>
         )}
 
@@ -523,7 +518,6 @@ export default function RouteFinder() {
             summary={summary}
             whatsappHref={buildWhatsappHref(requestText)}
             mailtoHref={buildMailtoHref(t("mailOnderwerp"), requestText)}
-            needsFlight={needsFlight}
             hasStops={hasStops}
           />
         )}

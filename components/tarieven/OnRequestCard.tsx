@@ -5,12 +5,11 @@ import Icon from "@/components/ui/Icon";
 
 /* ── Geen automatisch tarief: bruikbare aanvraagflow ── */
 export default function OnRequestCard({
-  summary, whatsappHref, mailtoHref, needsFlight, hasStops,
+  summary, whatsappHref, mailtoHref, hasStops,
 }: {
   summary: string;
   whatsappHref: string;
   mailtoHref: string;
-  needsFlight: boolean;
   hasStops: boolean;
 }) {
   const t = useTranslations("routezoeker");
@@ -21,7 +20,6 @@ export default function OnRequestCard({
       <p className="mt-4 max-w-xl text-secondary">
         {t("opAanvraagUitleg")}
         {hasStops ? ` ${t("opAanvraagStops")}` : ""}
-        {needsFlight ? ` ${t("opAanvraagVlucht")}` : ""}
       </p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <a

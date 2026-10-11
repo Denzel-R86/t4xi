@@ -26,11 +26,13 @@ export type BuildUpRow =
 
 export function rideBuildUp(q: ServerQuoteFields): BuildUpRow[] {
   const rows: BuildUpRow[] = [];
-  if (Number.isFinite(q.distanceKm) && q.distanceKm > 0) {
+  // Afstand en reistijd zijn serverwaarden van één ritdeel; naast een retourprijs
+  // horen ze niet bij dezelfde ritbasis. Bij retour daarom alleen het totaal.
+  if (!q.returnApplied && Number.isFinite(q.distanceKm) && q.distanceKm > 0) {
     rows.push({ kind: "fact", labelKey: "factAfstand", value: `${q.distanceKm} km`, source: "distanceKm" });
   }
   const duration = formatDuration(q.estimatedDurationMin);
-  if (duration) {
+  if (!q.returnApplied && duration) {
     rows.push({ kind: "fact", labelKey: "factReistijd", value: duration, source: "estimatedDurationMin" });
   }
   if (Number.isFinite(q.price) && q.price > 0) {
