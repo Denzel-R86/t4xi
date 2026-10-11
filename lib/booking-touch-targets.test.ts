@@ -8,6 +8,7 @@ const addressAutocomplete = readFileSync("components/shared/AddressAutocomplete.
 const sentence = readFileSync("components/booking-sentence/SentencePattern.tsx", "utf8");
 const horizonCss = readFileSync("components/horizon/horizon.css", "utf8");
 const routeFinder = readFileSync("components/tarieven/RouteFinder.tsx", "utf8");
+const onRequestCard = readFileSync("components/tarieven/OnRequestCard.tsx", "utf8");
 const destinationExplorer = readFileSync("components/tarieven/DestinationExplorer.tsx", "utf8");
 
 test("primaire boekingsbediening heeft minimaal 44px aanraakhoogte", () => {
@@ -28,7 +29,7 @@ test("compacte homepage-invoer wordt op mobiel niet kleiner dan 44px", () => {
 
 test("secundaire links in de boekingsflow halen minimaal 24px", () => {
   assert.match(booking, /href="\/dagtochten#aanvragen" className="inline-flex min-h-6 items-center/);
-  assert.match(routeFinder, /href="tel:\+31634744522" className="inline-flex min-h-6 items-center/);
+  assert.match(onRequestCard, /href="tel:\+31634744522" className="inline-flex min-h-6 items-center/);
 });
 
 test("routekeuzes op de tarievenpagina halen 44px", () => {
