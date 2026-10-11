@@ -120,11 +120,11 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   const showPrice = priceRevealed(quote.status, drawn);
   const busy = resultBusy(quote.status, drawn);
 
-  // F-14: de zin draagt de boekingshandeling zelf. De mobiele StickyCta wijkt
-  // alleen als de resultaatregel (prijs + "Bevestig") grotendeels in beeld is.
+  // F-14: de zin draagt de boekingshandeling zelf. De mobiele StickyCta wijkt als
+  // de resultaatregel grotendeels in beeld is, of (< 768px) de zin eronder ligt.
   const rootRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
-  useHidesStickyCta(resultRef);
+  useHidesStickyCta(resultRef, rootRef);
 
   // F-14: op een smal scherm valt de uitkomst voor een nieuwe rit onder de vouw.
   // Dan schuift de pagina één keer precies genoeg om de resultaatregel te tonen

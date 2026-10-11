@@ -3,6 +3,7 @@
 import { useEffect, type RefObject } from "react";
 import {
   anyHidesStickyCta,
+  blockUnderStickyBar,
   latestResultRatio,
   STICKY_CTA_THRESHOLDS,
   type StickyCtaHiderState,
@@ -19,6 +20,18 @@ import {
  */
 const hiders = new Map<symbol, StickyCtaHiderState>();
 const listeners = new Set<(hidden: boolean) => void>();
+/** De balk zelf (voor zijn hoogte) en de metingen die opnieuw moeten als hij verschijnt. */
+let barElement: HTMLElement | null = null;
+const remeasurers = new Set<() => void>();
+
+/** Mobiele zin (PR 2.6): onder deze breedte telt ook het zinsblok achter de balk. */
+const MOBILE_SENTENCE_QUERY = "(max-width: 767px)";
+
+/** StickyCtaBar meldt zich aan, zodat zinnen zijn hoogte kunnen meten. */
+export function registerStickyCtaBar(el: HTMLElement | null): void {
+  barElement = el;
+  remeasurers.forEach((m) => m());
+}
 
 function emit() {
   const hidden = anyHidesStickyCta(hiders.values());
@@ -33,8 +46,17 @@ export function subscribeStickyCtaHidden(listener: (hidden: boolean) => void): (
   };
 }
 
-/** @param actionRef de resultaatregel met de hero-CTA (prijs + "Bevestig") */
-export function useHidesStickyCta(actionRef: RefObject<HTMLElement | null>) {
+/**
+ * @param actionRef de resultaatregel met de hero-CTA (prijs + "Bevestig")
+ * @param blockRef  PR 2.6: het hele zinsblok. Onder 768px wijkt de balk zolang
+ *   een deel ervan achter de balk zou liggen (F-14-rest), zodat geen veld en de
+ *   hero-knop nooit afgedekt worden. Gemeten bij scroll/resize (passief, één
+ *   keer per frame); verbergen verandert de layout niet, dus geen terugkoppeling.
+ */
+export function useHidesStickyCta(
+  actionRef: RefObject<HTMLElement | null>,
+  blockRef?: RefObject<HTMLElement | null>
+) {
   useEffect(() => {
     const action = actionRef.current;
     if (!action) return;
@@ -55,10 +77,41 @@ export function useHidesStickyCta(actionRef: RefObject<HTMLElement | null>) {
           );
     io?.observe(action);
 
+    const block = blockRef?.current ?? null;
+    const mobile = block && typeof window.matchMedia === "function" ? window.matchMedia(MOBILE_SENTENCE_QUERY) : null;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const under =
+        !!block &&
+        !!mobile?.matches &&
+        !!barElement &&
+        blockUnderStickyBar(block.getBoundingClientRect(), window.innerHeight, barElement.offsetHeight);
+      if (under !== (state.blockUnderBar === true)) {
+        state.blockUnderBar = under;
+        emit();
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(measure);
+    };
+    if (block) {
+      measure();
+      remeasurers.add(measure);
+      window.addEventListener("scroll", schedule, { passive: true });
+      window.addEventListener("resize", schedule);
+      mobile?.addEventListener("change", schedule);
+    }
+
     return () => {
       io?.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
+      remeasurers.delete(measure);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      mobile?.removeEventListener("change", schedule);
       hiders.delete(id);
       emit();
     };
-  }, [actionRef]);
+  }, [actionRef, blockRef]);
 }

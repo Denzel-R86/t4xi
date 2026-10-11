@@ -11,16 +11,37 @@ export const STICKY_CTA_THRESHOLDS = [0, STICKY_CTA_RESULT_RATIO, 1];
 export type StickyCtaHiderState = {
   /** Zichtbare fractie (0–1) van de resultaatregel met de hero-CTA. */
   resultRatio: number;
+  /**
+   * PR 2.6 (F-14-rest, alleen < 768px): ligt een deel van het zinsblok achter
+   * de plek van de balk? Ontbreekt → false (desktop, of nog niet gemeten).
+   */
+  blockUnderBar?: boolean;
 };
 
 /**
- * De StickyCta wijkt alleen als de hero-boekingsactie zelf (de resultaatregel
- * met de hero-knop) grotendeels in beeld is. Focus in de zin is geen reden: de
- * balk blijft dan staan. Een zin die alleen met een randje in beeld staat, telt
- * niet.
+ * De StickyCta wijkt als de hero-boekingsactie zelf (de resultaatregel met de
+ * hero-knop) grotendeels in beeld is, óf (mobiel) zolang een deel van de zin
+ * achter de balk zou liggen: de balk mag nooit een veld of de hero-knop
+ * afdekken. Focus in de zin is geen reden: zonder overlap blijft de balk staan.
+ * Een resultaatregel die alleen met een randje in beeld staat, telt niet.
  */
 export function shouldHideStickyCta(state: StickyCtaHiderState): boolean {
-  return state.resultRatio >= STICKY_CTA_RESULT_RATIO;
+  return state.resultRatio >= STICKY_CTA_RESULT_RATIO || state.blockUnderBar === true;
+}
+
+/**
+ * Snijdt het zinsblok (verticaal, in viewport-coördinaten) de strook onderaan
+ * het venster waar de vaste balk staat? Gemeten tegen de RUSTpositie van de
+ * balk (vensterhoogte − balkhoogte), dus onafhankelijk van of de balk nu
+ * zichtbaar is: verbergen verandert de meting niet (geen terugkoppeling).
+ */
+export function blockUnderStickyBar(
+  block: { top: number; bottom: number },
+  viewportHeight: number,
+  barHeight: number
+): boolean {
+  if (barHeight <= 0 || block.bottom <= block.top) return false;
+  return block.bottom > viewportHeight - barHeight && block.top < viewportHeight;
 }
 
 /** Minimale vorm van een IntersectionObserverEntry (testbaar zonder DOM). */
