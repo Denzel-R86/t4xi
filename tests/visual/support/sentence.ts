@@ -26,11 +26,9 @@ async function isMobileSentence(page: Page, field: AddressField) {
 /** Maakt het adresveld klaar voor invoer (mobiel: sheet open) en geeft de combobox terug. */
 export async function openAddress(page: Page, field: AddressField) {
   if (await isMobileSentence(page, field)) {
-    // Klik zonder Playwright-scroll: in de H-1-scenario's ligt de regel bewust
-    // onder in beeld, deels onder de StickyCta (F-14). Een gewone click() scrolt
-    // de regel dan eerst naar het midden en verandert zo de uitgangssituatie
-    // van de reveal-scroll. Echte tik-interactie toetst mobile-sheet.spec.ts.
-    await sheetTrigger(page, field).evaluate((el: HTMLElement) => el.click());
+    // Echte klik/tik zoals een klant: de StickyCta wijkt zolang de zin eronder
+    // ligt (PR 2.6), dus de regel is ook onderaan het venster raakbaar.
+    await sheetTrigger(page, field).click();
     const sheet = addressSheet(page, field);
     await expect(sheet).toBeVisible();
     const input = sheet.getByRole("combobox", { name: field });
