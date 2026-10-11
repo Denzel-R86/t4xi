@@ -59,6 +59,7 @@ test.describe("UW RIT (RouteFinder, PR 2.7)", () => {
   test("2 ready retour", async ({ page }) => {
     await compute(page, "ready-retour", { retour: true });
     await expect(ride(page)).toContainText("170");
+    await expect(ride(page)).not.toContainText("Indicatief maximum via taxameter");
     await blurActive(page);
     await settle(page);
     await expect(ride(page)).toHaveScreenshot("uw-rit-retour.png", { ...shot, mask: defaultMasks(page) });

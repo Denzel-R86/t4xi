@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
-import { rideBuildUp, routeFinderHandoff } from "./ride-result";
+import { euroText, rideBuildUp, routeFinderHandoff, showLegalComparison } from "./ride-result";
 
 /** PR 2.7 — RouteFinder "UW RIT": prijsopbouw, handoff, F-28 en F-17. */
 
@@ -126,4 +126,65 @@ test("UW RIT: Button v2 primary, JourneyLine, geen serif (§13e/§13f)", () => {
   assert.match(card, /<JourneyLine state=\{journey\}/);
   assert.match(finder, /journey=\{journeyStateFor\(quote, pickup, dropoff\)\}/);
   assert.doesNotMatch(card, /font-display-serif|font-playfair/);
+});
+
+/* ── Besluiten eigenaar op #75 ── */
+
+const ROUTEFINDER_FILES = [
+  "components/tarieven/RouteFinder.tsx",
+  "components/tarieven/RideResult.tsx",
+  "components/tarieven/OnRequestCard.tsx",
+  "components/tarieven/TariffComparison.tsx",
+];
+
+/** Alle routezoeker-teksten die deze componenten echt renderen (via t("…")). */
+function usedRouteFinderCopy(locale: string): Record<string, string> {
+  const ns = JSON.parse(readFileSync(`messages/${locale}.json`, "utf8")).routezoeker as Record<string, unknown>;
+  const keys = new Set<string>();
+  for (const f of ROUTEFINDER_FILES) {
+    for (const m of readFileSync(f, "utf8").matchAll(/\bt\(\s*"([A-Za-z0-9_]+)"/g)) keys.add(m[1]);
+  }
+  // Ook dynamische sleutels uit lijsten ("bewijsVaste", labelKey: "factAfstand", …).
+  for (const f of ROUTEFINDER_FILES) {
+    for (const m of readFileSync(f, "utf8").matchAll(/"([a-z][A-Za-z0-9]+)"/g)) if (m[1] in ns) keys.add(m[1]);
+  }
+  for (const m of readFileSync("lib/tarieven/ride-result.ts", "utf8").matchAll(/"([a-z][A-Za-z0-9]+)"/g)) if (m[1] in ns) keys.add(m[1]);
+  return Object.fromEntries([...keys].filter((k) => typeof ns[k] === "string").map((k) => [k, ns[k] as string]));
+}
+
+const UNCONFIRMED = /Inbegrepen wachttijd|Included waiting time|na de landing|after landing|min inbegrepen|min included|Vluchtmonitoring|Flight monitoring|24\/7/i;
+
+test("§0c: geen wachttijd-, vluchtmonitoring- of 24/7-claim in de RouteFinder of zijn teksten", () => {
+  for (const f of ROUTEFINDER_FILES) {
+    assert.doesNotMatch(readFileSync(f, "utf8"), /factWachttijd|wachttijdLucht|wachttijdStandaard|bewijsVlucht/, f);
+  }
+  for (const locale of ["nl", "en"]) {
+    const copy = usedRouteFinderCopy(locale);
+    assert.ok(copy.trust && copy.boekDezeRit, `${locale}: sleutelverzameling leeg — test kijkt niet echt`);
+    const hits = Object.entries(copy).filter(([, v]) => UNCONFIRMED.test(v));
+    assert.deepEqual(hits, [], `${locale}: onbevestigde claim`);
+    const ns = JSON.parse(readFileSync(`messages/${locale}.json`, "utf8")).routezoeker;
+    for (const k of ["factWachttijd", "wachttijdLucht", "wachttijdStandaard", "bewijsVlucht"]) assert.equal(ns[k], undefined, `${locale}.${k}`);
+  }
+});
+
+test("vergelijking wettelijk tarief alleen op dezelfde ritbasis: enkele rit wel, retour niet", () => {
+  assert.equal(showLegalComparison(SERVER), true);
+  assert.equal(showLegalComparison({ ...SERVER, price: 170, returnApplied: true }), false);
+  assert.equal(showLegalComparison({ ...SERVER, distanceKm: 0 }), false);
+  const card = readFileSync("components/tarieven/RideResult.tsx", "utf8");
+  assert.match(card, /\{showLegalComparison\(quote\) && \(\s*<TariffComparison/);
+});
+
+test("euroteken en bedrag blijven samen: vaste spatie, nergens een gewone spatie na €", () => {
+  assert.equal(euroText("89,00"), "€ 89,00");
+  for (const f of ROUTEFINDER_FILES) {
+    const src = readFileSync(f, "utf8");
+    assert.doesNotMatch(src, /€ /, `${f}: gewone spatie na €`);
+    assert.doesNotMatch(src, /€\$\{/, `${f}: € direct aan een template-waarde zonder vaste spatie`);
+  }
+  for (const locale of ["nl", "en"]) {
+    const hits = Object.entries(usedRouteFinderCopy(locale)).filter(([, v]) => /€ /.test(v));
+    assert.deepEqual(hits, [], `${locale}: gewone spatie na € in RouteFinder-tekst`);
+  }
 });

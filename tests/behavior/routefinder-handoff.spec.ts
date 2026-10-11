@@ -57,7 +57,13 @@ test.describe("RouteFinder → /boeken (PR 2.7)", () => {
     await expect(card.locator('[data-source="distanceKm"]')).toContainText("26 km");
     await expect(card.locator('[data-source="estimatedDurationMin"]')).toContainText("28 min");
     await expect(card.locator('[data-source="price"]')).toContainText("89,00");
+    // Vergelijking op dezelfde ritbasis (enkele rit, serverafstand/-reistijd); € en bedrag samen.
     await expect(card).toContainText("Indicatief maximum via taxameter");
+    await expect(card).toContainText("26 km × €\u00a03,17");
+    await expect(card).toContainText("€\u00a0101,29");
+    await expect(card.getByText(/€ \d/)).toHaveCount(0);
+    // Geen onbevestigde claims (§0c, besluit #75).
+    await expect(finder(page)).not.toContainText(/Inbegrepen wachttijd|Vluchtmonitoring bij luchthavenritten|24\/7 beschikbaar/);
     await expect(card).not.toContainText(/betaalt .* minder|%\)/);
 
     // F-17: het geprijsde adres opnieuw focussen → geen "Geen adressen gevonden".
@@ -107,6 +113,8 @@ test.describe("RouteFinder → /boeken (PR 2.7)", () => {
     await open(page, "/tarieven");
     await compute(page, { retour: true });
     await expect(ride(page)).toContainText("170");
+    // Geen betrouwbare retourbasis → geen vergelijking met het wettelijke tarief.
+    await expect(ride(page)).not.toContainText("Indicatief maximum via taxameter");
     const href = (await ride(page).getByRole("link", { name: "Boek deze rit" }).getAttribute("href")) ?? "";
     expect(href).toMatch(/\/boeken\?.*retour=1/);
   });
