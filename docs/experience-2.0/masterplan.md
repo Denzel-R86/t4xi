@@ -417,7 +417,7 @@ bestand in `docs/experience-2.0/baseline/` of groene test in de repo. 0.4b hoort
 - 2.4 BookingSection-stappenweergave + focus-na-fout + split; StickyCta contextueel.
 - 2.5 Bevestigingsmoment (§8).
 - 2.6 Mobiel: gestapelde zin + bottom sheet.
-- 2.7 RouteFinder-resultaat → "UW RIT" + handoff. **Incl. prijsopbouw:** de claim "U betaalt … minder (…%)" verdwijnt (F-28); de objectieve vergelijking met het wettelijke maximumtarief en server-side pricing blijven.
+- 2.7 RouteFinder-resultaat → "UW RIT" + handoff. **Incl. prijsopbouw:** de claim "U betaalt … minder (…%)" verdwijnt (F-28); de objectieve vergelijking met het wettelijke maximumtarief en server-side pricing blijven. Vergelijking alleen bij een enkele rit (zelfde ritbasis). Onbevestigde claims (wachttijd, vluchtmonitoring, 24/7) uit de RouteFinder. Restwerk: F-30 (volledige prijsopbouw, eigen PR), F-31 (retour-handoff), F-32 (retourvergelijking), F-33 (24/7 sitebreed) in `baseline/findings.md`.
 
 **Fase 3 — Homepage editorial**
 - 3.1 Quiet proof + service principles (vervangt donkere vows-sectie).
