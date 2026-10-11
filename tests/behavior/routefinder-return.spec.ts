@@ -71,6 +71,8 @@ test("F-29: retourmoment gelijk in routezoeker-quote, /boeken-quote en boekings-
   expect(bookingQuote, "zelfde velden, zelfde waarden als de routezoeker").toEqual(finderQuote);
   await expect(page.getByRole("region", { name: "Geschatte prijs" })).toContainText("170");
 
+  // Terugrit vanaf Schiphol = aankomst → retourvluchtnummer is verplicht (fictief).
+  await page.getByLabel("Vluchtnummer terugrit").fill("KL1234");
   await next(page).click();
   await expect(currentStep(page)).toContainText("Gegevens");
   await page.getByRole("textbox", { name: "Naam", exact: true }).fill("Behaviour Test");
