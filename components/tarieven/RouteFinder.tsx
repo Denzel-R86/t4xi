@@ -142,7 +142,17 @@ export default function RouteFinder() {
 
   // Live, autoritatieve richtprijs + luchthavencontext — exact dezelfde keten als
   // de homepagehero en /boeken. Het resultaat wordt pas getóónd na "Bereken".
-  const quote = useRouteQuote(pickup, dropoff, { returnTrip, passengers, date, time, luggage, ready: detailsComplete });
+  // F-29: retourdatum/-tijd meesturen (zelfde vorm als BookingSection), zodat het
+  // nachttarief van het terug-ritdeel op het eigen retourmoment wordt bepaald.
+  const quote = useRouteQuote(pickup, dropoff, {
+    returnTrip,
+    passengers,
+    date,
+    time,
+    luggage,
+    ready: detailsComplete,
+    ...(returnTrip ? { returnDate, returnTime } : {}),
+  });
   const airport = quote.airport;
   const needsFlight = Boolean(airport?.isTransfer);
   const isArrival = airport?.direction === "arrival";
