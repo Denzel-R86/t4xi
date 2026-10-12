@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { registerStickyCtaBar, subscribeStickyCtaHidden } from "@/components/sections/sticky-cta-visibility";
+import { registerStickyCtaBar, stickyCtaMeasured, subscribeStickyCtaHidden } from "@/components/sections/sticky-cta-visibility";
 
 /**
  * Schil van de mobiele StickyCta (F-14). De balk wijkt als de
@@ -29,6 +29,9 @@ export default function StickyCtaBar({
     registerStickyCtaBar(bar);
     const unsubscribe = subscribeStickyCtaHidden((hidden) => {
       bar.dataset.hidden = String(hidden);
+      // Pas na de eerste echte meting laat de balk zijn CSS-startverberging los
+      // (alleen relevant op pagina's met de hero-zin, < 768px).
+      if (stickyCtaMeasured()) bar.dataset.ready = "true";
     });
     return () => {
       unsubscribe();

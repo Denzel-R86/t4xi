@@ -38,6 +38,16 @@ function emit() {
   listeners.forEach((l) => l(hidden));
 }
 
+/**
+ * Mag de balk zijn startverberging loslaten (PR 2.6, vóór/zonder JS)? Op een
+ * pagina met de hero-zin pas als die zin zich heeft aangemeld en dus gemeten
+ * is; op andere pagina's meteen. Zie `.sticky-cta:not([data-ready])` in
+ * app/globals.css.
+ */
+export function stickyCtaMeasured(): boolean {
+  return hiders.size > 0 || !document.querySelector(".hz-sentence");
+}
+
 export function subscribeStickyCtaHidden(listener: (hidden: boolean) => void): () => void {
   listeners.add(listener);
   listener(anyHidesStickyCta(hiders.values()));
