@@ -197,3 +197,14 @@ test("grote prijs: hele euro's zonder decimalen, anders twee decimalen in locale
   assert.equal(headlinePrice(1234.5, "nl"), "€\u00a01.234,50");
   assert.doesNotMatch(headlinePrice(199.3, "nl"), /199\.3(?!0)/);
 });
+
+test("grote prijs in UW RIT en bestemmingslijst loopt via headlinePrice: € 199,30 en € 102, nooit het ruwe getal", () => {
+  for (const f of ["components/tarieven/RideResult.tsx", "components/tarieven/DestinationExplorer.tsx"]) {
+    const src = readFileSync(f, "utf8");
+    assert.match(src, /headlinePrice\(/, f);
+    assert.doesNotMatch(src, /€\s*\{(price|fixed\.single|fixed\.retour)\}/, `${f}: ruw bedrag na €`);
+  }
+  // Nachtelijke retour van productie (11-10-2026): 184 + 15,30 nachttoeslag.
+  assert.equal(headlinePrice(199.3, "nl"), "€ 199,30");
+  assert.equal(headlinePrice(102, "nl"), "€ 102");
+});
