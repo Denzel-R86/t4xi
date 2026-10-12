@@ -218,6 +218,16 @@ link naar `/boeken?pickup=…`. Nieuw:
 5. Mobiel (< 768px): gestapelde "Van / Naar" + bottom sheet voor datum/tijd/passagiers/
    bagage (`<dialog>` met focus-trap; native pickers binnen de sheet). CTA in duimzone.
 6. `aria-live="polite"` op prijs blijft; route-label voor screenreaders.
+7. **StickyCta naast de zin (besluit eigenaar 12-10, optie A).** De balk dekt nooit een deel van
+   de boekingszin af. Hij is verborgen zolang hij de zin zou bedekken — **ook bij laden** — of
+   zolang de resultaatregel voor ≥ 75 % in beeld is (H-1). Zodra de overlap verdwijnt, volgt hij
+   weer de bestaande zichtbaarheidsregels (o.a. terug voorbij de hero). Op schermen waar de zin
+   bij laden onder de vouw valt, is de balk bij laden zichtbaar. Automatisch scrollen blijft
+   ongewijzigd (één keer, pas na de prijs van een nieuw aangevraagde rit, niet tijdens invoer of
+   focus; reduced motion = `auto`). Alleen < 768px. Bewijs: `lib/hero/hero-visibility.ts`
+   (`blockUnderStickyBar`, `shouldHideStickyCta`), `tests/behavior/sticky-cta-overlap.spec.ts`
+   (overlap = 0 over de hele hero, echte tap), `tests/behavior/hero-reveal.spec.ts` (H-1).
+   Restpunt: vóór hydratatie (zonder JS) kan de balk nog kort zichtbaar zijn.
 
 ---
 
