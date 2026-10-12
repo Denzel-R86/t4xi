@@ -63,7 +63,15 @@ test.describe("StickyCta zonder JS @nojs", () => {
 });
 
 test.describe("StickyCta bij vertraagde hydratie", () => {
-  test("tot hydratie nooit overlap; daarna de gewone regels", async ({ page }) => {
+  test("tot hydratie nooit overlap; daarna de gewone regels", async ({ playwright, browserName, baseURL }) => {
+    // Eigen browserproces: WebKit deelt zijn geheugencache tussen contexten, dan
+    // komen de JS-chunks van een eerdere test zonder netwerkverzoek (en dus
+    // zonder vertraging) binnen.
+    const { browserName: _b, launchOptions, ...contextUse } = test.info().project.use as Record<string, unknown>;
+    void _b;
+    const browser = await playwright[browserName].launch(launchOptions as object);
+    const context = await browser.newContext({ ...(contextUse as object), baseURL });
+    const page = await context.newPage();
     await stabilize(page);
     // Alle JS-chunks 3 s vasthouden (CSS niet: die blokkeert de eerste weergave):
     // de server-HTML staat dan met stijlen maar zonder client-logica in beeld.
@@ -71,30 +79,49 @@ test.describe("StickyCta bij vertraagde hydratie", () => {
       await new Promise((r) => setTimeout(r, 3000));
       await route.fallback();
     });
+    // Meten in de pagina zelf (setInterval 100 ms vanaf het eerste document),
+    // zodat de bemonstering niet afhangt van protocol-round-trips; inline
+    // init-scripts lopen ook als de chunks nog vastgehouden worden.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __ctaSamples: { t: number; overlap: number; visible: boolean; ready: boolean }[] };
+      w.__ctaSamples = [];
+      const sample = () => {
+        const bar = document.querySelector<HTMLElement>(".sticky-cta");
+        const root = document.querySelector<HTMLElement>("div.hz-sentence");
+        if (!bar || !root) return;
+        const visible = getComputedStyle(bar).visibility !== "hidden";
+        const b = bar.getBoundingClientRect();
+        const overlap = !visible
+          ? 0
+          : Array.from(root.querySelectorAll<HTMLElement>('button[aria-controls^="hero-"], input, select, [aria-live="polite"], a'))
+              .filter((el) => !el.closest("dialog") && el.getClientRects().length > 0)
+              .filter((el) => {
+                const r = el.getBoundingClientRect();
+                return Math.min(r.right, b.right) > Math.max(r.left, b.left) && Math.min(r.bottom, b.bottom) > Math.max(r.top, b.top);
+              }).length;
+        w.__ctaSamples.push({ t: Math.round(performance.now()), overlap, visible, ready: bar.dataset.ready === "true" });
+      };
+      setInterval(sample, 100);
+    });
     const start = Date.now();
     await page.goto("/", { waitUntil: "commit" });
     await page.waitForSelector("div.hz-sentence");
-    const samples: { t: number; overlap: number; visible: boolean }[] = [];
-    const taken = new Set<number>();
-    let ready = false;
-    while (!ready && Date.now() - start < 20_000) {
-      const t = Date.now() - start;
-      const o = await overlaps(page);
-      samples.push({ t, overlap: o.length, visible: await barVisible(page) });
-      for (const s of [0, 1000, 2000]) {
-        if (t >= s && !taken.has(s)) {
-          taken.add(s);
-          await shot(page, `vertraagd-t${s / 1000}s`);
-        }
-      }
-      ready = await page.evaluate(() => document.querySelector(".sticky-cta")?.getAttribute("data-ready") === "true");
-      if (!ready) await page.waitForTimeout(100);
+    for (const s of [0, 1000, 2000]) {
+      const wait = s - (Date.now() - start);
+      if (wait > 0) await page.waitForTimeout(wait);
+      await shot(page, `vertraagd-t${s / 1000}s`);
     }
-    test.info().annotations.push({ type: "samples", description: JSON.stringify(samples) });
-    expect(ready, "client heeft gemeten").toBe(true);
-    expect(samples.length, "meerdere metingen vóór hydratie").toBeGreaterThan(10);
-    expect(samples.filter((s) => s.overlap > 0), "nooit overlap vóór hydratie").toEqual([]);
-    expect(samples.filter((s) => s.visible && s.t < 2500), "geen zichtbare balk vóór hydratie").toEqual([]);
+    await expect
+      .poll(() => page.evaluate(() => document.querySelector(".sticky-cta")?.getAttribute("data-ready")), { timeout: 20_000 })
+      .toBe("true");
+    const all = await page.evaluate(
+      () => (window as unknown as { __ctaSamples: { t: number; overlap: number; visible: boolean; ready: boolean }[] }).__ctaSamples
+    );
+    const before = all.filter((x) => !x.ready);
+    test.info().annotations.push({ type: "samples", description: JSON.stringify(all.slice(0, 60)) });
+    expect(before.length, `metingen vóór hydratie (elke 100 ms): ${before.length}`).toBeGreaterThan(10);
+    expect(all.filter((x) => x.overlap > 0), "nooit overlap, vóór of na hydratie").toEqual([]);
+    expect(before.filter((x) => x.visible), "geen zichtbare balk vóór de meting").toEqual([]);
 
     // Na hydratie: zin ligt achter de balkstrook → balk weg; voorbij de hero → terug.
     await page.waitForLoadState("networkidle");
@@ -106,5 +133,6 @@ test.describe("StickyCta bij vertraagde hydratie", () => {
     });
     await expect(page.getByRole("complementary", { name: "Snelle acties" })).toBeVisible();
     await shot(page, "na-hydratie-voorbij-hero");
+    await browser.close();
   });
 });
