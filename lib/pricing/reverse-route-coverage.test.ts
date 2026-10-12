@@ -22,7 +22,8 @@ const MIGRATIES = new URL("../../supabase/migrations/", import.meta.url);
 const SPIEGEL = "20261010120500_reverse_fixed_routes.sql";
 const TOESLAG = "20261010120000_airport_arrival_surcharge.sql";
 const BASELINE_V2 = "20261010211234_pricing_canonical_baseline_v2.sql";
-const NIEUWE_MIGRATIES = [TOESLAG, SPIEGEL, BASELINE_V2];
+const STAD = "20261012080000_city_airport_routes.sql";
+const NIEUWE_MIGRATIES = [TOESLAG, SPIEGEL, BASELINE_V2, STAD];
 
 const lees = (naam: string) => readFileSync(new URL(naam, MIGRATIES), "utf8");
 
@@ -211,14 +212,17 @@ test("elke nieuwe migratie draait in één transactie", () => {
 // ── De keten als geheel ─────────────────────────────────────────────────────
 
 test("alleen pricingmigraties zijn nog pending t.o.v. productie", () => {
-  // Productie draagt 63 migraties, hoogste versie 20261009120000
-  // (ade_2026_window_correction, remote-only), read-only vastgesteld op
-  // 2026-10-10 21:20Z. Alles daarboven in de repo is pending.
+  // IJKLIJN BIJGEWERKT 2026-10-12. De vorige ijklijn stond op 63 migraties met
+  // hoogste versie 20261009120000 (gemeten 2026-10-10 21:20Z). Inmiddels zijn
+  // TOESLAG, SPIEGEL en BASELINE_V2 alle drie op productie toegepast — één
+  // handmatige `db push` op 2026-10-12 06:45:47Z — waardoor productie nu
+  // 66 migraties draagt met hoogste versie 20261010211234, read-only
+  // vastgesteld op 2026-10-12. Alles daarboven in de repo is pending.
   const pending = readdirSync(MIGRATIES)
     .filter((n) => n.endsWith(".sql"))
-    .filter((n) => n.slice(0, 14) > "20261009120000")
+    .filter((n) => n.slice(0, 14) > "20261010211234")
     .sort();
-  assert.deepEqual(pending, [TOESLAG, SPIEGEL, BASELINE_V2]);
+  assert.deepEqual(pending, [STAD]);
 });
 
 test("geen dubbele versieprefices in de keten", () => {
