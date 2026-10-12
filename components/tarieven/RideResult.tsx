@@ -6,7 +6,7 @@ import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
 import JourneyLine from "@/components/horizon/JourneyLine";
 import TariffComparison from "@/components/tarieven/TariffComparison";
-import { euroText, rideBuildUp, showLegalComparison, type ServerQuoteFields } from "@/lib/tarieven/ride-result";
+import { euroText, headlinePrice, rideBuildUp, showLegalComparison, type ServerQuoteFields } from "@/lib/tarieven/ride-result";
 import type { JourneyState } from "@/lib/horizon/journey-line-state";
 
 /** Korte plaatsnaam zoals in de hero-zin ("Amsterdam Zuidas, Amsterdam" → "Amsterdam Zuidas"). */
@@ -83,7 +83,7 @@ export default function RideResult({
 
         <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-ink/30 pt-4">
           <span className="hx-handoff-price font-display text-[40px] font-semibold leading-none text-ink [font-variant-numeric:tabular-nums] md:text-[48px]">
-            {euroText(price)}
+            {headlinePrice(price, locale)}
           </span>
           <span className="text-sm text-secondary">
             {returnApplied ? t("vastRetour") : t("vastEnkel")} · {t("inclBtw")} · {t("geenSurge")}
