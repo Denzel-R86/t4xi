@@ -56,8 +56,29 @@ test("handoff: enkele rit → gevalideerde velden, zonder prijs", () => {
   assert.ok(!("price" in (ride as object)));
 });
 
-test("handoff: retour en tussenstops passen niet in het formaat → null (deep-link)", () => {
+test("handoff v2 (F-31): retour → gevalideerde retourvelden, zonder prijs", () => {
+  const ride = routeFinderHandoff({ ...RIDE, returnTrip: true, returnDate: "2026-11-15", returnTime: "23:30" });
+  assert.deepEqual(ride, {
+    pickup: RIDE.pickup,
+    dropoff: "Schiphol",
+    date: RIDE.date,
+    time: RIDE.time,
+    persons: 2,
+    luggage: "1-2-koffers",
+    quoteId: "q-123",
+    returnTrip: true,
+    returnDate: "2026-11-15",
+    returnTime: "23:30",
+  });
+  assert.ok(!("price" in (ride as object)));
+  // Retour zonder (geldig) retourmoment → null, nooit een half retour.
   assert.equal(routeFinderHandoff({ ...RIDE, returnTrip: true }), null);
+  assert.equal(routeFinderHandoff({ ...RIDE, returnTrip: true, returnDate: "2026-11-15", returnTime: "" }), null);
+  // Enkele rit: losse retourwaarden uit het formulier gaan niet mee.
+  assert.equal("returnDate" in (routeFinderHandoff({ ...RIDE, returnDate: "2026-11-15", returnTime: "18:00" }) as object), false);
+});
+
+test("handoff: tussenstops passen niet in het formaat → null", () => {
   assert.equal(routeFinderHandoff({ ...RIDE, hasStops: true }), null);
 });
 
@@ -116,7 +137,9 @@ test("F-17: geprijsde adressen krijgen geen 'Geen adressen gevonden'", () => {
 test("handoff: 'Boek deze rit' schrijft alleen de gevalideerde rit, prijs alleen in het geheugen", () => {
   assert.match(finder, /writeHandoff\(handoffRide\)/);
   assert.match(finder, /rememberShownPrice\(quote\.quoteId, quote\.price/);
-  assert.match(finder, /handoffRide \? HANDOFF_HREF : buildBookingHref\(/);
+  assert.match(finder, /bookingHref=\{HANDOFF_HREF\}/);
+  assert.match(finder, /returnDate,\s*returnTime,\s*hasStops,/, "retourmoment gaat via de handoff (F-31)");
+  assert.doesNotMatch(finder, /buildBookingHref/);
   assert.doesNotMatch(finder, /writeHandoff\(\{[^}]*price/);
 });
 
