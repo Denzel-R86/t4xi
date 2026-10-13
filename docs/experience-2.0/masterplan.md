@@ -227,7 +227,9 @@ link naar `/boeken?pickup=…`. Nieuw:
    focus; reduced motion = `auto`). Alleen < 768px. Bewijs: `lib/hero/hero-visibility.ts`
    (`blockUnderStickyBar`, `shouldHideStickyCta`), `tests/behavior/sticky-cta-overlap.spec.ts`
    (overlap = 0 over de hele hero, echte tap), `tests/behavior/hero-reveal.spec.ts` (H-1).
-   Restpunt: vóór hydratatie (zonder JS) kan de balk nog kort zichtbaar zijn.
+   Vóór hydratatie en zonder JS verbergt CSS (`html:has(.hz-sentence)`) de balk tot de eerste meting.
+   **Compatibiliteitsbeperking:** Safari iOS < 15.4 ondersteunt `:has()` niet; daar kan de balk tot
+   de eerste meting kort zichtbaar zijn (F-35).
 
 ---
 
