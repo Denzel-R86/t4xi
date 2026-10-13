@@ -28,7 +28,20 @@ test.describe("Mobiele zin (375)", () => {
     await expect(first).toContainText("Amsterdam Airport Schiphol (AMS)");
     await first.click();
     await expect(sheetTrigger(page, "Bestemming")).toBeFocused();
-    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await expect(page.locator("dialog[open]")).toHaveCount(0);
+    // Focus kan na het sluiten van de native dialog nog een keer terugkomen op de
+    // trigger (:focus-visible-ring). Blijven blurren tot de focus twee frames lang
+    // op <body> blijft; anders komt de ring incidenteel in de opname (F-36).
+    await page.evaluate(async () => {
+      const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
+      for (let i = 0; i < 20; i++) {
+        (document.activeElement as HTMLElement | null)?.blur();
+        await frame();
+        await frame();
+        if (document.activeElement === document.body) return;
+      }
+      throw new Error("focus bleef op de trigger");
+    });
     // Vaste uitgangspositie: kiezen/sluiten laat de pagina op een wisselende
     // (fractionele) scrollpositie, wat de hairlines per run 1px laat verspringen.
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
