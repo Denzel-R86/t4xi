@@ -1,5 +1,6 @@
 import { formatDuration } from "@/lib/tarieven/route-finder";
 import { validateHandoffRide, type HandoffRide } from "@/lib/booking-handoff";
+import type { PublicAdjustmentCode, PublicPriceBreakdown } from "@/lib/pricing/public-price-breakdown";
 
 /**
  * "UW RIT" in de RouteFinder (Experience 2.0 PR 2.7) — pure logica, los testbaar.
@@ -18,16 +19,74 @@ export type ServerQuoteFields = {
   returnApplied: boolean;
   distanceKm: number;
   estimatedDurationMin: number;
+  /** F-30: `priceBreakdown` uit /api/pricing/quote (via useRouteQuote), indien geleverd. */
+  breakdown?: PublicPriceBreakdown;
 };
+
+/**
+ * Labels per serverveld. TIJDELIJK (F-30): neutraal, gelijk aan de labels die de
+ * snapshot zelf voor deze codes vastlegt (lib/pricing/snapshot.ts) — definitieve
+ * copy is een voorstel in baseline/findings.md (F-30) en wacht op akkoord (§0c).
+ */
+type ComponentLabelKey = "opbouwRitprijs" | "opbouwNachttarief" | "opbouwNachttariefHeen" | "opbouwNachttariefRetour";
+
+function adjustmentLabel(code: PublicAdjustmentCode, returnApplied: boolean): ComponentLabelKey | null {
+  switch (code) {
+    case "night_outbound":
+      return returnApplied ? "opbouwNachttariefHeen" : "opbouwNachttarief";
+    case "night_return":
+      return returnApplied ? "opbouwNachttariefRetour" : null;
+    // Evenemententarief NIET tonen tot het in productie actief is (masterplan §1:
+    // events mode=off) en er een goedgekeurd label is. Staat er toch een
+    // evenementregel in de opbouw, dan sluiten de getoonde regels niet op het
+    // totaal en valt de opbouw terug op alleen het totaal — niets geschat.
+    case "event_outbound":
+    case "event_return":
+      return null;
+  }
+}
 
 export type BuildUpRow =
   | { kind: "fact"; labelKey: "factAfstand" | "factReistijd"; value: string; source: "distanceKm" | "estimatedDurationMin" }
+  | {
+      kind: "component";
+      labelKey: ComponentLabelKey;
+      /** Euro's, exact `cents / 100` van het serverveld. */
+      amount: number;
+      cents: number;
+      source: "priceBreakdown.subtotalCents" | `priceBreakdown.adjustments.${PublicAdjustmentCode}`;
+    }
   | { kind: "total"; labelKey: "vastEnkel" | "vastRetour"; amount: number; source: "price" };
+
+/**
+ * Componentregels uit de serveropbouw — of `[]` als die niet exact op `price`
+ * sluit. Alleen regels > 0; het subtotaal alleen naast minstens één toeslag
+ * (anders zou het een dubbele vermelding van het totaal zijn).
+ */
+function componentRows(q: ServerQuoteFields): Extract<BuildUpRow, { kind: "component" }>[] {
+  const b = q.breakdown;
+  if (!b || !Number.isFinite(q.price) || b.totalCents !== Math.round(q.price * 100)) return [];
+  const extras: Extract<BuildUpRow, { kind: "component" }>[] = [];
+  for (const a of b.adjustments) {
+    if (a.amountCents <= 0) continue;
+    const labelKey = adjustmentLabel(a.code, q.returnApplied);
+    if (!labelKey) continue;
+    extras.push({ kind: "component", labelKey, amount: a.amountCents / 100, cents: a.amountCents, source: `priceBreakdown.adjustments.${a.code}` });
+  }
+  if (extras.length === 0) return [];
+  const rows = [
+    { kind: "component" as const, labelKey: "opbouwRitprijs" as const, amount: b.subtotalCents / 100, cents: b.subtotalCents, source: "priceBreakdown.subtotalCents" as const },
+    ...extras,
+  ];
+  // Harde eis: de getoonde regels tellen exact op tot het totaal. Anders niets tonen.
+  const sum = rows.reduce((s, r) => s + r.cents, 0);
+  return sum === b.totalCents ? rows : [];
+}
 
 export function rideBuildUp(q: ServerQuoteFields): BuildUpRow[] {
   const rows: BuildUpRow[] = [];
   // Afstand en reistijd zijn serverwaarden van één ritdeel; naast een retourprijs
-  // horen ze niet bij dezelfde ritbasis. Bij retour daarom alleen het totaal.
+  // horen ze niet bij dezelfde ritbasis. Bij retour daarom geen afstand/reistijd.
   if (!q.returnApplied && Number.isFinite(q.distanceKm) && q.distanceKm > 0) {
     rows.push({ kind: "fact", labelKey: "factAfstand", value: `${q.distanceKm} km`, source: "distanceKm" });
   }
@@ -36,6 +95,10 @@ export function rideBuildUp(q: ServerQuoteFields): BuildUpRow[] {
     rows.push({ kind: "fact", labelKey: "factReistijd", value: duration, source: "estimatedDurationMin" });
   }
   if (Number.isFinite(q.price) && q.price > 0) {
+    // F-30: componenten uitsluitend uit `priceBreakdown`. De retourprijs wordt
+    // niet in heen/terug gesplitst: de server levert geen basisbedrag per ritdeel
+    // (alleen de toeslagen zijn per ritdeel) — dus geen afgeleide splitsing.
+    rows.push(...componentRows(q));
     rows.push({ kind: "total", labelKey: q.returnApplied ? "vastRetour" : "vastEnkel", amount: q.price, source: "price" });
   }
   return rows;
