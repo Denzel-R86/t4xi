@@ -38,6 +38,7 @@ import {
   type ExternalEvidence,
   type ShadowObservation,
 } from "@/lib/pricing/event-shadow-report";
+import { EXCLUDED_TEST_QUOTE_IDS, EXCLUDED_TEST_TRAFFIC } from "@/lib/pricing/event-shadow-test-traffic";
 import { evaluateGates, formatShadowReport } from "@/lib/pricing/event-shadow-gates";
 import {
   assertProjectRef,
@@ -181,8 +182,27 @@ async function main(): Promise<void> {
   const selection = selectDecisionPopulation(observations, {
     since: sinceValue,
     includeAll: process.argv.includes("--all"),
+    // Aantoonbaar verificatieverkeer blijft buiten de poorten. De pure meetlaag
+    // kent die lijst niet; de leeslaag geeft hem mee. Zie
+    // lib/pricing/event-shadow-test-traffic.ts voor het bewijs per quote.
+    excludedQuoteIds: EXCLUDED_TEST_QUOTE_IDS,
   });
-  const { population, legacy: legacyPolicy, excludedByPeriod, excludedAsSynthetic, usingCurrentPolicy: usingCurrent } = selection;
+  const {
+    population,
+    legacy: legacyPolicy,
+    excludedByPeriod,
+    excludedAsSynthetic,
+    excludedAsTestTraffic,
+    usingCurrentPolicy: usingCurrent,
+  } = selection;
+
+  if (excludedAsTestTraffic > 0) {
+    console.log(
+      `VERIFICATIEVERKEER: ${excludedAsTestTraffic} observatie(s) over ` +
+        `${EXCLUDED_TEST_TRAFFIC.length} quote(s) uitgesloten van de poorten. ` +
+        "Historische rijen zijn ongewijzigd; dit is uitsluitend selectie.\n"
+    );
+  }
   const since = sinceValue ? Date.parse(sinceValue) : null;
 
   console.log(

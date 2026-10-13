@@ -511,6 +511,17 @@ export type PopulationOptions = {
   readonly since?: string | null;
   /** true = cohorten samennemen, uitsluitend voor historische analyse. */
   readonly includeAll?: boolean;
+  /**
+   * Quote-id's van aantoonbaar verificatieverkeer, die buiten de poorten blijven.
+   *
+   * Deze laag blijft puur en kent de lijst dus NIET zelf: de leeslaag
+   * (scripts/event-shadow-report.ts) geeft `EXCLUDED_TEST_QUOTE_IDS` mee uit
+   * lib/pricing/event-shadow-test-traffic.ts. Ontbreekt de set, dan wordt er
+   * niets uitgesloten — zichtbaar in `excludedAsTestTraffic`, dat dan 0 is.
+   *
+   * Historische observaties worden nooit gewijzigd; dit is uitsluitend selectie.
+   */
+  readonly excludedQuoteIds?: ReadonlySet<string>;
 };
 
 export type DecisionPopulation = {
@@ -522,6 +533,8 @@ export type DecisionPopulation = {
   readonly legacy: readonly ShadowObservation[];
   /** Aantal observaties dat vóór de startgrens viel. */
   readonly excludedByPeriod: number;
+  /** Aantal observaties uit aantoonbaar verificatieverkeer dat is uitgesloten. */
+  readonly excludedAsTestTraffic: number;
   /** True als de poorten uitsluitend de cap-cohort beoordelen. */
   readonly usingCurrentPolicy: boolean;
 };
@@ -552,7 +565,16 @@ export function selectDecisionPopulation(
     since === null || (!Number.isNaN(Date.parse(o.observedAt)) && Date.parse(o.observedAt) >= since);
 
   const includeAll = opts.includeAll === true;
-  const real = includeAll ? observations : observations.filter((o) => !o.isSynthetic);
+  // Verificatieverkeer valt af vóór elke andere selectie: het is geen klantbewijs
+  // en mag dus ook de legacy-cohort niet vullen. `includeAll` laat alles staan,
+  // uitsluitend voor debugging. Een observatie zonder quoteId kan niet aan een
+  // verificatiereeks worden toegerekend en blijft daarom altijd staan.
+  const testIds = opts.excludedQuoteIds;
+  const zonderTest =
+    includeAll || testIds === undefined || testIds.size === 0
+      ? observations
+      : observations.filter((o) => o.quoteId === null || !testIds.has(o.quoteId));
+  const real = includeAll ? zonderTest : zonderTest.filter((o) => !o.isSynthetic);
   const inPeriodAll = real.filter(inPeriod);
   const currentPolicy = inPeriodAll.filter((o) => o.configuredFeeCents !== null);
   const legacy = real.filter((o) => o.configuredFeeCents === null);
@@ -562,6 +584,7 @@ export function selectDecisionPopulation(
     population: usingCurrentPolicy ? currentPolicy : inPeriodAll,
     legacy,
     excludedByPeriod: real.length - inPeriodAll.length,
+    excludedAsTestTraffic: observations.length - zonderTest.length,
     excludedAsSynthetic: includeAll ? 0 : observations.length - real.length,
     usingCurrentPolicy,
   };
