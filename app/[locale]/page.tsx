@@ -315,7 +315,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </Reveal>
           <Reveal immediate>
             <Stamp className="hz-hero-trust mt-7 leading-relaxed">
-              {t("arrivalStamp1")}<Dash />{t("arrivalStamp2")}<Dash />{t("arrivalStamp3")}<Dash />
+              {t("arrivalStamp2")}<Dash />{t("arrivalStamp3")}<Dash />
               <b className="font-semibold text-ink">{t("arrivalStamp4")}</b>
             </Stamp>
           </Reveal>

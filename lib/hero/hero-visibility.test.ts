@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   latestResultRatio,
   anyHidesStickyCta,
+  blockUnderStickyBar,
   isTextEntry,
   quoteOutcomeKey,
   shouldHideStickyCta,
@@ -131,4 +132,31 @@ test("StickyCta volgt de nieuwste meting als een callback meerdere entries bevat
   assert.equal(shouldHideStickyCta({ resultRatio: latestResultRatio(batch, 0) }), false);
   assert.equal(latestResultRatio([...batch].reverse(), 0), 1);
   assert.equal(latestResultRatio([], 0.8), 0.8);
+});
+
+// ── PR 2.6: zinsblok achter de balk (F-14-rest, mobiel) ─────────────────────
+
+test("StickyCta wijkt zolang een deel van de zin achter de balk ligt", () => {
+  assert.equal(shouldHideStickyCta({ resultRatio: 0, blockUnderBar: true }), true);
+  assert.equal(shouldHideStickyCta({ resultRatio: 0, blockUnderBar: false }), false);
+  assert.equal(shouldHideStickyCta({ resultRatio: 0.8, blockUnderBar: false }), true);
+});
+
+test("blockUnderStickyBar: gemeten posities 375×812 en iPhone 13 (390×664), balk 69px", () => {
+  // Bij laden: zin begint in de balkstrook → overlap.
+  assert.equal(blockUnderStickyBar({ top: 655, bottom: 1017 }, 812, 69), true);
+  assert.equal(blockUnderStickyBar({ top: 615, bottom: 977 }, 664, 69), true);
+  // Zin volledig boven de balk (voorbij de hero gescrold) → geen overlap.
+  assert.equal(blockUnderStickyBar({ top: 100, bottom: 743 }, 812, 69), false);
+  assert.equal(blockUnderStickyBar({ top: -300, bottom: 200 }, 664, 69), false);
+  // Zin volledig onder het venster (bv. hoge hero) → balk mag blijven.
+  assert.equal(blockUnderStickyBar({ top: 812, bottom: 1170 }, 812, 69), false);
+  // Rand: onderkant precies op de bovenkant van de balk = geen overlap.
+  assert.equal(blockUnderStickyBar({ top: 400, bottom: 595 }, 664, 69), false);
+  assert.equal(blockUnderStickyBar({ top: 400, bottom: 596 }, 664, 69), true);
+});
+
+test("blockUnderStickyBar: geen balk of leeg blok → nooit verbergen", () => {
+  assert.equal(blockUnderStickyBar({ top: 700, bottom: 900 }, 812, 0), false);
+  assert.equal(blockUnderStickyBar({ top: 0, bottom: 0 }, 812, 69), false);
 });

@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { HANDOFF_KEY, HANDOFF_TTL_MS } from "../../lib/booking-handoff";
 import { blurActive, defaultMasks, FIXED_NOW, fixture, HIDE_OVERLAYS, imagesReady, open, RIDE, settle, stabilize } from "./support/harness";
+import { fillAddress, sentenceRoot } from "./support/sentence";
 
 /**
  * Handoff hero → /boeken (Experience 2.0 PR 2.3, besluit #70) — gerichte opnames.
@@ -21,7 +22,7 @@ import { blurActive, defaultMasks, FIXED_NOW, fixture, HIDE_OVERLAYS, imagesRead
 const ADDRESS = "Voorbeeldstraat 12, Almere";
 
 const sentence = (page: Page) =>
-  page.locator("div.border-t").filter({ has: page.getByRole("combobox", { name: "Vertrek" }) }).first();
+  sentenceRoot(page);
 const bookingForm = (page: Page) => page.locator("form").filter({ has: page.locator("#f-name") });
 const card = (page: Page) => bookingForm(page).locator("xpath=..");
 const price = (page: Page) => page.getByRole("region", { name: "Geschatte prijs" });
@@ -36,10 +37,9 @@ const onlyWidths = (page: Page, widths: number[]) =>
 async function handoffInFlight(page: Page): Promise<Route[]> {
   await stabilize(page, { quote: "ready" });
   await open(page, "/");
-  await page.getByRole("combobox", { name: "Vertrek" }).fill(ADDRESS);
-  const to = page.getByRole("combobox", { name: "Bestemming" });
-  await to.fill("Schiphol");
-  await to.blur();
+  await fillAddress(page, "Vertrek", ADDRESS);
+  await fillAddress(page, "Bestemming", "Schiphol");
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await expect(page.getByRole("listbox")).toHaveCount(0);
   await page.getByLabel("Datum", { exact: true }).first().fill(RIDE.date);
   await page.getByLabel("Tijd", { exact: true }).first().fill(RIDE.time);

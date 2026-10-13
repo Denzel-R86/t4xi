@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { subscribeStickyCtaHidden } from "@/components/sections/sticky-cta-visibility";
+import { registerStickyCtaBar, stickyCtaMeasured, subscribeStickyCtaHidden } from "@/components/sections/sticky-cta-visibility";
 
 /**
- * Schil van de mobiele StickyCta (F-14). De balk wijkt alleen als de
- * hero-boekingsactie zelf grotendeels in beeld is (zie `useHidesStickyCta`):
- * dan staat de handeling al op de pagina en zou de balk de prijs en "Bevestig"
- * afdekken.
+ * Schil van de mobiele StickyCta (F-14). De balk wijkt als de
+ * hero-boekingsactie zelf grotendeels in beeld is, en onder 768px ook zolang de
+ * hero-zin achter de balk zou liggen (zie `useHidesStickyCta`): de balk dekt
+ * nooit een veld, de prijs of "Bevestig" af.
  * Startwaarde (SSR en vóór de eerste meting) = zichtbaar.
  */
 export default function StickyCtaBar({
@@ -26,9 +26,17 @@ export default function StickyCtaBar({
   useEffect(() => {
     const bar = ref.current;
     if (!bar) return;
-    return subscribeStickyCtaHidden((hidden) => {
+    registerStickyCtaBar(bar);
+    const unsubscribe = subscribeStickyCtaHidden((hidden) => {
       bar.dataset.hidden = String(hidden);
+      // Pas na de eerste echte meting laat de balk zijn CSS-startverberging los
+      // (alleen relevant op pagina's met de hero-zin, < 768px).
+      if (stickyCtaMeasured()) bar.dataset.ready = "true";
     });
+    return () => {
+      unsubscribe();
+      registerStickyCtaBar(null);
+    };
   }, []);
 
   // Verborgen = visibility:hidden (via CSS): de links verlaten dan ook de

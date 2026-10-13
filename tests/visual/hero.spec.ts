@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { blurActive, defaultMasks, HIDE_OVERLAYS, imagesReady, open, RIDE, settle, stabilize, type QuoteMode } from "./support/harness";
+import { fillAddress, openAddress, sentenceRoot, sheetTrigger } from "./support/sentence";
 
 /**
  * Hero (Arrival) en SentencePattern op de homepage (§10b).
@@ -9,15 +10,14 @@ import { blurActive, defaultMasks, HIDE_OVERLAYS, imagesReady, open, RIDE, settl
 const hero = (page: Page) =>
   page.locator("section").filter({ has: page.getByRole("heading", { level: 1 }) }).first();
 const sentence = (page: Page) =>
-  page.locator("div.border-t").filter({ has: page.getByRole("combobox", { name: "Vertrek" }) }).first();
+  sentenceRoot(page);
 const stamp = (page: Page) => sentence(page).locator('[aria-live="polite"]');
 
 async function fillAddresses(page: Page) {
-  await page.getByRole("combobox", { name: "Vertrek" }).fill("Amsterdam Zuidas");
-  const to = page.getByRole("combobox", { name: "Bestemming" });
-  await to.fill("Schiphol");
+  await fillAddress(page, "Vertrek", "Amsterdam Zuidas");
+  await fillAddress(page, "Bestemming", "Schiphol");
   // Blur zodat er geen suggestielijst openstaat in de opname.
-  await to.blur();
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await expect(page.getByRole("listbox")).toHaveCount(0);
 }
 
@@ -86,7 +86,10 @@ test.describe("SentencePattern", () => {
   test("focus op veld", async ({ page }) => {
     await stabilize(page);
     await open(page, "/");
-    await page.getByRole("combobox", { name: "Vertrek" }).focus();
+    // < 768px (PR 2.6): de focus staat op de regel "Van", zonder de sheet te openen.
+    const trigger = sheetTrigger(page, "Vertrek");
+    if (await trigger.isVisible()) await trigger.focus();
+    else await page.getByRole("combobox", { name: "Vertrek" }).focus();
     await settle(page);
     await expect(sentence(page)).toHaveScreenshot("zin-focus.png", { stylePath: HIDE_OVERLAYS });
   });
@@ -94,19 +97,21 @@ test.describe("SentencePattern", () => {
   test("suggesties open", async ({ page }) => {
     await stabilize(page);
     await open(page, "/");
-    const from = page.getByRole("combobox", { name: "Vertrek" });
-    await from.focus();
+    const mobile = await sheetTrigger(page, "Vertrek").isVisible();
+    const from = await openAddress(page, "Vertrek");
     // Lokale dataset levert direct; PDOK/Places zijn gemockt (leeg). Wacht op
     // beide antwoorden zodat de lijst daarna niet meer verspringt.
     const places = page.waitForResponse(/\/api\/places/);
     await from.pressSequentially("Schiphol");
     await places;
     await expect(page.getByRole("listbox")).toBeVisible();
-    await expect(page.getByRole("option").first()).toBeVisible();
+    await expect(page.getByRole("listbox").getByRole("option").first()).toBeVisible();
     await settle(page);
     // De lijst valt buiten de zin-container: neem de hero, zodat het hele
-    // overlay-paneel in beeld is.
-    await expect(hero(page)).toHaveScreenshot("zin-suggesties-open.png", { mask: defaultMasks(page), stylePath: HIDE_OVERLAYS });
+    // overlay-paneel in beeld is. < 768px staat de lijst in de bottom sheet
+    // (top layer, vast onderin het venster): dan het venster zelf.
+    if (mobile) await expect(page).toHaveScreenshot("zin-suggesties-open.png", { mask: defaultMasks(page) });
+    else await expect(hero(page)).toHaveScreenshot("zin-suggesties-open.png", { mask: defaultMasks(page), stylePath: HIDE_OVERLAYS });
   });
 
   test("quote loading", async ({ page }) => {

@@ -58,14 +58,25 @@ footer {
   }
 }
 
-/* Mobiele StickyCta (F-14): wijkt alleen als de resultaatregel met de hero-knop
-   grotendeels in beeld is (zie lib/hero/hero-visibility.ts); StickyCtaBar zet
-   data-hidden.
-   Startwaarde = zichtbaar, dus geen regel vóór hydratie. visibility:hidden haalt
-   de links ook uit tabvolgorde en a11y-boom. */
+/* Mobiele StickyCta (F-14): wijkt als de resultaatregel met de hero-knop
+   grotendeels in beeld is, en onder 768px zolang de hero-zin achter de balk zou
+   liggen (zie lib/hero/hero-visibility.ts); StickyCtaBar zet data-hidden.
+   visibility:hidden haalt de links ook uit tabvolgorde en a11y-boom.
+   Startwaarde: zichtbaar, BEHALVE onder 768px op een pagina met de hero-zin
+   (PR 2.6): daar blijft de balk weg tot StickyCtaBar na de eerste meting
+   data-ready zet. Zo dekt hij de zin ook vóór hydratie en zonder JS nooit af;
+   zonder JS blijft hij op die pagina weg (de hero-knop leidt dan naar /boeken).
+   Vaste positie: geen layout-shift. Zonder :has()-ondersteuning (iOS < 15.4)
+   geldt het oude gedrag. */
 .sticky-cta[data-hidden="true"] {
   visibility: hidden;
   transform: translateY(100%);
+}
+@media (max-width: 767px) {
+  html:has(.hz-sentence) .sticky-cta:not([data-ready="true"]) {
+    visibility: hidden;
+    transform: translateY(100%);
+  }
 }
 @media (prefers-reduced-motion: no-preference) {
   .sticky-cta {
