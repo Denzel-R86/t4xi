@@ -99,7 +99,7 @@ test.describe("RouteFinder → /boeken (PR 2.7)", () => {
     await expect(region).toContainText("89");
 
     // Storage bevat alleen de gevalideerde rit, nooit een prijs.
-    const stored = await page.evaluate(() => sessionStorage.getItem("t4xi:handoff:v1") ?? "");
+    const stored = await page.evaluate(() => sessionStorage.getItem("t4xi:handoff:v2") ?? "");
     expect(stored).toContain('"quoteId":"visual-fixture-quote-ready"');
     expect(stored).not.toMatch(/"price"/);
 

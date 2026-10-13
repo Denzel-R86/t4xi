@@ -8,7 +8,6 @@
  * apart getest (route-finder.test.ts).
  */
 
-import { classifyLuggage } from "@/lib/pricing/luggage";
 
 /** Eén ingevoerde tussenstop. `waitRequested` = extra wachttijd aangevraagd. */
 export type StopInput = {
@@ -63,37 +62,11 @@ export function matchSchipholRoute(pickup: string): { slug: string; naam: string
   return null;
 }
 
-/**
- * Deep-link naar /boeken met de reeds ingevulde ritgegevens. De server
- * herberekent de prijs altijd opnieuw — deze parameters zijn prefill, geen
- * prijsbron. Alleen zonder tussenstops te gebruiken: /boeken kent geen
- * tussenstops, dus die route loopt via een offerteaanvraag. Een bagagekeuze
- * gaat alleen mee als dezelfde serverclassificatie haar als bindend herkent.
+/*
+ * F-31: `buildBookingHref` (deep-link met vrij adres en retourmoment in de URL) is
+ * verwijderd. "Boek deze rit" gaat altijd via de handoff (lib/booking-handoff.ts,
+ * v2) naar /boeken?h=1. /boeken leest publieke deep-links nog wel als terugval.
  */
-export function buildBookingHref(trip: {
-  pickup: string;
-  dropoff: string;
-  returnTrip?: boolean;
-  passengers?: number;
-  date?: string;
-  time?: string;
-  returnDate?: string;
-  returnTime?: string;
-  luggage?: string;
-}): string {
-  const q = new URLSearchParams();
-  q.set("pickup", trip.pickup);
-  q.set("dropoff", trip.dropoff);
-  if (trip.returnTrip) q.set("retour", "1");
-  if (trip.passengers && trip.passengers > 1) q.set("persons", String(trip.passengers));
-  if (trip.date) q.set("date", trip.date);
-  if (trip.time) q.set("time", trip.time);
-  if (trip.returnTrip && trip.returnDate) q.set("returnDate", trip.returnDate);
-  if (trip.returnTrip && trip.returnTime) q.set("returnTime", trip.returnTime);
-  const luggage = classifyLuggage(trip.luggage);
-  if (luggage.kind === "binding") q.set("luggage", luggage.category);
-  return `/boeken?${q.toString()}`;
-}
 
 /** Volledige route als leesbare tekst: "A → tussenstop → B". */
 export function routeSummary(pickup: string, stops: StopInput[], dropoff: string): string {

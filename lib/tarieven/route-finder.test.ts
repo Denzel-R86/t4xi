@@ -2,7 +2,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   matchSchipholRoute,
-  buildBookingHref,
   routeSummary,
   buildQuoteRequestText,
   buildWhatsappHref,
@@ -24,47 +23,6 @@ test("matchSchipholRoute herkent de vijf steden, ook met wijk/plaatsdetails", ()
 test("matchSchipholRoute geeft null voor onbekende plaatsen", () => {
   assert.equal(matchSchipholRoute("Groningen"), null);
   assert.equal(matchSchipholRoute(""), null);
-});
-
-test("buildBookingHref codeert en laat standaardwaarden weg", () => {
-  const href = buildBookingHref({ pickup: "Amsterdam Centrum", dropoff: "Schiphol" });
-  assert.match(href, /^\/boeken\?/);
-  assert.ok(href.includes("pickup=Amsterdam+Centrum") || href.includes("pickup=Amsterdam%20Centrum"));
-  assert.ok(!href.includes("retour="));
-  assert.ok(!href.includes("persons="));
-});
-
-test("buildBookingHref voegt retour en passagiers toe wanneer relevant", () => {
-  const href = buildBookingHref({
-    pickup: "A",
-    dropoff: "B",
-    returnTrip: true,
-    passengers: 3,
-    date: "2026-09-18",
-    time: "09:30",
-    returnDate: "2026-09-20",
-    returnTime: "18:45",
-    luggage: "1-2-koffers",
-  });
-  assert.ok(href.includes("retour=1"));
-  assert.ok(href.includes("persons=3"));
-  assert.ok(href.includes("date=2026-09-18"));
-  assert.ok(href.includes("time=09%3A30"));
-  assert.ok(href.includes("returnDate=2026-09-20"));
-  assert.ok(href.includes("returnTime=18%3A45"));
-  assert.ok(href.includes("luggage=1-2-koffers"));
-});
-
-test("buildBookingHref laat persons weg bij 1 passagier", () => {
-  const href = buildBookingHref({ pickup: "A", dropoff: "B", passengers: 1 });
-  assert.ok(!href.includes("persons="));
-});
-
-test("buildBookingHref neemt alleen een server-geldige bindende bagagekeuze mee", () => {
-  assert.ok(buildBookingHref({ pickup: "A", dropoff: "B", luggage: "handbagage" }).includes("luggage=handbagage"));
-  assert.ok(buildBookingHref({ pickup: "A", dropoff: "B", luggage: "  HANDBAGAGE " }).includes("luggage=handbagage"));
-  assert.ok(!buildBookingHref({ pickup: "A", dropoff: "B", luggage: "onbekend" }).includes("luggage="));
-  assert.ok(!buildBookingHref({ pickup: "A", dropoff: "B", luggage: "overleg" }).includes("luggage="));
 });
 
 test("routeSummary toont tussenstops in volgorde en negeert lege delen", () => {
@@ -227,13 +185,11 @@ test("alle drie useRouteQuote-aanroepen geven 'luggage' door — geen enkele op 
   }
 });
 
-test("RouteFinder geeft de gevalideerde bagagekeuze door aan de boekings-deep-link", () => {
+test("RouteFinder geeft de gevalideerde bagagekeuze door via de handoff, nooit via de URL (F-31)", () => {
   const src = readFileSync(resolve(process.cwd(), "components/tarieven/RouteFinder.tsx"), "utf8");
-  assert.match(
-    src,
-    // PR 2.7: enkele rit via de handoff; de deep-link (retour) houdt de bagagekeuze.
-    /bookingHref=\{handoffRide \? HANDOFF_HREF : buildBookingHref\(\{[\s\S]*?\bluggage,\s*[\s\S]*?\}\)\}/,
-  );
+  assert.match(src, /routeFinderHandoff\(\{[\s\S]*?\bluggage,[\s\S]*?\}\)/);
+  assert.match(src, /bookingHref=\{HANDOFF_HREF\}/);
+  assert.doesNotMatch(src, /buildBookingHref|URLSearchParams|[?&](pickup|dropoff|retour|returnDate|returnTime)=/);
 });
 
 // ── 2026-08-19 (hotfix, herzien): bagage werd tweemaal gevraagd (de bewuste ──

@@ -12,12 +12,11 @@ import OnRequestCard from "@/components/tarieven/OnRequestCard";
 import { useTranslations } from "next-intl";
 import { track } from "@/lib/analytics";
 import { usePrefersReducedMotion } from "@/components/horizon/motion";
-import { HANDOFF_HREF, rememberShownPrice, writeHandoff } from "@/lib/booking-handoff";
+import { clearHandoff, HANDOFF_HREF, rememberShownPrice, writeHandoff } from "@/lib/booking-handoff";
 import { navigateWithHandoffTransition } from "@/components/booking/handoff/view-transition";
 import { routeFinderHandoff } from "@/lib/tarieven/ride-result";
 import { journeyStateFor } from "@/lib/horizon/journey-line-state";
 import {
-  buildBookingHref,
   buildMailtoHref,
   buildQuoteRequestText,
   buildWhatsappHref,
@@ -37,8 +36,8 @@ import {
  * routes kennen (in v1) geen automatisch tarief; die lopen bewust via een
  * offerteaanvraag, niet via een verzonnen bedrag. "Boek deze rit" (PR 2.7) gaat
  * via de handoff (lib/booking-handoff.ts) naar /boeken?h=1 — geen adres in de URL;
- * /boeken rekent verifiërend. Een retour past niet in het handoff-formaat en houdt
- * de bestaande deep-link naar /boeken.
+ * /boeken rekent verifiërend. Sinds handoff v2 (F-31) geldt dat ook voor een retour:
+ * geen adres of retourmoment in de URL.
  */
 
 const MAX_STOPS = 3;
@@ -244,7 +243,7 @@ export default function RouteFinder() {
   const schipholRoute = airport?.direction === "departure" ? matchSchipholRoute(pickup?.label ?? "") : null;
 
   // §7 / PR 2.3-mechanisme: alleen gevalideerde velden naar sessionStorage, nooit
-  // een prijs. Retour/tussenstops passen niet in het formaat → `null` → deep-link.
+  // een prijs. Enkel én retour (v2, F-31); tussenstops komen hier niet (geen "ready").
   const handoffRide =
     view === "ready" && quote.status === "ready"
       ? routeFinderHandoff({
@@ -255,6 +254,8 @@ export default function RouteFinder() {
           passengers,
           luggage,
           returnTrip,
+          returnDate,
+          returnTime,
           hasStops,
           quoteId: quote.quoteId,
         })
@@ -262,9 +263,12 @@ export default function RouteFinder() {
 
   function onBook(e: React.MouseEvent<HTMLAnchorElement>) {
     track("boeking_geklikt", { airport: needsFlight, stops: resolvedStops.length });
-    if (!handoffRide || quote.status !== "ready") return;
-    // Storage geweigerd: /boeken?h=1 opent dan een leeg formulier (geen adres in de URL).
-    if (!writeHandoff(handoffRide)) return;
+    // Geen geldige rit of storage geweigerd: /boeken?h=1 opent dan een leeg formulier
+    // (geen adres in de URL) — nooit een oudere rit uit hetzelfde tabblad.
+    if (!handoffRide || quote.status !== "ready" || !writeHandoff(handoffRide)) {
+      clearHandoff();
+      return;
+    }
     // Alleen in het geheugen (besluit #70): /boeken mag hem voorlopig tonen tot de server antwoordt.
     rememberShownPrice(quote.quoteId, quote.price, quoteReadyAt.current || Date.now());
     // Nieuw tabblad/venster (modifier of middelklik): gewone link-navigatie.
@@ -507,17 +511,7 @@ export default function RouteFinder() {
             time={time}
             passengers={passengers}
             luggageLabel={tripForRequest.luggage}
-            bookingHref={handoffRide ? HANDOFF_HREF : buildBookingHref({
-              pickup: pickup.label,
-              dropoff: dropoff.label,
-              returnTrip,
-              passengers,
-              date: date || undefined,
-              time: time || undefined,
-              returnDate: returnDate || undefined,
-              returnTime: returnTime || undefined,
-              luggage,
-            })}
+            bookingHref={HANDOFF_HREF}
             schipholRoute={schipholRoute}
             onBook={onBook}
           />
