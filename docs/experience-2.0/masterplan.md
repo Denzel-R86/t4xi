@@ -253,6 +253,13 @@ serverlogs, analytics en Referer. Daarnaast rekent `/boeken` opnieuw (pickup wor
 - Tests: handoff round-trip, verlopen TTL, gemanipuleerde storage (prijs in storage wordt
   genegeerd — alleen `quoteId` telt), en een lock-test dat `SentencePattern` geen
   vrij adres meer in `href` zet.
+- **Handoff v2 (F-31):** het formaat kent ook een retour: `returnTrip: true` +
+  `returnDate` + `returnTime` (zelfde validatie, geen prijs, zelfde TTL). Geschreven
+  wordt `{v: 2}` onder `t4xi:handoff:v2`; een v1-item onder `t4xi:handoff:v1` wordt nog
+  gelezen (als enkele rit) en bij schrijven/opruimen verwijderd. "Boek deze rit" in de
+  RouteFinder gaat daardoor altijd naar `/boeken?h=1`, ook bij een retour; de eigen UI
+  maakt geen deep-link met adres of retourmoment meer. `/boeken` blijft de publieke
+  deep-links (`?pickup=…&retour=1&returnDate=…`) lezen als terugval voor externe links.
 
 ---
 
