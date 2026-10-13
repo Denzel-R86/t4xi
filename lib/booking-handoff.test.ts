@@ -6,6 +6,7 @@ import {
   HANDOFF_HREF,
   HANDOFF_KEY,
   HANDOFF_TTL_MS,
+  LEGACY_HANDOFF_KEY,
   parseHandoff,
   handoffRideUnchanged,
   priceWasUpdated,
@@ -27,6 +28,7 @@ function memoryStorage() {
     setItem: (k: string, v: string) => void m.set(k, v),
     removeItem: (k: string) => void m.delete(k),
     raw: () => m.get(HANDOFF_KEY) ?? null,
+    keys: () => [...m.keys()],
   };
 }
 
@@ -43,7 +45,8 @@ const T0 = Date.UTC(2026, 9, 1, 8, 0, 0);
 
 test("TTL = quote-TTL van de server (lib/pricing/snapshot.ts)", () => {
   assert.equal(HANDOFF_TTL_MS, QUOTE_TTL_MS);
-  assert.equal(HANDOFF_KEY, "t4xi:handoff:v1");
+  assert.equal(HANDOFF_KEY, "t4xi:handoff:v2");
+  assert.equal(LEGACY_HANDOFF_KEY, "t4xi:handoff:v1");
   assert.equal(HANDOFF_HREF, "/boeken?h=1");
 });
 
@@ -52,7 +55,7 @@ test("round-trip: schrijven → lezen geeft exact dezelfde rit", () => {
   assert.equal(writeHandoff(RIDE, { storage, now: T0 }), true);
   assert.deepEqual(readHandoff({ storage, now: T0 + 1000 }), RIDE);
   const stored = JSON.parse(storage.raw()!);
-  assert.equal(stored.v, 1);
+  assert.equal(stored.v, 2);
   assert.equal(stored.writtenAt, T0);
   assert.equal("price" in stored, false, "er staat nooit een prijs in storage");
 });
@@ -104,7 +107,7 @@ test("gemanipuleerde storage: ongeldige velden → leeg, nooit een exceptie", ()
 });
 
 test("versie-mismatch → leeg", () => {
-  for (const v of [0, 2, "1", undefined]) {
+  for (const v of [0, 3, "1", "2", undefined]) {
     assert.equal(parseHandoff(JSON.stringify({ ...RIDE, v, writtenAt: T0 }), T0), null);
   }
 });
@@ -142,7 +145,7 @@ test("prijs in geheugen alleen voor exact dezelfde quoteId en binnen de quote-TT
   assert.equal(shownPriceFor("q_x", T0), null);
 });
 
-test("rit ongewijzigd: alleen exact de hero-rit, enkele rit", () => {
+test("rit ongewijzigd: alleen exact de hero-rit, zelfde ritsoort", () => {
   const initial = { pickup: RIDE.pickup, dropoff: RIDE.dropoff, date: RIDE.date, time: RIDE.time, persons: 2, luggage: RIDE.luggage };
   const current = { ...initial, returnTrip: false };
   assert.equal(handoffRideUnchanged(initial, current), true);
@@ -150,6 +153,105 @@ test("rit ongewijzigd: alleen exact de hero-rit, enkele rit", () => {
   assert.equal(handoffRideUnchanged(initial, { ...current, time: "14:31" }), false);
   assert.equal(handoffRideUnchanged(initial, { ...current, returnTrip: true }), false);
   assert.equal(handoffRideUnchanged({}, {}), false, "gewone deep-link: nooit");
+});
+
+/* ── v2 (F-31): retour in de handoff ─────────────────────────────────────── */
+
+const RETURN_RIDE: HandoffRide = { ...RIDE, returnTrip: true, returnDate: "2026-11-15", returnTime: "23:30" };
+
+test("v2 round-trip: retour → exact dezelfde rit, geen prijs in storage", () => {
+  const storage = memoryStorage();
+  assert.equal(writeHandoff(RETURN_RIDE, { storage, now: T0 }), true);
+  assert.deepEqual(readHandoff({ storage, now: T0 + 1000 }), RETURN_RIDE);
+  const stored = JSON.parse(storage.raw()!);
+  assert.equal(stored.v, 2);
+  assert.deepEqual(
+    Object.keys(stored).sort(),
+    ["date", "dropoff", "luggage", "persons", "pickup", "quoteId", "returnDate", "returnTime", "returnTrip", "time", "v", "writtenAt"]
+  );
+  assert.equal(/price|amount|bedrag/i.test(storage.raw()!), false, "er staat nooit een prijs in storage");
+});
+
+test("v2: enkele rit schrijft geen retourvelden; returnTrip:false wordt een enkele rit", () => {
+  const storage = memoryStorage();
+  writeHandoff({ ...RIDE, returnTrip: false }, { storage, now: T0 });
+  assert.deepEqual(readHandoff({ storage, now: T0 }), RIDE);
+  const stale = { v: 2, writtenAt: T0, ...RIDE, returnDate: "2026-11-15", returnTime: "18:00" };
+  assert.deepEqual(parseHandoff(JSON.stringify(stale), T0), RIDE, "losse retourwaarden zonder returnTrip tellen niet");
+});
+
+test("v2 TTL: ook een retour verloopt met de quote-TTL", () => {
+  const storage = memoryStorage();
+  writeHandoff(RETURN_RIDE, { storage, now: T0 });
+  assert.ok(readHandoff({ storage, now: T0 + HANDOFF_TTL_MS - 1 }));
+  assert.equal(readHandoff({ storage, now: T0 + HANDOFF_TTL_MS }), null);
+});
+
+test("v2: ongeldig retour → leeg, nooit een half retour", () => {
+  const base = { v: 2, writtenAt: T0, ...RETURN_RIDE };
+  const bad = [
+    { ...base, returnTrip: "true" },
+    { ...base, returnTrip: 1 },
+    { ...base, returnDate: undefined },
+    { ...base, returnDate: "15-11-2026" },
+    { ...base, returnTime: undefined },
+    { ...base, returnTime: "24:00" },
+    { ...base, returnTime: "23:30<script>" },
+  ];
+  for (const raw of bad) assert.equal(parseHandoff(JSON.stringify(raw), T0), null, JSON.stringify(raw).slice(0, 80));
+  const storage = memoryStorage();
+  assert.equal(writeHandoff({ ...RETURN_RIDE, returnTime: "7:00" }, { storage }), false);
+  assert.equal(storage.raw(), null);
+});
+
+test("v2: prijs en extra velden naast een retour worden genegeerd", () => {
+  const raw = JSON.stringify({ v: 2, writtenAt: T0, ...RETURN_RIDE, price: 1, returnPrice: 1, returnFlightNumber: "KL1" });
+  assert.deepEqual(parseHandoff(raw, T0), RETURN_RIDE);
+});
+
+test("v1-compatibiliteit: oud item onder de v1-sleutel wordt nog gelezen, als enkele rit", () => {
+  const storage = memoryStorage();
+  storage.setItem(LEGACY_HANDOFF_KEY, JSON.stringify({ v: 1, writtenAt: T0, ...RIDE }));
+  assert.deepEqual(readHandoff({ storage, now: T0 + 1000 }), RIDE);
+  // v1 kende geen retour: retourvelden in een v1-item worden genegeerd.
+  storage.setItem(LEGACY_HANDOFF_KEY, JSON.stringify({ v: 1, writtenAt: T0, ...RETURN_RIDE }));
+  assert.deepEqual(readHandoff({ storage, now: T0 }), RIDE);
+  // v1 verloopt net zo.
+  assert.equal(readHandoff({ storage, now: T0 + HANDOFF_TTL_MS }), null);
+});
+
+test("v2 gaat vóór v1; schrijven en opruimen ruimen de v1-sleutel mee op", () => {
+  const storage = memoryStorage();
+  storage.setItem(LEGACY_HANDOFF_KEY, JSON.stringify({ v: 1, writtenAt: T0, ...RIDE, pickup: "Oud adres 9, Almere" }));
+  writeHandoff(RETURN_RIDE, { storage, now: T0 });
+  assert.deepEqual(storage.keys(), [HANDOFF_KEY], "v1-item weg na schrijven");
+  assert.deepEqual(readHandoff({ storage, now: T0 }), RETURN_RIDE);
+  storage.setItem(LEGACY_HANDOFF_KEY, JSON.stringify({ v: 1, writtenAt: T0, ...RIDE }));
+  clearHandoff({ storage });
+  assert.deepEqual(storage.keys(), []);
+});
+
+test("rit ongewijzigd (v2): retour alleen met hetzelfde retourmoment", () => {
+  const initial = {
+    pickup: RIDE.pickup, dropoff: RIDE.dropoff, date: RIDE.date, time: RIDE.time, persons: 2, luggage: RIDE.luggage,
+    returnTrip: true, returnDate: "2026-11-15", returnTime: "23:30",
+  };
+  const current = { ...initial };
+  assert.equal(handoffRideUnchanged(initial, current), true);
+  assert.equal(handoffRideUnchanged(initial, { ...current, returnTime: "23:31" }), false);
+  assert.equal(handoffRideUnchanged(initial, { ...current, returnDate: "2026-11-16" }), false);
+  assert.equal(handoffRideUnchanged(initial, { ...current, returnTrip: false }), false, "retour → enkel");
+  assert.equal(handoffRideUnchanged({ ...initial, returnDate: undefined }, current), false);
+  // Enkele rit: het (verborgen) retourveld van het formulier telt niet mee.
+  const single = { ...initial, returnTrip: false, returnDate: undefined, returnTime: undefined };
+  assert.equal(handoffRideUnchanged(single, { ...current, returnTrip: false, returnDate: "", returnTime: "18:00" }), true);
+});
+
+test("lock: /boeken vult de retourtab, -datum en -tijd uit de handoff (v2)", () => {
+  const entry = readFileSync("components/booking/handoff/BookingEntry.tsx", "utf8");
+  assert.match(entry, /ride\.returnTrip\s*\?\s*\{ initialReturn: true, initialReturnDate: ride\.returnDate, initialReturnTime: ride\.returnTime \}/);
+  const section = readFileSync("components/booking/BookingSection.tsx", "utf8");
+  assert.match(section, /returnTrip: Boolean\(initialReturn\), returnDate: initialReturnDate, returnTime: initialReturnTime/);
 });
 
 test("voorlopige prijs (besluit #70): alleen zolang de server nog niet antwoordde", () => {
