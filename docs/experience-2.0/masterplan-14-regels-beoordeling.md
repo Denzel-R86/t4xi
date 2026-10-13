@@ -1,6 +1,10 @@
 # Beoordeling: de 14 unieke regels uit het oude masterplan
 
-**Opgesteld:** 2026-10-12 · **Uitkomst: NIETS INTEGREREN**
+**Opgesteld:** 2026-10-12 · herijkt 2026-10-13 · **Uitkomst: NIETS INTEGREREN**
+
+> Regelnummers verwijzen naar `docs/experience-2.0/masterplan.md` op deze branch
+> (basis `origin/main` 384200e, na PR #76). Ze verschuiven bij elke masterplanwijziging;
+> de paragraafverwijzingen zijn duurzaam, de nummers niet.
 
 Bij het opschonen van `~/Downloads/t4xi-next` (217 commits achter) bleek een
 untracked `masterplan.md` van 486 regels te staan, tegen 492 op `main`. Een
@@ -26,13 +30,13 @@ vastgelegde besluiten ongedaan maken.
 
 | Thema | Op `main` | Verhouding |
 |---|---|---|
-| 2.7 RouteFinder → "UW RIT" + handoff | `masterplan.md:420` | `main` voegt F-28 t/m F-34 en de prijsopbouwregels toe |
-| `/dashboard/invoices` op gedeeld wachtwoord | `masterplan.md:325` | `main` voegt `/api/admin/*`, HMAC-sessie, `BRAIN_DASHBOARD_*`-terugval en wachtwoordrotatie toe |
-| `/dashboard/brain` achter Basic Auth | `masterplan.md:326` | `main` voegt "geen sessietimeout/uitlog" toe |
-| `booking_status_transitions.actor` vrije tekst | `masterplan.md:327` | `main` voegt `"ops-dashboard"` en de actorinvariant `20260912120000` toe; einddatum concreter |
-| ADR-015 / beveiligingsstand, `proxy.ts` | `masterplan.md:299-301` | `main` benoemt #45/#47, staging-vs-productie en de S8-trigger |
-| "voor staging; productie apart eigenaarsbesluit" | `masterplan.md:301` | identiek van inhoud |
-| design-specs §13c / §13d | `masterplan.md:492` | `main` voegt §13f toe |
+| 2.7 RouteFinder → "UW RIT" + handoff | `masterplan.md:432` | `main` voegt F-28 t/m F-34 en de prijsopbouwregels toe |
+| `/dashboard/invoices` op gedeeld wachtwoord | `masterplan.md:338` | `main` voegt `/api/admin/*`, HMAC-sessie, `BRAIN_DASHBOARD_*`-terugval en wachtwoordrotatie toe |
+| `/dashboard/brain` achter Basic Auth | `masterplan.md:339` | `main` voegt "geen sessietimeout/uitlog" toe |
+| `booking_status_transitions.actor` vrije tekst | `masterplan.md:340` | `main` voegt `"ops-dashboard"` en de actorinvariant `20260912120000` toe; einddatum concreter |
+| ADR-015 / beveiligingsstand, `proxy.ts` | `masterplan.md:304-311` | `main` benoemt #45/#47, staging-vs-productie en de S8-trigger |
+| "voor staging; productie apart eigenaarsbesluit" | `masterplan.md:311` | identiek van inhoud |
+| design-specs §13c / §13d | `masterplan.md:504` | `main` voegt §13f toe |
 | Arrival (hero) tabelrij | §5-choreografie | valt onder het herroepen `html.js`-besluit |
 
 `main` draagt bovendien een herzieningsnotitie van 06-10-2026 na #45/#47 die de

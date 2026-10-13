@@ -308,7 +308,9 @@ klanten; `/klant` en overige `/dashboard` → 404; `/dashboard/brain` achter HTT
 (Control) in code default-deny met Supabase `getUser()` + verplichte AAL2 + platform-identiteit
 (#45 Gates A–D, #47 first-admin bootstrap). Het Control-schema staat op staging maar **niet op
 productie** — Control is daar nog geen werkende vervanging en de legacy-toegang is volledig
-actief. ADR-015 staat niet als bestand in de repo; productie is een apart eigenaarsbesluit.
+actief. ADR-015 staat sinds 12-10-2026 versiebeheerd in de repo als
+`docs/architecture/ADR-015-identity-and-access.md`, inhoudelijk ongewijzigd; de status blijft
+**aanvaard — vrijgegeven voor staging**, productie is een apart eigenaarsbesluit.
 
 **Trigger:** S8 moet groen zijn vóór een PR die (a) een login-, account- of
 "mijn boekingen"-scherm publiek bereikbaar maakt, (b) een nieuwe rol (customer, business
