@@ -218,11 +218,11 @@ test("F-30 opbouw: in elk scenario sluiten de getoonde regels exact op price", a
   }
 });
 
-test("F-30 opbouw: retour heen dag, terug nacht → Ritprijs 184 + Nachttarief retour 15,30 = 199,30", async () => {
+test("F-30 opbouw: retour heen dag, terug nacht → Retourprijs 184 + Nachttarief terugrit 15,30 = 199,30", async () => {
   const quote = fixedQuote(RETURN);
   const rows = rideBuildUp(uiQuote(quote, await snapshotFor(quote, "14:30", "23:30")));
   assert.deepEqual(rows, [
-    { kind: "component", labelKey: "opbouwRitprijs", amount: 184, cents: 18400, source: "priceBreakdown.subtotalCents" },
+    { kind: "component", labelKey: "opbouwRetourprijs", amount: 184, cents: 18400, source: "priceBreakdown.subtotalCents" },
     { kind: "component", labelKey: "opbouwNachttariefRetour", amount: 15.3, cents: 1530, source: "priceBreakdown.adjustments.night_return" },
     { kind: "total", labelKey: "vastRetour", amount: 199.3, source: "price" },
   ]);
@@ -306,7 +306,7 @@ test("F-32 ongewijzigd: wettelijke vergelijking alleen bij enkele rit, ook met o
 test("F-30 copy: alle opbouwlabels bestaan in nl en en", () => {
   for (const file of ["messages/nl.json", "messages/en.json"]) {
     const rz = JSON.parse(readFileSync(file, "utf8")).routezoeker as Record<string, string>;
-    for (const k of ["opbouwRitprijs", "opbouwNachttarief", "opbouwNachttariefHeen", "opbouwNachttariefRetour"]) {
+    for (const k of ["opbouwRitprijs", "opbouwRetourprijs", "opbouwNachttarief", "opbouwNachttariefHeen", "opbouwNachttariefRetour"]) {
       assert.equal(typeof rz[k], "string", `${file}: ${k}`);
     }
   }

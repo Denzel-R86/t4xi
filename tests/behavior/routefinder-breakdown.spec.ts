@@ -3,7 +3,7 @@ import { fixture, open, RIDE, stabilize } from "../visual/support/harness";
 
 /**
  * F-30: UW RIT toont de prijsopbouw uitsluitend uit `priceBreakdown` van de server.
- * Retour heen 14:30, terug 23:30 → Ritprijs € 184,00 + Nachttarief retour € 15,30
+ * Retour heen 14:30, terug 23:30 → Retourprijs (heen en terug) € 184,00 + Nachttarief terugrit € 15,30
  * = € 199,30 (zoals productie). Elke regel draagt zijn serverveld (`data-source`).
  * Offline mocks; op 375 (en iPhone 13) en 1280 (@desktop).
  */
@@ -47,8 +47,8 @@ async function nightReturn(page: Page) {
     "price",
   ]);
   const text = async (i: number) => (await rows.nth(i).innerText()).replace(/\s+/g, " ").trim();
-  expect(await text(0)).toBe("Ritprijs € 184,00");
-  expect(await text(1)).toBe("Nachttarief retour € 15,30");
+  expect(await text(0)).toBe("Retourprijs (heen en terug) € 184,00");
+  expect(await text(1)).toBe("Nachttarief terugrit € 15,30");
   expect(await text(2)).toMatch(/^Vaste retourprijs · inclusief btw € 199,30$/i);
   // Retour: geen afstand/reistijd en geen wettelijke vergelijking (F-32 ongewijzigd).
   await expect(page.getByTestId("uw-rit")).not.toContainText("Indicatief maximum via taxameter");

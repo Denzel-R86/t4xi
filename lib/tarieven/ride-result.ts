@@ -25,10 +25,9 @@ export type ServerQuoteFields = {
 
 /**
  * Labels per serverveld. TIJDELIJK (F-30): neutraal, gelijk aan de labels die de
- * snapshot zelf voor deze codes vastlegt (lib/pricing/snapshot.ts) — definitieve
- * copy is een voorstel in baseline/findings.md (F-30) en wacht op akkoord (§0c).
+ * eigenaar op 13-10-2026 heeft goedgekeurd (F-30, §0c).
  */
-type ComponentLabelKey = "opbouwRitprijs" | "opbouwNachttarief" | "opbouwNachttariefHeen" | "opbouwNachttariefRetour";
+type ComponentLabelKey = "opbouwRitprijs" | "opbouwRetourprijs" | "opbouwNachttarief" | "opbouwNachttariefHeen" | "opbouwNachttariefRetour";
 
 function adjustmentLabel(code: PublicAdjustmentCode, returnApplied: boolean): ComponentLabelKey | null {
   switch (code) {
@@ -75,7 +74,7 @@ function componentRows(q: ServerQuoteFields): Extract<BuildUpRow, { kind: "compo
   }
   if (extras.length === 0) return [];
   const rows = [
-    { kind: "component" as const, labelKey: "opbouwRitprijs" as const, amount: b.subtotalCents / 100, cents: b.subtotalCents, source: "priceBreakdown.subtotalCents" as const },
+    { kind: "component" as const, labelKey: q.returnApplied ? ("opbouwRetourprijs" as const) : ("opbouwRitprijs" as const), amount: b.subtotalCents / 100, cents: b.subtotalCents, source: "priceBreakdown.subtotalCents" as const },
     ...extras,
   ];
   // Harde eis: de getoonde regels tellen exact op tot het totaal. Anders niets tonen.
