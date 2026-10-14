@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isAuthorizedAdminRequest } from "@/lib/admin/basic-auth";
+import { isSameOriginRequest } from "@/lib/security/same-origin";
 import { STATUS_EVENT, isBookingStatus, type BookingStatus } from "@/lib/bookings/lifecycle";
 import { dispatch } from "@/lib/communication/orchestrator";
 import { supabaseDeliveryLog } from "@/lib/communication/delivery-log";
@@ -33,6 +34,7 @@ function db() {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) return json(403, { error: "forbidden_origin" });
   if (!(await isAuthorizedAdminRequest(request))) return json(401, { error: "unauthorized" });
 
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
