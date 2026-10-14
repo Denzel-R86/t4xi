@@ -5,7 +5,10 @@ import { open, RIDE, stabilize } from "../visual/support/harness";
  * F-29: routezoeker-retour (heen 14:30, terug 23:30) → "Boek deze rit" → /boeken.
  * Het retourmoment moet identiek zijn in de quote van de routezoeker, de quote van
  * /boeken en de boekings-POST — anders mist het nachttarief van het terug-ritdeel
- * of ontstaat een quote-mismatch. Offline mocks; stopt vóór betaling.
+ * of ontstaat een quote-mismatch.
+ * F-31: sinds handoff v2 gaat de retour via sessionStorage naar /boeken?h=1 — geen
+ * adres, datum of tijd in de URL. Offline mocks; boekings-POST onderschept (400),
+ * dus geen boeking en geen betaling.
  */
 
 const RETURN_TIME = "23:30";
@@ -62,10 +65,34 @@ test("F-29: retourmoment gelijk in routezoeker-quote, /boeken-quote en boekings-
   });
 
   const before = quotes.length;
+  const navigations: string[] = [];
+  page.on("framenavigated", (fr) => fr === page.mainFrame() && navigations.push(fr.url()));
   await f.getByRole("link", { name: "Boek deze rit" }).click();
-  await expect(page).toHaveURL(/\/boeken\?/);
-  expect(new URL(page.url()).searchParams.get("returnTime")).toBe(RETURN_TIME);
+  await expect(page).toHaveURL(/\/boeken\?h=1$/);
+  // F-31: geen adres, ritdatum of (retour)tijd in de URL — ook niet in tussenliggende navigaties.
+  for (const u of [page.url(), ...navigations]) {
+    const plain = decodeURIComponent(u);
+    expect(plain, u).not.toMatch(/zuidas|schiphol|pickup=|dropoff=|retour=|returnDate|returnTime|date=|time=/i);
+    expect(plain, u).not.toContain(RIDE.date);
+    expect(plain, u).not.toContain(RIDE.returnDate);
+    expect(plain, u).not.toContain(RETURN_TIME);
+  }
+  // Storage: gevalideerde v2-rit met retourmoment en de quoteId van de routezoeker, nooit een prijs.
+  const stored = JSON.parse((await page.evaluate(() => sessionStorage.getItem("t4xi:handoff:v2"))) ?? "{}");
+  expect(stored).toMatchObject({
+    v: 2,
+    returnTrip: true,
+    date: RIDE.date,
+    time: RIDE.time,
+    returnDate: RIDE.returnDate,
+    returnTime: RETURN_TIME,
+    quoteId: "visual-fixture-quote-retour",
+  });
+  expect(JSON.stringify(stored)).not.toMatch(/price|170/i);
   await expect(currentStep(page)).toContainText("Rit");
+  // /boeken staat op retour (retourvelden zichtbaar) met hetzelfde retourmoment.
+  await expect(page.locator("#f-return-date")).toHaveValue(RIDE.returnDate);
+  await expect(page.locator("#f-return-time")).toHaveValue(RETURN_TIME);
   await expect.poll(() => quotes.length, { message: "/boeken rekent verifiërend" }).toBeGreaterThan(before);
   const bookingQuote = quotes.at(-1)!.body;
   expect(bookingQuote, "zelfde velden, zelfde waarden als de routezoeker").toEqual(finderQuote);
@@ -88,6 +115,6 @@ test("F-29: retourmoment gelijk in routezoeker-quote, /boeken-quote en boekings-
     time: RIDE.time,
     returnDate: finderQuote!.returnDate,
     returnTime: finderQuote!.returnTime,
-    quoteId: "visual-fixture-quote-retour",
+    quoteId: stored.quoteId,
   });
 });

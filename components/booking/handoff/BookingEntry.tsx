@@ -9,7 +9,7 @@ type SectionProps = NonNullable<ComponentProps<typeof BookingSection>>;
 const noSubscribe = () => () => {};
 const serverSnapshot = () => null;
 
-/** Handoff → beginwaarden van het formulier; de prijs komt nooit uit storage. */
+/** Handoff → beginwaarden van het formulier (incl. retour, v2); de prijs komt nooit uit storage. */
 export function handoffSectionProps(ride: HandoffRide, shown: ShownPrice | null): SectionProps {
   return {
     initialPickup: ride.pickup,
@@ -18,6 +18,10 @@ export function handoffSectionProps(ride: HandoffRide, shown: ShownPrice | null)
     initialDate: ride.date,
     initialTime: ride.time,
     initialLuggage: ride.luggage,
+    // v2 (F-31): retour uit de RouteFinder — tab, retourdatum en -tijd.
+    ...(ride.returnTrip
+      ? { initialReturn: true, initialReturnDate: ride.returnDate, initialReturnTime: ride.returnTime }
+      : {}),
     handoff: { shown },
   };
 }

@@ -7,9 +7,9 @@ import { validateHandoffRide, type HandoffRide } from "@/lib/booking-handoff";
  * 1. `rideBuildUp`: de prijsopbouw uitsluitend uit velden die de server teruggaf
  *    (`useRouteQuote` → `/api/pricing/quote`). Geen client-side prijslogica, geen
  *    afgeleide componenten: een veld dat de engine niet levert (0) wordt niet getoond.
- * 2. `routeFinderHandoff`: de rit voor de 2.3-handoff (`/boeken?h=1`). Het
- *    handoff-formaat kent alleen een enkele rit; een retour (of tussenstops) kan er
- *    niet in en valt dus terug op de bestaande publieke route (`null`).
+ * 2. `routeFinderHandoff`: de rit voor de 2.3-handoff (`/boeken?h=1`). Sinds v2
+ *    (F-31) ook een retour, met retourdatum en -tijd; tussenstops passen er niet in
+ *    (die lopen via een offerteaanvraag) → `null`.
  */
 
 /** Serverbevestigde velden van een `ready`-quote die de opbouw mag tonen. */
@@ -41,7 +41,7 @@ export function rideBuildUp(q: ServerQuoteFields): BuildUpRow[] {
   return rows;
 }
 
-/** Rit voor de handoff, of `null` als die er niet in past (retour, tussenstops, ongeldig). */
+/** Rit voor de handoff (enkel of retour), of `null` als die er niet in past (tussenstops, ongeldig). */
 export function routeFinderHandoff(input: {
   pickup: string | undefined;
   dropoff: string | undefined;
@@ -50,10 +50,12 @@ export function routeFinderHandoff(input: {
   passengers: number;
   luggage: string;
   returnTrip: boolean;
+  returnDate?: string;
+  returnTime?: string;
   hasStops: boolean;
   quoteId: string;
 }): HandoffRide | null {
-  if (input.returnTrip || input.hasStops) return null;
+  if (input.hasStops) return null;
   return validateHandoffRide({
     pickup: input.pickup,
     dropoff: input.dropoff,
@@ -62,6 +64,9 @@ export function routeFinderHandoff(input: {
     persons: input.passengers,
     luggage: input.luggage,
     quoteId: input.quoteId,
+    ...(input.returnTrip
+      ? { returnTrip: true, returnDate: input.returnDate, returnTime: input.returnTime }
+      : {}),
   });
 }
 
