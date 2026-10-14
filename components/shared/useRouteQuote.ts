@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { formatEuro } from "@/lib/format/currency";
+import { parsePriceBreakdown, type PublicPriceBreakdown } from "@/lib/pricing/public-price-breakdown";
 
 /**
  * DE gedeelde live-quote-flow: AddressAutocomplete → deze hook →
@@ -38,6 +39,12 @@ export type Quote =
        * Een `ready` quote bestaat uitsluitend met een backend-bevestigde lock.
        */
       quoteId: string;
+      /**
+       * F-30 (optioneel, additief): de serverprijsopbouw in cent, ongewijzigd
+       * doorgegeven uit `priceBreakdown`. Afwezig als de server hem niet (geldig)
+       * levert; alleen voor weergave — `price` blijft het bindende bedrag.
+       */
+      breakdown?: PublicPriceBreakdown;
     };
 
 /** Houd een echte offerte-op-aanvraag gescheiden van transport/serverfouten. */
@@ -79,6 +86,31 @@ export function buildQuoteRequestBody(
     ...(o.returnTrip && o.returnDate && o.returnTime
       ? { returnDate: o.returnDate, returnTime: o.returnTime }
       : {}),
+  };
+}
+
+type ReadyQuote = Extract<Quote, { status: "ready" }>;
+
+/**
+ * Pure mapping van een geslaagde /api/pricing/quote-respons naar de `ready`-quote
+ * (exact de bestaande velden; F-30 voegt alleen `breakdown` toe als de server een
+ * geldige `priceBreakdown` meestuurt). Aanroeper controleert `available`/`quoteId`.
+ */
+export function readyQuoteFromResponse(data: Record<string, unknown> & { quoteId: string }): ReadyQuote {
+  const breakdown = parsePriceBreakdown(data.priceBreakdown);
+  return {
+    status: "ready",
+    amount: formatEuro(Number(data.price)),
+    price: Number(data.price),
+    returnApplied: Boolean(data.returnApplied),
+    distanceKm: Number(data.distanceKm) || 0,
+    estimatedDurationMin: Number(data.estimatedDurationMin) || 0,
+    quoteId: data.quoteId,
+    airport: {
+      isTransfer: Boolean(data.isAirportTransfer),
+      direction: (data.flightDirection as Airport["direction"] | undefined) ?? null,
+    },
+    ...(breakdown ? { breakdown } : {}),
   };
 }
 
@@ -155,19 +187,7 @@ export function useRouteQuote(
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.available && typeof data.quoteId === "string" && data.quoteId.length > 0) {
-          setQuote({
-            status: "ready",
-            amount: formatEuro(Number(data.price)),
-            price: Number(data.price),
-            returnApplied: Boolean(data.returnApplied),
-            distanceKm: Number(data.distanceKm) || 0,
-            estimatedDurationMin: Number(data.estimatedDurationMin) || 0,
-            quoteId: data.quoteId,
-            airport: {
-              isTransfer: Boolean(data.isAirportTransfer),
-              direction: data.flightDirection ?? null,
-            },
-          });
+          setQuote(readyQuoteFromResponse(data));
         } else {
           const failure = classifyQuoteFailure(res.status, data.available);
           if (failure !== "onrequest") {

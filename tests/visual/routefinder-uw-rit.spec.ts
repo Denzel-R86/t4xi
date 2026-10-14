@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { blurActive, defaultMasks, HIDE_OVERLAYS, open, RIDE, settle, stabilize, type QuoteMode } from "./support/harness";
+import { blurActive, defaultMasks, fixture, HIDE_OVERLAYS, open, RIDE, settle, stabilize, type QuoteMode } from "./support/harness";
 
 /**
  * "UW RIT" in de RouteFinder (Experience 2.0 PR 2.7) — gerichte opnames van het
@@ -8,6 +8,7 @@ import { blurActive, defaultMasks, HIDE_OVERLAYS, open, RIDE, settle, stabilize,
  *   1  ready (enkele rit): JourneyLine, serverprijs, Boek deze rit, prijsopbouw
  *   2  ready (retour): zelfde blok, retourprijs uit de server
  *   3  F-17: ophaalveld opnieuw gefocust ná de prijs — geen "Geen adressen gevonden"
+ *   4  F-30: retour met nachttarief op de terugrit — prijsopbouw uit `priceBreakdown`
  */
 
 const widths = [375, 1280];
@@ -27,8 +28,12 @@ async function fillAddress(page: Page, input: Locator, text: string) {
   await expect(page.getByRole("listbox")).toHaveCount(0);
 }
 
-async function compute(page: Page, mode: QuoteMode, opts: { retour?: boolean } = {}) {
+async function compute(page: Page, mode: QuoteMode, opts: { retour?: boolean; quoteFixture?: string; returnTime?: string } = {}) {
   await stabilize(page, { quote: mode });
+  if (opts.quoteFixture) {
+    const body = fixture(opts.quoteFixture);
+    await page.route("**/api/pricing/quote", (route) => route.fulfill({ status: 200, contentType: "application/json", body }));
+  }
   await open(page, "/tarieven");
   const f = finder(page);
   await fillAddress(page, f.getByLabel("Waar mogen wij u ophalen?"), "Amsterdam Zuidas");
@@ -39,7 +44,7 @@ async function compute(page: Page, mode: QuoteMode, opts: { retour?: boolean } =
   if (opts.retour) {
     await f.getByRole("radio", { name: "Retour" }).click();
     await f.getByLabel("Retourdatum").fill(RIDE.returnDate);
-    await f.getByLabel("Retourtijd").fill(RIDE.returnTime);
+    await f.getByLabel("Retourtijd").fill(opts.returnTime ?? RIDE.returnTime);
   }
   await f.getByRole("button", { name: /Bereken vaste prijs/ }).click();
   await expect(ride(page)).toBeVisible();
@@ -63,6 +68,14 @@ test.describe("UW RIT (RouteFinder, PR 2.7)", () => {
     await blurActive(page);
     await settle(page);
     await expect(ride(page)).toHaveScreenshot("uw-rit-retour.png", { ...shot, mask: defaultMasks(page) });
+  });
+
+  test("4 F-30: retour, nachttarief op de terugrit", async ({ page }) => {
+    await compute(page, "ready-retour", { retour: true, quoteFixture: "quote-ready-retour-nacht", returnTime: "23:30" });
+    await expect(page.getByTestId("prijsopbouw")).toContainText("15,30");
+    await blurActive(page);
+    await settle(page);
+    await expect(ride(page)).toHaveScreenshot("uw-rit-retour-nacht.png", { ...shot, mask: defaultMasks(page) });
   });
 
   test("3 F-17: geprijsd adres opnieuw gefocust", async ({ page }) => {

@@ -9,6 +9,7 @@ import {
 } from "@/lib/pricing/service";
 import { isNightAdjustmentCode, type PriceSnapshot } from "@/lib/pricing/snapshot";
 import { isEventAdjustmentCode } from "@/lib/pricing/event-pricing";
+import { publicPriceBreakdown } from "@/lib/pricing/public-price-breakdown";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 import { classifyLuggage } from "@/lib/pricing/luggage";
 import { clientIp, rateLimit } from "@/lib/security/rate-limit";
@@ -368,6 +369,9 @@ export async function POST(request: Request) {
         flightDirection: result.airport.flightDirection,
         // Verplicht bij iedere vaste prijs: de opslag is hierboven bevestigd.
         quoteId: snapshot.quoteId,
+        // F-30 (ADDITIEF, alleen-lezen): kopie van snapshot-subtotaal, -totaal en
+        // de publieke adjustments in cent. Geen berekening; `price` blijft bindend.
+        priceBreakdown: publicPriceBreakdown(snapshot),
         // Alleen aanwezig wanneer er daadwerkelijk een evenemententarief geldt;
         // afwezigheid betekent simpelweg "geen evenemententarief".
         ...(eventFee ? { eventFee } : {}),

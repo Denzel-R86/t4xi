@@ -18,5 +18,10 @@
   "isAirportPickup": false,
   "isAirportDropoff": true,
   "flightDirection": "departure",
-  "quoteId": "visual-fixture-quote-ready"
+  "quoteId": "visual-fixture-quote-ready",
+  "priceBreakdown": {
+    "subtotalCents": 8900,
+    "totalCents": 8900,
+    "adjustments": []
+  }
 }

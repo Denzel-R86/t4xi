@@ -312,8 +312,11 @@ export default function BookingSection({
     handoff?.shown,
     quote,
     handoffRideUnchanged(
-      { pickup: initialPickup, dropoff: initialDropoff, date: initialDate, time: initialTime, persons: initialPersons, luggage: initialLuggage },
-      { pickup: pickup?.label, dropoff: dropoff?.label, date, time, persons, luggage, returnTrip: tab === "retour" }
+      {
+        pickup: initialPickup, dropoff: initialDropoff, date: initialDate, time: initialTime, persons: initialPersons, luggage: initialLuggage,
+        returnTrip: Boolean(initialReturn), returnDate: initialReturnDate, returnTime: initialReturnTime,
+      },
+      { pickup: pickup?.label, dropoff: dropoff?.label, date, time, persons, luggage, returnTrip: tab === "retour", returnDate, returnTime }
     )
   );
   const quoteAllowsBooking =

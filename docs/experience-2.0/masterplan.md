@@ -255,6 +255,13 @@ serverlogs, analytics en Referer. Daarnaast rekent `/boeken` opnieuw (pickup wor
 - Tests: handoff round-trip, verlopen TTL, gemanipuleerde storage (prijs in storage wordt
   genegeerd — alleen `quoteId` telt), en een lock-test dat `SentencePattern` geen
   vrij adres meer in `href` zet.
+- **Handoff v2 (F-31):** het formaat kent ook een retour: `returnTrip: true` +
+  `returnDate` + `returnTime` (zelfde validatie, geen prijs, zelfde TTL). Geschreven
+  wordt `{v: 2}` onder `t4xi:handoff:v2`; een v1-item onder `t4xi:handoff:v1` wordt nog
+  gelezen (als enkele rit) en bij schrijven/opruimen verwijderd. "Boek deze rit" in de
+  RouteFinder gaat daardoor altijd naar `/boeken?h=1`, ook bij een retour; de eigen UI
+  maakt geen deep-link met adres of retourmoment meer. `/boeken` blijft de publieke
+  deep-links (`?pickup=…&retour=1&returnDate=…`) lezen als terugval voor externe links.
 
 ---
 
@@ -429,7 +436,7 @@ bestand in `docs/experience-2.0/baseline/` of groene test in de repo. 0.4b hoort
 - 2.4 BookingSection-stappenweergave + focus-na-fout + split; StickyCta contextueel.
 - 2.5 Bevestigingsmoment (§8).
 - 2.6 Mobiel: gestapelde zin + bottom sheet.
-- 2.7 RouteFinder-resultaat → "UW RIT" + handoff. **Incl. prijsopbouw:** de claim "U betaalt … minder (…%)" verdwijnt (F-28); de objectieve vergelijking met het wettelijke maximumtarief en server-side pricing blijven. Vergelijking alleen bij een enkele rit (zelfde ritbasis). Onbevestigde claims (wachttijd, vluchtmonitoring, 24/7) uit de RouteFinder. Restwerk: F-30 (volledige prijsopbouw, eigen PR), F-31 (retour-handoff), F-32 (retourvergelijking), F-33 (24/7 sitebreed), F-34 (vluchtmonitoring buiten RouteFinder) in `baseline/findings.md`. Bij retour toont de opbouw alleen het totaal.
+- 2.7 RouteFinder-resultaat → "UW RIT" + handoff. **Incl. prijsopbouw:** de claim "U betaalt … minder (…%)" verdwijnt (F-28); de objectieve vergelijking met het wettelijke maximumtarief en server-side pricing blijven. Vergelijking alleen bij een enkele rit (zelfde ritbasis). Onbevestigde claims (wachttijd, vluchtmonitoring, 24/7) uit de RouteFinder. Restwerk: F-30 (volledige prijsopbouw, eigen PR), F-31 (retour-handoff), F-32 (retourvergelijking), F-33 (24/7 sitebreed), F-34 (vluchtmonitoring buiten RouteFinder) in `baseline/findings.md`. Bij retour toont de opbouw alleen het totaal. **F-30** (`feat/f30-price-breakdown`): de opbouw toont nu ook servercomponenten uit het additieve, alleen-lezen `priceBreakdown` (snapshotkopie; `price` ongewijzigd, §1) — alleen regels > 0 die exact op het totaal sluiten; bij retour het nachttarief per ritdeel, geen heen/terug-splitsing van de basis; aankomsttoeslag blijft inclusief; evenemententarief verborgen.
 
 **Fase 3 — Homepage editorial**
 - 3.1 Quiet proof + service principles (vervangt donkere vows-sectie).

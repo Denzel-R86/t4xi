@@ -99,7 +99,7 @@ test.describe("RouteFinder → /boeken (PR 2.7)", () => {
     await expect(region).toContainText("89");
 
     // Storage bevat alleen de gevalideerde rit, nooit een prijs.
-    const stored = await page.evaluate(() => sessionStorage.getItem("t4xi:handoff:v1") ?? "");
+    const stored = await page.evaluate(() => sessionStorage.getItem("t4xi:handoff:v2") ?? "");
     expect(stored).toContain('"quoteId":"visual-fixture-quote-ready"');
     expect(stored).not.toMatch(/"price"/);
 
@@ -108,7 +108,7 @@ test.describe("RouteFinder → /boeken (PR 2.7)", () => {
     expect(decodeURIComponent(page.url())).not.toMatch(/voorbeeldstraat|pickup=|dropoff=/i);
   });
 
-  test("retour past niet in het handoff-formaat: bestaande deep-link blijft", async ({ page }) => {
+  test("retour via handoff v2 (F-31): href zonder adres of retourmoment", async ({ page }) => {
     await stabilize(page, { quote: "ready-retour" });
     await open(page, "/tarieven");
     await compute(page, { retour: true });
@@ -116,6 +116,6 @@ test.describe("RouteFinder → /boeken (PR 2.7)", () => {
     // Geen betrouwbare retourbasis → geen vergelijking met het wettelijke tarief.
     await expect(ride(page)).not.toContainText("Indicatief maximum via taxameter");
     const href = (await ride(page).getByRole("link", { name: "Boek deze rit" }).getAttribute("href")) ?? "";
-    expect(href).toMatch(/\/boeken\?.*retour=1/);
+    expect(href).toMatch(/\/boeken\?h=1$/);
   });
 });
