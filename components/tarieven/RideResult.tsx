@@ -18,7 +18,8 @@ const short = (label: string) => label.split(",")[0]?.trim() || label;
  * de serverprijs en één primaire actie (Button v2). De JourneyLine en de prijs
  * dragen de handoff-namen (handoff.css), zodat ze naar /boeken doorlopen.
  *
- * Prijsopbouw: alleen velden die de server teruggaf (`rideBuildUp`), plus de
+ * Prijsopbouw: alleen velden die de server teruggaf (`rideBuildUp`; F-30: incl.
+ * `priceBreakdown`-componenten die exact op het totaal sluiten), plus de
  * objectieve vergelijking met het wettelijke maximumtarief (TariffComparison).
  */
 export default function RideResult({
@@ -123,6 +124,13 @@ export default function RideResult({
                   <div key={row.source} data-source={row.source} className="flex items-baseline justify-between gap-3">
                     <dt className="text-secondary">{t(row.labelKey)}</dt>
                     <dd className="text-right font-medium text-ink [font-variant-numeric:tabular-nums]">{row.value}</dd>
+                  </div>
+                ) : row.kind === "component" ? (
+                  <div key={row.source} data-source={row.source} className="flex items-baseline justify-between gap-3">
+                    <dt className="text-secondary">{t(row.labelKey)}</dt>
+                    <dd className="whitespace-nowrap text-right font-medium text-ink [font-variant-numeric:tabular-nums]">
+                      {euroText(money.format(row.amount))}
+                    </dd>
                   </div>
                 ) : (
                   <div
