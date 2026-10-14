@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { fixture, open, RIDE, stabilize } from "../visual/support/harness";
-import { fillAddress, openAddress, sentenceRoot } from "../visual/support/sentence";
+import { fillAddress, openAddress, sentenceRoot, fillDetails } from "../visual/support/sentence";
 
 /**
  * Gedragscheck H-1 (F-14): automatisch scrollen naar de prijsregel in de hero, met een
@@ -99,9 +99,7 @@ async function fillAll(page: Page, from = "Amsterdam Zuidas") {
   await fillAddress(page, "Bestemming", "Schiphol");
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await expect(page.getByRole("listbox")).toHaveCount(0);
-  await page.getByLabel("Datum", { exact: true }).first().fill(RIDE.date);
-  await page.getByLabel("Tijd", { exact: true }).first().fill(RIDE.time);
-  await page.getByLabel("Bagage", { exact: true }).first().selectOption("1-2-koffers");
+  await fillDetails(page, { date: RIDE.date, time: RIDE.time, luggage: "1-2-koffers" });
   await blurActive(page);
 }
 
@@ -148,10 +146,13 @@ test.describe("H-1 automatisch scrollen naar de prijs", () => {
     await placeResultBelowFold(page);
     await resetScrolls(page);
     const n2 = gate.bodies.length;
-    const time = page.getByLabel("Tijd", { exact: true }).first();
-    await time.fill("14:31");
-    await time.fill(RIDE.time);
+    // PR 2.6b: < 768px via de sheet (twee keer bevestigen), ≥ 768px inline.
+    await fillDetails(page, { time: "14:31" });
+    await fillDetails(page, { time: RIDE.time });
     await blurActive(page);
+    // Via de sheet kan het tussenverzoek (14:31) al vertrokken zijn: pas vrijgeven
+    // als het verzoek voor de teruggezette tijd er ook is.
+    await expect.poll(() => (gate.bodies.at(-1) as { time?: string } | undefined)?.time).toBe(RIDE.time);
     const rel2 = await landAndSettle(page, gate, n2);
     test.info().annotations.push({ type: "scroll2", description: JSON.stringify({ rel2, s: await scrolls(page) }) });
     const last2 = gate.bodies.at(-1) as { time?: string; pickup?: string };
