@@ -25,6 +25,21 @@ import { timingSafeEqual } from "node:crypto";
  * onzichtbaar maakt voor Gate 6.4; dat is een intern meetbelang, geen
  * klant- of geldbelang.
  *
+ * WAT DIT NIET OPLOST — DE FUNNEL. De vlag raakt uitsluitend de observatielog
+ * van het evenemententarief. De aanvraaglog `pricing_quote_logs` wordt NIET
+ * gecorrigeerd: die tabel heeft geen enkele kolom die herkomst vastlegt (geen
+ * synthetic, geen bron, geen user-agent), en `request_payload` bevat alleen
+ * pickup, dropoff, bagage, passagiers, retour en voertuigklasse. Verificatie-
+ * verkeer telt daar dus gewoon mee als prijsaanvraag.
+ *
+ * Dat is niet theoretisch: de funnel is extreem dun — op veel dagen nul echte
+ * aanvragen — zodat een reeks machinale aanvragen op één ochtend de
+ * conversiecijfers zichtbaar vertekent. Eén consistente classificatie die ook de
+ * funnelrapportage dekt is bewust BUITEN de scope van deze module gehouden; dat
+ * vraagt schema- en analyticswijzigingen met behoud van historische gegevens, en
+ * hoort in een eigen PR. Tot die er is: lees funnelcijfers rond een
+ * verificatieronde met dit voorbehoud.
+ *
  * ZWAK TOKEN = UIT. Een te kort token wordt geweigerd en laat de functie uit
  * staan, zodat een slordig gezette variabele geen zwakke schakel wordt.
  */
