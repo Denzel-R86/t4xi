@@ -38,3 +38,13 @@ test("PR 2.3: de zin geeft passagiers via de handoff mee (geen query-string meer
   const page = readFileSync("app/[locale]/boeken/page.tsx", "utf8");
   assert.match(page, /query\?\.persons/);
 });
+
+test("PR 2.6b: een open sheet telt als invoer voor H-1 (geen reveal-scroll onder de sheet)", () => {
+  assert.match(src, /Boolean\(active\?\.closest\("dialog\[open\]"\)\) \|\|\s*isTextEntry\(/);
+});
+
+test("PR 2.6b: de detail-sheet schrijft pas bij Bevestigen in de zin (concept, geen live-waarden)", () => {
+  const sheet = readFileSync("components/booking-sentence/DetailsSheet.tsx", "utf8");
+  assert.match(sheet, /onCommit\(draft\);\s*dialogRef\.current\?\.close\(\);/);
+  assert.equal((sheet.match(/onCommit\(/g) ?? []).length, 1, "alleen de bevestigknop roept onCommit aan");
+});
