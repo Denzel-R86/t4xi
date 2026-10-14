@@ -155,3 +155,68 @@ test("uitloggen en muterende admin-routes weigeren een vreemde Origin vóór de 
     assert.equal((await handler(make(ORIGIN))).status, 401, `${name}: eigen Origin, geen sessie → 401`);
   }
 });
+
+/** Absoluut eindtijdstip (ms) dat een 429 aankondigt. */
+const lockEnd = (response: Response) => clock + Number(response.headers.get("retry-after")) * 1000;
+
+test("IP-lockout: herhaalde pogingen tijdens de lockout schuiven het einde niet op", async () => {
+  const ip = freshIp();
+  for (let i = 0; i < 5; i += 1) assert.equal((await login(`gok-${randomUUID()}`, "fout", ip)).status, 401);
+  const first = await login(user, pass, ip);
+  assert.equal(first.status, 429);
+  const end = lockEnd(first);
+  for (let i = 0; i < 20; i += 1) {
+    advance(30_000);
+    const again = await login(i % 2 ? user : `gok-${i}`, i % 3 ? "fout" : pass, ip);
+    assert.equal(again.status, 429);
+    assert.equal(lockEnd(again), end, `poging ${i + 1} verschoof het einde`);
+  }
+  clock = end + 1000;
+  assert.equal((await login(user, pass, ip)).status, 200, "na het oorspronkelijke einde weer open");
+});
+
+test("naam-lockout: pogingen vanaf andere IP's tijdens de lockout schuiven het einde niet op", async () => {
+  for (let i = 0; i < 5; i += 1) assert.equal((await login(user, "fout", freshIp())).status, 401);
+  const first = await login(user, pass, freshIp());
+  assert.equal(first.status, 429);
+  const end = lockEnd(first);
+  for (let i = 0; i < 30; i += 1) {
+    advance(20_000);
+    const again = await login(user, i % 2 ? pass : "fout", freshIp());
+    assert.equal(again.status, 429);
+    assert.equal(lockEnd(again), end, `poging ${i + 1} verschoof het einde`);
+  }
+  clock = end + 1000;
+  assert.equal((await login(user, pass, freshIp())).status, 200);
+});
+
+test("naam-lockout is nooit langer dan 15 min, ook na vele fouten vanaf vele IP's", async () => {
+  for (let round = 0; round < 6; round += 1) {
+    for (let i = 0; i < 5; i += 1) assert.equal((await login(user, "fout", freshIp())).status, 401, `ronde ${round}`);
+    for (let i = 0; i < 10; i += 1) {
+      const locked = await login(user, "fout", freshIp());
+      assert.equal(locked.status, 429);
+      const wait = Number(locked.headers.get("retry-after"));
+      assert.ok(wait > 0 && wait <= 15 * 60, `ronde ${round}: naam-lockout ${wait}s > 15 min`);
+    }
+    advance(15 * 60_000 + 1000);
+  }
+  assert.equal((await login(user, pass, freshIp())).status, 200, "na afloop weer inloggen");
+});
+
+test("IP-escalatie blijft: 15 min → tot het uur om is → na 20 fouten een dag; daarna weer open", async () => {
+  const ip = freshIp();
+  const waits: number[] = [];
+  // Pogingen tijdens een lockout tellen niet, dus elke ronde wacht de lockout eerst uit.
+  for (let round = 0; round < 4; round += 1) {
+    for (let i = 0; i < 5; i += 1) assert.equal((await login(`gok-${randomUUID()}`, "fout", ip)).status, 401, `ronde ${round}`);
+    const locked = await login(user, pass, ip);
+    assert.equal(locked.status, 429);
+    waits.push(Number(locked.headers.get("retry-after")));
+    advance(waits[round] * 1000 + 1000);
+  }
+  assert.ok(waits[0] <= 15 * 60, `eerste lockout ≤ 15 min (${waits[0]}s)`);
+  assert.ok(waits[1] > waits[0], `tweede lockout langer (${waits[1]}s)`);
+  assert.ok(waits[3] > 60 * 60, `na 20 fouten > 1 uur dicht (${waits.join(", ")}s)`);
+  assert.equal((await login(user, pass, ip)).status, 200, "na afloop weer open");
+});
