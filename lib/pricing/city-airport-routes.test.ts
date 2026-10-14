@@ -89,21 +89,59 @@ test("de MAX-wijkprijsconventie wordt in de migratie GETOETST, niet aangenomen",
   assert.match(sql, /city_airport_source_mismatch/, "faalt als de bronwijk is gewijzigd");
 });
 
-test("drie guards vóór het invoegen, elk met een eigen foutcode", () => {
+test("vijf guards vóór het invoegen, elk met een eigen foutcode", () => {
   const sql = code(STAD);
   for (const guard of [
     "city_airport_unknown_reference",
     "city_airport_convention_broken",
-    "city_airport_existing_price_differs",
+    "city_airport_existing_row_differs",
+    "city_airport_city_unlinked",
+    "city_airport_source_other_city",
   ]) {
     assert.ok(sql.includes(guard), `guard ontbreekt: ${guard}`);
   }
 });
 
-test("bestaande wijkprijzen worden niet geraakt en wél geteld", () => {
+test("wijken worden ONTDEKT via city_id, niet opgesomd", () => {
+  // Dit is de kern van de herziening van 14-10. Een slugpatroon mist
+  // `leidsche-rijn` en `de-uithof-science-park`; een vaste lijst laat een NIEUWE
+  // wijk stilzwijgend buiten de MAX-berekening én buiten de telling vallen.
   const sql = code(STAD);
-  assert.match(sql, /wijken_almere <> 7/, "7 Almere-wijken blijven actief");
-  assert.match(sql, /wijken_utrecht <> 3/, "3 Utrechtse wijken blijven actief");
+  assert.match(sql, /p\.city_id = /, "wijken volgen uit de stad-wijkrelatie");
+  assert.doesNotMatch(sql, /like 'almere-%'/, "geen slugpatroon meer");
+  assert.doesNotMatch(sql, /'utrecht-centrum',\s*'leidsche-rijn'/, "geen vaste wijklijst meer");
+  assert.match(sql, /city_airport_city_unlinked/, "faalt als de stad geen city_id heeft");
+  assert.match(sql, /city_airport_source_other_city/, "bronwijk moet bij diezelfde stad horen");
+});
+
+test("het verwachte aantal wijken staat per stad in de data, niet in SQL-takken", () => {
+  const sql = code(STAD);
+  assert.match(sql, /verwachte_wijken/, "aantal per stad in de temp-tabel");
+  assert.match(sql, /wijken <> r\.verwachte_wijken/, "telling wordt per stad vergeleken");
+  // 7 voor Almere, 3 voor Utrecht — zoals read-only gemeten op productie.
+  assert.match(sql, /'almere-oostvaarders',\s+7\)/);
+  assert.match(sql, /'de-uithof-science-park', 3\)/);
+});
+
+test("een afwijkende bestaande rij wordt veld voor veld afgewezen", () => {
+  // `on conflict do nothing` zou een INACTIEVE afwijkende rij stil overslaan: de
+  // unieke index op (pickup, dropoff, vehicle_class) is niet partieel.
+  const sql = code(STAD);
+  for (const veld of [
+    "price", "return_price", "active", "source_label",
+    "distance_km", "estimated_duration_min", "service_type", "currency", "vat_rate",
+  ]) {
+    assert.ok(
+      new RegExp(`r\\.${veld} is distinct from|f\\.${veld} is distinct from`).test(sql),
+      `GUARD 3 of de eindstaat moet ${veld} vergelijken`
+    );
+  }
+  assert.match(sql, /city_airport_existing_row_differs/);
+  assert.match(sql, /onvolledig > 0/, "ook de eindstaat toetst de eigenschappen, niet alleen het aantal");
+});
+
+test("bestaande wijkprijzen worden niet geraakt", () => {
+  const sql = code(STAD);
   // Geen UPDATE op een prijsveld: de migratie is puur additief.
   assert.ok(
     !/update\s+public\.fixed_route_prices[\s\S]*?set[\s\S]*?\bprice\b/i.test(sql),
