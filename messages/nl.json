@@ -345,7 +345,8 @@
     "rateLimitedNa": "probeer het over een minuut opnieuw",
     "leeg": "Vul de zin aan",
     "leegNa": "een vaste prijs, zonder taxameter",
-    "bevestig": "Bekijk mijn vaste prijs"
+    "bevestig": "Bekijk mijn vaste prijs",
+    "klaar": "Klaar"
   },
   "fair": {
     "kicker": "Onze belofte",

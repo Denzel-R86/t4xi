@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode, type RefObject } from "react";
+import { useRef, useState, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import Icon from "@/components/ui/Icon";
 import Button from "@/components/ui/Button";
@@ -13,9 +13,10 @@ import { trapSheetTab, useSheetDialog } from "./sheet-dialog";
  * Mobiele boekingszin, tweede regel (Experience 2.0 PR 2.6b, masterplan §6.5):
  * "op … om … met … en …" is onder 768px één knop die een bottom sheet opent met
  * native pickers op volle breedte (datum, tijd, passagiers, bagage). Zelfde
- * basis als de adres-sheet (sheet-dialog.ts). De sheet werkt op een concept:
- * pas "Bevestigen" schrijft de waarden in de zin; sluiten of Escape laat de zin
- * ongewijzigd. Zo start er tijdens het kiezen geen prijsaanvraag.
+ * basis als de adres-sheet (sheet-dialog.ts). De sheet werkt op een concept
+ * (besluit eigenaar 14-10): alleen "Klaar" schrijft de waarden in de zin;
+ * Escape, Sluiten en een tik buiten de sheet annuleren. Heropenen toont de
+ * laatst toegepaste waarden. Zo start er tijdens het kiezen geen prijsaanvraag.
  * Datum/tijd gebruiken `dateTimeCls` van /boeken (F-26: appearance:none +
  * min-width:0, zodat iOS het veld niet breder maakt dan de kolom).
  */
@@ -173,13 +174,12 @@ export function DetailsSheet({
 }: {
   open: boolean;
   details: RideDetails;
-  /** "Bevestigen": de waarden gaan de zin in (daarna sluit de sheet). */
+  /** "Klaar": de waarden gaan de zin in (daarna sluit de sheet). */
   onCommit: (details: RideDetails) => void;
   onClosed: () => void;
   returnFocusRef: RefObject<HTMLButtonElement | null>;
 }) {
   const t = useTranslations("zin");
-  const tb = useTranslations("booking");
   const tr = useTranslations("routes");
   const tz = useTranslations("routezoeker");
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -194,6 +194,14 @@ export function DetailsSheet({
   // Focus op de titel, niet op een veld: anders opent iOS direct een picker.
   useSheetDialog({ open, dialogRef, initialFocusRef: titleRef, returnFocusRef, onClosed });
 
+  // Tik buiten de sheet (op de backdrop) = annuleren. Een klik op de backdrop
+  // komt bij de <dialog> zelf binnen, met coördinaten buiten zijn vlak.
+  function cancelOnBackdrop(e: MouseEvent<HTMLDialogElement>) {
+    if (e.target !== e.currentTarget) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) e.currentTarget.close();
+  }
+
   const set = (patch: Partial<RideDetails>) => setDraft((d) => ({ ...d, ...patch }));
   const id = DETAILS_SHEET_ID;
 
@@ -204,6 +212,7 @@ export function DetailsSheet({
       className="hz-sheet hz-sheet--fit bg-card text-ink shadow-card"
       aria-labelledby={`${id}-title`}
       onKeyDown={(e) => trapSheetTab(e, dialogRef.current)}
+      onClick={cancelOnBackdrop}
     >
       <span className="hz-sheet-handle" aria-hidden="true" />
       <div className="flex items-center justify-between">
@@ -271,7 +280,6 @@ export function DetailsSheet({
           <Icon name="chevron-down" size={18} className={chevronCls} />
         </div>
       </div>
-      {/* Taalvoorstel: eigen sleutel `zin.klaar` ("Klaar" / "Done"); tot dan de bestaande "Bevestigen". */}
       <Button
         variant="primary"
         fullWidth
@@ -281,7 +289,7 @@ export function DetailsSheet({
           dialogRef.current?.close();
         }}
       >
-        {tb("stapBevestigen")}
+        {t("klaar")}
       </Button>
     </dialog>
   );
