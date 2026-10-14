@@ -113,39 +113,82 @@ test.describe("PR 2.6b mobiele detail-sheet (datum, tijd, passagiers, bagage)", 
     expect(await page.evaluate(() => window.scrollY), "geen scrollsprong bij sluiten").toBe(y);
   });
 
-  test("Bevestigen schrijft de waarden in de zin; Escape en Sluiten laten de zin ongewijzigd", async ({ page }) => {
+  // Besluit eigenaar #92: alleen "Klaar" past toe; Escape, Sluiten en een tik
+  // buiten de sheet annuleren. Heropenen toont de laatst toegepaste waarden en
+  // de focus keert in elk geval terug naar de zinregel.
+  test("annuleren (Escape, Sluiten, tik buiten) laat de zin ongewijzigd; Klaar past toe", async ({ page }) => {
     await stabilize(page);
     await open(page, "/");
-    await fillDetails(page, { date: RIDE.date, time: RIDE.time, passengers: 2, luggage: "1-2-koffers" });
     const trigger = detailsTrigger(page);
+    const APPLIED: Record<"date" | "time" | "passengers" | "luggage", string> = { date: RIDE.date, time: RIDE.time, passengers: "2", luggage: "1-2-koffers" };
+    await fillDetails(page, { date: APPLIED.date, time: APPLIED.time, passengers: 2, luggage: APPLIED.luggage });
     await expect(trigger).toContainText(/do 12 nov/);
     await expect(trigger).toContainText("14:30");
     await expect(trigger).toContainText("2 passagiers");
     await expect(trigger).toContainText("1–2 koffers");
     const written = await trigger.innerText();
 
-    // Heropenen toont de waarden uit de zin.
-    let sheet = await openDetails(page);
-    await expect(sheet.getByLabel("Datum", { exact: true })).toHaveValue(RIDE.date);
-    await expect(sheet.getByLabel("Tijd", { exact: true })).toHaveValue(RIDE.time);
-    await expect(sheet.getByLabel("Passagiers", { exact: true })).toHaveValue("2");
-    await expect(sheet.getByLabel("Bagage", { exact: true })).toHaveValue("1-2-koffers");
-    // Escape: concept vervalt.
-    await sheet.getByLabel("Tijd", { exact: true }).fill("09:15");
+    const expectValues = async (v: typeof APPLIED, why: string) => {
+      const sheet = detailsSheet(page);
+      await expect(sheet.getByLabel("Datum", { exact: true }), why).toHaveValue(v.date);
+      await expect(sheet.getByLabel("Tijd", { exact: true }), why).toHaveValue(v.time);
+      await expect(sheet.getByLabel("Passagiers", { exact: true }), why).toHaveValue(v.passengers);
+      await expect(sheet.getByLabel("Bagage", { exact: true }), why).toHaveValue(v.luggage);
+    };
+    const changeAll = async () => {
+      const sheet = detailsSheet(page);
+      await sheet.getByLabel("Datum", { exact: true }).fill("2026-12-24");
+      await sheet.getByLabel("Tijd", { exact: true }).fill("09:15");
+      await sheet.getByLabel("Passagiers", { exact: true }).selectOption("4");
+      await sheet.getByLabel("Bagage", { exact: true }).selectOption("handbagage");
+    };
+    const cancels: Record<string, () => Promise<void>> = {
+      Escape: () => page.keyboard.press("Escape"),
+      Sluiten: () => detailsSheet(page).getByRole("button", { name: "Sluiten" }).click(),
+      "tik buiten": async () => {
+        const box = (await detailsSheet(page).boundingBox())!;
+        expect(box.y, "ruimte boven de sheet").toBeGreaterThan(40);
+        await page.touchscreen.tap(page.viewportSize()!.width / 2, box.y / 2);
+      },
+    };
+
+    for (const [route, cancel] of Object.entries(cancels)) {
+      await openDetails(page);
+      await expectValues(APPLIED, `${route}: sheet toont de toegepaste waarden`);
+      await changeAll();
+      await cancel();
+      await expect(detailsSheet(page), `${route} sluit`).toBeHidden();
+      await expect(trigger, `${route}: focus terug op de zinregel`).toBeFocused();
+      expect(await trigger.innerText(), `${route}: zin ongewijzigd`).toBe(written);
+      await openDetails(page);
+      await expectValues(APPLIED, `${route}: heropend zonder verlaten concept`);
+      await page.keyboard.press("Escape");
+      await expect(detailsSheet(page)).toBeHidden();
+      await expect(trigger).toBeFocused();
+    }
+
+    // Tik binnen de sheet (op de titel) sluit niet.
+    const sheet = await openDetails(page);
+    const title = (await sheet.getByRole("heading", { name: "Uw rit" }).boundingBox())!;
+    await page.touchscreen.tap(title.x + 4, title.y + title.height / 2);
+    await expect(sheet, "tik in de sheet sluit niet").toBeVisible();
+
+    // Klaar past toe; heropenen toont de nieuwe waarden.
+    await changeAll();
+    await sheet.getByRole("button", { name: "Klaar" }).click();
+    await expect(sheet).toBeHidden();
+    await expect(trigger, "Klaar: focus terug op de zinregel").toBeFocused();
+    await expect(trigger).toContainText(/do 24 dec/);
+    await expect(trigger).toContainText("09:15");
+    await expect(trigger).toContainText("4 passagiers");
+    await expect(trigger).toContainText("handbagage");
+    await openDetails(page);
+    await expectValues({ date: "2026-12-24", time: "09:15", passengers: "4", luggage: "handbagage" }, "heropend na Klaar");
     await page.keyboard.press("Escape");
-    await expect(sheet).toBeHidden();
     await expect(trigger).toBeFocused();
-    expect(await trigger.innerText()).toBe(written);
-    // Sluiten: concept vervalt ook.
-    sheet = await openDetails(page);
-    await expect(sheet.getByLabel("Tijd", { exact: true }), "concept is opnieuw de zin").toHaveValue(RIDE.time);
-    await sheet.getByLabel("Passagiers", { exact: true }).selectOption("4");
-    await sheet.getByRole("button", { name: "Sluiten" }).click();
-    await expect(sheet).toBeHidden();
-    expect(await trigger.innerText()).toBe(written);
   });
 
-  test("prijsaanvraag pas na Bevestigen en alleen met complete zin; payload ongewijzigd", async ({ page }) => {
+  test("prijsaanvraag pas na Klaar en alleen met complete zin; payload ongewijzigd", async ({ page }) => {
     await stabilize(page);
     const gate = await heldQuotes(page);
     await open(page, "/");
@@ -161,7 +204,7 @@ test.describe("PR 2.6b mobiele detail-sheet (datum, tijd, passagiers, bagage)", 
     await sheet.getByLabel("Passagiers", { exact: true }).selectOption("3");
     await page.waitForTimeout(700);
     expect(gate.bodies, "geen quote zolang de sheet open is").toHaveLength(0);
-    await sheet.getByRole("button", { name: "Bevestigen" }).click();
+    await sheet.getByRole("button", { name: "Klaar" }).click();
     await expect.poll(() => gate.bodies.length).toBe(1);
     expect(gate.bodies[0]).toMatchObject({
       pickup: "Amsterdam Zuidas",
@@ -226,7 +269,7 @@ test.describe("PR 2.6b mobiele detail-sheet (datum, tijd, passagiers, bagage)", 
       expect(m[k].sw, `${k} zonder horizontale overloop`).toBeLessThanOrEqual(m[k].cw);
     }
     await sheet.getByLabel("Bagage", { exact: true }).selectOption("1-2-koffers");
-    await sheet.getByRole("button", { name: "Bevestigen" }).click();
+    await sheet.getByRole("button", { name: "Klaar" }).click();
     await expect(sheet).toBeHidden();
     // In de zinregel is de waarde tekst (geen veld): volledig, zonder afkappen.
     const trigger = detailsTrigger(page);
@@ -251,7 +294,7 @@ test.describe("PR 2.6b mobiele detail-sheet (datum, tijd, passagiers, bagage)", 
       const pts = [0.1, 0.5, 0.9].flatMap((fx) => [d.bottom - 8, d.bottom - 40].map((y) => [d.left + d.width * fx, y]));
       return pts.filter(([x, y]) => !document.elementFromPoint(x, y)?.closest("dialog#hero-details-sheet")).length;
     });
-    expect(covered, "onderrand (Bevestigen) is van de sheet").toBe(0);
+    expect(covered, "onderrand (Klaar) is van de sheet").toBe(0);
   });
 
   test("H-1: één scroll na de prijs van de bevestigde rit; geen scroll zolang de sheet open is", async ({ page }) => {
@@ -264,6 +307,9 @@ test.describe("PR 2.6b mobiele detail-sheet (datum, tijd, passagiers, bagage)", 
     await placeDetailsNearBottom(page);
     await fillDetails(page, { date: RIDE.date, time: RIDE.time, luggage: "1-2-koffers" });
     await expect.poll(() => gate.bodies.length).toBe(1);
+    // De aanvraag wordt vastgehouden: de uitgangspositie opnieuw vastzetten
+    // (de zinregel kan na het invullen een regel korter zijn).
+    await placeDetailsNearBottom(page);
     const resultBelow = await page.evaluate(() => {
       const r = document.querySelector<HTMLElement>('div.hz-sentence [aria-live="polite"]')!.getBoundingClientRect();
       return r.bottom > (window.visualViewport?.height ?? window.innerHeight);

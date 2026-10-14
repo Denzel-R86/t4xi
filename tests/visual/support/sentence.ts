@@ -57,7 +57,7 @@ export async function fillAddress(page: Page, field: AddressField, value: string
 /**
  * Datum, tijd, passagiers en bagage (PR 2.6b):
  *  · ≥ 768px: de inline velden in de zin;
- *  · < 768px: de zinregel opent één sheet; "Bevestigen" schrijft de waarden in de zin.
+ *  · < 768px: de zinregel opent één sheet; "Klaar" schrijft de waarden in de zin.
  */
 export type RideDetailsInput = { date?: string; time?: string; passengers?: number; luggage?: string };
 
@@ -79,7 +79,7 @@ export async function fillDetails(page: Page, ride: RideDetailsInput) {
     if (ride.time !== undefined) await sheet.getByLabel("Tijd", { exact: true }).fill(ride.time);
     if (ride.passengers !== undefined) await sheet.getByLabel("Passagiers", { exact: true }).selectOption(String(ride.passengers));
     if (ride.luggage !== undefined) await sheet.getByLabel("Bagage", { exact: true }).selectOption(ride.luggage);
-    await sheet.getByRole("button", { name: "Bevestigen" }).click();
+    await sheet.getByRole("button", { name: "Klaar" }).click();
     await expect(sheet).toBeHidden();
     // Focus keert asynchroon (native 'close') terug naar de zinregel.
     await expect(detailsTrigger(page)).toBeFocused();
