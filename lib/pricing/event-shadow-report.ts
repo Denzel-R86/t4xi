@@ -361,6 +361,16 @@ export function aggregateShadowObservations(
   const sortedFees = [...fees].sort((a, b) => a - b);
   const sortedUplifts = [...uplifts].sort((a, b) => a - b);
   const evaluated = observations.length;
+  // LET OP — de spanne loopt over de observaties die DEZE functie krijgt, dus
+  // over de beslispopulatie NA uitsluiting van verificatieverkeer en synthetische
+  // rijen. Valt de vroegste echte observatie weg omdat ze testverkeer was, dan
+  // schuift `firstObservedAt` naar voren en wordt `observationDays` kleiner.
+  //
+  // Dat is de bedoelde richting: het criterium van >= 14 dagen meet hoe lang er
+  // ECHT klantverkeer is waargenomen, niet hoe lang de tabel rijen bevat. Een
+  // kortere spanne maakt de poort dus strenger, nooit soepeler. Wie ziet dat de
+  // teller terugliep na het toevoegen van een uitsluiting: dat is dit, en het is
+  // geen regressie.
   const days = first !== null && last !== null ? Math.max(1, Math.ceil((last - first) / 86_400_000)) : 0;
 
   return {

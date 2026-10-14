@@ -34,6 +34,13 @@
  * Eén ervan — `Almere → Schiphol Airport`, 07:03:48 — liep op `route_not_fixed`
  * en is precies het stadsniveau-gat dat migratie 20261012080000 dicht.
  *
+ * GEVOLG VOOR DE MEETPERIODE. `observationDays` in het rapport wordt berekend
+ * over de beslispopulatie, dus NA deze uitsluiting. Waren de uitgesloten quotes
+ * de vroegste van de reeks, dan schuift het beginpunt naar voren en wordt de
+ * gemeten periode korter. Dat maakt het criterium van >= 14 dagen strenger, niet
+ * soepeler, en is daarmee de juiste richting: de poort hoort te meten hoe lang
+ * er echt klantverkeer is waargenomen.
+ *
  * TOEKOMSTIGE VERVUILING VOORKOMEN. Deze lijst is een correctie achteraf, geen
  * oplossing. De structurele weg staat in
  * docs/pricing/verificatieverkeer-markeren.md.
