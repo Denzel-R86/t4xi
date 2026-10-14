@@ -32,6 +32,14 @@ export type RideDetails = { date: string; time: string; passengers: number; lugg
 
 export const DETAILS_SHEET_ID = "hero-details-sheet";
 
+/*
+ * WebKit negeert min-height op een native <select> (gemeten: ~24px hoog in
+ * WebKit iPhone 13). Daarom appearance:none + vaste 52px, met een eigen pijl
+ * uit Icon.tsx; de native keuzelijst opent zoals altijd.
+ */
+const selectCls = `${inputCls} block h-[52px] appearance-none pr-11 [-webkit-appearance:none]`;
+const chevronCls = "pointer-events-none absolute bottom-[17px] right-4 text-ink";
+
 /**
  * De tweede zinregel als inline velden (≥ 768px, sinds PR 2.1); ongewijzigd uit
  * SentencePattern verplaatst (PR 2.6b). Onder 768px vervangen door DetailsTrigger.
@@ -233,11 +241,11 @@ export function DetailsSheet({
             onChange={(e) => set({ time: e.target.value })}
           />
         </div>
-        <div className="min-w-0">
+        <div className="relative min-w-0">
           <label htmlFor={`${id}-passengers`} className={labelCls}>{t("ariaPassagiers")}</label>
           <select
             id={`${id}-passengers`}
-            className={inputCls}
+            className={selectCls}
             value={draft.passengers}
             onChange={(e) => set({ passengers: sentencePassengers(e.target.value) })}
           >
@@ -245,12 +253,13 @@ export function DetailsSheet({
               <option key={n} value={n}>{t("passagiersAantal", { count: n })}</option>
             ))}
           </select>
+          <Icon name="chevron-down" size={18} className={chevronCls} />
         </div>
-        <div className="min-w-0">
+        <div className="relative min-w-0">
           <label htmlFor={`${id}-luggage`} className={labelCls}>{t("ariaBagage")}</label>
           <select
             id={`${id}-luggage`}
-            className={inputCls}
+            className={selectCls}
             value={draft.luggage}
             onChange={(e) => set({ luggage: e.target.value })}
           >
@@ -259,6 +268,7 @@ export function DetailsSheet({
               <option key={l.value} value={l.value}>{t(l.labelKey)}</option>
             ))}
           </select>
+          <Icon name="chevron-down" size={18} className={chevronCls} />
         </div>
       </div>
       {/* Taalvoorstel: eigen sleutel `zin.klaar` ("Klaar" / "Done"); tot dan de bestaande "Bevestigen". */}

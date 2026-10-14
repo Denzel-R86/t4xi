@@ -213,9 +213,13 @@ test.describe("PR 2.6b mobiele detail-sheet (datum, tijd, passagiers, bagage)", 
         date: field("#hero-details-sheet-date"),
         time: field("#hero-details-sheet-time"),
         luggage: rect("#hero-details-sheet-luggage"),
+        passengers: rect("#hero-details-sheet-passengers"),
       };
     });
     test.info().annotations.push({ type: "veldmaten", description: JSON.stringify(m) });
+    for (const k of ["date", "time", "passengers", "luggage"] as const) {
+      expect(m[k].height, `${k}: aanraakdoel ≥ 44px (WebKit negeert min-height op select)`).toBeGreaterThanOrEqual(44);
+    }
     for (const k of ["date", "time"] as const) {
       expect(Math.abs(m[k].width - m.luggage.width), `${k} even breed als bagage (F-26)`).toBeLessThanOrEqual(1);
       expect(m[k].right, `${k} binnen de sheet`).toBeLessThanOrEqual(m.sheet.right + 0.5);
