@@ -177,7 +177,14 @@ test("ops-login (F-39): limiet per IP, lockout per IP en naam vóór de wachtwoo
   for (const call of ["peekRateLimit(", "rateLimit(`ops-login:", "rateLimit(`ops-login-fail:"]) {
     assert.ok(throttle.includes(call), `lockout-helper mist ${call}`);
   }
-  assert.ok(!login.gaps.some((g) => g.finding === "F-39"), "F-39 is opgelost: geen open F-39-gap meer");
+  // Eigenaarsbesluit #91: naam-lockout max. 15 min; langere stappen alleen per IP.
+  assert.ok(throttle.includes("USER_LOCKOUT_TIERS = [{ max: 5, windowMs: 15 * 60_000 }] as const;"), "naam-lockout is niet meer één stap van 15 min");
+  assert.ok(throttle.includes("tiers: USER_LOCKOUT_TIERS"), "naam-lockout gebruikt niet de 15-min-stap");
+  assert.ok(/subject: `ip:\$\{ip\}`, tiers: IP_LOCKOUT_TIERS/.test(throttle), "IP-escalatie ontbreekt");
+  // Pogingen tijdens een lockout tellen niet als fout: de lockout wordt alleen gelezen (peek).
+  assert.ok(!/checkOpsLogin[\s\S]*?rateLimit\(`ops-login-fail/.test(throttle.slice(0, throttle.indexOf("export function recordOpsLoginFailure"))), "lockout-check telt mee en verlengt");
+  const f39 = login.gaps.find((g) => g.finding === "F-39");
+  assert.ok(f39 && f39.category === "rate-limit", "F-39 is deels opgelost: restrisico blijft als gap zichtbaar");
 });
 
 test("upstream-cache (F-41): de health-check cachet de Schiphol-opvraag", () => {
@@ -190,7 +197,7 @@ test("upstream-cache (F-41): de health-check cachet de Schiphol-opvraag", () => 
   assert.notEqual(health.rateLimit.kind, "none", "/api/flights/health zonder limiet");
   const cache = read("lib/schiphol/health-cache.ts");
   assert.ok(cache.includes(`HEALTH_CACHE_TTL_MS = ${health.upstreamCache.ttlSec}_000`), "cache-TTL klopt niet met de matrix");
-  assert.ok(!health.gaps.some((g) => g.finding === "F-41"), "F-41 is opgelost: geen open F-41-gap meer");
+  assert.ok(health.gaps.some((g) => g.finding === "F-41" && g.category === "kosten"), "F-41 is deels opgelost: cache per instance is geen globale quotumbescherming");
 });
 
 test("rate limit: budget en sleutel staan in de handler; 'none' bevat geen limiter", () => {

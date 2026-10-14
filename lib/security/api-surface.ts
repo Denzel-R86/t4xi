@@ -2,6 +2,7 @@
  * Publieke API-matrix (Experience 2.0 · S2, masterplan §9) — als data.
  *
  * Eén entry per (route, geëxporteerde HTTP-methode) onder `app/api/**\/route.ts`.
+ * Inventaris en vangnet, GEEN bewijs dat alle routes veilig zijn.
  * Dit is de FEITELIJKE stand van de code, niet de gewenste. Wat ontbreekt staat
  * expliciet als `gaps` met een findings-nummer (docs/experience-2.0/baseline/findings.md).
  *
@@ -139,12 +140,13 @@ export const API_SURFACE: ApiSurfaceEntry[] = [
     auth: { kind: "basic-auth", evidence: ["hasValidOpsCredentials(username, password)"], note: "Login zelf: publiek bereikbaar, gedeeld OPS_DASHBOARD_PASSWORD." },
     csrf: ADMIN_CSRF,
     rateLimit: { kind: "lib-in-memory", key: "ops-login:<ip>", max: 10, windowSec: 60, evidence: [`rateLimit(\`ops-login:${ip}\`, LOGIN_RATE_MAX, LOGIN_RATE_WINDOW_MS)`, "LOGIN_RATE_MAX = 10;", "LOGIN_RATE_WINDOW_MS = 60_000;"] },
-    // F-39: per gebruikersnaam 10/min + lockout 5/15 min · 10/1 u · 20/24 u op IP én naam (lib/admin/login-throttle.ts).
+    // F-39 (deels): per naam 10/min + lockout 5/15 min (max. 15 min); per IP 5/15 min · 10/1 u · 20/24 u (lib/admin/login-throttle.ts).
     lockout: { evidence: ["checkOpsLogin(ip, username)", "recordOpsLoginFailure(ip, username)"] },
     validation: { kind: "handgeschreven", evidence: ["typeof body?.username === \"string\"", "typeof body?.password === \"string\""] },
     pii: { fields: ["username", "password"], logged: [] },
     bodyLimit: { kind: "none" },
     gaps: [
+      { category: "rate-limit", finding: "F-39", text: "Deels opgelost: limiet en lockout zijn in-memory per instance; gericht blokkeren van het gedeelde ops-account (max. 15 min per instance) blijft mogelijk. Definitief via S8." },
       { category: "body-size", finding: "F-42", text: "request.json() zonder eigen limiet op een publiek endpoint." },
     ],
   },
@@ -273,7 +275,7 @@ export const API_SURFACE: ApiSurfaceEntry[] = [
     pii: { fields: [], logged: [] },
     bodyLimit: { kind: "geen-body" },
     upstreamCost: "Schiphol Public Flight API (max. één opvraag per 60 s per instance, F-41)",
-    gaps: [],
+    gaps: [{ category: "kosten", finding: "F-41", text: "Deels opgelost: cache en limiet per instance (60 s) zijn geen globale quotumbescherming; veel instances of IP's kunnen het quotum nog raken." }],
   },
 
   // ── Server-naar-server ───────────────────────────────────────────────────
