@@ -1,10 +1,11 @@
 # Beoordeling: de 14 unieke regels uit het oude masterplan
 
-**Opgesteld:** 2026-10-12 · herijkt 2026-10-13 · **Uitkomst: NIETS INTEGREREN**
+**Opgesteld:** 2026-10-12 · herijkt 2026-10-14 · **Uitkomst: NIETS INTEGREREN**
 
-> Regelnummers verwijzen naar `docs/experience-2.0/masterplan.md` op deze branch
-> (basis `origin/main` 384200e, na PR #76). Ze verschuiven bij elke masterplanwijziging;
-> de paragraafverwijzingen zijn duurzaam, de nummers niet.
+> Verwijzingen gaan naar paragrafen en rij-aanduidingen in
+> `docs/experience-2.0/masterplan.md`, niet naar regelnummers. Regelnummers
+> verschuiven bij elke masterplanwijziging — tussen 12 en 14 oktober gebeurde dat
+> twee keer (#76, #86/#87) — en waren daardoor binnen twee dagen onjuist.
 
 Bij het opschonen van `~/Downloads/t4xi-next` (217 commits achter) bleek een
 untracked `masterplan.md` van 486 regels te staan, tegen 492 op `main`. Een
@@ -22,21 +23,21 @@ vastgelegde besluiten ongedaan maken.
 
 | Oude regel | Wat `main` besloot |
 |---|---|
-| Hero-choreografie op `html.js` | **Besloten 09-10:** `@media (scripting: enabled)` i.p.v. `html.js`, omdat `html.js` in de App Router pas ná de eerste paint wordt gezet — de hero zou flitsen en LCP herstarten (`masterplan.md:181`) |
-| AddressAutocomplete met type-label `Recent`/`Airport`/`Station` | **Besloten 09-10:** `Recent` **niet bouwen** — botst met §7, geen adressen bewaren (`masterplan.md:126`) |
-| B1 display-font: "blijft Outfit, of editorial serif" (open vraag) | **Besloten 08-10:** Playfair Display, rechtop, alleen Brand Mode ≥ 48px, nooit in transactionele onderdelen, volledige specificatie in §13f (`masterplan.md:86`) |
+| Hero-choreografie op `html.js` | **Besloten 09-10:** `@media (scripting: enabled)` i.p.v. `html.js`, omdat `html.js` in de App Router pas ná de eerste paint wordt gezet — de hero zou flitsen en LCP herstarten (§5 Motion-spec) |
+| AddressAutocomplete met type-label `Recent`/`Airport`/`Station` | **Besloten 09-10:** `Recent` **niet bouwen** — botst met §7, geen adressen bewaren (§3 Inventaris, rij `components/shared/AddressAutocomplete.tsx`) |
+| B1 display-font: "blijft Outfit, of editorial serif" (open vraag) | **Besloten 08-10:** Playfair Display, rechtop, alleen Brand Mode ≥ 48px, nooit in transactionele onderdelen, volledige specificatie in §13f (§2, rij B1) |
 
 ## De overige elf
 
 | Thema | Op `main` | Verhouding |
 |---|---|---|
-| 2.7 RouteFinder → "UW RIT" + handoff | `masterplan.md:432` | `main` voegt F-28 t/m F-34 en de prijsopbouwregels toe |
-| `/dashboard/invoices` op gedeeld wachtwoord | `masterplan.md:338` | `main` voegt `/api/admin/*`, HMAC-sessie, `BRAIN_DASHBOARD_*`-terugval en wachtwoordrotatie toe |
-| `/dashboard/brain` achter Basic Auth | `masterplan.md:339` | `main` voegt "geen sessietimeout/uitlog" toe |
-| `booking_status_transitions.actor` vrije tekst | `masterplan.md:340` | `main` voegt `"ops-dashboard"` en de actorinvariant `20260912120000` toe; einddatum concreter |
-| ADR-015 / beveiligingsstand, `proxy.ts` | `masterplan.md:304-311` | `main` benoemt #45/#47, staging-vs-productie en de S8-trigger |
-| "voor staging; productie apart eigenaarsbesluit" | `masterplan.md:311` | identiek van inhoud |
-| design-specs §13c / §13d | `masterplan.md:504` | `main` voegt §13f toe |
+| 2.7 RouteFinder → "UW RIT" + handoff | §11 PR-volgorde, punt 2.7 | `main` voegt F-28 t/m F-34 en de prijsopbouwregels toe |
+| `/dashboard/invoices` op gedeeld wachtwoord | §9b, legacy-tabel, rij `/dashboard/invoices` | `main` voegt `/api/admin/*`, HMAC-sessie, `BRAIN_DASHBOARD_*`-terugval en wachtwoordrotatie toe |
+| `/dashboard/brain` achter Basic Auth | §9b, legacy-tabel, rij `/dashboard/brain` | `main` voegt "geen sessietimeout/uitlog" toe |
+| `booking_status_transitions.actor` vrije tekst | §9b, legacy-tabel, rij `booking_status_transitions.actor` | `main` voegt `"ops-dashboard"` en de actorinvariant `20260912120000` toe; einddatum concreter |
+| ADR-015 / beveiligingsstand, `proxy.ts` | §9b, "Huidige stand" | `main` benoemt #45/#47, staging-vs-productie en de S8-trigger |
+| "voor staging; productie apart eigenaarsbesluit" | §9b, slotzin van "Huidige stand" | identiek van inhoud |
+| design-specs §13c / §13d | §13 Design-specificaties | `main` voegt §13f toe |
 | Arrival (hero) tabelrij | §5-choreografie | valt onder het herroepen `html.js`-besluit |
 
 `main` draagt bovendien een herzieningsnotitie van 06-10-2026 na #45/#47 die de
