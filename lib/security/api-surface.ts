@@ -46,8 +46,13 @@ export type ApiSurfaceEntry = {
   file: string;
   method: HttpMethod;
   auth: { kind: AuthKind; evidence: string[]; note?: string };
-  csrf: "n.v.t." | "SameSite=Strict-cookie, geen Origin-check";
+  /** Cookie-auth: muterende methoden krijgen een Origin-check (`isSameOriginRequest`), GET niet. */
+  csrf: "n.v.t." | "SameSite=Strict-cookie, geen Origin-check" | "SameSite=Strict-cookie + Origin-check";
   rateLimit: RateLimitSpec;
+  /** Progressieve lockout bovenop de limiet (alleen de ops-login); bewijs staat in de handler. */
+  lockout?: { evidence: string[] };
+  /** Korte in-memory cache van de upstream-uitkomst; bewijs staat in de handler. */
+  upstreamCache?: { ttlSec: number; evidence: string[] };
   validation: { kind: "geen-invoer" | "handgeschreven" | "parserfunctie" | "bibliotheek"; evidence: string[] };
   pii: {
     /** Persoonsgegevens die de route ontvangt of teruggeeft. */
@@ -73,7 +78,8 @@ export const GLOBAL_GAPS: Gap[] = [
 ];
 
 const ADMIN_SESSION = "app/api/admin/session/route.ts";
-const ADMIN_CSRF = "SameSite=Strict-cookie, geen Origin-check" as const;
+const ADMIN_CSRF_READ = "SameSite=Strict-cookie, geen Origin-check" as const;
+const ADMIN_CSRF = "SameSite=Strict-cookie + Origin-check" as const;
 const ip = "${ip}";
 
 export const API_SURFACE: ApiSurfaceEntry[] = [
@@ -108,7 +114,7 @@ export const API_SURFACE: ApiSurfaceEntry[] = [
   {
     route: "/api/admin/invoices", file: "app/api/admin/invoices/route.ts", method: "GET",
     auth: { kind: "basic-auth", evidence: ["isAuthorizedAdminRequest(request)"] },
-    csrf: ADMIN_CSRF,
+    csrf: ADMIN_CSRF_READ,
     rateLimit: { kind: "none" },
     validation: { kind: "geen-invoer", evidence: [] },
     pii: { fields: ["customer_name", "customer_email", "from_address", "to_address", "billing_*"], logged: [] },
@@ -132,12 +138,13 @@ export const API_SURFACE: ApiSurfaceEntry[] = [
     route: "/api/admin/session", file: ADMIN_SESSION, method: "POST",
     auth: { kind: "basic-auth", evidence: ["hasValidOpsCredentials(username, password)"], note: "Login zelf: publiek bereikbaar, gedeeld OPS_DASHBOARD_PASSWORD." },
     csrf: ADMIN_CSRF,
-    rateLimit: { kind: "none" },
+    rateLimit: { kind: "lib-in-memory", key: "ops-login:<ip>", max: 10, windowSec: 60, evidence: [`rateLimit(\`ops-login:${ip}\`, LOGIN_RATE_MAX, LOGIN_RATE_WINDOW_MS)`, "LOGIN_RATE_MAX = 10;", "LOGIN_RATE_WINDOW_MS = 60_000;"] },
+    // F-39: per gebruikersnaam 10/min + lockout 5/15 min · 10/1 u · 20/24 u op IP én naam (lib/admin/login-throttle.ts).
+    lockout: { evidence: ["checkOpsLogin(ip, username)", "recordOpsLoginFailure(ip, username)"] },
     validation: { kind: "handgeschreven", evidence: ["typeof body?.username === \"string\"", "typeof body?.password === \"string\""] },
     pii: { fields: ["username", "password"], logged: [] },
     bodyLimit: { kind: "none" },
     gaps: [
-      { category: "rate-limit", finding: "F-39", text: "Geen limiet/lockout op de ops-login: brute force op één gedeeld wachtwoord." },
       { category: "body-size", finding: "F-42", text: "request.json() zonder eigen limiet op een publiek endpoint." },
     ],
   },
@@ -149,7 +156,7 @@ export const API_SURFACE: ApiSurfaceEntry[] = [
     validation: { kind: "geen-invoer", evidence: [] },
     pii: { fields: [], logged: [] },
     bodyLimit: { kind: "geen-body" },
-    gaps: [{ category: "rate-limit", finding: "F-39", text: "Geen limiet (laag risico: zet alleen een lege cookie)." }],
+    gaps: [{ category: "rate-limit", finding: "F-37", text: "Geen limiet (laag risico: zet alleen een lege cookie, Origin-check ervoor)." }],
   },
 
   // ── Publiek: boeken, prijs, leads, betalen ───────────────────────────────
@@ -260,12 +267,13 @@ export const API_SURFACE: ApiSurfaceEntry[] = [
     route: "/api/flights/health", file: "app/api/flights/health/route.ts", method: "GET",
     auth: { kind: "publiek", evidence: [] },
     csrf: "n.v.t.",
-    rateLimit: { kind: "none" },
+    rateLimit: { kind: "lib-in-memory", key: "flights-health:<ip>", max: 6, windowSec: 60, evidence: [`rateLimit(\`flights-health:${ip}\`, RATE_MAX, RATE_WINDOW_MS)`, "RATE_MAX = 6;", "RATE_WINDOW_MS = 60_000;"] },
+    upstreamCache: { ttlSec: 60, evidence: ["cachedSchipholHealth(() => checkSchipholHealth())"] },
     validation: { kind: "geen-invoer", evidence: [] },
     pii: { fields: [], logged: [] },
     bodyLimit: { kind: "geen-body" },
-    upstreamCost: "Schiphol Public Flight API (één opvraag per aanroep)",
-    gaps: [{ category: "rate-limit", finding: "F-41", text: "Publiek, ongelimiteerd, elke aanroep raakt het Schiphol-quotum en toont de configuratiestatus." }],
+    upstreamCost: "Schiphol Public Flight API (max. één opvraag per 60 s per instance, F-41)",
+    gaps: [],
   },
 
   // ── Server-naar-server ───────────────────────────────────────────────────

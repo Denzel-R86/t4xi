@@ -6,7 +6,9 @@
  * 2. Juistheid: elk `evidence`-fragment staat in de handler van die methode; een
  *    entry die "geen" claimt (publiek, geen limiet, geen body) mag de bijbehorende
  *    aanroepen ook niet bevatten.
- * 3. Gaps zijn expliciet: ontbrekende limiet/body-limiet, PII in logs of in een
+ * 3. F-39/F-41: Origin-check op muterende admin-methoden, limiet + lockout op de
+ *    ops-login en limiet + cache op /api/flights/health staan in de bron.
+ * 4. Gaps zijn expliciet: ontbrekende limiet/body-limiet, PII in logs of in een
  *    logtabel en de in-memory store vereisen een gap met findings-nummer.
  */
 import assert from "node:assert/strict";
@@ -139,6 +141,56 @@ test("CSRF: cookie-auth routes leunen op een SameSite=Strict-sessiecookie", () =
     const cookieAuth = e.route.startsWith("/api/admin/");
     assert.equal(e.csrf !== "n.v.t.", cookieAuth, `${label(e)}: CSRF-kolom klopt niet met cookie-auth`);
   }
+});
+
+test("CSRF (F-39): elke muterende admin-methode doet de Origin-check als eerste stap", () => {
+  const helper = read("lib/security/same-origin.ts");
+  assert.ok(helper.includes("export function isSameOriginRequest("), "Origin-helper ontbreekt");
+  for (const e of API_SURFACE.filter((entry) => entry.route.startsWith("/api/admin/"))) {
+    const handler = handlerSource(read(e.file), e.method);
+    const mutating = e.method !== "GET" && e.method !== "HEAD" && e.method !== "OPTIONS";
+    const claimsOrigin = e.csrf === "SameSite=Strict-cookie + Origin-check";
+    assert.equal(claimsOrigin, mutating, `${label(e)}: muterend ⇔ Origin-check in de matrix`);
+    assert.equal(handler.includes("isSameOriginRequest(request)"), claimsOrigin, `${label(e)}: Origin-check in de bron klopt niet met de matrix`);
+    if (!claimsOrigin) continue;
+    assert.ok(read(e.file).includes('from "@/lib/security/same-origin"'), `${label(e)}: gebruikt lib/security/same-origin niet`);
+    const origin = handler.indexOf("isSameOriginRequest(request)");
+    for (const later of ["isAuthorizedAdminRequest(", "hasValidOpsCredentials(", "request.json(", "rateLimit("]) {
+      const at = handler.indexOf(later);
+      assert.ok(at < 0 || origin < at, `${label(e)}: Origin-check moet vóór ${later} staan`);
+    }
+  }
+});
+
+test("ops-login (F-39): limiet per IP, lockout per IP en naam vóór de wachtwoordcheck", () => {
+  const login = API_SURFACE.find((e) => e.route === "/api/admin/session" && e.method === "POST")!;
+  assert.equal(login.rateLimit.kind, "lib-in-memory", "ops-login zonder limiet");
+  assert.ok(login.lockout && login.lockout.evidence.length >= 2, "ops-login zonder lockout in de matrix");
+  const handler = handlerSource(read(login.file), "POST");
+  for (const ev of login.lockout.evidence) assert.ok(handler.includes(ev), `lockout-bewijs ontbreekt: ${ev}`);
+  const gate = handler.indexOf("checkOpsLogin(ip, username)");
+  const verify = handler.indexOf("hasValidOpsCredentials(username, password)");
+  assert.ok(gate >= 0 && gate < verify, "lockout moet vóór de wachtwoordcheck gelezen worden");
+  assert.ok(handler.indexOf("recordOpsLoginFailure(ip, username)") > verify, "mislukte poging wordt niet geteld");
+  const throttle = read("lib/admin/login-throttle.ts");
+  assert.ok(throttle.includes('from "@/lib/security/rate-limit"'), "lockout gebruikt de bestaande limiter niet");
+  for (const call of ["peekRateLimit(", "rateLimit(`ops-login:", "rateLimit(`ops-login-fail:"]) {
+    assert.ok(throttle.includes(call), `lockout-helper mist ${call}`);
+  }
+  assert.ok(!login.gaps.some((g) => g.finding === "F-39"), "F-39 is opgelost: geen open F-39-gap meer");
+});
+
+test("upstream-cache (F-41): de health-check cachet de Schiphol-opvraag", () => {
+  for (const e of API_SURFACE.filter((entry) => entry.upstreamCache)) {
+    const handler = handlerSource(read(e.file), e.method);
+    for (const ev of e.upstreamCache!.evidence) assert.ok(handler.includes(ev), `${label(e)}: cache-bewijs ontbreekt: ${ev}`);
+  }
+  const health = API_SURFACE.find((e) => e.route === "/api/flights/health")!;
+  assert.ok(health.upstreamCache, "/api/flights/health zonder cache in de matrix");
+  assert.notEqual(health.rateLimit.kind, "none", "/api/flights/health zonder limiet");
+  const cache = read("lib/schiphol/health-cache.ts");
+  assert.ok(cache.includes(`HEALTH_CACHE_TTL_MS = ${health.upstreamCache.ttlSec}_000`), "cache-TTL klopt niet met de matrix");
+  assert.ok(!health.gaps.some((g) => g.finding === "F-41"), "F-41 is opgelost: geen open F-41-gap meer");
 });
 
 test("rate limit: budget en sleutel staan in de handler; 'none' bevat geen limiter", () => {
