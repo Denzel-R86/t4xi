@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import FlightCard from "@/components/booking/FlightCard";
 import Icon from "@/components/ui/Icon";
 import { BOOKING_FIELD_ID } from "@/lib/booking/steps";
-import { FieldError, RequiredMark, dateTimeCls, fieldA11y, inputCls, labelCls, type FieldErrorState } from "./fields";
+import { FieldError, RequiredMark, SelectField, dateTimeCls, fieldA11y, inputCls, labelCls, type FieldErrorState } from "./fields";
 
 export const LUGGAGE = [
   { value: "geen-bagage", labelKey: "bagageGeen" },
@@ -134,19 +134,18 @@ export default function RideStep({
       </div>
       <div className="min-w-0">
         <label htmlFor={BOOKING_FIELD_ID.luggage} className={labelCls}>{t("bagage")}<RequiredMark /></label>
-        <select
+        <SelectField
           id={BOOKING_FIELD_ID.luggage}
           value={luggage}
           required
           onChange={(e) => onLuggage(e.target.value)}
-          className={inputCls}
           {...fieldA11y("luggage", error)}
         >
           <option value="" disabled>{t("bagageKies")}</option>
           {LUGGAGE.map((l) => (
             <option key={l.value} value={l.value}>{t(l.labelKey)}</option>
           ))}
-        </select>
+        </SelectField>
         <FieldError field="luggage" error={error} />
       </div>
 
