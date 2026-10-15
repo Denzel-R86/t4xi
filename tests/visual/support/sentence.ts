@@ -53,3 +53,41 @@ export async function fillAddress(page: Page, field: AddressField, value: string
     await expect(sheetTrigger(page, field)).toBeFocused();
   }
 }
+
+/**
+ * Datum, tijd, passagiers en bagage (PR 2.6b):
+ *  · ≥ 768px: de inline velden in de zin;
+ *  · < 768px: de zinregel opent één sheet; "Klaar" schrijft de waarden in de zin.
+ */
+export type RideDetailsInput = { date?: string; time?: string; passengers?: number; luggage?: string };
+
+export const detailsTrigger = (page: Page) => page.locator('button[aria-controls="hero-details-sheet"]');
+export const detailsSheet = (page: Page) => page.locator("dialog#hero-details-sheet");
+
+/** Opent de sheet (mobiel) zoals een klant: echte klik op de zinregel. */
+export async function openDetails(page: Page) {
+  await detailsTrigger(page).click();
+  const sheet = detailsSheet(page);
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
+
+export async function fillDetails(page: Page, ride: RideDetailsInput) {
+  if (await detailsTrigger(page).isVisible()) {
+    const sheet = await openDetails(page);
+    if (ride.date !== undefined) await sheet.getByLabel("Datum", { exact: true }).fill(ride.date);
+    if (ride.time !== undefined) await sheet.getByLabel("Tijd", { exact: true }).fill(ride.time);
+    if (ride.passengers !== undefined) await sheet.getByLabel("Passagiers", { exact: true }).selectOption(String(ride.passengers));
+    if (ride.luggage !== undefined) await sheet.getByLabel("Bagage", { exact: true }).selectOption(ride.luggage);
+    await sheet.getByRole("button", { name: "Klaar" }).click();
+    await expect(sheet).toBeHidden();
+    // Focus keert asynchroon (native 'close') terug naar de zinregel.
+    await expect(detailsTrigger(page)).toBeFocused();
+    return;
+  }
+  if (ride.date !== undefined) await page.getByLabel("Datum", { exact: true }).first().fill(ride.date);
+  if (ride.time !== undefined) await page.getByLabel("Tijd", { exact: true }).first().fill(ride.time);
+  if (ride.passengers !== undefined)
+    await page.getByLabel("Passagiers", { exact: true }).first().selectOption(String(ride.passengers));
+  if (ride.luggage !== undefined) await page.getByLabel("Bagage", { exact: true }).first().selectOption(ride.luggage);
+}

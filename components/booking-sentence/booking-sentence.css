@@ -90,6 +90,9 @@
   overflow: hidden;
 }
 .hz-sheet[open] { display: flex; flex-direction: column; }
+/* PR 2.6b: de sheet voor datum/tijd/passagiers/bagage is zo hoog als zijn
+   inhoud (vier velden + knop), met dezelfde bovengrens als de adres-sheet. */
+.hz-sheet--fit { height: auto; max-height: min(85svh, 44rem); }
 .hz-sheet::backdrop { background: rgb(31 39 48 / 0.32); }
 .hz-sheet-handle {
   align-self: center;

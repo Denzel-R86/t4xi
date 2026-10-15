@@ -199,10 +199,10 @@ Alleen wat in code bestaat heeft een contract. Status per component uit §13a:
 | PriceDisplay | nog niet gebouwd; prijs nu via `Odometer` | `components/horizon/motion.tsx:87` |
 | Header | bestaat (v14); 2.0-spec §13c nog niet gebouwd | `components/sections/Header.tsx:19` |
 | Footer | bestaat (v14); 2.0-spec §13c nog niet gebouwd | `components/sections/Footer.tsx:30` |
-| DatePicker (native in sheet) | nog niet gebouwd | — |
+| DatePicker (native in sheet) | **gebouwd** als native `date`/`time` op volle breedte in de mobiele detail-sheet (PR 2.6b); zelfde `dateTimeCls` als /boeken (F-26) | `components/booking-sentence/DetailsSheet.tsx` |
 | VehiclePlate | nog niet gebouwd; voorganger `FleetPlate` (lokaal in de homepage) | `app/[locale]/page.tsx:96` |
 | TrustItem | nog niet gebouwd | — |
-| Sheet (`<dialog>`) | nog niet gebouwd | — |
+| Sheet (`<dialog>`) | **gebouwd** (< 768px): adres-sheet (PR 2.6) en detail-sheet datum/tijd/passagiers/bagage (PR 2.6b) op één basis — `showModal()`, focus-trap, focus terug, scroll-lock, safe-area, geen slide bij reduced motion | `components/booking-sentence/sheet-dialog.ts`, `AddressSheet.tsx`, `DetailsSheet.tsx`, `booking-sentence.css` |
 | Toast | nog niet gebouwd | — |
 
 ### 2.1 Button v2

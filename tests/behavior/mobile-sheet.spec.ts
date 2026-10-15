@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import path from "node:path";
 import { open, RIDE, stabilize } from "../visual/support/harness";
-import { addressSheet, fillAddress, openAddress, sentenceRoot, sheetTrigger } from "../visual/support/sentence";
+import { addressSheet, fillAddress, openAddress, sentenceRoot, sheetTrigger, fillDetails, detailsTrigger } from "../visual/support/sentence";
 
 /**
  * Gedragscheck PR 2.6 (masterplan §6.5): gestapelde mobiele zin + adres-sheet.
@@ -26,9 +26,7 @@ function recordQuotes(page: Page) {
 }
 
 async function fillRide(page: Page) {
-  await page.getByLabel("Datum", { exact: true }).first().fill(RIDE.date);
-  await page.getByLabel("Tijd", { exact: true }).first().fill(RIDE.time);
-  await page.getByLabel("Bagage", { exact: true }).first().selectOption("1-2-koffers");
+  await fillDetails(page, { date: RIDE.date, time: RIDE.time, luggage: "1-2-koffers" });
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 }
 
@@ -60,7 +58,9 @@ test.describe("PR 2.6 mobiele zin + adres-sheet", () => {
     await expect(sheetTrigger(page, "Vertrek")).toContainText("Van");
     await expect(sheetTrigger(page, "Bestemming")).toContainText("Naar");
     await expect(page.getByRole("combobox", { name: "Vertrek" })).toHaveCount(0);
-    await expect(page.getByLabel("Passagiers", { exact: true }).first()).toBeVisible();
+    // PR 2.6b: passagiers staan in de zinregel die de detail-sheet opent.
+    await expect(detailsTrigger(page)).toBeVisible();
+    await expect(detailsTrigger(page)).toContainText("1 passagier");
     const from = await sheetTrigger(page, "Vertrek").boundingBox();
     const to = await sheetTrigger(page, "Bestemming").boundingBox();
     expect(to!.y, "Naar staat onder Van").toBeGreaterThan(from!.y + from!.height - 1);

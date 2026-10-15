@@ -11,6 +11,7 @@ import { Stamp, Dash } from "@/components/horizon/stamp";
 import { useAddressSuggestions, type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { sentenceDisplayLabel } from "@/components/shared/address-suggestions";
 import { AddressSheet, SheetTrigger, SuggestionText } from "./AddressSheet";
+import { DetailsSheet, DetailsTrigger, InlineDetails, type RideDetails } from "./DetailsSheet";
 import { useRouteQuote } from "@/components/shared/useRouteQuote";
 import { useHidesStickyCta } from "@/components/sections/sticky-cta-visibility";
 import { isTextEntry, quoteOutcomeKey, shouldRevealResult } from "@/lib/hero/hero-visibility";
@@ -18,15 +19,13 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { HANDOFF_HREF, rememberShownPrice, writeHandoff } from "@/lib/booking-handoff";
 import { navigateWithHandoffTransition } from "@/components/booking/handoff/view-transition";
-import { isFutureAmsterdamDeparture, todayISO, useIsDesktop } from "./sentence-env";
+import { isFutureAmsterdamDeparture, useIsDesktop } from "./sentence-env";
 import { journeyStateFor, journeyTransition, type JourneyState } from "@/lib/horizon/journey-line-state";
 import {
   JOURNEY_RUN_MS,
   priceRevealed,
   resultBusy,
   SENTENCE_DEFAULT_PASSENGERS,
-  SENTENCE_PASSENGERS,
-  sentencePassengers,
 } from "@/lib/hero/sentence-reveal";
 
 /*
@@ -41,15 +40,9 @@ import {
  *  de adressen gaan via sessionStorage, nooit via de URL.
  *  Suggesties en prijs komen uit de GEDEELDE bronnen (useAddressSuggestions,
  *  useRouteQuote): dit is dezelfde keten als het boekingsformulier, alleen in
- *  zin-presentatie. Vrije tekst blijft toegestaan. */
-const HERO_LUGGAGE = [
-  { value: "geen-bagage", labelKey: "bagageGeen" },
-  { value: "handbagage", labelKey: "bagageHand" },
-  { value: "1-2-koffers", labelKey: "bagage12" },
-  { value: "3-koffers", labelKey: "bagage3" },
-  { value: "overleg", labelKey: "bagageOverleg" },
-] as const;
-
+ *  zin-presentatie. Vrije tekst blijft toegestaan.
+ *  PR 2.6b: < 768px opent de regel datum/tijd/passagiers/bagage één sheet
+ *  (DetailsSheet.tsx); de inline velden zijn er alleen vanaf 768px. */
 export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: string }) {
   const t = useTranslations("zin");
   const tb = useTranslations("booking");
@@ -73,6 +66,16 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   // §6.2: passagiers in de zin (alleen zichtbaar vanaf 768px; daaronder 1, zoals
   // vóór 2.1). Zelfde grens als /boeken; de server beslist over handmatige review.
   const [passengers, setPassengers] = useState<number>(SENTENCE_DEFAULT_PASSENGERS);
+  // PR 2.6b: mobiele sheet voor datum/tijd/passagiers/bagage.
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detailsTriggerRef = useRef<HTMLButtonElement>(null);
+  const details: RideDetails = { date, time, passengers, luggage };
+  function commitDetails(d: RideDetails) {
+    setDate(d.date);
+    setTime(d.time);
+    setPassengers(d.passengers);
+    setLuggage(d.luggage);
+  }
 
   // Eén gedeelde suggestiebron voor het actieve veld.
   const activeQuery = activeField === "from" ? from : activeField === "to" ? to : "";
@@ -170,14 +173,17 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
       resultBottom: r.bottom,
       sentenceTop: root.getBoundingClientRect().top,
       viewportHeight: window.visualViewport?.height ?? window.innerHeight,
-      textEntryFocused: isTextEntry(
-        active && {
-          tagName: active.tagName,
-          type: active.getAttribute("type"),
-          role: active.getAttribute("role"),
-          isContentEditable: active.isContentEditable,
-        }
-      ),
+      // Een open sheet (PR 2.6/2.6b) is ook invoer: de pagina eronder schuift niet.
+      textEntryFocused:
+        Boolean(active?.closest("dialog[open]")) ||
+        isTextEntry(
+          active && {
+            tagName: active.tagName,
+            type: active.getAttribute("type"),
+            role: active.getAttribute("role"),
+            isContentEditable: active.isContentEditable,
+          }
+        ),
     });
     lastHandledOutcome.current = outcomeKey;
     if (reveal) result.scrollIntoView({ block: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
@@ -254,6 +260,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
   );
   // Wordt het venster breder dan 768px terwijl de sheet open is: sluiten.
   if (isDesktop && sheetField !== null) setSheetField(null);
+  if (isDesktop && detailsOpen) setDetailsOpen(false);
 
   function onKeyDown(e: React.KeyboardEvent) {
     if (suggestions.length === 0) return;
@@ -358,61 +365,18 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
         <span className="max-md:hidden">{t("voor")}</span> {blank("from", from, setFrom, () => setFromResolved(""), t("phVertrek"), t("ariaVertrek"), tb("van"))} <span className="max-md:hidden">{t("tussen")}</span>{" "}
         {blank("to", to, setTo, () => setToResolved(""), t("phBestemming"), t("ariaBestemming"), tb("naar"))}<span className="max-md:hidden">.</span>
       </div>
-      <div className="hz-sentence-text mt-2 font-display text-[clamp(15px,1.7vw,20px)] font-light leading-[1.6] text-ink/75">
-        {t("op")}{" "}
-        <span className="hz-focus relative inline-block align-baseline">
-          <input
-            type="date"
-            className="hz-blank font-display font-medium"
-            style={{ width: "10.5ch" }}
-            min={todayISO()}
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            aria-label={t("ariaDatum")}
-          />
-        </span>{" "}
-        {t("om")}{" "}
-        <span className="hz-focus relative inline-block align-baseline">
-          <input
-            type="time"
-            className="hz-blank hz-time font-display font-medium"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            aria-label={t("ariaTijd")}
-          />
-        </span>{" "}
-        {t("met")}{" "}
-        {/* §6.2: passagiers in de zin, sinds PR 2.6 ook < 768px. */}
-        <span>
-          <span className="hz-focus relative inline-block align-baseline">
-            <select
-              className="hz-blank font-display font-medium"
-              value={passengers}
-              onChange={(e) => setPassengers(sentencePassengers(e.target.value))}
-              aria-label={t("ariaPassagiers")}
-            >
-              {SENTENCE_PASSENGERS.map((n) => (
-                <option key={n} value={n}>{t("passagiersAantal", { count: n })}</option>
-              ))}
-            </select>
-          </span>{" "}
-          {t("en")}{" "}
-        </span>
-        <span className="hz-focus relative inline-block align-baseline">
-          <select
-            className="hz-blank font-display font-medium"
-            value={luggage}
-            onChange={(e) => setLuggage(e.target.value)}
-            aria-label={t("ariaBagage")}
-          >
-            <option value="" disabled>{t("kiesBagage")}</option>
-            {HERO_LUGGAGE.map((l) => (
-              <option key={l.value} value={l.value}>{t(l.labelKey)}</option>
-            ))}
-          </select>
-        </span>
-        .
-      </div>
+      <InlineDetails
+        details={details}
+        onChange={(d) => commitDetails({ ...details, ...d })}
+      />
+      <DetailsTrigger details={details} expanded={detailsOpen} onOpen={() => setDetailsOpen(true)} triggerRef={detailsTriggerRef} />
+      <DetailsSheet
+        open={detailsOpen}
+        details={details}
+        onCommit={commitDetails}
+        onClosed={() => setDetailsOpen(false)}
+        returnFocusRef={detailsTriggerRef}
+      />
       {(["from", "to"] as const).map((field) => (
         <AddressSheet
           key={field}

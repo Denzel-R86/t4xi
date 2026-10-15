@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { defaultMasks, HIDE_OVERLAYS, open, settle, stabilize } from "./support/harness";
-import { fillAddress, openAddress, sentenceRoot, sheetTrigger } from "./support/sentence";
+import { defaultMasks, HIDE_OVERLAYS, open, RIDE, settle, stabilize } from "./support/harness";
+import { detailsTrigger, fillAddress, fillDetails, openAddress, openDetails, sentenceRoot, sheetTrigger } from "./support/sentence";
 
 /**
  * PR 2.6 (masterplan §6.5): gestapelde mobiele zin en adres-sheet, alleen op 375.
@@ -68,5 +68,39 @@ test.describe("Mobiele zin (375)", () => {
     await expect(page.getByRole("listbox").getByRole("option").first()).toBeVisible();
     await settle(page);
     await expect(page).toHaveScreenshot("mobiel-sheet-suggesties.png", { mask: defaultMasks(page) });
+  });
+
+  // PR 2.6b: detail-sheet (datum, tijd, passagiers, bagage).
+  test("detail-sheet open met waarden", async ({ page }) => {
+    await stabilize(page);
+    await open(page, "/");
+    await fillDetails(page, { date: RIDE.date, time: RIDE.time, passengers: 2, luggage: "1-2-koffers" });
+    await openDetails(page);
+    await settle(page);
+    await expect(page).toHaveScreenshot("mobiel-details-sheet-waarden.png", { mask: defaultMasks(page) });
+  });
+
+  test("zin ingevuld (adressen + details)", async ({ page }) => {
+    await stabilize(page);
+    await open(page, "/");
+    await fillAddress(page, "Vertrek", "Amsterdam Zuidas");
+    await fillAddress(page, "Bestemming", "Schiphol");
+    await fillDetails(page, { date: RIDE.date, time: RIDE.time, passengers: 2, luggage: "1-2-koffers" });
+    await expect(detailsTrigger(page)).toBeFocused();
+    // Zelfde blur-lus als hierboven (F-36): geen focusring in de opname.
+    await page.evaluate(async () => {
+      const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
+      for (let i = 0; i < 20; i++) {
+        (document.activeElement as HTMLElement | null)?.blur();
+        await frame();
+        await frame();
+        if (document.activeElement === document.body) return;
+      }
+      throw new Error("focus bleef op de trigger");
+    });
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await expect(sentenceRoot(page)).toHaveScreenshot("mobiel-zin-ingevuld.png", { stylePath: HIDE_OVERLAYS });
   });
 });
