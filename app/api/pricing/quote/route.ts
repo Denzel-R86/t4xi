@@ -13,6 +13,7 @@ import { publicPriceBreakdown } from "@/lib/pricing/public-price-breakdown";
 import { amsterdamDepartureIso } from "@/lib/pricing/departure-time";
 import { classifyLuggage } from "@/lib/pricing/luggage";
 import { clientIp, rateLimit } from "@/lib/security/rate-limit";
+import { isVerificationRequest } from "@/lib/pricing/verification-header";
 
 /**
  * POST /api/pricing/quote
@@ -265,7 +266,20 @@ export async function POST(request: Request) {
   let result: PricingQuoteResult;
   let snapshot: PriceSnapshot | null;
   try {
-    const computed = await calculateBookingPrice(input);
+    // VERIFICATIEVERKEER (classificatie, geen prijs). Een geldige
+    // `x-t4xi-verification`-header merkt de observaties van DEZE aanroep als
+    // synthetisch aan, zodat ze buiten de Gate 6.4-drempels blijven. De vlag
+    // raakt uitsluitend het veld `is_synthetic` in de observatielog van het
+    // evenemententarief; er is geen pad van hier naar een bedrag, en de route
+    // leidt zelf niets over het evenemententarief af. Zonder
+    // `VERIFICATION_TOKEN` staat de functie uit.
+    //
+    // BEWUST GEEN AFWIJKEND ANTWOORD bij een onjuist token: een 401/403 zou de
+    // route tot een orakel maken om het token te raden. Een ongeldige of
+    // ontbrekende header wordt stil genegeerd en de observatie telt gewoon mee.
+    const computed = await calculateBookingPrice(input, {
+      markObservationsSynthetic: isVerificationRequest(request.headers),
+    });
     result = computed.quote;
     snapshot = computed.snapshot;
   } catch {
