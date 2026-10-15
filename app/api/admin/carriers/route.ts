@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAuthorizedAdminRequest } from "@/lib/admin/basic-auth";
+import { isSameOriginRequest } from "@/lib/security/same-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,9 @@ function normalizeName(value: unknown): string {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json({ error: "forbidden_origin" }, { status: 403 });
+  }
   if (!(await isAuthorizedAdminRequest(request))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }

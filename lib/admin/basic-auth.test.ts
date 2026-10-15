@@ -19,6 +19,9 @@ test("operationscredentials worden server-side en exact gecontroleerd", () => {
   assert.equal(hasValidOpsCredentials("operations", "sterk-wachtwoord"), true);
   assert.equal(hasValidOpsCredentials("Operations", "sterk-wachtwoord"), false);
   assert.equal(hasValidOpsCredentials("operations", "fout"), false);
+  // Lengteverschil faalt zonder vroege lengtecheck (digest-vergelijking, F-39).
+  assert.equal(hasValidOpsCredentials("operations", "sterk-wachtwoord-langer"), false);
+  assert.equal(hasValidOpsCredentials("", ""), false);
 });
 
 test("admin-API accepteert alleen een geldige sessie, geen gecachte Basic Auth", async () => {
