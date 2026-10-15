@@ -8,7 +8,7 @@
  * lopen op functionaliteit die nog niet bestaat.
  *
  * Validatie voorkomt dat een verkeerd ingevulde environment-waarde
- * ongefilterd in een inline script terechtkomt (zie Trackers.tsx).
+ * ongefilterd in een trackerconfiguratie terechtkomt (zie Trackers.tsx).
  */
 
 const GA_ID_PATTERN = /^G-[A-Z0-9]+$/;
@@ -39,6 +39,30 @@ export const hasGoogleTag = Boolean(gaMeasurementId || googleAdsId);
 export const hasStatisticsTracker = Boolean(gaMeasurementId);
 export const hasMarketingTracker = Boolean(googleAdsId || metaPixelId);
 export const hasOptionalTrackers = hasStatisticsTracker || hasMarketingTracker;
+
+export type GoogleTrackerActivation = {
+  initializeGA4: boolean;
+  initializeGoogleAds: boolean;
+  loadGoogleTag: boolean;
+};
+
+/**
+ * Koppelt iedere Google-dienst strikt aan zijn eigen categorie. Een keuze voor
+ * Statistieken mag Google Ads nooit laden/initialiseren en een keuze voor
+ * Marketing mag GA4 nooit laden/initialiseren.
+ */
+export function resolveGoogleTrackerActivation(
+  config: { gaMeasurementId: string | null; googleAdsId: string | null },
+  consent: { statistics: boolean; marketing: boolean },
+): GoogleTrackerActivation {
+  const initializeGA4 = Boolean(config.gaMeasurementId && consent.statistics);
+  const initializeGoogleAds = Boolean(config.googleAdsId && consent.marketing);
+  return {
+    initializeGA4,
+    initializeGoogleAds,
+    loadGoogleTag: initializeGA4 || initializeGoogleAds,
+  };
+}
 
 export type ConsentCategory = "statistics" | "marketing";
 

@@ -47,6 +47,8 @@ type ConsentState = {
 
 const ConsentContext = createContext<ConsentState | null>(null);
 
+type ConsentWindow = Window & { __t4xiStatisticsConsent?: boolean };
+
 function readCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
@@ -87,6 +89,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
   const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
+    (window as ConsentWindow).__t4xiStatisticsConsent = false;
     // Cookie-lezing kan pas ná mount (document is er server-side niet); de
     // setState-calls lopen via een microtask zodat dit geen synchrone
     // setState-in-effect is (react-hooks/set-state-in-effect).
@@ -95,6 +98,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       const stored = parseConsent(readCookie(CONSENT_COOKIE_NAME));
       if (stored) {
+        (window as ConsentWindow).__t4xiStatisticsConsent = stored.statistics;
         setHasChoice(true);
         setStatistics(stored.statistics);
         setMarketing(stored.marketing);
@@ -116,6 +120,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
       ts,
     };
     writeCookie(CONSENT_COOKIE_NAME, JSON.stringify(record));
+    (window as ConsentWindow).__t4xiStatisticsConsent = choice.statistics;
     setStatistics(choice.statistics);
     setMarketing(choice.marketing);
     setConsentedAt(ts);

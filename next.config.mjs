@@ -65,9 +65,6 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // Voorkomt dat `next dev`/`next build` steeds opnieuw AGENTS.md en CLAUDE.md
-  // in de projectroot genereren (Next.js 16-default, sinds versie 16.3.0).
-  agentRules: false,
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

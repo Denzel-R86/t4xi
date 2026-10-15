@@ -4,7 +4,12 @@ import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePathname } from "@/i18n/navigation";
-import { gaMeasurementId, googleAdsId, metaPixelId, hasGoogleTag } from "@/lib/consent/config";
+import {
+  gaMeasurementId,
+  googleAdsId,
+  metaPixelId,
+  resolveGoogleTrackerActivation,
+} from "@/lib/consent/config";
 import { useConsent } from "@/components/consent/ConsentContext";
 
 declare global {
@@ -16,9 +21,11 @@ declare global {
   }
 }
 
-/** Cookies die Google-tag/Meta Pixel zelf zetten — verwijderd zodra de bijbehorende categorie wordt ingetrokken. */
-const GA_COOKIE_EXACT = ["_ga", "_gid", "_gat", "_gcl_au"];
-const GA_COOKIE_PREFIX = ["_ga_", "_gac_"];
+/** Cookies per categorie — verwijderd zodra de bijbehorende toestemming wordt ingetrokken. */
+const GA_COOKIE_EXACT = ["_ga", "_gid", "_gat"];
+const GA_COOKIE_PREFIX = ["_ga_"];
+const GOOGLE_ADS_COOKIE_EXACT = ["_gcl_au"];
+const GOOGLE_ADS_COOKIE_PREFIX = ["_gac_"];
 const META_COOKIE_EXACT = ["_fbp", "_fbc"];
 
 /**
@@ -83,11 +90,23 @@ export default function Trackers() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [loadGoogleTag, setLoadGoogleTag] = useState(false);
+  const [googleTagSrcId, setGoogleTagSrcId] = useState<string | null>(null);
+  const [ga4Ready, setGa4Ready] = useState(false);
   const [loadMetaPixel, setLoadMetaPixel] = useState(false);
-  const primaryGoogleTagId = gaMeasurementId ?? googleAdsId;
+  const [metaPixelReady, setMetaPixelReady] = useState(false);
+  const googleBootstrapped = useRef(false);
+  const ga4Initialized = useRef(false);
+  const googleAdsInitialized = useRef(false);
+  const lastGaPageView = useRef<string | null>(null);
+  const lastMetaPageView = useRef<string | null>(null);
+  const activation = resolveGoogleTrackerActivation(
+    { gaMeasurementId, googleAdsId },
+    { statistics, marketing },
+  );
 
-  // Eenmalig laden zodra een relevante categorie voor het eerst is toegestaan.
+  // Eenmalig laden zodra een daadwerkelijk geconfigureerde dienst toestemming
+  // heeft in zijn EIGEN categorie. De gtag-queue wordt vooraf klaargezet, zodat
+  // initialisatiecommando's veilig wachten tot het externe script gereed is.
   // Bewust GEEN dependency op "false" terug laten leiden tot unmounten: het
   // script blijft staan, alleen de consentstatus verandert (zie effect hieronder).
   // setState loopt via een microtask, zoals in ConsentContext (react-hooks/set-state-in-effect).
@@ -96,13 +115,55 @@ export default function Trackers() {
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
-      if (hasGoogleTag && (statistics || marketing)) setLoadGoogleTag(true);
+      if (!activation.initializeGA4) setGa4Ready(false);
+      if (activation.loadGoogleTag) {
+        if (!googleBootstrapped.current) {
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = (...args: unknown[]) => window.dataLayer?.push(args);
+          window.gtag("consent", "default", {
+            analytics_storage: "denied",
+            ad_storage: "denied",
+            ad_user_data: "denied",
+            ad_personalization: "denied",
+          });
+          window.gtag("js", new Date());
+          window.gtag("consent", "update", {
+            analytics_storage: statistics ? "granted" : "denied",
+            ad_storage: marketing ? "granted" : "denied",
+            ad_user_data: marketing ? "granted" : "denied",
+            ad_personalization: marketing ? "granted" : "denied",
+          });
+          googleBootstrapped.current = true;
+        }
+
+        if (activation.initializeGA4 && gaMeasurementId && !ga4Initialized.current) {
+          window.gtag?.("config", gaMeasurementId, { send_page_view: false });
+          ga4Initialized.current = true;
+        }
+        if (activation.initializeGA4 && gaMeasurementId) setGa4Ready(true);
+        if (activation.initializeGoogleAds && googleAdsId && !googleAdsInitialized.current) {
+          window.gtag?.("config", googleAdsId);
+          googleAdsInitialized.current = true;
+        }
+
+        setGoogleTagSrcId((current) =>
+          current ?? (activation.initializeGA4 ? gaMeasurementId : googleAdsId),
+        );
+      }
       if (metaPixelId && marketing) setLoadMetaPixel(true);
     });
     return () => {
       cancelled = true;
     };
-  }, [ready, hasChoice, statistics, marketing]);
+  }, [
+    ready,
+    hasChoice,
+    statistics,
+    marketing,
+    activation.initializeGA4,
+    activation.initializeGoogleAds,
+    activation.loadGoogleTag,
+  ]);
 
   // Iedere consentwijziging — óók intrekking — direct doorgeven aan reeds
   // geladen scripts, en niet-toegestane trackercookies opruimen. Werkt zonder
@@ -122,7 +183,10 @@ export default function Trackers() {
       window.fbq("consent", marketing ? "grant" : "revoke");
     }
     if (!statistics) deleteCookiesMatching(GA_COOKIE_EXACT, GA_COOKIE_PREFIX);
-    if (!marketing) deleteCookiesMatching(META_COOKIE_EXACT, []);
+    if (!marketing) {
+      deleteCookiesMatching(GOOGLE_ADS_COOKIE_EXACT, GOOGLE_ADS_COOKIE_PREFIX);
+      deleteCookiesMatching(META_COOKIE_EXACT, []);
+    }
   }, [ready, hasChoice, statistics, marketing]);
 
   // SPA-navigatie binnen de App Router ververst de pagina niet volledig, dus
@@ -130,65 +194,52 @@ export default function Trackers() {
   // De categorie-check hier is een tweede, eigen verdedigingslinie bovenop
   // Consent Mode: zelfs als deze check ontbrak, onderdrukt Google's library
   // zelf een hit bij denied consent.
-  const didInitialSync = useRef(false);
   useEffect(() => {
     if (!ready || !hasChoice) return;
-    if (!didInitialSync.current) {
-      // Eerste render na een keuze: de init-inline-script hieronder regelt al
-      // de eerste 'page_view' via gtag('config', …). Voorkom een dubbele hit.
-      didInitialSync.current = true;
-      return;
-    }
     const page_path = searchParams?.toString() ? `${pathname}?${searchParams.toString()}` : pathname;
-    if (statistics && gaMeasurementId && typeof window.gtag === "function") {
+
+    if (!activation.initializeGA4 || !ga4Ready) {
+      // Na intrekking mag opnieuw toestaan op dezelfde route één nieuwe
+      // page_view opleveren; daarom wordt de deduplicatiesleutel gewist.
+      lastGaPageView.current = null;
+    } else if (lastGaPageView.current !== page_path && typeof window.gtag === "function") {
       window.gtag("event", "page_view", { page_path });
+      lastGaPageView.current = page_path;
     }
-    if (marketing && metaPixelId && typeof window.fbq === "function") {
+
+    if (!marketing || !metaPixelId || !metaPixelReady) {
+      lastMetaPageView.current = null;
+    } else if (lastMetaPageView.current !== page_path && typeof window.fbq === "function") {
       window.fbq("track", "PageView");
+      lastMetaPageView.current = page_path;
     }
-  }, [pathname, searchParams, ready, hasChoice, statistics, marketing]);
+  }, [
+    pathname,
+    searchParams,
+    ready,
+    hasChoice,
+    marketing,
+    metaPixelReady,
+    ga4Ready,
+    activation.initializeGA4,
+  ]);
 
   return (
     <>
-      {loadGoogleTag && primaryGoogleTagId ? (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${primaryGoogleTagId}`}
-            strategy="afterInteractive"
-          />
-          {/* Consent Mode v2: eerst een expliciete 'default' (alles denied) op
-              het moment dat de library laadt, direct gevolgd door 'update' naar
-              de daadwerkelijke — op dat moment al bekende — keuze. Er is geen
-              wachttijd/CMP-vertraging nodig: dit blok wordt pas geïnjecteerd
-              nádat de bezoeker al heeft gekozen (Basic-implementatie). */}
-          <Script id="gtag-init" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              window.gtag = gtag;
-              gtag('consent', 'default', {
-                analytics_storage: 'denied',
-                ad_storage: 'denied',
-                ad_user_data: 'denied',
-                ad_personalization: 'denied'
-              });
-              gtag('consent', 'update', {
-                analytics_storage: '${statistics ? "granted" : "denied"}',
-                ad_storage: '${marketing ? "granted" : "denied"}',
-                ad_user_data: '${marketing ? "granted" : "denied"}',
-                ad_personalization: '${marketing ? "granted" : "denied"}'
-              });
-              gtag('js', new Date());
-              ${statistics && gaMeasurementId ? `gtag('config', '${gaMeasurementId}');` : ""}
-              ${marketing && googleAdsId ? `gtag('config', '${googleAdsId}');` : ""}
-            `}
-          </Script>
-        </>
+      {googleTagSrcId ? (
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${googleTagSrcId}`}
+          strategy="afterInteractive"
+        />
       ) : null}
 
       {loadMetaPixel ? (
         <>
-          <Script id="meta-pixel-init" strategy="afterInteractive">
+          <Script
+            id="meta-pixel-init"
+            strategy="afterInteractive"
+            onReady={() => setMetaPixelReady(true)}
+          >
             {`
               !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
               n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
@@ -197,7 +248,6 @@ export default function Trackers() {
               document,'script','https://connect.facebook.net/en_US/fbevents.js');
               fbq('consent', 'grant');
               fbq('init', '${metaPixelId}');
-              fbq('track', 'PageView');
             `}
           </Script>
           <noscript>
