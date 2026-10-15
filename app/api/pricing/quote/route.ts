@@ -96,6 +96,9 @@ function statusForReason(reason: UnavailableReason): 400 | 404 | 422 | 500 {
     // (ontbrekende configuratie versus leesfout) blijft binnen de server.
     case "airport_arrival_surcharge_missing":
     case "airport_arrival_surcharge_unavailable":
+    // Meerdere even specifieke terugvalroutes met verschillende prijzen:
+    // functioneel "Offerte op aanvraag", geen storing. Interne reden blijft binnen.
+    case "route_fallback_ambiguous":
       return 404;
     case "data_unavailable":
       return 500;
