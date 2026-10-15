@@ -37,6 +37,11 @@ import {
 } from "@/lib/pricing/approach-fee";
 import { isNightTariff } from "@/lib/pricing/departure-time";
 import {
+  buildFallbackLevels,
+  isFallbackEligible,
+  resolveLevel,
+} from "@/lib/pricing/route-fallback";
+import {
   resolveArrivalSurcharge,
   applyArrivalSurcharge,
   type AirportArrivalSurcharge,
@@ -120,7 +125,15 @@ export type UnavailableReason =
    * fail-closed gedrag, andere oorzaak — onderscheiden zodat een storing in de
    * logs niet op een ontbrekende configuratie lijkt.
    */
-  | "airport_arrival_surcharge_unavailable";
+  | "airport_arrival_surcharge_unavailable"
+  /**
+   * Wijk → stad-terugval (2026-10-15) leverde op hetzelfde specificiteitsniveau
+   * MEERDERE routes met verschillende prijzen op. Er is dan geen objectieve
+   * keuze, dus valt de offerte fail-closed terug op "Offerte op aanvraag" in
+   * plaats van willekeurig een prijs te kiezen. INTERNE reden; de publieke
+   * response toont uitsluitend de gewone tekst.
+   */
+  | "route_fallback_ambiguous";
 
 /** Richting van de vlucht bij een luchthavenrit. */
 export type FlightDirection = "arrival" | "departure";
@@ -622,6 +635,13 @@ export type ResolveQuoteDeps = {
    * nooit een stilzwijgende default. Zie lib/pricing/airport-arrival-surcharge.ts.
    */
   loadArrivalSurcharge?: (airportLocationId: string) => Promise<AirportArrivalSurchargeConfig | null>;
+  /**
+   * Actieve city-level locatie van deze `city_id` (2026-10-15), of `null`.
+   * Uitsluitend gebruikt voor de wijk → stad-terugval bij VASTE ROUTES; raakt
+   * de algemene locatieresolver niet. Ontbreekt deze dep, dan vindt er geen
+   * terugval plaats en blijft het gedrag exact zoals voorheen.
+   */
+  findCityLocation?: (cityId: string) => Promise<LocationRow | null>;
   /** SHADOW-ONLY. Geconfigureerde high-demand-bestemmingen (nooit "perifeer"). */
   loadHighDemandZones?: () => Promise<HighDemandZoneIds>;
   /**
@@ -833,6 +853,9 @@ async function resolveQuote(input: PricingQuoteInput): Promise<{
     findVehicleClass: (code) => findVehicleClass(supabase, code),
     findFixedRoute: (pickupId, dropoffId, vehicleClassId) =>
       findFixedRoute(supabase, pickupId, dropoffId, vehicleClassId),
+    // Wijk -> stad-terugval (2026-10-15): zelfde publieke read-client als de
+    // overige referentietabellen, geen verhoogde rechten.
+    findCityLocation: (cityId) => findCityLocation(supabase, cityId),
     getRoute: getDrivingRoute,
     // SHADOW-ONLY, service-role-only tabellen (pricing_deadhead_config/
     // pricing_high_demand_zones/pricing_deadhead_eligible_zones zijn RLS-only
@@ -921,7 +944,39 @@ export async function resolveQuoteWith(
   if (pickup && dropoff) {
     let fixed: FixedRouteRow | null;
     try {
+      // 1a. EXACT herkende locaties hebben altijd voorrang.
       fixed = await deps.findFixedRoute(pickup.id, dropoff.id, vehicleClass.id);
+
+      // 1b. Pas als daarvoor GEEN route bestaat: wijk → eigen stad terugvallen
+      //     (2026-10-15). Een adres mét postcode resolvet naar de wijk, terwijl
+      //     intercity-tarieven op stadsniveau staan. Uitsluitend `district`
+      //     mag terugvallen, uitsluitend naar de EIGEN stad, en per
+      //     specificiteitsniveau — city → city als laatste. Zie
+      //     lib/pricing/route-fallback.ts. De locatieresolver blijft ongemoeid.
+      if (!fixed && deps.findCityLocation) {
+        const pickupCity = isFallbackEligible(pickup) ? await deps.findCityLocation(pickup.city_id!) : null;
+        const dropoffCity = isFallbackEligible(dropoff) ? await deps.findCityLocation(dropoff.city_id!) : null;
+
+        const levels = buildFallbackLevels({ pickup, dropoff, pickupCity, dropoffCity });
+        for (const level of levels) {
+          const treffers = [];
+          for (const candidate of level) {
+            treffers.push({
+              route: await deps.findFixedRoute(candidate.pickupId, candidate.dropoffId, vehicleClass.id),
+              candidate,
+            });
+          }
+          const outcome = resolveLevel(treffers, (a, b) => a.price === b.price && a.return_price === b.return_price);
+          if (outcome.kind === "ambiguous") {
+            // Geen willekeurige winnaar: liever geen prijs dan de verkeerde.
+            return unavailable("route_fallback_ambiguous", airport);
+          }
+          if (outcome.kind === "match") {
+            fixed = outcome.route;
+            break;
+          }
+        }
+      }
     } catch {
       return unavailable("data_unavailable", airport);
     }
@@ -1617,6 +1672,28 @@ async function findLocation(
     .maybeSingle();
   if (byName.error) throw byName.error;
   return byName.data ?? null;
+}
+
+/**
+ * Actieve city-level locatie binnen deze `city_id` (2026-10-15). Uitsluitend
+ * voor de wijk → stad-terugval bij vaste routes. Levert `null` als er geen
+ * actieve city-locatie is (zoals bij Schiphol) of bij meer dan één — dan is er
+ * geen eenduidige stad en vindt er geen terugval plaats.
+ */
+async function findCityLocation(
+  supabase: PricingSupabaseClient,
+  cityId: string
+): Promise<LocationRow | null> {
+  const res = await supabase
+    .from("locations")
+    .select("id, slug, name, active, location_type, city_id")
+    .eq("active", true)
+    .eq("city_id", cityId)
+    .eq("location_type", "city")
+    .limit(2);
+  if (res.error) throw res.error;
+  const rows = res.data ?? [];
+  return rows.length === 1 ? rows[0]! : null;
 }
 
 async function findVehicleClass(
