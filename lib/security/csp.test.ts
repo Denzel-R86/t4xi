@@ -14,7 +14,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { buildReportOnlyCsp, cspSourcesFromEnv, generateNonce, CSP_REPORT_PATH } from "@/lib/security/csp";
-import { formatCspViolation, parseCspReports } from "@/lib/security/csp-report";
+import { existsSync } from "node:fs";
+import { classifyCspViolation, formatCspViolation, parseCspReports, SSG_PAGE_PATHS } from "@/lib/security/csp-report";
 
 const ROOT = process.cwd();
 const read = (file: string) => readFileSync(path.join(ROOT, file), "utf8");
@@ -138,7 +139,7 @@ test("rapport: alleen directive, origin en pad — geen query, sample of referre
     },
   });
   const [v] = parseCspReports(legacy);
-  assert.deepEqual(v, { directive: "script-src-elem", blocked: "https://evil.example", page: "/boeken", source: "https://www.t4xi.nl", disposition: "report" });
+  assert.deepEqual(v, { directive: "script-src-elem", blocked: "https://evil.example", page: "/boeken", source: "self", disposition: "report", category: "onbekend" });
   const line = formatCspViolation(v);
   for (const leak of ["Kerkstraat", "geheim", "0612345678", "a%40b", "alert", "?", "#"]) assert.ok(!line.includes(leak), `lekt ${leak}`);
 
@@ -146,7 +147,7 @@ test("rapport: alleen directive, origin en pad — geen query, sample of referre
     { type: "csp-violation", body: { documentURL: "https://www.t4xi.nl/en/tarieven?x=1", blockedURL: "inline", effectiveDirective: "script-src-elem", disposition: "report" } },
     { type: "deprecation", body: {} },
   ]);
-  assert.deepEqual(parseCspReports(reportTo), [{ directive: "script-src-elem", blocked: "inline", page: "/en/tarieven", source: "-", disposition: "report" }]);
+  assert.deepEqual(parseCspReports(reportTo), [{ directive: "script-src-elem", blocked: "inline", page: "/en/tarieven", source: "-", disposition: "report", category: "onbekend" }]);
 });
 
 test("rapport: onzin, log-injectie en te veel rapporten worden begrensd", () => {
@@ -161,4 +162,36 @@ test("rapport: onzin, log-injectie en te veel rapporten worden begrensd", () => 
   assert.equal(parseCspReports(JSON.stringify({ "csp-report": { "effective-directive": "x=1;rm" } }))[0].directive, "?");
   const many = JSON.stringify(Array.from({ length: 50 }, () => ({ type: "csp-violation", body: { effectiveDirective: "img-src" } })));
   assert.equal(parseCspReports(many).length, 10);
+});
+
+test("categorie: F-47-ruis (SSG zonder nonce) is herkenbaar, de rest niet", () => {
+  const report = (doc: string, blocked: string, directive = "script-src-elem") =>
+    parseCspReports(JSON.stringify({ "csp-report": { "document-uri": doc, "blocked-uri": blocked, "effective-directive": directive, disposition: "report" } }))[0];
+  // Next-chunk (zelfde origin) en inline-script op een SSG-pagina, NL en EN.
+  assert.equal(report("https://www.t4xi.nl/diensten", "https://www.t4xi.nl/_next/static/chunks/a.js").category, "F-47 ssg-no-nonce");
+  assert.equal(report("https://www.t4xi.nl/en/over-ons?x=1", "inline").category, "F-47 ssg-no-nonce");
+  assert.equal(report("https://www.t4xi.nl/diensten", "https://www.t4xi.nl/x.js").blocked, "self");
+  // Zelfde violation op een dynamische pagina is GEEN F-47: dat is een echte afwijking.
+  assert.equal(report("https://www.t4xi.nl/tarieven", "inline").category, "onbekend");
+  assert.equal(report("https://www.t4xi.nl/", "inline").category, "onbekend");
+  // Vreemde origin op een SSG-pagina is ook geen F-47.
+  assert.equal(report("https://www.t4xi.nl/diensten", "https://evil.example/x.js").category, "onbekend");
+  // Andere directive op een SSG-pagina evenmin.
+  assert.equal(report("https://www.t4xi.nl/diensten", "https://cdn.example", "img-src").category, "onbekend");
+  // Stripe-/Link-hosts apart (bewijs voor de Stripe-hostvraag).
+  assert.equal(report("https://www.t4xi.nl/boeken", "https://b.js.stripe.com", "frame-src").category, "stripe-host");
+  assert.equal(report("https://www.t4xi.nl/boeken", "https://checkout.link.com", "frame-src").category, "stripe-host");
+  assert.equal(report("https://www.t4xi.nl/boeken", "https://stripe.com.evil.example", "frame-src").category, "onbekend");
+  assert.match(formatCspViolation(report("https://www.t4xi.nl/diensten", "inline")), /^\[csp-report\] category="F-47 ssg-no-nonce" /);
+  assert.equal(classifyCspViolation({ directive: "script-src", blocked: "inline", page: "/en", source: "-", disposition: "report" }), "onbekend");
+});
+
+test("SSG-lijst klopt met de laatste build (alleen als .next aanwezig is)", (t) => {
+  const manifest = path.join(ROOT, ".next", "prerender-manifest.json");
+  if (!existsSync(manifest)) return t.skip("geen build");
+  const routes = Object.keys(JSON.parse(readFileSync(manifest, "utf8")).routes as Record<string, unknown>);
+  const ssg = routes.filter((r) => r.startsWith("/nl/")).map((r) => r.slice(3))
+    // /dashboard en /klant worden door proxy.ts als 404 beantwoord (nooit gerenderd).
+    .filter((r) => r !== "/dashboard" && r !== "/klant").sort();
+  assert.deepEqual(ssg, [...SSG_PAGE_PATHS].sort());
 });

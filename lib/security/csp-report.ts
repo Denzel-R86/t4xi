@@ -8,20 +8,61 @@
  *   · blocked    — CSP-sleutelwoord (inline/eval/…) of uitsluitend de ORIGIN;
  *   · page       — uitsluitend het PAD (geen query/hash), tekenset begrensd;
  *   · source     — uitsluitend de origin van het bronbestand;
- *   · disposition — report | enforce.
+ *   · disposition — report | enforce;
+ *   · category   — bekende groep (F-47, stripe-host) of `onbekend`, zodat de
+ *     7-dagenanalyse F-47-ruis direct kan scheiden (docs: masterplan §9 S1).
  * Nooit: query, hash, script-sample, referrer, IP, user-agent, statuscode.
  *
  * Ondersteunt beide formaten: `report-uri` (application/csp-report,
  * `{"csp-report": {...}}`) en de Reporting API (application/reports+json, array).
  */
 
+export type CspViolationCategory =
+  /** Bekend: statisch voorgerenderde pagina zonder nonce (findings F-47). */
+  | "F-47 ssg-no-nonce"
+  /** Stripe-/Link-host buiten de policy: bewijs voor de Stripe-hostvraag (S1). */
+  | "stripe-host"
+  /** Nieuw: handmatig beoordelen. */
+  | "onbekend";
+
 export type CspViolationSummary = {
   directive: string;
+  /** CSP-sleutelwoord, `self` (zelfde origin als de pagina) of een vreemde origin. */
   blocked: string;
   page: string;
   source: string;
   disposition: "report" | "enforce" | "?";
+  category: CspViolationCategory;
 };
+
+/**
+ * SSG-routes (● in de `next build`-routetabel) zonder locale-prefix. Deze pagina's
+ * hebben geen nonce (F-47). Wijzigt de routetabel, dan faalt csp.test.ts zodra
+ * er een build ligt (vergelijking met .next/prerender-manifest.json).
+ */
+export const SSG_PAGE_PATHS = [
+  "/dagtochten",
+  "/dashboard/invoices",
+  "/diensten",
+  "/over-ons",
+  "/partner",
+  "/privacy",
+  "/producten",
+  "/voorwaarden",
+  "/zakelijk-vervoer",
+] as const;
+
+const STRIPE_HOST_RE = /^https:\/\/(?:[a-z0-9-]+\.)*(?:stripe\.com|stripe\.network|link\.com)$/;
+
+export function classifyCspViolation(v: Omit<CspViolationSummary, "category">): CspViolationCategory {
+  const page = v.page.replace(/^\/en(?=\/|$)/, "") || "/";
+  const script = v.directive === "script-src" || v.directive === "script-src-elem";
+  if (script && (v.blocked === "inline" || v.blocked === "self") && (SSG_PAGE_PATHS as readonly string[]).includes(page)) {
+    return "F-47 ssg-no-nonce";
+  }
+  if (STRIPE_HOST_RE.test(v.blocked)) return "stripe-host";
+  return "onbekend";
+}
 
 export const MAX_REPORTS_PER_REQUEST = 10;
 
@@ -61,13 +102,17 @@ function summarize(body: Record<string, unknown>, legacy: boolean): CspViolation
   const directiveRaw = str(legacy ? body["effective-directive"] || body["violated-directive"] : body.effectiveDirective);
   const directive = directiveRaw.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
   const disposition = str(body.disposition);
-  return {
+  const documentUrl = str(legacy ? body["document-uri"] : body.documentURL);
+  const documentOrigin = originOf(documentUrl);
+  const same = (origin: string) => (origin.startsWith("http") && origin === documentOrigin ? "self" : origin);
+  const summary = {
     directive: DIRECTIVE_RE.test(directive) ? directive : "?",
-    blocked: originOf(str(legacy ? body["blocked-uri"] : body.blockedURL)),
-    page: pathOf(str(legacy ? body["document-uri"] : body.documentURL)),
-    source: originOf(str(legacy ? body["source-file"] : body.sourceFile)),
-    disposition: disposition === "report" || disposition === "enforce" ? disposition : "?",
+    blocked: same(originOf(str(legacy ? body["blocked-uri"] : body.blockedURL))),
+    page: pathOf(documentUrl),
+    source: same(originOf(str(legacy ? body["source-file"] : body.sourceFile))),
+    disposition: (disposition === "report" || disposition === "enforce" ? disposition : "?") as CspViolationSummary["disposition"],
   };
+  return { ...summary, category: classifyCspViolation(summary) };
 }
 
 /** Parset een (al grootte-begrensde) body. Ongeldig → lege lijst. */
@@ -98,5 +143,5 @@ export function parseCspReports(raw: string): CspViolationSummary[] {
 
 /** Eén logregel, alleen samengevatte velden. */
 export function formatCspViolation(v: CspViolationSummary): string {
-  return `[csp-report] disposition=${v.disposition} directive=${v.directive} blocked=${v.blocked} page=${v.page} source=${v.source}`;
+  return `[csp-report] category="${v.category}" disposition=${v.disposition} directive=${v.directive} blocked=${v.blocked} page=${v.page} source=${v.source}`;
 }
