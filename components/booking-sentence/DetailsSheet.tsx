@@ -4,7 +4,7 @@ import { useRef, useState, type MouseEvent, type ReactNode, type RefObject } fro
 import { useFormatter, useTranslations } from "next-intl";
 import Icon from "@/components/ui/Icon";
 import Button from "@/components/ui/Button";
-import { dateTimeCls, inputCls, labelCls } from "@/components/booking/steps/fields";
+import { SelectField, dateTimeCls, labelCls } from "@/components/booking/steps/fields";
 import { SENTENCE_PASSENGERS, sentencePassengers } from "@/lib/hero/sentence-reveal";
 import { todayISO } from "./sentence-env";
 import { trapSheetTab, useSheetDialog } from "./sheet-dialog";
@@ -17,8 +17,9 @@ import { trapSheetTab, useSheetDialog } from "./sheet-dialog";
  * (besluit eigenaar 14-10): alleen "Klaar" schrijft de waarden in de zin;
  * Escape, Sluiten en een tik buiten de sheet annuleren. Heropenen toont de
  * laatst toegepaste waarden. Zo start er tijdens het kiezen geen prijsaanvraag.
- * Datum/tijd gebruiken `dateTimeCls` van /boeken (F-26: appearance:none +
- * min-width:0, zodat iOS het veld niet breder maakt dan de kolom).
+ * Datum/tijd gebruiken `dateTimeCls` en de keuzelijsten `SelectField` van
+ * /boeken (F-26: appearance:none + vaste 52px, zodat iOS het veld niet breder
+ * of lager maakt dan de andere velden).
  */
 
 export const HERO_LUGGAGE = [
@@ -32,14 +33,6 @@ export const HERO_LUGGAGE = [
 export type RideDetails = { date: string; time: string; passengers: number; luggage: string };
 
 export const DETAILS_SHEET_ID = "hero-details-sheet";
-
-/*
- * WebKit negeert min-height op een native <select> (gemeten: ~24px hoog in
- * WebKit iPhone 13). Daarom appearance:none + vaste 52px, met een eigen pijl
- * uit Icon.tsx; de native keuzelijst opent zoals altijd.
- */
-const selectCls = `${inputCls} block h-[52px] appearance-none pr-11 [-webkit-appearance:none]`;
-const chevronCls = "pointer-events-none absolute bottom-[17px] right-4 text-ink";
 
 /**
  * De tweede zinregel als inline velden (≥ 768px, sinds PR 2.1); ongewijzigd uit
@@ -250,25 +243,22 @@ export function DetailsSheet({
             onChange={(e) => set({ time: e.target.value })}
           />
         </div>
-        <div className="relative min-w-0">
+        <div className="min-w-0">
           <label htmlFor={`${id}-passengers`} className={labelCls}>{t("ariaPassagiers")}</label>
-          <select
+          <SelectField
             id={`${id}-passengers`}
-            className={selectCls}
             value={draft.passengers}
             onChange={(e) => set({ passengers: sentencePassengers(e.target.value) })}
           >
             {SENTENCE_PASSENGERS.map((n) => (
               <option key={n} value={n}>{t("passagiersAantal", { count: n })}</option>
             ))}
-          </select>
-          <Icon name="chevron-down" size={18} className={chevronCls} />
+          </SelectField>
         </div>
-        <div className="relative min-w-0">
+        <div className="min-w-0">
           <label htmlFor={`${id}-luggage`} className={labelCls}>{t("ariaBagage")}</label>
-          <select
+          <SelectField
             id={`${id}-luggage`}
-            className={selectCls}
             value={draft.luggage}
             onChange={(e) => set({ luggage: e.target.value })}
           >
@@ -276,8 +266,7 @@ export function DetailsSheet({
             {HERO_LUGGAGE.map((l) => (
               <option key={l.value} value={l.value}>{t(l.labelKey)}</option>
             ))}
-          </select>
-          <Icon name="chevron-down" size={18} className={chevronCls} />
+          </SelectField>
         </div>
       </div>
       <Button
