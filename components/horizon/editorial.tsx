@@ -36,6 +36,14 @@ export function QuietProofPattern({ lines }: { lines: string[] }) {
   );
 }
 
+/** Kolommen per aantal principes: nooit een lege kolom of een wees-item (besluit #98). */
+const PRINCIPLE_COLUMNS: Record<number, string> = {
+  1: "",
+  2: "md:grid-cols-2",
+  3: "md:grid-cols-3",
+  4: "md:grid-cols-2 xl:grid-cols-4",
+};
+
 export function PrinciplesPattern({
   label,
   kicker,
@@ -57,7 +65,7 @@ export function PrinciplesPattern({
             {kicker}
           </h2>
         </Reveal>
-        <ol className="mt-10 grid gap-x-8 gap-y-12 md:grid-cols-2 xl:grid-cols-4">
+        <ol className={`mt-10 grid gap-x-8 gap-y-12 ${PRINCIPLE_COLUMNS[principles.length] ?? "md:grid-cols-2 xl:grid-cols-4"}`}>
           {principles.map((p, i) => (
             <li key={p.title}>
               <Reveal delay={(Math.min(i, 3) as 0 | 1 | 2 | 3)}>
