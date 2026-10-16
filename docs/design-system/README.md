@@ -114,7 +114,7 @@ geen `weight` (variabel, één bestand) — `layout.tsx:41-46`.
 | `text-display-md` | clamp(1.5rem, 2.5vw, 2rem) | 1.2 | -0.01em | v14, in gebruik |
 | `text-eyebrow` | 0.75rem | 1 | 0.19em | v14, in gebruik |
 | `text-display-hero` | clamp(3rem, 7vw, 6.875rem) | 1 | -0.04em | §3, nog niet geadopteerd |
-| `text-display-statement` | clamp(2.5rem, 5.5vw, 5.5rem) | 1.05 | -0.03em | §3, geadopteerd in quiet proof (PR 3.1, sans); footer PR 3.5 |
+| `text-display-statement` | clamp(2.5rem, 5.5vw, 5.5rem) | 1.05 | -0.03em | §3, geadopteerd in quiet proof ≥ 768px (PR 3.1, sans; < 768px `display-lg`); footer PR 3.5 |
 | `text-body-lg` | clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem) | 1.6 | — | §3, nog niet geadopteerd |
 | `text-meta` | 0.6875rem | 1.2 | 0.16em | §3 |
 | `text-display-serif` | clamp(3rem, 7.6vw, 6.75rem) | 1.04 | -0.015em | B1, Brand Mode |
@@ -294,7 +294,7 @@ geen reizend punt (`journey-line.css:173-177`).
 | Editorial figure | `EditorialFigure` — `patterns.tsx:643`, `.hz-frame` `horizon.css:256-268` | in gebruik |
 | Viewport / Breath / Spine | `patterns.tsx:109,152,65` | in gebruik |
 | Proof | `ProofPattern` — `patterns.tsx` | in gebruik |
-| Quiet proof | `QuietProofPattern` — `components/horizon/editorial.tsx`; regels uit `lib/home/editorial-claims.ts` (alleen claimstatus `approved`, §0c) | PR 3.1: `display-statement` in Outfit (geen serif), verticale JourneyLine `route`, `aria-hidden`; Reveal per regel |
+| Quiet proof | `QuietProofPattern` — `components/horizon/editorial.tsx`; regels uit `lib/home/editorial-claims.ts` (alleen claimstatus `approved`, §0c) | PR 3.1: `display-lg` → `md:display-statement` in Outfit (geen serif), `hyphens-auto break-words` tegen overflow bij lange woorden, verticale JourneyLine `route`, `aria-hidden`; Reveal per regel |
 | Service principles | `PrinciplesPattern` — `components/horizon/editorial.tsx` | PR 3.1: vervangt het donkere vows-blok en `VowsPattern`; `<ol>`, hairline `border-ink` boven elk principe, nummer `text-meta` (`aria-hidden`), titel `display-md` sans, tekst `stone-text` op `overlay` (4,86:1); geen kaart, schaduw of radius; kolommen per aantal (`PRINCIPLE_COLUMNS`: 3 → `md:grid-cols-3`, geen lege kolom) |
 
 ---
