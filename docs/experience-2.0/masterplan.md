@@ -293,7 +293,7 @@ Per gate: bewijs = test of script in de repo, niet een bewering.
 
 | PR | Gate | Huidige stand | Werk |
 |---|---|---|---|
-| S1 | A — browser headers | HSTS, nosniff, Referrer, Permissions, frame-ancestors staan (`next.config.mjs:61-76`). CSP heeft `script-src 'unsafe-inline'`. | Nonce-CSP via `proxy.ts` (Next 16 ondersteunt nonce voor eigen scripts; Stripe + Sanity + consent meenemen). Eerst `Content-Security-Policy-Report-Only` 7 dagen, dan enforce. Test: header-snapshot. `productionBrowserSourceMaps` expliciet `false`. Scan build-output op `NEXT_PUBLIC_*` met secret-patronen. **Report-only staat (branch `feat/s1-csp-report-only`):** `proxy.ts` zet per request een nonce en `Content-Security-Policy-Report-Only` (`lib/security/csp.ts`: `script-src 'nonce-…' 'strict-dynamic'`, Stripe/Link/Sanity/PDOK/Places per inventaris, `object-src 'none'`, `base-uri`/`form-action 'self'`, `frame-ancestors 'self'`) op request (Next leest de nonce) én response; de afgedwongen CSP in `next.config.mjs` is ongewijzigd (broncode-lock in `csp.test.ts`). Rapporten naar same-origin `/api/csp-report` (limiet 30/min/IP + 300/min/instance, 8 kB, logt alleen directive/origin/pad; in S2-matrix). Header-snapshot `lib/security/csp.test.ts`; gedrag `tests/behavior/csp-report-only.spec.ts` (0 violations op `/`, `/en`, `/tarieven`, `[slug]`, `/boeken` t/m betaalstap). `productionBrowserSourceMaps: false`. `npm run security:scan-build` (+ CI-stap na build) scant `.next/static` en `NEXT_PUBLIC_*`. **Open:** F-47 (SSG-pagina's zonder nonce), consent-PR #95 moet zijn scripts de nonce (`x-nonce`) geven en tracker-origins in `buildReportOnlyCsp` opnemen, 7 dagen meten en enforce = eigenaarsbesluit. |
+| S1 | A — browser headers | HSTS, nosniff, Referrer, Permissions, frame-ancestors staan (`next.config.mjs:61-76`). CSP heeft `script-src 'unsafe-inline'`. | Nonce-CSP via `proxy.ts` (Next 16 ondersteunt nonce voor eigen scripts; Stripe + Sanity + consent meenemen). Eerst `Content-Security-Policy-Report-Only` 7 dagen, dan enforce. Test: header-snapshot. `productionBrowserSourceMaps` expliciet `false`. Scan build-output op `NEXT_PUBLIC_*` met secret-patronen. **Report-only staat (branch `feat/s1-csp-report-only`):** `proxy.ts` zet per request een nonce en `Content-Security-Policy-Report-Only` (`lib/security/csp.ts`: `script-src 'nonce-…' 'strict-dynamic'`, Stripe-hosts gelijk aan de afgedwongen CSP, Sanity/PDOK/Places, `object-src 'none'`, `base-uri`/`form-action 'self'`, `frame-ancestors 'self'`) op request (Next leest de nonce) én response; de afgedwongen CSP in `next.config.mjs` is ongewijzigd (broncode-lock in `csp.test.ts`). Rapporten naar same-origin `/api/csp-report` (limiet 30/min/IP + 300/min/instance, 8 kB, logt alleen categorie/directive/origin/pad; in S2-matrix). Header-snapshot `lib/security/csp.test.ts`; gedrag `tests/behavior/csp-report-only.spec.ts` (0 violations op `/`, `/en`, `/tarieven`, `[slug]`, `/boeken` t/m betaalstap). `productionBrowserSourceMaps: false`. `npm run security:scan-build` (+ CI-stap na build) scant `.next/static` en `NEXT_PUBLIC_*`. **Open:** F-47 (SSG-pagina's zonder nonce), consent-PR #95 (§9a), 7 dagen meten en enforce = eigenaarsbesluit. Analyse, Stripe-hosts en consent: §9a. |
 | S2 | B — publieke API-matrix | Rate limiting in-memory op quote/bookings/leads/payments/flights/places. | Matrix als code: `lib/security/api-surface.test.ts` dat alle `app/api/**/route.ts` opsomt en faalt als een nieuwe route geen entry (auth, limiet, validatie, PII) heeft. Gedeelde store (B6). `/api/places` apart budget (kost Google-geld). Body-size limits. **Matrix staat (branch `test/s2-api-surface-matrix`):** `lib/security/api-surface.ts` + `.test.ts` dekt 17 routes / 19 methoden (auth, CSRF, limiet, validatie, PII, body-limiet als broncode-lock). Open gaps: F-37 gedeelde store (B6), F-38 `/api/places` zonder eigen Google-budget, F-40 create-intent-sleutel met UA, F-42 body-size (na inlezen; ontbreekt op admin/webhooks), F-43 IP in logs, F-44 adresinvoer in `pricing_quote_logs` zonder bewaartermijn. F-39 (ops-login limiet + lockout + Origin-check) en F-41 (health limiet + cache) **deels opgelost** in PR #91; beide blijven open tot B6/S8. De matrix is een inventaris en vangnet, **geen bewijs dat alle routes veilig zijn**. |
 | S3 | Pricing | Server rekent, quote-lock + TTL. | Adversarial tests toevoegen waar ontbrekend: verlopen `quoteId`, `quoteId` van andere route, hergebruik na boeking, prijsveld in payload wordt genegeerd. Eerst inventariseren wat `booking-lock.test.ts` al dekt. |
 | S4 | Supabase RLS | Deny-by-default op brain_*, Control Sprint 1 gemerged. | RLS-matrix per tabel × rol × actie als SQL-testscript tegen **staging**; bewijsgevallen: klant A ≠ boeking B, ingetrokken gebruiker verliest toegang. Driver/hotel-rollen pas testen wanneer die tabellen bestaan (geen nieuwe tabellen in 2.0 — zie Control-architectuurgrenzen). |
@@ -301,6 +301,75 @@ Per gate: bewijs = test of script in de repo, niet een bewering.
 | S6 | Logging/privacy | — | Grep-test: geen `console.*` met booking-payload/adres/telefoon in `app/api`; monitoring op booking-ID. Analytics: geen adressen in events of page-URL's (hangt samen met §7). |
 | S7 | Abuse | Honeypot op booking. | Submission-timing + duplicaatdetectie op bookings/leads; challenge alleen bij verdacht verkeer. Geen CAPTCHA op de normale flow. |
 | S8 | Identity & session (conditioneel) | Zie §9b. | Gate die afgaat vóór elke login-oppervlakte live gaat. |
+
+### 9a. S1 — report-only: analyse, Stripe-hosts, consent (#95)
+
+**7-dagenanalyse.** Elke violation geeft één regel in de Vercel-functielogs van
+`/api/csp-report`:
+`[csp-report] category="…" disposition=report directive=… blocked=… page=… source=…`
+(geen query, sample, IP of user-agent; `blocked=self` = zelfde origin als de pagina).
+Groeperen: filter de logs op `[csp-report]` en tel per `category` → `directive` →
+`blocked` → `page`.
+- `F-47 ssg-no-nonce` — bekende ruis: `script-src(-elem)` met `inline`/`self` op een
+  SSG-route (`SSG_PAGE_PATHS` in `lib/security/csp-report.ts`, gecontroleerd tegen
+  `.next/prerender-manifest.json`). Niet het besluit, wel de omvang van F-47.
+- `stripe-host` — een `*.stripe.com`/`*.stripe.network`/`*.link.com`-origin buiten de
+  policy: het bewijs voor de Stripe-hostvraag hieronder.
+- `onbekend` — alles anders: elk exemplaar beoordelen vóór enforce. Dezelfde
+  violation op een dynamische route (`/`, `/tarieven`, `/boeken`, `[slug]`) is nooit
+  F-47. Rapporten zijn onbetrouwbaar (iedereen kan posten): signaal, geen bewijs.
+
+**Stripe-hosts (`*.js.stripe.com`, `link.com`).** Integratie volgens de code:
+`@stripe/stripe-js` 9.12.0 (release train `dahlia`) + `@stripe/react-stripe-js`
+6.8.0; `<Elements clientSecret>` + één `PaymentElement` (`layout: "tabs"`, geen
+`wallets`-/`link`-optie, geen Address/Link Authentication Element);
+`automatic_payment_methods: { enabled: true }` (welke methoden — iDEAL, Link,
+wallets — bepaalt het Stripe-dashboard, niet de repo); `confirmPayment` met
+`redirect: "if_required"` (redirectmethoden = top-level navigatie, geen CSP-frame).
+Stripe-gids (docs.stripe.com/security/guide): Stripe.js vraagt `js.stripe.com`,
+`hooks.stripe.com` (3DS/redirects) en `api.stripe.com` — staan al in de afgedwongen
+CSP. `*.js.stripe.com` is volgens Stripe *optioneel* ("improve performance by
+starting frames on different origins, where possible"). `link.com`/`*.link.com`
+alleen als Link actief is. `maps.googleapis.com` alleen bij Address Element met
+eigen Maps-key (niet gebruikt). `m.stripe.network` staat niet (meer) in de gids.
+Live aantonen kon niet: de repo bevat geen echte Stripe-testsleutel (alleen de
+nep-`pk_test_offline_fixture…`), en zonder server-PaymentIntent mount de Payment
+Element niet. Uitkomst: `*.js.stripe.com` **niet nodig** (optioneel, Stripe valt
+terug op `js.stripe.com`); `link.com` **onbewezen** (hangt af van het dashboard).
+Daarom **geen wijziging** aan de afgedwongen CSP, en de report-only policy gebruikt
+dezelfde Stripe-hosts: verschijnt `category="stripe-host"` in de 7 dagen, dan is
+dát het bewijs voor een minimale toevoeging.
+
+**Consent (#95, `feature/consent-marketing-trackers-current`).** `components/consent/Trackers.tsx`
+(client component, in `app/[locale]/layout.tsx`) voegt via `next/script`
+`strategy="afterInteractive"` toe:
+1. `https://www.googletagmanager.com/gtag/js?id=…` (extern);
+2. `meta-pixel-init` (inline), dat zelf `connect.facebook.net/en_US/fbevents.js` laadt;
+3. `<noscript><img src="https://www.facebook.com/tr…">` (`img-src`).
+Beide scripts rendert `Trackers` pas na een consentkeuze (client-state), dus Next's
+client-loader voegt ze met `createElement` in: **niet-parser-ingevoegd**. Onder
+`'strict-dynamic'` mogen zulke scripts — óók inline — draaien zonder eigen nonce,
+omdat het genoncede Next-bundel ze invoegt. Geverifieerd (Chromium + WebKit, CSP
+`'nonce-…' 'strict-dynamic'`): een dynamisch ingevoegd inline script zonder nonce
+draait, een parser-ingevoegd inline script zonder nonce wordt geblokkeerd. #95
+heeft dus **geen nonce nodig zolang het zo blijft**. Wel nodig als #95 later een
+zelfgeschreven server-gerenderd uitvoerbaar `<script>` toevoegt (`<Script strategy="beforeInteractive">`
+krijgt de nonce op dynamische routes al automatisch, zie `js-detect` in de layout).
+Lees de nonce dan **niet** via `headers().get("x-nonce")` in de layout (maakt
+álle routes dynamisch: CDN-cache weg, raakt F-47), maar client-side van een door
+Next genoncede tag — `document.querySelector<HTMLScriptElement>("script[nonce]")?.nonce`
+(de browser verbergt het attribuut, de `.nonce`-property blijft) — en geef die als
+`nonce`-prop door. De proxy zet `x-nonce` wél als requestheader, voor een server
+component op een route die toch al dynamisch is. NB: in de app-router geeft Next de
+nonce niet automatisch aan client-side `next/script` (`HeadManagerContext` =
+`{ appDir: true }`). Origins voor `buildReportOnlyCsp`
+(alleen bij geldig ID, dezelfde validatie als #95 in `next.config.mjs`):
+`script-src` (CSP2-fallback) `https://www.googletagmanager.com`,
+`https://connect.facebook.net`; `connect-src` `https://*.google-analytics.com
+https://*.analytics.google.com https://*.googletagmanager.com
+https://www.facebook.com`; `img-src` `https://www.facebook.com` (en wat Google voor
+GA4/Ads in zijn CSP-gids noemt, te bevestigen met de report-only-data). #95 zelf is
+niet gewijzigd.
 
 ### 9b. S8 — Identity & Session Security (conditionele gate)
 
