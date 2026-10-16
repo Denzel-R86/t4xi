@@ -73,30 +73,33 @@ export function generateNonce(): string {
 export function buildReportOnlyCsp(nonce: string, sources: CspSources, opts: { isDev: boolean }): string {
   if (!NONCE_RE.test(nonce)) throw new Error("Ongeldige CSP-nonce.");
   const { sanityProjectId, sanityDataset, supabaseOrigin } = sources;
-  const stripeJs = "https://js.stripe.com https://*.js.stripe.com";
-  const link = "https://link.com https://*.link.com";
+  // Stripe: exact de bronnen van de afgedwongen CSP. Stripe documenteert daarnaast
+  // `*.js.stripe.com` (optioneel, performance), `link.com` (alleen met Link) en
+  // `maps.googleapis.com` (alleen Address Element met eigen Maps-key). Niet
+  // aangetoond nodig voor onze Payment Element-integratie, dus bewust NIET hier:
+  // gebruikt Stripe ze toch, dan levert report-only precies dat bewijs (zie
+  // masterplan §9 S1, Stripe-analyse).
   return [
     "default-src 'self'",
     // Nonce + strict-dynamic: alleen scripts met de nonce, plus wat díé scripts
-    // laden (Next-chunks, Stripe.js via loadStripe). 'self' en de hosts zijn
+    // laden (Next-chunks, Stripe.js via loadStripe). 'self' en js.stripe.com zijn
     // alleen fallback voor CSP2-browsers; CSP3 negeert ze naast strict-dynamic.
     // Dev: React/Next gebruiken eval voor foutstacks.
-    `script-src 'nonce-${nonce}' 'strict-dynamic' 'self' ${stripeJs}${opts.isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'nonce-${nonce}' 'strict-dynamic' 'self' https://js.stripe.com${opts.isDev ? " 'unsafe-eval'" : ""}`,
     // Stijlen blijven zoals afgedwongen: React style-attributen en Stripe/next-font
     // inline-stijlen. Een nonce hier zou 'unsafe-inline' uitschakelen. Buiten S1.
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
-    `img-src 'self' data: blob: https://cdn.sanity.io/images/${sanityProjectId}/${sanityDataset}/ https://*.stripe.com https://*.link.com`,
+    `img-src 'self' data: blob: https://cdn.sanity.io/images/${sanityProjectId}/${sanityDataset}/`,
     "worker-src 'self' blob:",
     [
       "connect-src 'self'",
       supabaseOrigin ?? "",
-      "https://api.pdok.nl https://places.googleapis.com",
-      "https://api.stripe.com https://maps.googleapis.com",
-      link,
+      "https://api.pdok.nl https://places.googleapis.com https://api.stripe.com",
       `https://${sanityProjectId}.api.sanity.io https://${sanityProjectId}.apicdn.sanity.io wss://${sanityProjectId}.api.sanity.io`,
     ].filter(Boolean).join(" "),
-    `frame-src 'self' ${stripeJs} https://hooks.stripe.com ${link}`,
+    // Payment Element + 3D Secure (hooks) draaien in Stripe-iframes.
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

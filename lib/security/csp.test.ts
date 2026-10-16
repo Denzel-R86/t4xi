@@ -27,13 +27,13 @@ const SOURCES = cspSourcesFromEnv({
 
 const SNAPSHOT = [
   "default-src 'self'",
-  "script-src 'nonce-<NONCE>' 'strict-dynamic' 'self' https://js.stripe.com https://*.js.stripe.com",
+  "script-src 'nonce-<NONCE>' 'strict-dynamic' 'self' https://js.stripe.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
-  "img-src 'self' data: blob: https://cdn.sanity.io/images/95pzjxjq/production/ https://*.stripe.com https://*.link.com",
+  "img-src 'self' data: blob: https://cdn.sanity.io/images/95pzjxjq/production/",
   "worker-src 'self' blob:",
-  "connect-src 'self' https://abcdefgh.supabase.co https://api.pdok.nl https://places.googleapis.com https://api.stripe.com https://maps.googleapis.com https://link.com https://*.link.com https://95pzjxjq.api.sanity.io https://95pzjxjq.apicdn.sanity.io wss://95pzjxjq.api.sanity.io",
-  "frame-src 'self' https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com https://link.com https://*.link.com",
+  "connect-src 'self' https://abcdefgh.supabase.co https://api.pdok.nl https://places.googleapis.com https://api.stripe.com https://95pzjxjq.api.sanity.io https://95pzjxjq.apicdn.sanity.io wss://95pzjxjq.api.sanity.io",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -59,7 +59,7 @@ test("script-src: geen 'unsafe-inline', wel nonce + strict-dynamic; dev voegt al
   assert.ok(!scriptSrc.includes("'unsafe-eval'"));
   assert.ok(scriptSrc.includes(`'nonce-${nonce}'`) && scriptSrc.includes("'strict-dynamic'"));
   const dev = buildReportOnlyCsp(nonce, SOURCES, { isDev: true });
-  assert.equal(dev, prod.replace("https://*.js.stripe.com;", "https://*.js.stripe.com 'unsafe-eval';"));
+  assert.equal(dev, prod.replace("'self' https://js.stripe.com;", "'self' https://js.stripe.com 'unsafe-eval';"));
 });
 
 test("nonce: 128 bit base64, uniek per aanroep, door Next herkend", () => {
