@@ -18,22 +18,42 @@ const home = { nl: nl.home as Record<string, string>, en: en.home as Record<stri
 const page = readFileSync("app/[locale]/page.tsx", "utf8");
 const editorial = readFileSync("components/horizon/editorial.tsx", "utf8");
 
-test("quiet proof: regel 1 is de goedgekeurde §0c-claim, plek 2 en 3 wachten op de eigenaar", () => {
+test("quiet proof (#98): regel 1 + 2 approved, regel 3 vervalt als niet-gerenderde owner-plek", () => {
   assert.equal(QUIET_PROOF_SLOTS.length, 3);
-  assert.deepEqual(approvedQuietProofKeys(), ["quietProof1"]);
+  assert.deepEqual(approvedQuietProofKeys(), ["quietProof1", "proofOnder1"]);
   assert.equal(home.nl.quietProof1, "Uw prijs staat vast.");
-  assert.ok(home.en.quietProof1, "EN-vertaling ontbreekt");
+  assert.equal(home.en.quietProof1, "Your fare is fixed.");
+  assert.equal(home.nl.proofOnder1, "Geldige Nederlandse taxichauffeurskaart");
+  assert.equal(home.en.proofOnder1, "Licensed Dutch taxi drivers");
+  assert.equal(QUIET_PROOF_SLOTS[2].status, "owner");
+});
+
+test("principles (#98): vow2 verborgen, vow3/vow4 nieuwe NL-tekst met EN-vertaling", () => {
   assert.deepEqual(
-    QUIET_PROOF_SLOTS.slice(1).map((s) => s.status),
-    ["owner", "owner"],
-    "regel 2 en 3 pas renderen na keuze eigenaar (masterplan §3)",
+    approvedPrinciples().map((p) => p.titleKey),
+    ["vow1Titel", "vow3Titel", "vow4Titel"],
   );
+  assert.equal(SERVICE_PRINCIPLES.find((p) => p.titleKey === "vow2Titel")?.status, "owner");
+  assert.equal(home.nl.vow3Tekst, "Vertrek, bestemming, datum, tijd en bagage geeft u vooraf door.");
+  assert.equal(home.nl.vow4Tekst, "Vul uw route in, bekijk de vaste prijs en vraag uw rit aan.");
+  for (const key of ["vow3Titel", "vow4Titel"]) {
+    assert.equal(SERVICE_PRINCIPLES.find((p) => p.titleKey === key)?.en, "en-translation");
+  }
+  // Geen operationele belofte meer in vow3 (ophaaltijd afstemmen, reistijd plannen).
+  for (const locale of ["nl", "en"] as const) {
+    assert.doesNotMatch(home[locale].vow3Tekst, /stemmen|plannen|agreed|plan/i);
+  }
+});
+
+test("principles-grid: geen lege kolom bij drie principes", () => {
+  assert.match(editorial, /3: "md:grid-cols-3"/);
+  assert.match(editorial, /PRINCIPLE_COLUMNS\[principles\.length\]/);
 });
 
 test("alleen approved wordt gerenderd", () => {
   const withOwner = [...QUIET_PROOF_SLOTS, { status: "owner" as const, key: null, source: "x" }];
-  assert.deepEqual(approvedQuietProofKeys(withOwner), ["quietProof1"]);
-  const p = [...SERVICE_PRINCIPLES, { status: "owner" as const, titleKey: "x", textKey: "y", source: "z" }];
+  assert.deepEqual(approvedQuietProofKeys(withOwner), ["quietProof1", "proofOnder1"]);
+  const p = [...SERVICE_PRINCIPLES, { status: "owner" as const, titleKey: "x", textKey: "y", en: "approved" as const, source: "z" }];
   assert.equal(approvedPrinciples(p).length, SERVICE_PRINCIPLES.filter((e) => e.status === "approved").length);
   assert.match(page, /approvedQuietProofKeys\(\)/);
   assert.match(page, /approvedPrinciples\(\)/);
