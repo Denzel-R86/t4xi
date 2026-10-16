@@ -14,6 +14,7 @@ test.describe("Homepage editorial", () => {
     const section = page.locator('[data-editorial="quiet-proof"]');
     await section.scrollIntoViewIfNeeded();
     await expect(section.getByText("Uw prijs staat vast.")).toBeVisible();
+    await expect(section.getByText("Geldige Nederlandse taxichauffeurskaart")).toBeVisible();
     await settle(page);
     await expect(section).toHaveScreenshot("quiet-proof.png", { mask: defaultMasks(page), stylePath: HIDE_OVERLAYS });
   });
@@ -23,7 +24,7 @@ test.describe("Homepage editorial", () => {
     await open(page, "/");
     const section = page.locator('[data-editorial="principles"]');
     await section.scrollIntoViewIfNeeded();
-    await expect(section.getByRole("listitem")).toHaveCount(4);
+    await expect(section.getByRole("listitem")).toHaveCount(3);
     await settle(page);
     await expect(section).toHaveScreenshot("service-principles.png", { mask: defaultMasks(page), stylePath: HIDE_OVERLAYS });
   });
