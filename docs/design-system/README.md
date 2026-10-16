@@ -294,7 +294,7 @@ geen reizend punt (`journey-line.css:173-177`).
 | Editorial figure | `EditorialFigure` — `patterns.tsx:643`, `.hz-frame` `horizon.css:256-268` | in gebruik |
 | Viewport / Breath / Spine | `patterns.tsx:109,152,65` | in gebruik |
 | Proof | `ProofPattern` — `patterns.tsx` | in gebruik |
-| Quiet proof | `QuietProofPattern` — `components/horizon/editorial.tsx`; regels uit `lib/home/editorial-claims.ts` (alleen claimstatus `approved`, §0c) | PR 3.1: `display-lg` → `md:display-statement` in Outfit (geen serif), `hyphens-auto break-words` tegen overflow bij lange woorden, verticale JourneyLine `route`, `aria-hidden`; Reveal per regel |
+| Quiet proof | `QuietProofPattern` — `components/horizon/editorial.tsx`; regels uit `lib/home/editorial-claims.ts` (alleen claimstatus `approved`, §0c) | PR 3.1: `display-lg` → `md:display-statement` in Outfit (geen serif), `break-words` tegen overflow bij lange woorden (geen `hyphens-auto`), verticale JourneyLine `route`, `aria-hidden`; Reveal per regel |
 | Service principles | `PrinciplesPattern` — `components/horizon/editorial.tsx` | PR 3.1: vervangt het donkere vows-blok en `VowsPattern`; `<ol>`, hairline `border-ink` boven elk principe, nummer `text-meta` (`aria-hidden`), titel `display-md` sans, tekst `stone-text` op `overlay` (4,86:1); geen kaart, schaduw of radius; kolommen per aantal (`PRINCIPLE_COLUMNS`: 3 → `md:grid-cols-3`, geen lege kolom) |
 
 ---

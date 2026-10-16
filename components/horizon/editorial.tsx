@@ -27,8 +27,8 @@ export function QuietProofPattern({ lines }: { lines: string[] }) {
             <li key={line}>
               <Reveal delay={(Math.min(i + 1, 3) as 1 | 2 | 3)}>
                 {/* < 768px `display-lg`: "taxichauffeurskaart" is één lang woord (#98);
-                    hyphens + break-words vangen nog smallere schermen op. */}
-                <p className="font-display text-display-lg font-semibold text-ink hyphens-auto break-words md:text-display-statement">
+                    `break-words` vangt nog smallere schermen (320px) op; geen hyphens-auto (breekt ook woorden die wél passen). */}
+                <p className="font-display text-display-lg font-semibold text-ink break-words md:text-display-statement">
                   {line}
                 </p>
               </Reveal>
