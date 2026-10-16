@@ -62,6 +62,10 @@ test("homepage editorial: tekst, grid en overflow op 375", async ({ page }) => {
   await check(page, 375);
 });
 
+test("homepage editorial: geen overflow op 320 (lang woord in quiet proof)", async ({ page }) => {
+  await check(page, 320);
+});
+
 test("homepage editorial: tekst, grid en overflow op 768 @desktop", async ({ page }) => {
   await check(page, 768);
 });
