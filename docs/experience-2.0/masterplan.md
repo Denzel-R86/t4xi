@@ -306,6 +306,17 @@ Per gate: bewijs = test of script in de repo, niet een bewering.
 
 ### 9a. S1 — report-only: analyse, Stripe-hosts, consent (#95)
 
+**Uitrol en observatieperiode (vastgelegd 17-10-2026).** #99 gemerged als `4128f6a`, productie-deployment
+`t4xi-qt1flzq41` geslaagd op **2026-10-17 10:13:43 UTC (12:13 CEST)**. Observatieperiode: **17-10-2026 10:14 UTC
+t/m 24-10-2026 10:14 UTC**. Productiecontrole direct na deployment: afgedwongen CSP byte-gelijk aan vóór de uitrol;
+report-only header met per-request nonce aanwezig op `/`, `/tarieven`, `/boeken` en de voorgerenderde `/diensten` en
+`/over-ons` (`x-vercel-cache: PRERENDER`); synthetisch rapport naar `/api/csp-report` → 204. De logregel zelf is
+vanuit deze sessie niet ingezien (geen toegang tot Vercel-logs) — bij de analyse controleren dat die regel alleen
+categorie/directive/origin/pad bevat. **Analyse na 7 dagen:** F-47 (`category="F-47 ssg-no-nonce"`) en Stripe
+(`category="stripe-host"`) afzonderlijk tellen, plus `onbekend`. **Geen automatische enforcement.** Nul meldingen
+is zonder aantoonbare dekking (welke pagina's/flows bezocht zijn) geen bewijs van veiligheid. Enforcement vraagt een
+apart besluit en een oplossing voor F-47.
+
 **7-dagenanalyse.** Elke violation geeft één regel in de Vercel-functielogs van
 `/api/csp-report`:
 `[csp-report] category="…" disposition=report directive=… blocked=… page=… source=…`
