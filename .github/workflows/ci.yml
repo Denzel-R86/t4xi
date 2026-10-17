@@ -63,6 +63,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Experience 2.0 / S1: geen server-geheim of sourcemap in de client-bundels
+      # (.next/static) en geen geheim-achtige NEXT_PUBLIC_*-naam of -waarde.
+      - name: Scan build output for secrets
+        run: npm run security:scan-build
+
       # Experience 2.0 / PR 0.2: start `next start` op de zojuist gebouwde app
       # en vergelijkt alle sitemap-URL's (title, canonical, hreflang, h1, status,
       # robots) met docs/experience-2.0/baseline/seo-snapshot.json. Verlies of

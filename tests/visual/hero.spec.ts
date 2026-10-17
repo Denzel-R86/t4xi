@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { blurActive, defaultMasks, HIDE_OVERLAYS, imagesReady, open, RIDE, settle, stabilize, type QuoteMode } from "./support/harness";
-import { fillAddress, openAddress, sentenceRoot, sheetTrigger } from "./support/sentence";
+import { fillAddress, openAddress, sentenceRoot, sheetTrigger, fillDetails } from "./support/sentence";
 
 /**
  * Hero (Arrival) en SentencePattern op de homepage (§10b).
@@ -22,9 +22,7 @@ async function fillAddresses(page: Page) {
 }
 
 async function fillRide(page: Page) {
-  await page.getByLabel("Datum", { exact: true }).first().fill(RIDE.date);
-  await page.getByLabel("Tijd", { exact: true }).first().fill(RIDE.time);
-  await page.getByLabel("Bagage", { exact: true }).first().selectOption("1-2-koffers");
+  await fillDetails(page, { date: RIDE.date, time: RIDE.time, luggage: "1-2-koffers" });
   await blurActive(page);
 }
 

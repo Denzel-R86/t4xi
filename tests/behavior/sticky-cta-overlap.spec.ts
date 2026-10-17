@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { open, stabilize } from "../visual/support/harness";
-import { addressSheet, sentenceRoot, sheetTrigger } from "../visual/support/sentence";
+import { addressSheet, sentenceRoot, sheetTrigger, fillDetails, detailsTrigger, detailsSheet } from "../visual/support/sentence";
 
 /**
  * PR 2.6, F-14-rest: de mobiele StickyCta dekt nooit een deel van de hero-zin af
@@ -79,9 +79,7 @@ test.describe("PR 2.6 StickyCta dekt de hero-zin nooit af", () => {
       await input.press("Enter");
       await expect(addressSheet(page, field)).toBeHidden();
     }
-    await page.getByLabel("Datum", { exact: true }).first().fill("2026-11-12");
-    await page.getByLabel("Tijd", { exact: true }).first().fill("14:30");
-    await page.getByLabel("Bagage", { exact: true }).first().selectOption("1-2-koffers");
+    await fillDetails(page, { date: "2026-11-12", time: "14:30", luggage: "1-2-koffers" });
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await expect(sentenceRoot(page).locator('[aria-live="polite"]')).toContainText(/Uw vaste prijs/);
     const end = await page.evaluate(
@@ -106,12 +104,13 @@ test.describe("PR 2.6 StickyCta dekt de hero-zin nooit af", () => {
     await page.keyboard.press("Escape");
     await expect(addressSheet(page, "Bestemming")).toBeHidden();
 
-    // Bagage (laatste zinregel) als onderste regel in beeld.
-    await placeAtBottom(page, 'div.hz-sentence select[aria-label="Bagage"]');
+    // PR 2.6b: de zinregel datum/tijd/passagiers/bagage als onderste regel in beeld.
+    await placeAtBottom(page, 'button[aria-controls="hero-details-sheet"]');
     expect(await overlaps(page)).toEqual([]);
-    const luggage = page.getByLabel("Bagage", { exact: true }).first();
-    await luggage.tap();
-    await expect(luggage).toBeFocused();
+    await detailsTrigger(page).tap();
+    await expect(detailsSheet(page)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(detailsSheet(page)).toBeHidden();
 
     // Hero-knop als onderste element: raakbaar (niet afgedekt).
     await placeAtBottom(page, "div.hz-sentence a");

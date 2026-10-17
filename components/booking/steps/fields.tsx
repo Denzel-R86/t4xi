@@ -1,3 +1,5 @@
+import type { ComponentPropsWithoutRef } from "react";
+import Icon from "@/components/ui/Icon";
 import { fieldErrorId, type BookingField } from "@/lib/booking/steps";
 
 /**
@@ -16,6 +18,25 @@ export const inputCls =
  */
 // `appearance:none` haalt in WebKit de verticale centrering weg: regelhoogte = veldhoogte minus rand.
 export const dateTimeCls = `${inputCls} block h-[52px] appearance-none leading-[50px] [-webkit-appearance:none] [&::-webkit-date-and-time-value]:m-0 [&::-webkit-date-and-time-value]:text-left`;
+
+/**
+ * F-26 / 2.6b: WebKit negeert `min-height` op een native <select> (gemeten: 24px
+ * in WebKit iPhone 13). Een vaste hoogte van 52px geldt op alle breedtes; onder
+ * 768px bovendien `appearance:none` met een eigen pijl uit Icon.tsx, zodat iOS
+ * het veld niet zelf vormgeeft. Vanaf 768px blijft de native pijl staan.
+ * De native keuzelijst opent zoals altijd.
+ */
+export const selectCls = `${inputCls} h-[52px] max-md:block max-md:appearance-none max-md:pr-11 max-md:[-webkit-appearance:none]`;
+
+/** Native <select> met de gedeelde veldstijl en (onder 768px) een eigen pijl. */
+export function SelectField(props: Omit<ComponentPropsWithoutRef<"select">, "className">) {
+  return (
+    <div className="relative">
+      <select {...props} className={selectCls} />
+      <Icon name="chevron-down" size={18} className="pointer-events-none absolute right-4 top-[17px] text-ink md:hidden" />
+    </div>
+  );
+}
 
 export const labelCls = "mb-1.5 block text-xs font-bold text-secondary";
 

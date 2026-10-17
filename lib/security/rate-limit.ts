@@ -37,6 +37,20 @@ export function rateLimit(key: string, max: number, windowMs: number): RateLimit
   return { limited: false, remaining: Math.max(0, max - bucket.count), retryAfterSec };
 }
 
+/**
+ * Leest de stand van `key` zonder een poging te tellen. `limited` zodra er al
+ * `max` pogingen in het lopende venster zijn. Bedoeld voor een lockout die vóór
+ * de check kijkt en pas ná een mislukte poging telt (zie lib/admin/login-throttle.ts).
+ */
+export function peekRateLimit(key: string, max: number): RateLimitResult {
+  const now = Date.now();
+  const bucket = buckets.get(key);
+  if (!bucket || now > bucket.resetAt) return { limited: false, remaining: max, retryAfterSec: 0 };
+  const retryAfterSec = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+  if (bucket.count >= max) return { limited: true, remaining: 0, retryAfterSec };
+  return { limited: false, remaining: max - bucket.count, retryAfterSec };
+}
+
 function prune(now: number): void {
   buckets.forEach((v, k) => {
     if (now > v.resetAt) buckets.delete(k);

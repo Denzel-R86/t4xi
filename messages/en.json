@@ -345,7 +345,8 @@
     "rateLimitedNa": "please try again in one minute",
     "leeg": "Complete the sentence",
     "leegNa": "fixed fare, no meter",
-    "bevestig": "See my fixed fare"
+    "bevestig": "See my fixed fare",
+    "klaar": "Done"
   },
   "fair": {
     "kicker": "Our promise",

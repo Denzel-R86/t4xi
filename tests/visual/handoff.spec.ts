@@ -1,7 +1,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { HANDOFF_KEY, HANDOFF_TTL_MS } from "../../lib/booking-handoff";
 import { blurActive, defaultMasks, FIXED_NOW, fixture, HIDE_OVERLAYS, imagesReady, open, RIDE, settle, stabilize } from "./support/harness";
-import { fillAddress, sentenceRoot } from "./support/sentence";
+import { fillAddress, sentenceRoot, fillDetails } from "./support/sentence";
 
 /**
  * Handoff hero → /boeken (Experience 2.0 PR 2.3, besluit #70) — gerichte opnames.
@@ -41,9 +41,7 @@ async function handoffInFlight(page: Page): Promise<Route[]> {
   await fillAddress(page, "Bestemming", "Schiphol");
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await expect(page.getByRole("listbox")).toHaveCount(0);
-  await page.getByLabel("Datum", { exact: true }).first().fill(RIDE.date);
-  await page.getByLabel("Tijd", { exact: true }).first().fill(RIDE.time);
-  await page.getByLabel("Bagage", { exact: true }).first().selectOption("1-2-koffers");
+  await fillDetails(page, { date: RIDE.date, time: RIDE.time, luggage: "1-2-koffers" });
   await blurActive(page);
   await expect(sentence(page).locator('[aria-live="polite"]')).toContainText(/Uw vaste prijs[\s\S]*89/);
 

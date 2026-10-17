@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAuthorizedAdminRequest } from "@/lib/admin/basic-auth";
+import { isSameOriginRequest } from "@/lib/security/same-origin";
 import { trySendInvoice } from "@/lib/invoices/send-invoice";
 
 export const runtime = "nodejs";
@@ -34,6 +35,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOriginRequest(request)) return NextResponse.json({ error: "forbidden_origin" }, { status: 403 });
   if (!(await isAuthorizedAdminRequest(request))) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const text = (key: string) => typeof body?.[key] === "string" ? String(body[key]).trim() : "";
