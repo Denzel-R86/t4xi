@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
 import { controlEdgeDecision, isControlPath } from "@/lib/control/routes";
+import { buildReportOnlyCsp, cspSourcesFromEnv, generateNonce } from "@/lib/security/csp";
 
 /**
  * Twee taken, in vaste volgorde:
@@ -40,6 +41,43 @@ const intlMiddleware = createIntlMiddleware(routing);
  */
 
 const REALM = "T4XI intern";
+
+// ── S1: nonce-CSP in report-only (lib/security/csp.ts) ──────────────────────
+// Per request een nieuwe nonce. De policy gaat (1) als REQUEST-header naar Next,
+// dat de nonce daaruit leest en op zijn eigen scripts zet, en (2) als
+// RESPONSE-header `Content-Security-Policy-Report-Only` naar de browser. De
+// afgedwongen `Content-Security-Policy` uit next.config.mjs blijft ongewijzigd.
+// Bewust NEXT_PUBLIC_* met letterlijke namen: die worden bij de build ingelijnd.
+const CSP_SOURCES = cspSourcesFromEnv({
+  NEXT_PUBLIC_SANITY_PROJECT_ID: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+  NEXT_PUBLIC_SANITY_DATASET: process.env.NEXT_PUBLIC_SANITY_DATASET,
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+});
+const CSP_IS_DEV = process.env.NODE_ENV === "development";
+const REPORT_ONLY_HEADER = "content-security-policy-report-only";
+
+type CspContext = { request: NextRequest; headers: Headers; policy: string | null };
+
+/** Request met nonce + report-only policy in de headers (of ongewijzigd zonder bronnen). */
+function withReportOnlyCsp(request: NextRequest): CspContext {
+  // Nooit een door de client meegestuurde CSP-requestheader doorgeven: Next zou
+  // daar een (voorspelbare) nonce uit lezen.
+  const headers = new Headers(request.headers);
+  headers.delete("content-security-policy");
+  headers.delete(REPORT_ONLY_HEADER);
+  headers.delete("x-nonce");
+  if (!CSP_SOURCES) return { request: new NextRequest(request, { headers }), headers, policy: null };
+  const nonce = generateNonce();
+  const policy = buildReportOnlyCsp(nonce, CSP_SOURCES, { isDev: CSP_IS_DEV });
+  headers.set(REPORT_ONLY_HEADER, policy);
+  headers.set("x-nonce", nonce);
+  return { request: new NextRequest(request, { headers }), headers, policy };
+}
+
+function applyReportOnly(response: NextResponse, policy: string | null): NextResponse {
+  if (policy) response.headers.set(REPORT_ONLY_HEADER, policy);
+  return response;
+}
 
 /** Constant-time vergelijking via SHA-256, zodat ook de lengte niets prijsgeeft. */
 async function safeEqual(a: string, b: string): Promise<boolean> {
@@ -93,10 +131,11 @@ export async function proxy(request: NextRequest) {
     if (controlEdgeDecision(rawPathname, request.cookies.getAll().map((c) => c.name)) === "not_found") {
       return notFound();
     }
-    const response = NextResponse.next();
+    const csp = withReportOnlyCsp(request);
+    const response = NextResponse.next({ request: { headers: csp.headers } });
     response.headers.set("x-robots-tag", "noindex, nofollow");
     response.headers.set("cache-control", "no-store");
-    return response;
+    return applyReportOnly(response, csp.policy);
   }
   if (isControlPath(pathname)) return notFound();
 
@@ -105,17 +144,21 @@ export async function proxy(request: NextRequest) {
     pathname === "/klant" || pathname.startsWith("/klant/");
 
   // Alles buiten de beschermde paden: alleen i18n-routing.
-  if (!isProtected) return intlMiddleware(request);
+  if (!isProtected) {
+    const csp = withReportOnlyCsp(request);
+    return applyReportOnly(intlMiddleware(csp.request), csp.policy);
+  }
 
   // ── /dashboard/invoices — loginformulier + server-side sessie ───────────
   // De pagina zelf bevat geen gegevens. Alle operations-API's controleren de
   // ondertekende HttpOnly-sessie. Hierdoor kan de gebruiker betrouwbaar
   // uitloggen; browsers kunnen HTTP Basic Auth namelijk zelf blijven cachen.
   if (pathname === "/dashboard/invoices" || pathname.startsWith("/dashboard/invoices/")) {
-    const res = intlMiddleware(request);
+    const csp = withReportOnlyCsp(request);
+    const res = intlMiddleware(csp.request);
     res.headers.set("x-robots-tag", "noindex, nofollow");
     res.headers.set("cache-control", "no-store");
-    return res;
+    return applyReportOnly(res, csp.policy);
   }
 
   // ── /dashboard/brain — Basic Auth ────────────────────────────────────────
@@ -146,10 +189,11 @@ export async function proxy(request: NextRequest) {
     ]);
     if (!okUser || !okPass) return challenge();
 
-    const res = NextResponse.next();
+    const csp = withReportOnlyCsp(request);
+    const res = NextResponse.next({ request: { headers: csp.headers } });
     res.headers.set("x-robots-tag", "noindex, nofollow");
     res.headers.set("cache-control", "no-store");
-    return res;
+    return applyReportOnly(res, csp.policy);
   }
 
   // ── /dashboard en /klant — volledig gesloten ─────────────────────────────

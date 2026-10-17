@@ -112,6 +112,13 @@ beforeEach(() => {
     if (url.pathname === "/rest/v1/rpc/create_booking") {
       return jsonResponse(200, [{ booking_ref: "T4XI-2099-0002", booking_id: "22222222-2222-4222-8222-222222222222" }]);
     }
+    if (url.pathname === "/rest/v1/bookings" && method === "GET") {
+      // F-45: de route leest bij reused=true alleen de vluchtvelden van de
+      // bestaande boeking. Deze rit (geen luchthaven, enkel) heeft er geen.
+      const stored = { flight_number: null, return_date: null, return_flight_number: null };
+      const accept = new Headers(init?.headers).get("accept") ?? "";
+      return jsonResponse(200, accept.includes("vnd.pgrst.object") ? stored : [stored]);
+    }
     // Overige best-effort writes (communicatielog, retourvelden, monitoring).
     return jsonResponse(method === "GET" ? 200 : 204, method === "GET" ? [] : undefined);
   }) as typeof fetch;
@@ -326,12 +333,66 @@ test("S3 route: replay van dezelfde POST → dezelfde boeking en dezelfde prijs 
   assert.deepEqual(lockCalls().map((c) => (c.body as { p_quote_id: string }).p_quote_id), [QID, QID]);
 });
 
-// F-45 (docs/experience-2.0/baseline/findings.md): de route negeert `reused` en voert
-// bij een replay de nabewerking opnieuw uit op de BESTAANDE boeking. Lokaal
-// aangetoond: replay van een retour naar Schiphol met een ander retourvluchtnummer
-// → PATCH bookings.return_flight_number + register_flight_monitoring (upsert) met
-// het nieuwe nummer, terwijl de prijs en de boeking zelf gelijk blijven. Niet
-// gerepareerd in S3 (geen productiecode); deze todo wordt een echte test met de fix.
-test.todo(
-  "F-45: replay met reused=true wijzigt de bestaande boeking niet (geen bookings-update, geen register_flight_monitoring)"
-);
+// F-45 (docs/experience-2.0/baseline/findings.md), opgelost in fix/f45-booking-replay:
+// bij reused=true voert de route geen nabewerking meer uit. Een replay met een
+// ander retourvluchtnummer wordt geweigerd zonder de bestaande boeking te raken.
+// Uitgebreide replay- en gelijktijdigheidstests: lib/bookings/replay-route.test.ts.
+test("F-45: replay met reused=true en een ander retourvluchtnummer → 409 booking_exists, geen bookings-update, geen register_flight_monitoring", async () => {
+  snapshotRow = row({
+    returnApplied: true,
+    totalCents: 6000,
+    fingerprint: quoteFingerprint({
+      pickup: base.pickup,
+      dropoff: base.dropoff,
+      returnTrip: true,
+      departureAt: DEP,
+      returnDepartureAt: RET,
+    }),
+  });
+  // Brengen naar een luchthaven: het retourvluchtnummer (aankomst) is verplicht en wordt opgeslagen.
+  (snapshotRow.route_snapshot as { airport: unknown }).airport = {
+    pickupIsAirport: false,
+    dropoffIsAirport: true,
+    isAirportPickup: false,
+    isAirportDropoff: true,
+    isAirportTransfer: true,
+    flightDirection: "departure",
+  };
+  const retour = { ...base, rideType: "retour", returnDate: RET_DATE, returnTime: RET_TIME, returnFlightNumber: "KL1002" };
+  const first = await post(retour);
+  assert.equal(first.status, 201);
+  const firstOut = (await first.json()) as { bookingRef: string; bookingId: string };
+
+  // De bestaande boeking: retourvelden zijn na de eerste request geschreven.
+  const realFakeFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+    if (url.pathname === "/rest/v1/bookings" && (init?.method ?? "GET").toUpperCase() === "GET") {
+      calls.push({ method: "GET", path: url.pathname + url.search, body: null });
+      const stored = { flight_number: null, return_date: RET_DATE, return_flight_number: "KL1002" };
+      const accept = new Headers(init?.headers).get("accept") ?? "";
+      return jsonResponse(200, accept.includes("vnd.pgrst.object") ? stored : [stored]);
+    }
+    return realFakeFetch(input, init);
+  }) as typeof fetch;
+
+  calls = [];
+  rpcResult = {
+    status: 200,
+    body: [{ booking_ref: firstOut.bookingRef, booking_id: firstOut.bookingId, price_euros: 60, reused: true }],
+  };
+  const replay = await post({ ...retour, returnFlightNumber: "KL1234" });
+  assert.equal(replay.status, 409);
+  const out = (await replay.json()) as { ok: boolean; error: string; bookingId?: string };
+  assert.equal(out.ok, false);
+  assert.equal(out.error, "booking_exists");
+  assert.equal(out.bookingId, undefined, "geen betaalsleutel bij een afwijkende replay");
+  assert.equal(lockCalls().length, 1);
+  assert.equal(plainCreateCalls().length, 0, "geen tweede boeking");
+  assert.deepEqual(
+    calls.filter((c) => c.path.startsWith("/rest/v1/bookings") && c.method !== "GET").map((c) => c.method),
+    [],
+    "geen schrijfactie op bookings"
+  );
+  assert.equal(calls.filter((c) => c.path === "/rest/v1/rpc/register_flight_monitoring").length, 0);
+});
