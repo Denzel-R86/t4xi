@@ -83,6 +83,12 @@ function isExistingCalendarDate(value: string): boolean {
 
 /** Mapt een niet-beschikbaar-reden naar de juiste HTTP-status. */
 function statusForReason(reason: UnavailableReason): 400 | 404 | 422 | 500 {
+  // Routingdienst onbereikbaar (2026-10-16): voor de klant functioneel identiek
+  // aan een route zonder vaste prijs. Bewust 404 en niet 500 — het is geen
+  // storing van ONZE kant richting de klant, en de interne categorie
+  // (service_disabled, quota, timeout, ...) blijft binnen de server.
+  if (reason.startsWith("routing_unavailable:")) return 404;
+
   switch (reason) {
     case "invalid_input":
       return 400;

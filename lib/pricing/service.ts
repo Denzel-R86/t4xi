@@ -37,6 +37,12 @@ import {
 } from "@/lib/pricing/approach-fee";
 import { isNightTariff } from "@/lib/pricing/departure-time";
 import {
+  isServiceFailure,
+  toLogEntry,
+  type RoutingFailure,
+  type RoutingFailureLogEntry,
+} from "@/lib/pricing/routing-failure";
+import {
   buildFallbackLevels,
   isFallbackEligible,
   resolveLevel,
@@ -133,7 +139,15 @@ export type UnavailableReason =
    * plaats van willekeurig een prijs te kiezen. INTERNE reden; de publieke
    * response toont uitsluitend de gewone tekst.
    */
-  | "route_fallback_ambiguous";
+  | "route_fallback_ambiguous"
+  /**
+   * Geen vaste route EN de routingdienst was onbereikbaar (2026-10-16). Tot nu
+   * toe viel dit samen met `route_not_fixed`, waardoor het wegvallen van het
+   * afstand-tarief op 2026-09-08 vijf weken onzichtbaar bleef. De categorie
+   * staat achter het koppelteken, bijv. "routing_unavailable:service_disabled".
+   * INTERNE reden; publiek blijft het "Offerte op aanvraag".
+   */
+  | `routing_unavailable:${string}`;
 
 /** Richting van de vlucht bij een luchthavenrit. */
 export type FlightDirection = "arrival" | "departure";
@@ -429,9 +443,9 @@ export function quoteFingerprint(input: {
 export async function getPricingQuote(
   input: PricingQuoteInput
 ): Promise<PricingQuoteResult> {
-  const { result, shadow, pickupApproach } = await resolveQuote(input);
+  const { result, shadow, pickupApproach, routingFailure } = await resolveQuote(input);
   // Loggen mag de offerte nooit blokkeren of laten falen.
-  void logQuote(input, result, shadow, pickupApproach).catch(() => {});
+  void logQuote(input, result, shadow, pickupApproach, routingFailure).catch(() => {});
   return result;
 }
 
@@ -619,7 +633,9 @@ export type ResolveQuoteDeps = {
   getRoute: (
     origin: string,
     destination: string,
-    departureAt?: string
+    departureAt?: string,
+    /** Optionele, gesaneerde diagnostiek — zie lib/pricing/routing-failure.ts. */
+    onFailure?: (failure: RoutingFailure) => void
   ) => Promise<DrivingRoute | null>;
   /**
    * SHADOW-ONLY (geen invloed op `price`). Levert de enige actieve
@@ -642,6 +658,12 @@ export type ResolveQuoteDeps = {
    * terugval plaats en blijft het gedrag exact zoals voorheen.
    */
   findCityLocation?: (cityId: string) => Promise<LocationRow | null>;
+  /**
+   * Ontvangt de gesaneerde routingmislukking uit tryDistanceTariff (2026-10-16),
+   * zodat resolveQuoteWith de uiteindelijke reden kan verfijnen. Optioneel:
+   * ontbreekt de dep, dan blijft het gedrag exact als voorheen.
+   */
+  recordRoutingFailure?: (entry: RoutingFailureLogEntry) => void;
   /** SHADOW-ONLY. Geconfigureerde high-demand-bestemmingen (nooit "perifeer"). */
   loadHighDemandZones?: () => Promise<HighDemandZoneIds>;
   /**
@@ -842,12 +864,16 @@ async function resolveQuote(input: PricingQuoteInput): Promise<{
   result: PricingQuoteResult;
   shadow: ShadowLogEntry | null;
   pickupApproach: PickupApproachLogEntry | null;
+  routingFailure: RoutingFailureLogEntry | null;
 }> {
   const supabase = createPricingReadClient();
-  if (!supabase) return { result: unavailable("data_unavailable"), shadow: null, pickupApproach: null };
+  if (!supabase) return { result: unavailable("data_unavailable"), shadow: null, pickupApproach: null, routingFailure: null };
 
   let shadow: ShadowLogEntry | null = null;
   let pickupApproach: PickupApproachLogEntry | null = null;
+  // Eerste beslissende routingmislukking (2026-10-16). Blijft null bij een
+  // geslaagde offerte of een vaste route.
+  let routingFailure: RoutingFailureLogEntry | null = null;
   const deps: ResolveQuoteDeps = {
     findLocation: (raw) => findLocation(supabase, raw),
     findVehicleClass: (code) => findVehicleClass(supabase, code),
@@ -884,9 +910,12 @@ async function resolveQuote(input: PricingQuoteInput): Promise<{
     recordPickupApproach: (entry) => {
       pickupApproach = entry;
     },
+    recordRoutingFailure: (entry) => {
+      if (routingFailure === null) routingFailure = entry;
+    },
   };
   const result = await resolveQuoteWith(input, deps);
-  return { result, shadow, pickupApproach };
+  return { result, shadow, pickupApproach, routingFailure };
 }
 
 /**
@@ -1106,9 +1135,18 @@ export async function resolveQuoteWith(
   //    OVERSLAAN wanneer allowDistanceTariff === false: de booking-tak zonder
   //    geldige prijs-snapshot mag geen dynamische prijs binden en Google niet
   //    opnieuw aanroepen. Dan valt de rit terug op "offerte op aanvraag".
+  // EERSTE beslissende fout wint: de aanrijroute is de eerste Google-aanroep,
+  // dus bij een storing is dát de oorzaak. Een latere fout mag die niet
+  // overschrijven, anders verschuift de diagnose naar het verkeerde symptoom.
+  let eersteFout: RoutingFailureLogEntry | null = null;
+  const verzamel = (entry: RoutingFailureLogEntry) => {
+    if (eersteFout === null) eersteFout = entry;
+    try { deps.recordRoutingFailure?.(entry); } catch { /* diagnostiek is nooit fataal */ }
+  };
+
   if (input.allowDistanceTariff !== false) {
     const byDistance = await tryDistanceTariff(
-      deps,
+      { ...deps, recordRoutingFailure: verzamel },
       input,
       pickupRaw,
       dropoffRaw,
@@ -1122,6 +1160,15 @@ export async function resolveQuoteWith(
 
   // 3. Niets bruikbaars → offerte op aanvraag. De reden hangt af van wat ontbrak.
   if (!pickup || !dropoff) return unavailable("unknown_location", airport);
+
+  // Onderscheid (2026-10-16): "er bestaat geen route" versus "de routingdienst
+  // was onbereikbaar". Beide leveren de klant dezelfde tekst, maar in de
+  // quote-log staat voortaan de echte oorzaak — zodat uitval van het
+  // afstand-tarief niet opnieuw weken onopgemerkt blijft.
+  const fout = eersteFout as RoutingFailureLogEntry | null;
+  if (fout && fout.category !== "routing_no_route") {
+    return unavailable(`routing_unavailable:${fout.category}`, airport);
+  }
   return unavailable("route_not_fixed", airport);
 }
 
@@ -1157,7 +1204,16 @@ async function tryDistanceTariff(
   const approach = await resolvePickupApproach(deps, pickupRaw, input.departureAt);
   if (approach.outcome === "offer_on_request") return null;
 
-  const route = await deps.getRoute(pickupRaw, dropoffRaw, input.departureAt);
+  // Diagnostiek (2026-10-16): leg vast WAAROM er geen route kwam, zodat een
+  // onbereikbare routingdienst niet langer als "geen vaste route" verschijnt.
+  // Dit verandert geen enkele prijs; bij elke mislukking blijft het resultaat
+  // `null` en valt de offerte fail-closed terug op "Offerte op aanvraag".
+  const route = await deps.getRoute(pickupRaw, dropoffRaw, input.departureAt, (f) => {
+    // Seam-guard: dat de productie-getRoute zijn callback afvangt is een
+    // eigenschap van DIE implementatie, niet van deze aanroep. Een
+    // geïnjecteerde of later gewijzigde getRoute mag een offerte nooit breken.
+    try { deps.recordRoutingFailure?.(toLogEntry("passenger_route", f)); } catch { /* diagnostiek is nooit fataal */ }
+  });
   if (!route) return null;
 
   // Basisprijs — ALTIJD berekend uit de enkele-reisafstand (route.distanceKm/
@@ -1403,7 +1459,18 @@ async function resolvePickupApproach(
   const base = bases.get(baseSlug);
   if (!base) return offer("config_or_routing_unavailable");
 
-  const baseRoute = await deps.getRoute(`${base.postcode} ${base.label}`, pickupRaw, departureAt);
+  // Dit is de EERSTE Google-aanroep in het quotepad — bij een routingstoring
+  // faalt deze dus vóór de passagiersroute. De mislukking wordt daarom ook hier
+  // gemeld, anders zou een storing nog steeds als "geen vaste route"
+  // verschijnen (2026-10-16).
+  const baseRoute = await deps.getRoute(
+    `${base.postcode} ${base.label}`,
+    pickupRaw,
+    departureAt,
+    (f) => {
+      try { deps.recordRoutingFailure?.(toLogEntry("pickup_approach", f)); } catch { /* diagnostiek is nooit fataal */ }
+    }
+  );
   if (!baseRoute) return offer("config_or_routing_unavailable");
 
   const fee = computeApproachFee({ distanceKm: baseRoute.distanceKm, durationMin: baseRoute.durationMin, config });
@@ -1932,13 +1999,20 @@ export async function loadServiceAreaBaseSlugs(
  * `null` als deze offerte niet via het afstand-tarief liep) en komt
  * uitsluitend in `price_breakdown` terecht — beïnvloedt niets anders.
  */
-async function logQuote(
+/**
+ * Geëxporteerd met een INJECTEERBARE logclient (2026-10-17) zodat tests de
+ * werkelijke insert-payload kunnen vangen in plaats van de broncode te scannen.
+ * Productie geeft niets mee en krijgt `createPricingLogClient()`.
+ */
+export async function logQuote(
   input: PricingQuoteInput,
   result: PricingQuoteResult,
   shadow: ShadowLogEntry | null = null,
-  pickupApproach: PickupApproachLogEntry | null = null
+  pickupApproach: PickupApproachLogEntry | null = null,
+  routingFailure: RoutingFailureLogEntry | null = null,
+  injectedLogger?: PricingSupabaseClient | null
 ): Promise<void> {
-  const logger = createPricingLogClient();
+  const logger = injectedLogger !== undefined ? injectedLogger : createPricingLogClient();
   if (!logger) return; // geen service-role key → stil overslaan
 
   // `pickupApproach` genest onder een eigen sleutel — de bestaande, al-live
@@ -1952,12 +2026,17 @@ async function logQuote(
   // nooit voor bij een offer_on_request-uitkomst, dus `result.economicFloor`
   // is altijd de volledige, definitieve waarheid).
   const economicFloor = result.available ? result.economicFloor : null;
+  // `routingFailure` (2026-10-16) onder een eigen sleutel, net als
+  // pickupApproach/economicFloor: bestaande queries op price_breakdown->>'...'
+  // blijven ongemoeid. Dit is de DUURZAME vindplaats van fase, HTTP-status en
+  // Google-status/code — `error_code` blijft compact en querybaar.
   const breakdown: Json | null =
-    shadow || pickupApproach || economicFloor
+    shadow || pickupApproach || economicFloor || routingFailure
       ? ({
           ...(shadow as unknown as Record<string, Json>),
           pickupApproach: pickupApproach as unknown as Json,
           economicFloor: economicFloor as unknown as Json,
+          routingFailure: routingFailure as unknown as Json,
         } as Json)
       : null;
 
