@@ -1,6 +1,8 @@
 import { Link } from "@/i18n/navigation";
 import CmsLivePreview from "@/components/cms/CmsLivePreview";
 import { Reveal } from "@/components/horizon/motion";
+import { PrinciplesPattern, QuietProofPattern } from "@/components/horizon/editorial";
+import { approvedPrinciples, approvedQuietProofKeys } from "@/lib/home/editorial-claims";
 import {
   HorizonSpine,
   Viewport,
@@ -35,7 +37,7 @@ import comfortAanBoord from "@/public/t4xi-campagne-03-comfort.png";
  * Geen secties maar betekenis-viewports in een verticaal ritme
  * (Stilte → Statement → Adem → Bewijs → Adem → Handeling):
  *
- *   Arrival → Recognition → Certainty → Journey → Proof → Invitation
+ *   Arrival → Quiet proof → Service principles → Certainty → Journey → Proof → Invitation
  *
  * De horizonlijn draagt de pagina; de handeling (de boekingszin, gekoppeld aan
  * de echte Pricing Engine) ligt óp de lijn. Volledige boekingsflow: /boeken.
@@ -260,12 +262,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "home" });
   const cmsFleet = await loadCmsFleetPage(locale);
-  const VOWS = [
-    { title: t("vow1Titel"), text: t("vow1Tekst") },
-    { title: t("vow2Titel"), text: t("vow2Tekst") },
-    { title: t("vow3Titel"), text: t("vow3Tekst") },
-    { title: t("vow4Titel"), text: t("vow4Tekst") },
-  ];
+  // PR 3.1: alleen regels met claimstatus `approved` (masterplan §0c) — zie
+  // lib/home/editorial-claims.ts.
+  const QUIET_PROOF = approvedQuietProofKeys().map((key) => t(key));
+  const PRINCIPLES = approvedPrinciples().map((p) => ({ title: t(p.titleKey), text: t(p.textKey) }));
   const PATHS = [
     { label: t("padDiensten"), href: "/diensten" },
     { label: t("padDagtochten"), href: "/dagtochten" },
@@ -333,24 +333,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </figure>
       </section>
 
-      {/* ═══ RECOGNITION — vier ruime, redactionele voordelen ═══ */}
-      <section aria-label={t("recogLabel")} className="bg-ink px-[5vw] py-16 text-white md:py-24">
-        <div className="grid gap-x-10 gap-y-12 md:grid-cols-2 xl:grid-cols-4">
-          {VOWS.map((vow, index) => (
-            <Reveal key={vow.title} delay={(Math.min(index, 3) as 0 | 1 | 2 | 3) || 0}>
-              <article className="border-t border-white/25 pt-6">
-                <span className="text-[11px] font-medium tracking-[0.16em] text-white/50">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <h2 className="mt-10 font-display text-[clamp(24px,2.4vw,34px)] font-bold leading-[1.08] tracking-[-0.02em]">
-                  {vow.title}
-                </h2>
-                <p className="mt-5 max-w-sm text-[14px] leading-7 text-white/65">{vow.text}</p>
-              </article>
-            </Reveal>
-          ))}
-        </div>
-      </section>
+      {/* ═══ QUIET PROOF — wat vaststaat, naast een verticale JourneyLine (PR 3.1) ═══ */}
+      <QuietProofPattern lines={QUIET_PROOF} />
+
+      {/* ═══ SERVICE PRINCIPLES — vervangt het donkere vows-blok (PR 3.1) ═══ */}
+      <PrinciplesPattern label={t("recogLabel")} kicker={t("recogKicker")} principles={PRINCIPLES} />
 
       {/* ═══ CERTAINTY — het grootboek van vaste prijzen ═══ */}
       <Viewport

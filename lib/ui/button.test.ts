@@ -154,6 +154,7 @@ test("Button v2: polymorf — interne href via i18n-Link, schema/anker via <a>, 
 //   PR 2.5: bevestigingsmoment (Button + JourneyLine)
 //   PR 2.7: RouteFinder-resultaat "UW RIT" (Button + JourneyLine)
 //   PR 2.6b: "Bevestigen" in de mobiele detail-sheet van de boekingszin (Button)
+//   PR 3.1: homepage-quiet proof (verticale JourneyLine, decoratief)
 const ADOPTERS = new Set([
   join("components", "booking", "handoff", "HandoffRouteLine.tsx"),
   join("components", "booking-sentence", "SentencePattern.tsx"),
@@ -162,9 +163,10 @@ const ADOPTERS = new Set([
   join("components", "booking", "BookingConfirmation.tsx"),
   join("components", "tarieven", "RideResult.tsx"),
   join("components", "booking-sentence", "DetailsSheet.tsx"),
+  join("components", "horizon", "editorial.tsx"),
 ]);
 
-test("adoptie Button/JourneyLine: alleen de expliciet toegestane bestanden (PR 2.1, 2.3, 2.4, 2.5, 2.6b, 2.7)", () => {
+test("adoptie Button/JourneyLine: alleen de expliciet toegestane bestanden (PR 2.1, 2.3, 2.4, 2.5, 2.6b, 2.7, 3.1)", () => {
   const own = new Set([
     join("components", "ui", "Button.tsx"),
     join("components", "ui", "button-styles.ts"),

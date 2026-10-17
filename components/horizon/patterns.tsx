@@ -21,7 +21,7 @@
  *                      table: geen kolomkoppen, geen raster, geen knopkolom —
  *                      elke regel is een frase met een feit)
  *   EditorialFigure  — beeld als technische tekening met maatannotaties
- *   VowsPattern      — genummerde beloftes als volle regels (geen kaarten)
+ *   (Vows → PrinciplesPattern in editorial.tsx, PR 3.1)
  *   ProofPattern     — een citaat óp de lijn + gegraveerd bewijs
  *   Breath           — de adem tussen twee statements (stilte is het patroon)
  *
@@ -336,30 +336,6 @@ export function EditorialFigure({
         </figcaption>
       )}
     </figure>
-  );
-}
-
-/* ── vows: beloftes als volle regels ────────────────────────────────────── */
-
-export function VowsPattern({ vows }: { vows: { title: string; text: string }[] }) {
-  return (
-    <div>
-      {vows.map((v, i) => (
-        <Reveal key={v.title} delay={(Math.min(i, 3) as 0 | 1 | 2 | 3) || 0}>
-          <div className="grid grid-cols-[56px_1fr] items-baseline gap-6 border-t border-ink/10 py-8 last:border-b md:grid-cols-[90px_1fr_minmax(0,300px)]">
-            <span className="text-[15px] font-light text-stone [font-variant-numeric:tabular-nums]">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <span className="font-display text-[clamp(21px,3vw,36px)] font-bold leading-[1.12] tracking-[-0.02em] text-ink">
-              {v.title}
-            </span>
-            <span className="col-start-2 text-sm leading-relaxed text-secondary md:col-start-3 md:text-right">
-              {v.text}
-            </span>
-          </div>
-        </Reveal>
-      ))}
-    </div>
   );
 }
 
