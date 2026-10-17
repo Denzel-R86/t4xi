@@ -39,6 +39,9 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // S1: geen broncode via publieke sourcemaps. Dit is de Next-default; expliciet
+  // zodat een wijziging zichtbaar in review komt (lib/security/csp.test.ts).
+  productionBrowserSourceMaps: false,
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

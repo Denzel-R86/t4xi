@@ -242,6 +242,23 @@ export const API_SURFACE: ApiSurfaceEntry[] = [
     gaps: [],
   },
 
+  // ── Publiek: browserrapporten (S1) ────────────────────────────────────────
+  {
+    route: "/api/csp-report", file: "app/api/csp-report/route.ts", method: "POST",
+    auth: { kind: "publiek", evidence: [], note: "report-uri van de report-only CSP; rapporten zijn onbetrouwbaar en alleen een signaal." },
+    csrf: "n.v.t.",
+    // Daarnaast een plafond per instance: rateLimit("csp-report:global", GLOBAL_RATE_MAX, …) = 300/min.
+    rateLimit: { kind: "lib-in-memory", key: "csp-report:<ip>", max: 30, windowSec: 60, evidence: [`rateLimit(\`csp-report:${ip}\`, RATE_MAX, RATE_WINDOW_MS)`, "RATE_MAX = 30;", "RATE_WINDOW_MS = 60_000;", "GLOBAL_RATE_MAX = 300;"] },
+    validation: { kind: "parserfunctie", evidence: ["CONTENT_TYPES.includes(contentType)", "parseCspReports(rawBody)"] },
+    // Rapport kan document-/blocked-URL met query en een script-sample bevatten; de
+    // parser houdt alleen directive, origin en pad over (lib/security/csp-report.ts).
+    pii: { fields: ["document-URL/blocked-URL/script-sample in het rapport (verworpen, niet gelogd)"], logged: [] },
+    bodyLimit: { kind: "na-inlezen", maxBytes: 8000, unit: "bytes", evidence: ["MAX_BODY_BYTES = 8_000", "declared > MAX_BODY_BYTES", "new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES"] },
+    gaps: [
+      { category: "body-size", finding: "F-42", text: "Content-Length wordt vooraf gecontroleerd; zonder (chunked) of met onjuiste Content-Length pas na volledig inlezen." },
+    ],
+  },
+
   // ── Publiek: kosten-/quotumgevoelige proxies ─────────────────────────────
   {
     route: "/api/places", file: "app/api/places/route.ts", method: "GET",
