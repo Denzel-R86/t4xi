@@ -10,6 +10,7 @@ import { dispatch } from "@/lib/communication/orchestrator";
 import { supabaseDeliveryLog } from "@/lib/communication/delivery-log";
 import { rateLimit, clientIp } from "@/lib/security/rate-limit";
 import { flightRpcFields } from "@/lib/bookings/flight-rpc-fields";
+import { decideReplay, loadReplayFlights } from "@/lib/bookings/replay";
 import {
   buildTripMonitoringRegistration,
   registerFlightMonitoring,
@@ -400,7 +401,7 @@ export async function POST(request: Request) {
   }
 
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { booking_ref?: string; booking_id?: string; price_euros?: number }
+    | { booking_ref?: string; booking_id?: string; price_euros?: number; reused?: boolean }
     | null
     | undefined;
   // Bij de lock-RPC is de bindende prijs exact het snapshotbedrag uit de DB.
@@ -416,6 +417,49 @@ export async function POST(request: Request) {
       ok: false,
       error: "server_error",
       message: "Boeking kon niet worden bevestigd.",
+    });
+  }
+
+  const success = () =>
+    json(201, {
+      ok: true,
+      bookingRef,
+      bookingId,
+      status: "pending",
+      quoteOnRequest,
+      price: priceEuros,
+      currency,
+      returnApplied,
+      ...(quoteOnRequest ? { message: QUOTE_ON_REQUEST } : {}),
+    });
+
+  // F-45: replay van dezelfde quote + rit → de RPC gaf de BESTAANDE boeking terug.
+  // Dezelfde toegangscheck is al gepasseerd (snapshot bestaat, niet verlopen,
+  // vingerafdruk gelijk; in de app én in SQL). Geen enkele nabewerking: de
+  // bestaande boeking, monitoring en communicatie blijven onaangeroerd.
+  if (lockedQuoteId && row?.reused === true) {
+    const stored = bookingId ? await loadReplayFlights(supabase, bookingId) : null;
+    const decision = stored
+      ? decideReplay(stored, {
+          flightNumber: flightNumberToStore,
+          returnTrip,
+          returnFlightNumber: returnFlightNumberToStore,
+        })
+      : null;
+    if (decision?.kind === "return_existing") return success();
+    if (decision?.kind === "conflict") {
+      return json(409, {
+        ok: false,
+        error: "booking_exists",
+        message:
+          "Deze rit is al geboekt. Vluchtgegevens wijzigen kan niet via het formulier; neem contact met ons op.",
+      });
+    }
+    // pending of niet te verifiëren → niets teruggeven, opnieuw proberen.
+    return json(409, {
+      ok: false,
+      error: "quote_conflict",
+      message: "De prijsofferte wordt al verwerkt. Probeer het zo opnieuw.",
     });
   }
 
@@ -525,15 +569,5 @@ export async function POST(request: Request) {
     })
   );
 
-  return json(201, {
-    ok: true,
-    bookingRef,
-    bookingId,
-    status: "pending",
-    quoteOnRequest,
-    price: priceEuros,
-    currency,
-    returnApplied,
-    ...(quoteOnRequest ? { message: QUOTE_ON_REQUEST } : {}),
-  });
+  return success();
 }
