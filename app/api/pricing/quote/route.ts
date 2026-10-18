@@ -291,8 +291,28 @@ export async function POST(request: Request) {
     });
     result = computed.quote;
     snapshot = computed.snapshot;
-  } catch {
+  } catch (err) {
     // Onverwachte serverfout — geen prijs lekken, geen fallback tonen.
+    //
+    // DIAGNOSTIEK (2026-10-18). Deze catch was leeg. Gevolg: een klantfout van
+    // 18-10 (HTTP 500 om 11:00:35Z, iPhone, /tarieven) liet GEEN enkel spoor na:
+    // geen logregel, en ook geen rij in pricing_quote_logs, want logQuote is
+    // fire-and-forget en flusht niet meer wanneer deze tak onmiddellijk
+    // retourneert. De oorzaak was daardoor principieel onbewijsbaar.
+    // lib/pricing/service.ts heeft tien plekken met `throw res.error` die niet in
+    // een eigen try/catch zitten, dus elke voorbijgaande databasefout eindigt
+    // hier — zonder spoor.
+    //
+    // WEL gelogd: fouttype, foutnaam en een eventuele foutcode.
+    // NOOIT gelogd: de request-body, adressen, datum/tijd of andere klantinvoer,
+    // en geen secrets. Ook de vrije fouttekst blijft er bewust buiten, want die
+    // kan ingevoerde waarden echoen.
+    const naam = err instanceof Error ? err.name : typeof err;
+    const code =
+      typeof err === "object" && err !== null && "code" in err && typeof err.code === "string"
+        ? err.code
+        : "geen";
+    console.error(`[pricing/quote] 500 — fouttype=${naam} code=${code}`);
     return json(500, { available: false, message: "Offerte op aanvraag" });
   }
 
