@@ -112,6 +112,44 @@ type LegEventFees = {
 const NO_EVENT_FEES: LegEventFees = { outbound: null, returnLeg: null, mode: "off" };
 
 /**
+ * Redenen waarom de evenementberekening is overgeslagen. Uitsluitend vaste
+ * waarden — nooit klantinvoer — zodat de logregel geen persoonsgegevens kan
+ * bevatten.
+ */
+export type EventSkipReason =
+  | "laden-faalde"
+  | "laden-gaf-niets"
+  | "berekening-faalde";
+
+/**
+ * Registreert dat de toeslag is overgeslagen, MET reden.
+ *
+ * WAAROM DIT BESTAAT. Tot 2026-10-18 verdween een overgeslagen eventberekening
+ * spoorloos: `loadCachedEventPricingData` eindigt op `.catch(() => null)`, de
+ * teruggave kreeg `mode: "off"`, en `observeEventFees` keert bij 'off' direct
+ * terug — dus geen rij in pricing_event_shadow_logs, geen logregel, niets. De
+ * `null` wordt bovendien 60 s gecachet (EVENT_PRICING_CACHE_TTL_MS), zodat één
+ * voorbijgaande fout tot een minuut lang alle offertes stil zonder toeslag laat.
+ * In shadow is dat een meetgat; na activatie is het onzichtbare omzetderving die
+ * achteraf niet te reconstrueren is.
+ *
+ * `off` als BEWUSTE stand wordt hier niet gemeld — dat is geen uitval.
+ */
+function skipEventFees(reason: EventSkipReason, detail?: unknown): LegEventFees {
+  const soort =
+    detail instanceof Error
+      ? detail.name
+      : typeof detail === "string"
+        ? "string-throw"
+        : detail === undefined
+          ? "geen"
+          : typeof detail;
+  // Geen adressen, geen quote-inhoud, geen secrets: alleen reden en fouttype.
+  console.warn(`[event-pricing] toeslag overgeslagen — reden=${reason} fouttype=${soort}`);
+  return NO_EVENT_FEES;
+}
+
+/**
  * DE ENIGE plek waar het evenemententarief aan een berekende quote wordt
  * gekoppeld. Beide prijspaden (quote → snapshot → boeking, én de directe
  * boeking zonder quoteId) gebruiken deze functie, zodat dezelfde invoer bij
@@ -130,50 +168,73 @@ async function eventFeesForQuote(
   let data: EventPricingData | null;
   try {
     data = await load();
-  } catch {
-    return NO_EVENT_FEES;
+  } catch (err) {
+    return skipEventFees("laden-faalde", err);
   }
   // Alleen 'off' slaat alles over. In 'shadow' wordt hieronder normaal gerekend;
   // het verschil zit uitsluitend in wat de caller met het resultaat doet.
-  if (!data || data.config.mode === "off") return NO_EVENT_FEES;
+  // `null` na een GESLAAGDE load betekent dat de loader de fout zelf heeft
+  // weggeslikt (`.catch(() => null)`); dat is uitval en hoort gemeld. `off` is
+  // een bewuste stand en wordt niet gemeld.
+  if (!data) return skipEventFees("laden-gaf-niets");
 
   // Genormaliseerde locatiecontext, SERVER-SIDE afgeleid uit gegevens die de
   // pijplijn al heeft: het adres dat de klant koos (postcode + woonplaats), de
   // opgeloste route-slug, en — uitsluitend wanneer die toch al is opgezocht voor
   // de aanrijcomponent — de officiële PDOK-gemeente. Nul extra externe calls,
   // en identiek voor een vaste route en een afstandstarief.
-  const { outbound, returnLeg } = buildEventLegs({
-    pickup: buildLocationContext(input.pickup, {
-      locationSlug: quote.route.pickupSlug,
-      gemeente: quote.pickupApproach?.serviceAreaGemeente ?? null,
-    }),
-    dropoff: buildLocationContext(input.dropoff, {
-      locationSlug: quote.route.dropoffSlug,
-    }),
-    departureAt: input.departureAt,
-    returnDepartureAt: input.returnDepartureAt,
-    returnApplied: quote.returnApplied,
-  });
+  // ALLES hieronder staat BEWUST binnen de beveiliging (2026-10-18). Tot dan dekte
+  // de try/catch uitsluitend `await load()`, terwijl buildLocationContext,
+  // buildEventLegs en resolveEventFee erbuiten vielen. Een fout daar propageerde
+  // via calculateBookingPrice naar de catch in app/api/pricing/quote/route.ts en
+  // werd HTTP 500 "Offerte op aanvraag" — de klant kreeg dan GEEN prijs, terwijl
+  // de reguliere prijs al volledig en correct berekend was. Dat is in strijd met
+  // het uitgangspunt dat een optionele toeslag nooit een geldige prijs mag
+  // wegnemen. De bescherming zat tot nu toe in de afwezigheid van throws in die
+  // modules, niet in de structuur; dat is geen garantie bij een configuratiefout
+  // of een toekomstige wijziging.
+  try {
+    // Ook het LEZEN van de modus staat binnen de beveiliging: een misvormde
+    // configuratierij kan hier al gooien, en `validateEventData()` is nergens in
+    // runtime-code gewired (alleen in tests), dus misvormde rijen bereiken deze
+    // plek ongevalideerd.
+    if (data.config.mode === "off") return NO_EVENT_FEES;
 
-  // Dezelfde noemer als de meetlaag voor proportionaliteit gebruikt, zodat de
-  // uplift-cap en poort 9 niet uiteen kunnen lopen.
-  const baselineSubtotalCents = quote.priceCents;
-  const resolve = (leg: NonNullable<typeof outbound>) =>
-    resolveEventFee({
-      leg,
-      events: data.events,
-      windows: data.windows,
-      zones: data.zones,
-      rules: data.rules,
-      config: data.config,
-      baselineSubtotalCents,
+    const { outbound, returnLeg } = buildEventLegs({
+      pickup: buildLocationContext(input.pickup, {
+        locationSlug: quote.route.pickupSlug,
+        gemeente: quote.pickupApproach?.serviceAreaGemeente ?? null,
+      }),
+      dropoff: buildLocationContext(input.dropoff, {
+        locationSlug: quote.route.dropoffSlug,
+      }),
+      departureAt: input.departureAt,
+      returnDepartureAt: input.returnDepartureAt,
+      returnApplied: quote.returnApplied,
     });
 
-  return {
-    outbound: outbound ? resolve(outbound) : null,
-    returnLeg: returnLeg ? resolve(returnLeg) : null,
-    mode: data.config.mode,
-  };
+    // Dezelfde noemer als de meetlaag voor proportionaliteit gebruikt, zodat de
+    // uplift-cap en poort 9 niet uiteen kunnen lopen.
+    const baselineSubtotalCents = quote.priceCents;
+    const resolve = (leg: NonNullable<typeof outbound>) =>
+      resolveEventFee({
+        leg,
+        events: data.events,
+        windows: data.windows,
+        zones: data.zones,
+        rules: data.rules,
+        config: data.config,
+        baselineSubtotalCents,
+      });
+
+    return {
+      outbound: outbound ? resolve(outbound) : null,
+      returnLeg: returnLeg ? resolve(returnLeg) : null,
+      mode: data.config.mode,
+    };
+  } catch (err) {
+    return skipEventFees("berekening-faalde", err);
+  }
 }
 
 /**
