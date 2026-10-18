@@ -16,6 +16,7 @@ import {
   type OperationalBase,
 } from "@/lib/pricing/service";
 import type { ApproachFeeConfig } from "@/lib/pricing/approach-fee";
+import type { RoutingFailure } from "@/lib/pricing/routing-failure";
 import { buildPriceSnapshot, checkSnapshotUsable, NIGHT_SURCHARGE_RATE, type StoredSnapshot } from "@/lib/pricing/snapshot";
 import { eurosToCents } from "@/lib/payments/create-intent";
 
@@ -122,7 +123,14 @@ type MakeDepsOptions = Partial<ResolveQuoteDeps> & {
 function makeGetRoute(o: MakeDepsOptions) {
   const approach = { distanceKm: o.approachKm ?? 2, durationMin: o.approachMin ?? 4 };
   const passenger = { distanceKm: o.passengerKm ?? 20, durationMin: o.passengerMin ?? 25 };
-  return async (origin: string, _destination: string, _departureAt?: string) => {
+  // Vierde parameter (2026-10-16): de optionele diagnostiek-callback. Deze fake
+  // negeert hem; hij staat er zodat de signatuur die van ResolveQuoteDeps volgt.
+  return async (
+    origin: string,
+    _destination: string,
+    _departureAt?: string,
+    _onFailure?: (failure: RoutingFailure) => void
+  ) => {
     if (KNOWN_BASE_ADDRESSES.has(origin)) {
       if (o.baseRouteCallsCounter) o.baseRouteCallsCounter.count += 1;
       return approach;

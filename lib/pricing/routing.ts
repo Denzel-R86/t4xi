@@ -19,6 +19,14 @@ export type DrivingRoute = {
   durationMin: number;
 };
 
+import {
+  classifyRoutingFailure,
+  invalidResponseFailure,
+  noRouteFailure,
+  timeoutFailure,
+  type RoutingFailure,
+} from "@/lib/pricing/routing-failure";
+
 const COMPUTE_ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
 const TIMEOUT_MS = 4000;
 
@@ -76,10 +84,23 @@ function parseDurationSeconds(duration: string | undefined): number | null {
 export async function getDrivingRoute(
   origin: string,
   destination: string,
-  departureAt?: string
+  departureAt?: string,
+  /**
+   * Optionele diagnostiek (2026-10-16). Wordt aangeroepen met een
+   * GESANEERDE mislukking: categorie, HTTP-status en Google-status/code, nooit
+   * de key, headers, response of adressen. Het retourtype blijft ongewijzigd
+   * `DrivingRoute | null`, dus geen enkele bestaande aanroeper verandert van
+   * gedrag en er verandert geen enkele prijs.
+   */
+  onFailure?: (failure: RoutingFailure) => void
 ): Promise<DrivingRoute | null> {
+  const meld = (f: RoutingFailure) => { try { onFailure?.(f); } catch { /* diagnostiek mag nooit de offerte breken */ } };
+
   const key = process.env.GOOGLE_MAPS_API_KEY;
-  if (!key) return null;
+  if (!key) {
+    meld({ category: "routing_api_key_invalid", httpStatus: null, googleStatus: "NO_API_KEY", googleCode: null });
+    return null;
+  }
 
   const from = (origin ?? "").trim();
   const to = (destination ?? "").trim();
@@ -108,21 +129,42 @@ export async function getDrivingRoute(
       body: JSON.stringify(body),
       signal: controller.signal,
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // Body uitsluitend lezen om te CLASSIFICEREN; hij wordt nooit vastgelegd.
+      let body: unknown = null;
+      try { body = await res.json(); } catch { /* geen bruikbare payload */ }
+      meld(classifyRoutingFailure(res.status, body));
+      return null;
+    }
 
-    const data = (await res.json()) as ComputeRoutesResponse;
+    let data: ComputeRoutesResponse;
+    try {
+      data = (await res.json()) as ComputeRoutesResponse;
+    } catch {
+      meld(invalidResponseFailure(res.status));
+      return null;
+    }
+
     const route = data.routes?.[0];
-    const meters = route?.distanceMeters;
-    const seconds = parseDurationSeconds(route?.duration);
-    if (typeof meters !== "number" || meters <= 0) return null;
-    if (seconds === null || seconds <= 0) return null;
+    if (!route) {
+      // Geldig antwoord, maar Google kent geen route. Geen storing.
+      meld(noRouteFailure());
+      return null;
+    }
+    const meters = route.distanceMeters;
+    const seconds = parseDurationSeconds(route.duration);
+    if (typeof meters !== "number" || meters <= 0 || seconds === null || seconds <= 0) {
+      meld(invalidResponseFailure(res.status));
+      return null;
+    }
 
     return {
       distanceKm: Math.round((meters / 1000) * 10) / 10,
       durationMin: Math.round(seconds / 60),
     };
   } catch {
-    // Timeout (abort) of netwerk-/parsefout → geen prijs forceren.
+    // Timeout (abort) of netwerkfout → geen prijs forceren.
+    meld(timeoutFailure());
     return null;
   } finally {
     clearTimeout(timer);
