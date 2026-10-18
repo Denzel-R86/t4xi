@@ -31,6 +31,7 @@ type PlausibleFn = (event: string, options?: { props?: AnalyticsProps }) => void
 type AnalyticsWindow = Window & {
   plausible?: PlausibleFn;
   dataLayer?: Array<Record<string, unknown>>;
+  __t4xiStatisticsConsent?: boolean;
 };
 
 /**
@@ -40,6 +41,10 @@ type AnalyticsWindow = Window & {
 export function track(event: AnalyticsEvent | string, props?: AnalyticsProps): void {
   if (typeof window === "undefined") return;
   const w = window as AnalyticsWindow;
+  // Basic consent mode: geen enkel statistiekevent aanbieden zolang de
+  // bezoeker niet aantoonbaar in deze tab toestemming heeft gegeven. De vlag
+  // wordt synchroon bijgewerkt door ConsentProvider, ook bij intrekking.
+  if (w.__t4xiStatisticsConsent !== true) return;
   try {
     if (typeof w.plausible === "function") {
       w.plausible(event, props ? { props } : undefined);
