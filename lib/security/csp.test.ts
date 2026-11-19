@@ -3,13 +3,14 @@
  *
  * 1. De policy is deterministisch op de nonce na (snapshot hieronder).
  * 2. De nonce is per aanroep anders en heeft het formaat dat Next accepteert.
- * 3. De afgedwongen CSP in next.config.mjs is NIET gewijzigd (broncode-lock):
- *    S1 verandert geen productiegedrag tot de eigenaar enforce besluit.
+ * 3. De afgedwongen CSP behoudt alle beveiligingsregels en noodzakelijke
+ *    bronnen; tracker-origins verschijnen uitsluitend bij een geldig ID.
  * 4. proxy.ts zet de policy op request én response en wist client-CSP-headers.
  * 5. productionBrowserSourceMaps staat expliciet uit.
  * 6. Het rapport-endpoint logt geen PII.
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
@@ -88,18 +89,126 @@ test("nonce en env kunnen geen directive injecteren", () => {
   assert.ok(noSupabase.includes("connect-src 'self' https://api.pdok.nl"));
 });
 
-test("afgedwongen CSP in next.config.mjs is ongewijzigd (S1 = alleen report-only)", () => {
+const TRACKER_ENV_KEYS = [
+  "NEXT_PUBLIC_GA_MEASUREMENT_ID",
+  "NEXT_PUBLIC_GOOGLE_ADS_ID",
+  "NEXT_PUBLIC_META_PIXEL_ID",
+] as const;
+
+function enforcedCsp(overrides: Partial<Record<(typeof TRACKER_ENV_KEYS)[number], string>> = {}): string {
+  const script = `
+    const config = (await import('./next.config.mjs')).default;
+    const groups = await config.headers();
+    const header = groups.flatMap((group) => group.headers)
+      .find((item) => item.key === 'Content-Security-Policy');
+    if (!header) throw new Error('Content-Security-Policy ontbreekt');
+    process.stdout.write(header.value);
+  `;
+  const env = {
+    ...process.env,
+    NODE_ENV: "production" as const,
+    NEXT_PUBLIC_SANITY_PROJECT_ID: "95pzjxjq",
+    NEXT_PUBLIC_SANITY_DATASET: "production",
+    NEXT_PUBLIC_SUPABASE_URL: "https://abcdefgh.supabase.co",
+    ...Object.fromEntries(TRACKER_ENV_KEYS.map((key) => [key, ""])),
+    ...overrides,
+  };
+  const child = spawnSync(process.execPath, ["--input-type=module", "--eval", script], {
+    cwd: ROOT,
+    encoding: "utf8",
+    env,
+  });
+  assert.equal(child.status, 0, child.stderr || "next.config.mjs kon niet worden uitgevoerd");
+  return child.stdout;
+}
+
+function directive(policy: string, name: string): string[] {
+  const value = policy.split("; ").find((part) => part.startsWith(`${name} `));
+  assert.ok(value, `${name} ontbreekt`);
+  return value.slice(name.length + 1).split(" ");
+}
+
+const BASE_DIRECTIVES: Record<string, string[]> = {
+  "default-src": ["'self'"],
+  "object-src": ["'none'"],
+  "base-uri": ["'self'"],
+  "form-action": ["'self'"],
+  "frame-ancestors": ["'self'"],
+  "style-src": ["'self'", "'unsafe-inline'"],
+  "font-src": ["'self'"],
+  "worker-src": ["'self'", "blob:"],
+  "frame-src": ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+};
+const GOOGLE_SCRIPT = "https://www.googletagmanager.com";
+const GOOGLE_CONNECT = [
+  "https://*.google-analytics.com",
+  "https://*.analytics.google.com",
+  "https://*.googletagmanager.com",
+];
+const META_SCRIPT = "https://connect.facebook.net";
+const META_ENDPOINT = "https://www.facebook.com";
+
+const trackerMatrix = [
+  { name: "geen trackers", env: {}, google: false, meta: false },
+  { name: "alleen GA4", env: { NEXT_PUBLIC_GA_MEASUREMENT_ID: "G-TEST123" }, google: true, meta: false },
+  { name: "alleen Google Ads", env: { NEXT_PUBLIC_GOOGLE_ADS_ID: "AW-123456789" }, google: true, meta: false },
+  { name: "alleen Meta", env: { NEXT_PUBLIC_META_PIXEL_ID: "123456789012345" }, google: false, meta: true },
+  { name: "GA4 + Ads", env: { NEXT_PUBLIC_GA_MEASUREMENT_ID: "G-TEST123", NEXT_PUBLIC_GOOGLE_ADS_ID: "AW-123456789" }, google: true, meta: false },
+  { name: "GA4 + Meta", env: { NEXT_PUBLIC_GA_MEASUREMENT_ID: "G-TEST123", NEXT_PUBLIC_META_PIXEL_ID: "123456789012345" }, google: true, meta: true },
+  { name: "Ads + Meta", env: { NEXT_PUBLIC_GOOGLE_ADS_ID: "AW-123456789", NEXT_PUBLIC_META_PIXEL_ID: "123456789012345" }, google: true, meta: true },
+  { name: "GA4 + Ads + Meta", env: { NEXT_PUBLIC_GA_MEASUREMENT_ID: "G-TEST123", NEXT_PUBLIC_GOOGLE_ADS_ID: "AW-123456789", NEXT_PUBLIC_META_PIXEL_ID: "123456789012345" }, google: true, meta: true },
+] as const;
+
+for (const scenario of trackerMatrix) {
+  test(`afgedwongen CSP: ${scenario.name} laat uitsluitend bijbehorende tracker-origins toe`, () => {
+    const policy = enforcedCsp(scenario.env);
+    const script = directive(policy, "script-src");
+    const connect = directive(policy, "connect-src");
+    const img = directive(policy, "img-src");
+
+    for (const [name, expected] of Object.entries(BASE_DIRECTIVES)) {
+      assert.deepEqual(directive(policy, name), expected, `${scenario.name}: ${name} gewijzigd`);
+    }
+    for (const required of ["'self'", "'unsafe-inline'", "https://js.stripe.com", "https://core.sanity-cdn.com"]) {
+      assert.ok(script.includes(required), `${scenario.name}: script-src mist ${required}`);
+    }
+    for (const required of [
+      "'self'",
+      "https://abcdefgh.supabase.co",
+      "https://api.pdok.nl",
+      "https://places.googleapis.com",
+      "https://api.stripe.com",
+      "https://95pzjxjq.api.sanity.io",
+      "https://95pzjxjq.apicdn.sanity.io",
+      "wss://95pzjxjq.api.sanity.io",
+    ]) {
+      assert.ok(connect.includes(required), `${scenario.name}: connect-src mist ${required}`);
+    }
+
+    assert.equal(script.includes(GOOGLE_SCRIPT), scenario.google);
+    for (const source of GOOGLE_CONNECT) assert.equal(connect.includes(source), scenario.google);
+    assert.equal(script.includes(META_SCRIPT), scenario.meta);
+    assert.equal(connect.includes(META_ENDPOINT), scenario.meta);
+    assert.equal(img.includes(META_ENDPOINT), scenario.meta);
+    assert.equal(script.filter((source) => source === GOOGLE_SCRIPT).length, scenario.google ? 1 : 0);
+  });
+}
+
+test("afgedwongen CSP: ongeldige tracker-ID's voegen geen origins toe", () => {
+  const invalid = enforcedCsp({
+    NEXT_PUBLIC_GA_MEASUREMENT_ID: "G-lowercase; script-src *",
+    NEXT_PUBLIC_GOOGLE_ADS_ID: "AW-NIET-NUMERIEK",
+    NEXT_PUBLIC_META_PIXEL_ID: "12345",
+  });
+  const allSources = invalid.split(/; | /);
+  for (const forbidden of [GOOGLE_SCRIPT, ...GOOGLE_CONNECT, META_SCRIPT, META_ENDPOINT, "*"]) {
+    assert.ok(!allSources.includes(forbidden), `ongeldig ID liet ${forbidden} toe`);
+  }
+});
+
+test("afgedwongen CSP blijft een afzonderlijke productieheader zonder nonce", () => {
   const config = read("next.config.mjs");
-  const enforced = [
-    `\`script-src 'self' 'unsafe-inline'\${isDev ? " 'unsafe-eval'" : ""} https://js.stripe.com \${sanityCoreOrigin}\`,`,
-    `"style-src 'self' 'unsafe-inline'",`,
-    `\`img-src 'self' data: blob: \${sanityImageSource}\`,`,
-    `\`connect-src 'self'\${supabaseConnectOrigin} https://api.pdok.nl https://places.googleapis.com https://api.stripe.com \${sanityApiOrigin} \${sanityApiCdnOrigin} \${sanityWebSocketOrigin}\`,`,
-    `"frame-src 'self' https://js.stripe.com https://hooks.stripe.com",`,
-    `"frame-ancestors 'self'",`,
-    `key: "Content-Security-Policy",`,
-  ];
-  for (const line of enforced) assert.ok(config.includes(line), `afgedwongen CSP gewijzigd: ${line}`);
+  assert.ok(config.includes(`key: "Content-Security-Policy",`));
   assert.ok(!/key:\s*"Content-Security-Policy-Report-Only"/.test(config), "report-only hoort in proxy.ts (nonce per request)");
   assert.ok(!/nonce/i.test(config.slice(config.indexOf("Content-Security-Policy"))), "een nonce in de afgedwongen policy schakelt 'unsafe-inline' uit");
 });
