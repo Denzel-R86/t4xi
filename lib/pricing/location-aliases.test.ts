@@ -309,3 +309,36 @@ test("een woon-/wijkadres rond Zestienhoven (buiten 3045AP) wordt niet als lucht
   // postcodegebied (3043/3044-range) — géén van de nieuwe regels raakt dat.
   assert.notEqual(resolveLocationSlug("Zestienhovenseweg 100, 3043 EA Rotterdam"), "rotterdam-airport");
 });
+
+// ── Spijkenisse (2026-11-19) ────────────────────────────────────────────────
+// Productiebevinding: op 17/18-11 gaven drie aanvragen vanaf een Spijkenisse-
+// straatadres "unknown_location", terwijl Spijkenisse 16 actieve vaste routes
+// heeft. De resolver kende geen enkele Spijkenisse-regel. Postcodes en
+// wijkverdeling geverifieerd via PDOK Locatieserver (2026-11-19).
+test("Spijkenisse-straatadressen resolven naar Spijkenisse in plaats van naar niets", () => {
+  const cases: [string, string][] = [
+    // 3201: gemengd (Centrum/Schenkel/De Hoek) → stadsprijs
+    ["Hongerlandsedijk 666, 3201LW Spijkenisse", "spijkenisse"],
+    ["Hoogwerfsingel 1A-1, 3202SM Spijkenisse", "spijkenisse"],
+    // eenduidige wijkpostcodes → eigen wijkprijs
+    ["Groenewoudse Weg 1, 3203 AA Spijkenisse", "spijkenisse-groenewoud"],
+    ["Sterrenkwartier 1, 3204 AA Spijkenisse", "spijkenisse-sterrenkwartier"],
+    // randen van de woonplaats
+    ["Waterland 1, 3205 AA Spijkenisse", "spijkenisse"],
+    ["Halfweg 1, 3208 AA Spijkenisse", "spijkenisse"],
+    // zonder postcode: plaats-segment
+    ["Hongerlandsedijk 2000A, Spijkenisse", "spijkenisse"],
+  ];
+  for (const [adres, verwacht] of cases) {
+    assert.equal(resolveLocationSlug(adres), verwacht, adres);
+  }
+});
+
+test("Hekelingen (3209) en Geervliet (3211) vallen buiten de Spijkenisse-fallback", () => {
+  assert.equal(resolveLocationSlug("Dorpsstraat 1, 3209 AA Hekelingen"), null);
+  assert.equal(resolveLocationSlug("Toldijk 1, 3211 AA Geervliet"), null);
+});
+
+test("een straatnaam met 'Spijkenisse' in een andere plaats blijft die plaats", () => {
+  assert.equal(resolveLocationSlug("Spijkenissestraat 10, Rotterdam"), "rotterdam");
+});
