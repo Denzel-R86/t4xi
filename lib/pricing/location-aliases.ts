@@ -140,6 +140,16 @@ const POSTCODE_RULES: PostcodeRule[] = [
   { min: 2583, max: 2587, slug: "den-haag-scheveningen" },
   { min: 2596, max: 2597, slug: "den-haag-benoordenhout" },
 
+  // ── Prioriteit 2d (2026-11-19): Spijkenisse ─────────────────────────────
+  // Vóór deze regels resolveerde GEEN enkel Spijkenisse-straatadres: alleen
+  // wie letterlijk "Spijkenisse" typte, kreeg een vaste prijs. PDOK-steekproef
+  // (2026-11-19, 100 adressen per postcode4, veld `wijknaam`): alleen deze
+  // twee postcodes liggen (vrijwel) geheel in één T4XI-wijk. 3201 (Centrum
+  // 88%, ook Schenkel/De Hoek), 3202 (Hoogwerf 84%, ook Schiekamp) en de
+  // overige postcodes zijn gemengd en vallen bewust op de stadsprijs terug.
+  { min: 3203, max: 3203, slug: "spijkenisse-groenewoud" }, // 100% Groenewoud
+  { min: 3204, max: 3204, slug: "spijkenisse-sterrenkwartier" }, // 99% Sterrenkwartier
+
   // ── Prioriteit 3: stadsfallback — MOET onderaan blijven ─────────────────
   { min: 3000, max: 3089, slug: "rotterdam" },
   { min: 2491, max: 2599, slug: "den-haag" },
@@ -148,6 +158,10 @@ const POSTCODE_RULES: PostcodeRule[] = [
   { min: 1000, max: 1109, slug: "amsterdam" },
   { min: 1300, max: 1369, slug: "almere" },
   { min: 3500, max: 3585, slug: "utrecht" },
+  // 2026-11-19: woonplaats Spijkenisse = 3201–3208 (PDOK; 3200 en 3210
+  // bestaan niet). 3209 is woonplaats Hekelingen en valt er bewust buiten;
+  // 3205 bevat een handvol Hekelingen-adressen aan de rand van Waterland.
+  { min: 3201, max: 3208, slug: "spijkenisse" },
 ];
 
 /**
@@ -208,6 +222,9 @@ const KEYWORD_RULES: { test: (full: string, place: string) => boolean; slug: str
   { test: (_f, p) => p.includes("amsterdam"), slug: "amsterdam" },
   { test: (_f, p) => p.includes("almere"), slug: "almere" },
   { test: (_f, p) => p.includes("utrecht"), slug: "utrecht" },
+  // 2026-11-19: Spijkenisse-adres zonder postcode → stadsprijs. Op het
+  // plaats-segment, zodat "Spijkenissestraat, Rotterdam" Rotterdam blijft.
+  { test: (_f, p) => p.includes("spijkenisse"), slug: "spijkenisse" },
 ];
 
 /**
