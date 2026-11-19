@@ -133,6 +133,18 @@ export type UnavailableReason =
    */
   | "airport_arrival_surcharge_unavailable"
   /**
+   * Diagnostiek (2026-11-19): de pickup ligt bevestigd buiten elk servicegebied
+   * (PDOK-gemeente niet toegewezen). Vóór deze reden verscheen dit als
+   * `unknown_location`, wat op een herkenningsfout leek. INTERNE reden — de
+   * publieke response toont uitsluitend "Offerte op aanvraag".
+   */
+  | "outside_service_area"
+  /**
+   * Diagnostiek (2026-11-19): de pickup ligt in een servicegebied, maar verder
+   * dan de maximale aanrijafstand. INTERNE reden, zelfde publieke tekst.
+   */
+  | "beyond_max_approach"
+  /**
    * Wijk → stad-terugval (2026-10-15) leverde op hetzelfde specificiteitsniveau
    * MEERDERE routes met verschillende prijzen op. Er is dan geen objectieve
    * keuze, dus valt de offerte fail-closed terug op "Offerte op aanvraag" in
@@ -1143,10 +1155,17 @@ export async function resolveQuoteWith(
     if (eersteFout === null) eersteFout = entry;
     try { deps.recordRoutingFailure?.(entry); } catch { /* diagnostiek is nooit fataal */ }
   };
+  // Diagnostiek (2026-11-19): onthoud waarom het aanrijmodel een offerte gaf,
+  // zodat de quote-log "buiten servicegebied" niet als "onbekende locatie" toont.
+  let aanrijUitkomst: PickupApproachLogEntry | null = null;
+  const noteerAanrij = (entry: PickupApproachLogEntry) => {
+    aanrijUitkomst = entry;
+    try { deps.recordPickupApproach?.(entry); } catch { /* diagnostiek is nooit fataal */ }
+  };
 
   if (input.allowDistanceTariff !== false) {
     const byDistance = await tryDistanceTariff(
-      { ...deps, recordRoutingFailure: verzamel },
+      { ...deps, recordRoutingFailure: verzamel, recordPickupApproach: noteerAanrij },
       input,
       pickupRaw,
       dropoffRaw,
@@ -1159,16 +1178,26 @@ export async function resolveQuoteWith(
   }
 
   // 3. Niets bruikbaars → offerte op aanvraag. De reden hangt af van wat ontbrak.
-  if (!pickup || !dropoff) return unavailable("unknown_location", airport);
-
+  //
+  // VOLGORDE (2026-11-19): de werkelijke oorzaak gaat vóór "onbekende locatie".
+  // Vóór deze wijziging gaf elk vrij adres (pickup of dropoff niet in
+  // `locations`) `unknown_location`, óók als het afstand-tarief faalde door een
+  // routingstoring of een pickup buiten het servicegebied. Daardoor bleef een
+  // geweigerde Google-sleutel van 8 september tot november onzichtbaar. De klant
+  // ziet in alle gevallen dezelfde tekst; alleen de interne reden verandert.
+  //
   // Onderscheid (2026-10-16): "er bestaat geen route" versus "de routingdienst
-  // was onbereikbaar". Beide leveren de klant dezelfde tekst, maar in de
-  // quote-log staat voortaan de echte oorzaak — zodat uitval van het
-  // afstand-tarief niet opnieuw weken onopgemerkt blijft.
+  // was onbereikbaar".
   const fout = eersteFout as RoutingFailureLogEntry | null;
   if (fout && fout.category !== "routing_no_route") {
     return unavailable(`routing_unavailable:${fout.category}`, airport);
   }
+  const aanrij = aanrijUitkomst as PickupApproachLogEntry | null;
+  if (aanrij && aanrij.outcome === "offer_on_request") {
+    if (aanrij.reason === "unassigned_service_area") return unavailable("outside_service_area", airport);
+    if (aanrij.reason === "beyond_max_approach_km") return unavailable("beyond_max_approach", airport);
+  }
+  if (!pickup || !dropoff) return unavailable("unknown_location", airport);
   return unavailable("route_not_fixed", airport);
 }
 
