@@ -307,6 +307,16 @@ export const API_SURFACE: ApiSurfaceEntry[] = [
     gaps: [{ category: "rate-limit", finding: "F-37", text: "Geen limiet; acceptabel achter gedeeld geheim + eenmalige trace_id." }],
   },
   {
+    route: "/api/pricing/health", file: "app/api/pricing/health/route.ts", method: "GET",
+    auth: { kind: "service", evidence: ["secretsMatch(providedSecret(request), secret)"], note: "PRICING_HEALTH_SECRET, constant-time. Alleen-lezen tellingen." },
+    csrf: "n.v.t.",
+    rateLimit: { kind: "none" },
+    validation: { kind: "handgeschreven", evidence: ["providedSecret(request)"] },
+    pii: { fields: [], logged: [] },
+    bodyLimit: { kind: "geen-body" },
+    gaps: [{ category: "rate-limit", finding: "F-37", text: "Geen limiet; acceptabel achter gedeeld geheim, alleen head-count-queries." }],
+  },
+  {
     route: "/api/stripe/webhook", file: "app/api/stripe/webhook/route.ts", method: "POST",
     auth: { kind: "webhook-signature", evidence: ["stripe.webhooks.constructEvent(rawBody, sig, secret)"] },
     csrf: "n.v.t.",

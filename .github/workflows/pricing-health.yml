@@ -1,0 +1,40 @@
+name: Pricing health
+
+# Dagelijkse controle op het afstand-tarief (2026-11-19). Faalt deze job, dan
+# mailt GitHub de eigenaar. Aanleiding: het afstand-tarief gaf van 8 september
+# tot in november geen enkele prijs zonder dat iemand het merkte.
+#
+# Vereist (eenmalig, door de eigenaar):
+#   - GitHub secret  PRICING_HEALTH_SECRET  (zelfde waarde als in Vercel Production)
+#   - Vercel env     PRICING_HEALTH_SECRET  (Production)
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 07:00 wintertijd / 08:00 zomertijd
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Afstand-tarief gezond
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Controleer /api/pricing/health
+        env:
+          PRICING_HEALTH_SECRET: ${{ secrets.PRICING_HEALTH_SECRET }}
+        run: |
+          if [ -z "$PRICING_HEALTH_SECRET" ]; then
+            echo "::error::PRICING_HEALTH_SECRET ontbreekt als GitHub secret."
+            exit 1
+          fi
+          status=$(curl -sS -o body.json -w "%{http_code}" \
+            -H "x-health-secret: $PRICING_HEALTH_SECRET" \
+            https://www.t4xi.nl/api/pricing/health)
+          cat body.json; echo
+          if [ "$status" != "200" ]; then
+            echo "::error::Afstand-tarief ongezond of controle mislukt (HTTP $status). Zie de response hierboven."
+            exit 1
+          fi
