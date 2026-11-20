@@ -96,6 +96,9 @@ function statusForReason(reason: UnavailableReason): 400 | 404 | 422 | 500 {
       return 422;
     case "unknown_location":
     case "route_not_fixed":
+    // Diagnostiek (2026-11-19): interne verfijningen van "geen vaste prijs".
+    case "outside_service_area":
+    case "beyond_max_approach":
     // Luchthaven-pickup zonder bruikbare toeslagconfiguratie: functioneel
     // identiek aan een route zonder vaste prijs — "Offerte op aanvraag", 404.
     // Bewust GEEN 500: het is geen storing voor de klant, en de interne reden
