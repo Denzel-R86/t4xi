@@ -9,6 +9,13 @@ import {
 import type { Json, Tables, TablesInsert } from "@/lib/types/database";
 import { resolveLocationSlug, resolvePriorityLocationSlug } from "@/lib/pricing/location-aliases";
 import { getDrivingRoute, type DrivingRoute } from "@/lib/pricing/routing";
+import {
+  infraFailureFor,
+  noteInfraFailure,
+  type InfraFailureCategory,
+  type InfraFailureLogEntry,
+  type InfraFailureStage,
+} from "@/lib/pricing/infra-failure";
 import { priceFromDistance, DEFAULT_DISTANCE_TARIFF } from "@/lib/pricing/distance-tariff";
 import {
   classifyDestination,
@@ -732,7 +739,24 @@ export type ResolveQuoteDeps = {
    * `recordShadow` omdat dit een ANDERE, prijsbepalende component betreft.
    */
   recordPickupApproach?: (entry: PickupApproachLogEntry) => void;
+  /**
+   * Monitoring 2.0 (2026-11-21), best-effort side-channel: een configuratie-/
+   * lookupstoring die deze offerte zijn prijs kostte. Geen effect op de prijs
+   * of het resultaat — uitsluitend voor `price_breakdown.infraFailure`.
+   */
+  recordInfraFailure?: (entry: InfraFailureLogEntry) => void;
 };
+
+/** Diagnostiek is nooit fataal: een gooiende recorder mag de offerte niet raken. */
+function reportInfraFailure(deps: ResolveQuoteDeps, stage: InfraFailureStage, category: InfraFailureCategory): void {
+  try { deps.recordInfraFailure?.({ stage, category }); } catch { /* diagnostiek is nooit fataal */ }
+}
+
+function infraCategoryOf(e: unknown): InfraFailureCategory {
+  if (e instanceof ShadowTimeoutError) return "timeout";
+  if (e instanceof NoServiceRoleClientError) return "no_service_role_client";
+  return "load_error";
+}
 
 export type OperationalBase = {
   id: string;
@@ -886,6 +910,8 @@ async function resolveQuote(input: PricingQuoteInput): Promise<{
   // Eerste beslissende routingmislukking (2026-10-16). Blijft null bij een
   // geslaagde offerte of een vaste route.
   let routingFailure: RoutingFailureLogEntry | null = null;
+  // Eerste configuratie-/lookupstoring (Monitoring 2.0, 2026-11-21).
+  let infraFailure: InfraFailureLogEntry | null = null;
   const deps: ResolveQuoteDeps = {
     findLocation: (raw) => findLocation(supabase, raw),
     findVehicleClass: (code) => findVehicleClass(supabase, code),
@@ -925,8 +951,15 @@ async function resolveQuote(input: PricingQuoteInput): Promise<{
     recordRoutingFailure: (entry) => {
       if (routingFailure === null) routingFailure = entry;
     },
+    recordInfraFailure: (entry) => {
+      if (infraFailure === null) infraFailure = entry;
+    },
   };
   const result = await resolveQuoteWith(input, deps);
+  // Monitoring 2.0: alleen een offerte die daadwerkelijk zonder prijs bleef
+  // krijgt het label — zie lib/pricing/infra-failure.ts.
+  const infra = infraFailure as InfraFailureLogEntry | null;
+  if (infra && !result.available) noteInfraFailure(result, infra);
   return { result, shadow, pickupApproach, routingFailure };
 }
 
@@ -1470,15 +1503,21 @@ async function resolvePickupApproach(
       Promise.all([deps.loadApproachFeeConfig(), deps.loadOperationalBases(), deps.loadServiceAreaBaseSlugs()]),
       SHADOW_LOAD_OUTER_TIMEOUT_MS
     );
-  } catch {
+  } catch (e) {
+    // Monitoring 2.0: dit is een configuratiestoring, geen onbekende locatie.
+    reportInfraFailure(deps, "pickup_approach_config", infraCategoryOf(e));
     return offer("config_or_routing_unavailable");
   }
-  if (!config) return offer("config_or_routing_unavailable");
+  if (!config) {
+    reportInfraFailure(deps, "pickup_approach_config", "missing_config");
+    return offer("config_or_routing_unavailable");
+  }
 
   let gemeente: string | null;
   try {
     gemeente = await withTimeout(deps.lookupOfficialGemeente(pickupRaw), PDOK_ZONE_LOOKUP_OUTER_TIMEOUT_MS);
-  } catch {
+  } catch (e) {
+    reportInfraFailure(deps, "pickup_gemeente_lookup", infraCategoryOf(e));
     return offer("config_or_routing_unavailable");
   }
   if (!gemeente) return offer("unassigned_service_area");
@@ -1486,7 +1525,10 @@ async function resolvePickupApproach(
   const baseSlug = resolveBaseIdForGemeente(gemeente, baseSlugByGemeente);
   if (!baseSlug) return offer("unassigned_service_area");
   const base = bases.get(baseSlug);
-  if (!base) return offer("config_or_routing_unavailable");
+  if (!base) {
+    reportInfraFailure(deps, "pickup_approach_config", "missing_config");
+    return offer("config_or_routing_unavailable");
+  }
 
   // Dit is de EERSTE Google-aanroep in het quotepad — bij een routingstoring
   // faalt deze dus vóór de passagiersroute. De mislukking wordt daarom ook hier
@@ -1602,6 +1644,7 @@ async function resolveDeadheadPricing(
       couldPlausiblyBeInZone(dropoffForPlausibility, dropoffRaw) &&
       distanceKm > PLAUSIBLE_ZONE_MIN_DISTANCE_KM_FLOOR
     ) {
+      reportInfraFailure(deps, "deadhead_zone_config", infraCategoryOf(e));
       log({ shadowSkipped: true, reason: "zone_lookup_unavailable", basePrice, finalPrice: basePrice });
       return { indeterminate: true };
     }
@@ -1638,6 +1681,7 @@ async function resolveDeadheadPricing(
       // PDOK zelf onbereikbaar (niet: "succesvol geen match") vóór een
       // adres dat plausibel Eindhoven/Roermond zou kunnen zijn — onzeker,
       // nooit stilzwijgend de basisprijs.
+      reportInfraFailure(deps, "deadhead_zone_lookup", "load_error");
       log({ shadowSkipped: true, reason: "zone_lookup_unavailable", basePrice, finalPrice: basePrice });
       return { indeterminate: true };
     }
@@ -2059,13 +2103,18 @@ export async function logQuote(
   // pickupApproach/economicFloor: bestaande queries op price_breakdown->>'...'
   // blijven ongemoeid. Dit is de DUURZAME vindplaats van fase, HTTP-status en
   // Google-status/code — `error_code` blijft compact en querybaar.
+  // `infraFailure` (Monitoring 2.0, 2026-11-21): configuratie-/lookupstoring,
+  // apart van `unknown_location`. Alleen als sleutel aanwezig wanneer gevuld,
+  // zodat bestaande breakdown-vormen exact gelijk blijven. Zie infra-failure.ts.
+  const infraFailure = result.available ? null : infraFailureFor(result);
   const breakdown: Json | null =
-    shadow || pickupApproach || economicFloor || routingFailure
+    shadow || pickupApproach || economicFloor || routingFailure || infraFailure
       ? ({
           ...(shadow as unknown as Record<string, Json>),
           pickupApproach: pickupApproach as unknown as Json,
           economicFloor: economicFloor as unknown as Json,
           routingFailure: routingFailure as unknown as Json,
+          ...(infraFailure ? { infraFailure: infraFailure as unknown as Json } : {}),
         } as Json)
       : null;
 
