@@ -119,7 +119,13 @@ export default function Trackers() {
       if (activation.loadGoogleTag) {
         if (!googleBootstrapped.current) {
           window.dataLayer = window.dataLayer || [];
-          window.gtag = (...args: unknown[]) => window.dataLayer?.push(args);
+          // gtag.js verwerkt UITSLUITEND entries die een `arguments`-object
+          // zijn (Google's eigen snippet: `dataLayer.push(arguments)`). Een
+          // rest-array wordt stil genegeerd: 0 hits naar GA4. Empirisch
+          // vastgesteld 2026-11-21. Daarom bewust geen arrow-functie.
+          window.gtag = function gtag() {
+            window.dataLayer?.push(arguments);
+          };
           window.gtag("consent", "default", {
             analytics_storage: "denied",
             ad_storage: "denied",

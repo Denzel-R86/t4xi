@@ -13,6 +13,8 @@
  * hieraan; `props` is bewust beperkt tot primitieve, niet-identificerende waarden.
  */
 
+import { gaMeasurementId } from "./consent/config";
+
 export type AnalyticsProps = Record<string, string | number | boolean>;
 
 /** Bekende T4XI-events (documentair; `track` accepteert elke string). */
@@ -31,6 +33,7 @@ type PlausibleFn = (event: string, options?: { props?: AnalyticsProps }) => void
 type AnalyticsWindow = Window & {
   plausible?: PlausibleFn;
   dataLayer?: Array<Record<string, unknown>>;
+  gtag?: (...args: unknown[]) => void;
   __t4xiStatisticsConsent?: boolean;
 };
 
@@ -48,6 +51,17 @@ export function track(event: AnalyticsEvent | string, props?: AnalyticsProps): v
   try {
     if (typeof w.plausible === "function") {
       w.plausible(event, props ? { props } : undefined);
+      return;
+    }
+    // GA4 rechtstreeks (zonder GTM) verwerkt alleen `gtag('event', …)`; een
+    // los `{ event }`-object in de dataLayer bereikt GA4 niet (empirisch
+    // vastgesteld 2026-11-21). `send_to` beperkt het event tot GA4 — de
+    // statistiekencategorie — zodat het nooit naar Google Ads meegaat.
+    if (typeof w.gtag === "function") {
+      w.gtag("event", event, {
+        ...(props ?? {}),
+        ...(gaMeasurementId ? { send_to: gaMeasurementId } : {}),
+      });
       return;
     }
     if (Array.isArray(w.dataLayer)) {
