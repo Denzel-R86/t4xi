@@ -23,3 +23,11 @@ test("Meta heeft precies één PageView-pad en wacht op initialisatie", () => {
   assert.match(source, /if \(!marketing \|\| !metaPixelId \|\| !metaPixelReady\)/);
   assert.match(source, /onReady=\{\(\) => setMetaPixelReady\(true\)\}/);
 });
+
+// 2026-11-21: gtag.js verwerkt alleen `arguments`-objecten. Een rest-array
+// (`(...args) => dataLayer.push(args)`) leverde in een browsertest 0 hits op.
+test("gtag pusht het arguments-object, nooit een rest-array", () => {
+  assert.match(source, /window\.gtag = function gtag\(\) \{[\s\S]{0,200}?window\.dataLayer\?\.push\(arguments\);/);
+  assert.doesNotMatch(source, /window\.gtag = \(\.\.\.\w+[^)]*\) =>/);
+  assert.doesNotMatch(source, /dataLayer\?\.push\(args\)/);
+});

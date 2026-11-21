@@ -60,3 +60,45 @@ test("intrekken blokkeert ook een reeds aanwezige Plausible-provider", () => {
   });
   assert.deepEqual(events, ["routezoeker_gestart"]);
 });
+
+// ── GA4 rechtstreeks via gtag (2026-11-21) ──────────────────────────────────
+// Empirisch vastgesteld: zonder GTM bereikt een los `{ event }`-object in de
+// dataLayer GA4 niet. Met een geladen gtag moet track() dus `gtag('event', …)`
+// aanroepen en géén object meer in de dataLayer zetten.
+
+type GtagWindow = TestWindow & { gtag?: (...args: unknown[]) => void };
+
+test("met gtag aanwezig gaat een event via gtag('event'), niet als dataLayer-object", () => {
+  const calls: unknown[][] = [];
+  const dataLayer: Array<Record<string, unknown>> = [];
+  const windowValue: GtagWindow = {
+    __t4xiStatisticsConsent: true,
+    dataLayer,
+    gtag: (...args: unknown[]) => { calls.push(args); },
+  };
+  withWindow(windowValue, () => track("prijs_gevonden", { airport: true, stops: 0 }));
+  assert.deepEqual(calls, [["event", "prijs_gevonden", { airport: true, stops: 0 }]]);
+  assert.deepEqual(dataLayer, []);
+});
+
+test("gtag-events blijven uit zonder of na intrekking van statistiektoestemming", () => {
+  const calls: unknown[][] = [];
+  const windowValue: GtagWindow = {
+    __t4xiStatisticsConsent: false,
+    gtag: (...args: unknown[]) => { calls.push(args); },
+  };
+  withWindow(windowValue, () => {
+    track("boeking_geklikt");
+    windowValue.__t4xiStatisticsConsent = undefined;
+    track("boeking_voltooid");
+  });
+  assert.deepEqual(calls, []);
+});
+
+test("een gtag die gooit breekt de gebruikersflow nooit", () => {
+  const windowValue: GtagWindow = {
+    __t4xiStatisticsConsent: true,
+    gtag: () => { throw new Error("gtag kapot"); },
+  };
+  assert.doesNotThrow(() => withWindow(windowValue, () => track("prijs_gevonden")));
+});
