@@ -126,19 +126,19 @@ export default function Trackers() {
           window.gtag = function gtag() {
             window.dataLayer?.push(arguments);
           };
+          // Basic-mode: dit blok draait pas NÁ een expliciete keuze, dus de
+          // default IS die keuze. Eerder stond hier "default denied" gevolgd
+          // door een "update"; live (2026-11-21, G-V1SX1Q4HP7) ging de eerste
+          // page_view van iedere pagina dan uit met gcs=G100 (alleen default
+          // toegepast), ondanks toestemming. Latere wijzigingen, ook
+          // intrekking, lopen via `consent update` in het effect hieronder.
           window.gtag("consent", "default", {
-            analytics_storage: "denied",
-            ad_storage: "denied",
-            ad_user_data: "denied",
-            ad_personalization: "denied",
-          });
-          window.gtag("js", new Date());
-          window.gtag("consent", "update", {
             analytics_storage: statistics ? "granted" : "denied",
             ad_storage: marketing ? "granted" : "denied",
             ad_user_data: marketing ? "granted" : "denied",
             ad_personalization: marketing ? "granted" : "denied",
           });
+          window.gtag("js", new Date());
           googleBootstrapped.current = true;
         }
 

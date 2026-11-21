@@ -31,3 +31,30 @@ test("gtag pusht het arguments-object, nooit een rest-array", () => {
   assert.doesNotMatch(source, /window\.gtag = \(\.\.\.\w+[^)]*\) =>/);
   assert.doesNotMatch(source, /dataLayer\?\.push\(args\)/);
 });
+
+// 2026-11-21: live ging de eerste page_view met gcs=G100 (default "denied")
+// uit, ondanks toestemming. Omdat er in Basic-mode pas iets laadt NA een
+// keuze, is de default nu gelijk aan die keuze en volgt er geen update vóór
+// de eerste hit. Intrekken blijft via `consent update` lopen.
+test("consent default bij het opstarten is de gemaakte keuze, niet hard 'denied'", () => {
+  const start = source.indexOf('window.gtag("consent", "default"');
+  const js = source.indexOf('window.gtag("js", new Date())');
+  assert.ok(start >= 0 && js > start);
+  const defaultBlock = source.slice(start, js);
+  assert.match(defaultBlock, /analytics_storage: statistics \? "granted" : "denied"/);
+  assert.match(defaultBlock, /ad_storage: marketing \? "granted" : "denied"/);
+  assert.match(defaultBlock, /ad_user_data: marketing \? "granted" : "denied"/);
+  assert.match(defaultBlock, /ad_personalization: marketing \? "granted" : "denied"/);
+  assert.doesNotMatch(defaultBlock, /analytics_storage: "denied"/);
+});
+
+test("tussen 'js' en de eerste config staat geen consent-update meer", () => {
+  const js = source.indexOf('window.gtag("js", new Date())');
+  const config = source.indexOf('window.gtag?.("config", gaMeasurementId');
+  assert.ok(js >= 0 && config > js);
+  assert.doesNotMatch(source.slice(js, config), /"consent", "update"/);
+});
+
+test("intrekken en wijzigen lopen nog steeds via consent update", () => {
+  assert.match(source, /if \(typeof window\.gtag === "function"\) \{\s*window\.gtag\("consent", "update"/);
+});
