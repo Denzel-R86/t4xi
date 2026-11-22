@@ -58,3 +58,22 @@ test("tussen 'js' en de eerste config staat geen consent-update meer", () => {
 test("intrekken en wijzigen lopen nog steeds via consent update", () => {
   assert.match(source, /if \(typeof window\.gtag === "function"\) \{\s*window\.gtag\("consent", "update"/);
 });
+
+// 2026-11-22: live stuurde GA4 bij het initialiseren zelf een page_view, ook
+// met send_page_view:false; samen met de eigen page_view telde iedere
+// paginalaad dubbel. Nu: config verstuurt de eerste page_view expliciet en de
+// eigen page_view volgt alleen bij latere routewissels.
+test("GA4-config verstuurt de eerste page_view zelf (send_page_view: true)", () => {
+  assert.match(source, /window\.gtag\?\.\("config", gaMeasurementId, \{ send_page_view: true \}\)/);
+  assert.doesNotMatch(source, /send_page_view: false/);
+});
+
+test("na de eerste config wordt de eigen page_view voor die route overgeslagen", () => {
+  const config = source.indexOf('window.gtag?.("config", gaMeasurementId');
+  const flagSet = source.indexOf("ga4ConfigCoversCurrentPage.current = true", config);
+  assert.ok(config >= 0 && flagSet > config, "vlag wordt direct na de config gezet");
+  const skip = source.indexOf("} else if (ga4ConfigCoversCurrentPage.current) {");
+  const ownEvent = source.indexOf('window.gtag("event", "page_view"');
+  assert.ok(skip >= 0 && ownEvent > skip, "overslaan staat vóór de eigen page_view");
+  assert.match(source.slice(skip, ownEvent), /ga4ConfigCoversCurrentPage\.current = false;\s*lastGaPageView\.current = page_path;/);
+});
