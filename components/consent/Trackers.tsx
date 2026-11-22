@@ -98,6 +98,9 @@ export default function Trackers() {
   const ga4Initialized = useRef(false);
   const googleAdsInitialized = useRef(false);
   const lastGaPageView = useRef<string | null>(null);
+  // true direct na de eerste GA4-config: die config heeft de page_view van de
+  // huidige pagina al verstuurd, dus de eigen page_view voor die route vervalt.
+  const ga4ConfigCoversCurrentPage = useRef(false);
   const lastMetaPageView = useRef<string | null>(null);
   const activation = resolveGoogleTrackerActivation(
     { gaMeasurementId, googleAdsId },
@@ -143,7 +146,13 @@ export default function Trackers() {
         }
 
         if (activation.initializeGA4 && gaMeasurementId && !ga4Initialized.current) {
-          window.gtag?.("config", gaMeasurementId, { send_page_view: false });
+          // GA4 stuurt bij het initialiseren zelf een page_view voor de
+          // huidige pagina; live (2026-11-22) gebeurde dat zelfs met
+          // send_page_view:false, waardoor iedere paginalaad dubbel telde.
+          // Daarom expliciet aan, en slaat het route-effect hieronder de
+          // eerste page_view na deze config over.
+          window.gtag?.("config", gaMeasurementId, { send_page_view: true });
+          ga4ConfigCoversCurrentPage.current = true;
           ga4Initialized.current = true;
         }
         if (activation.initializeGA4 && gaMeasurementId) setGa4Ready(true);
@@ -208,6 +217,11 @@ export default function Trackers() {
       // Na intrekking mag opnieuw toestaan op dezelfde route één nieuwe
       // page_view opleveren; daarom wordt de deduplicatiesleutel gewist.
       lastGaPageView.current = null;
+    } else if (ga4ConfigCoversCurrentPage.current) {
+      // De page_view voor deze route is al door de GA4-config verstuurd.
+      // Alleen latere routewissels krijgen een eigen page_view.
+      ga4ConfigCoversCurrentPage.current = false;
+      lastGaPageView.current = page_path;
     } else if (lastGaPageView.current !== page_path && typeof window.gtag === "function") {
       window.gtag("event", "page_view", { page_path });
       lastGaPageView.current = page_path;
