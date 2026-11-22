@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type AddressSuggestion } from "@/components/shared/AddressAutocomplete";
-import { useRouteQuote } from "@/components/shared/useRouteQuote";
+import { reportQuoteVisible, useRouteQuote } from "@/components/shared/useRouteQuote";
 import PaymentStep from "@/components/booking/PaymentStep";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
@@ -37,6 +37,7 @@ import HandoffRouteLine from "./handoff/HandoffRouteLine";
 import { clearHandoff, handoffRideUnchanged, type ShownPrice } from "@/lib/booking-handoff";
 import { useHandoffPrice } from "./handoff/useHandoffPrice";
 import { track } from "@/lib/analytics";
+import { bookingRideKey, reportBookingStarted } from "@/lib/analytics-funnel";
 
 /**
  * 2026-08-19 (audit-correctie): toetst het VOLLEDIGE vertrekmoment (datum +
@@ -136,9 +137,7 @@ export default function BookingSection({
   // twijfel over welke gegevens bij de betaling horen. Alleen bevestiging + betaalstap.
   const booked = submit.status === "success";
   const successRef = useRef<HTMLDivElement>(null);
-  // Funnelmeting: booking_started één keer per bezoek aan /boeken, zodra de
-  // klant de ritstap met een geldige prijs verlaat.
-  const bookingStartedReported = useRef(false);
+
   // Referentie waarvoor PaymentStep het rit-overzicht toont (pending of betaald);
   // afgeleid, dus een nieuwe/gereste boeking toont automatisch weer de gewone melding.
   const [summaryRef, setSummaryRef] = useState<string | null>(null);
@@ -318,6 +317,11 @@ export default function BookingSection({
     // Retourtijd meesturen zodat het nachttarief per ritdeel wordt berekend.
     ...(tab === "retour" ? { returnDate, returnTime } : {}),
   });
+  // Funnelmeting: het prijsvoorbeeld (of de offerte-op-aanvraag) staat in
+  // beeld zodra de quote binnen is. Eén resultaat-event per rit per pagina.
+  useEffect(() => {
+    reportQuoteVisible(quote);
+  }, [quote]);
   // Verzenden mag pas nadat de prijsflow een bindbare, opgeslagen quote-lock
   // oplevert, of expliciet heeft vastgesteld dat dit een offerte-op-aanvraag is.
   // Idle/loading/error mogen nooit stil via het no-lock-pad worden geboekt.
@@ -390,9 +394,12 @@ export default function BookingSection({
         email: String(form.get("email") ?? ""),
       });
     }
-    if (step === "rit" && !bookingStartedReported.current) {
-      bookingStartedReported.current = true;
-      track("booking_started", { trip_type: tab === "retour" ? "retour" : "enkel" });
+    if (step === "rit") {
+      // Eén keer per rit per sessie: een rit die al via de homepage of de
+      // routezoeker als gestart telde, telt hier niet opnieuw.
+      reportBookingStarted(bookingRideKey({ pickup: pickup?.label, dropoff: dropoff?.label, date, time }), {
+        trip_type: tab === "retour" ? "retour" : "enkel",
+      });
     }
     clearGeneralError();
     goTo(nextStep(step));

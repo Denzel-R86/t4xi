@@ -107,7 +107,6 @@ test("een gtag die gooit breekt de gebruikersflow nooit", () => {
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { classifyContactHref, pageContextFor, priceKindFor } from "./analytics";
-import { reportQuoteRequested, reportQuoteResult, resetQuoteReportingForTests } from "../components/shared/useRouteQuote";
 
 test("pageContextFor: paginacategorie en taal zonder persoonsgegevens", () => {
   assert.deepEqual(pageContextFor("/"), { page_context: "home", lang: "nl" });
@@ -151,27 +150,6 @@ test("track voegt page_context en lang toe als er een locatie is", () => {
   assert.deepEqual(calls, [["event", "quote_shown", { page_context: "tarieven", lang: "en", airport: false }]]);
 });
 
-test("quote-hook meldt één quote_requested per pagina en één resultaat per unieke rit", () => {
-  resetQuoteReportingForTests();
-  const calls: unknown[][] = [];
-  const w = {
-    __t4xiStatisticsConsent: true,
-    location: { pathname: "/boeken" },
-    gtag: (...args: unknown[]) => { calls.push(args); },
-  };
-  withWindow(w as TestWindow, () => {
-    reportQuoteRequested();
-    reportQuoteRequested();
-    reportQuoteResult("rit-A", { onRequest: false, source: "distance_tariff", airport: false, returnTrip: false, night: false });
-    reportQuoteResult("rit-A", { onRequest: false, source: "distance_tariff", airport: false, returnTrip: false, night: false });
-    reportQuoteResult("rit-B", { onRequest: true, airport: true, returnTrip: true });
-  });
-  const names = calls.map((c) => c[1]);
-  assert.deepEqual(names, ["quote_requested", "quote_shown", "quote_on_request"]);
-  assert.deepEqual(calls[1]![2], { page_context: "boeken", lang: "nl", airport: false, trip_type: "enkel", price_kind: "afstand", night: false });
-  assert.deepEqual(calls[2]![2], { page_context: "boeken", lang: "nl", airport: true, trip_type: "retour", price_kind: "op_aanvraag" });
-});
-
 test("geen enkel track()-event in de code geeft persoonsgegevens mee", () => {
   const forbidden = /\b(pickup|dropoff|address|adres|postcode|email|phone|telefoon|naam|name|flight|vlucht|bookingId|bookingRef|quoteId|date|time|message)\s*:/i;
   const files: string[] = [];
@@ -191,5 +169,5 @@ test("geen enkel track()-event in de code geeft persoonsgegevens mee", () => {
       assert.doesNotMatch(m[1] ?? "", forbidden, `${file}: ${m[0].slice(0, 120)}`);
     }
   }
-  assert.ok(checked >= 8, `verwacht minstens 8 track()-aanroepen, gevonden ${checked}`);
+  assert.ok(checked >= 4, `verwacht minstens 4 track()-aanroepen, gevonden ${checked}`);
 });

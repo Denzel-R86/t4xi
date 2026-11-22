@@ -11,6 +11,7 @@ import RideResult from "@/components/tarieven/RideResult";
 import OnRequestCard from "@/components/tarieven/OnRequestCard";
 import { useTranslations } from "next-intl";
 import { track } from "@/lib/analytics";
+import { bookingRideKey, funnelKey, reportBookingStarted, reportQuoteRequested, reportQuoteResult } from "@/lib/analytics-funnel";
 import { usePrefersReducedMotion } from "@/components/horizon/motion";
 import { clearHandoff, HANDOFF_HREF, rememberShownPrice, writeHandoff } from "@/lib/booking-handoff";
 import { navigateWithHandoffTransition } from "@/components/booking/handoff/view-transition";
@@ -110,7 +111,6 @@ export default function RouteFinder() {
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const startedRef = useRef(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
   // Stabiele referenties: useRouteQuote vergelijkt op objectidentiteit. Zonder
@@ -138,6 +138,22 @@ export default function RouteFinder() {
   // "idle" staan: geen prijs, geen offerte-op-aanvraag, geen quote-API-call.
   // Puur/apart getest — zie lib/tarieven/route-finder.test.ts.
   const detailsComplete = isRouteFinderDetailsComplete(date, time, luggage, returnTrip, returnDate, returnTime);
+  // Lokale ritsleutel voor de funnelmeting: elke wijziging van prijsbepalende
+  // invoer is een nieuwe rit. Gaat nooit naar GA4 (alleen een korte hash).
+  const rideFingerprint = funnelKey(
+    JSON.stringify([
+      pickup?.label ?? "",
+      dropoff?.label ?? "",
+      resolvedStops.map((s) => [s.label, Boolean(s.waitRequested)]),
+      date,
+      time,
+      luggage,
+      passengers,
+      returnTrip,
+      returnTrip ? returnDate : "",
+      returnTrip ? returnTime : "",
+    ])
+  );
 
   // Live, autoritatieve richtprijs + luchthavencontext — exact dezelfde keten als
   // de homepagehero en /boeken. Het resultaat wordt pas getóónd na "Bereken".
@@ -182,10 +198,9 @@ export default function RouteFinder() {
   }
 
   function compute() {
-    if (!startedRef.current) {
-      startedRef.current = true;
-      track("quote_requested");
-    }
+    // Funnelmeting: alleen een geldige berekening telt (adressen + volledige
+    // ritgegevens), één keer per unieke rit op deze pagina.
+    if (pickup && dropoff && detailsComplete) reportQuoteRequested(rideFingerprint);
     if (!pickup || !dropoff) {
       setError(t("valAdres"));
       setSubmitted(false);
@@ -216,14 +231,21 @@ export default function RouteFinder() {
   const reducedMotion = usePrefersReducedMotion();
   useEffect(() => {
     if (view !== "ready" && view !== "onrequest") return;
-    const key = `${view}-${quote.status}-${hasStops}`;
+    const key = `${rideFingerprint}-${view}`;
     if (reported.current === key) return;
     reported.current = key;
-    const tripType = returnTrip ? "retour" : "enkel";
-    if (view === "ready") track("quote_shown", { airport: needsFlight, stops: resolvedStops.length, trip_type: tripType });
-    else track("quote_on_request", { airport: needsFlight, stops: resolvedStops.length, trip_type: tripType, price_kind: "op_aanvraag" });
+    // Eén resultaat-event per unieke rit (niet per status): twee verschillende
+    // ritten met dezelfde uitkomst tellen allebei.
+    reportQuoteResult(rideFingerprint, {
+      onRequest: view !== "ready",
+      airport: needsFlight,
+      returnTrip,
+      priceKind: view === "ready" ? "onbekend" : "op_aanvraag",
+      night: false,
+      stops: resolvedStops.length,
+    });
     resultRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "nearest" });
-  }, [view, quote.status, hasStops, needsFlight, resolvedStops.length, reducedMotion, returnTrip]);
+  }, [view, quote.status, hasStops, needsFlight, resolvedStops.length, reducedMotion, returnTrip, rideFingerprint]);
 
   // 2026-08-19 (hotfix): dezelfde, ÉNE bewuste bagagekeuze — vertaald naar een
   // leesbaar label — voor zowel de resultaatkaart als de offerteaanvraagtekst.
@@ -265,7 +287,11 @@ export default function RouteFinder() {
       : null;
 
   function onBook(e: React.MouseEvent<HTMLAnchorElement>) {
-    track("booking_started", { airport: needsFlight, stops: resolvedStops.length, trip_type: returnTrip ? "retour" : "enkel" });
+    reportBookingStarted(bookingRideKey({ pickup: pickup?.label, dropoff: dropoff?.label, date, time }), {
+      airport: needsFlight,
+      stops: resolvedStops.length,
+      trip_type: returnTrip ? "retour" : "enkel",
+    });
     // Geen geldige rit of storage geweigerd: /boeken?h=1 opent dan een leeg formulier
     // (geen adres in de URL) — nooit een oudere rit uit hetzelfde tabblad.
     if (!handoffRide || quote.status !== "ready" || !writeHandoff(handoffRide)) {

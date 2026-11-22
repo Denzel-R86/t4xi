@@ -12,13 +12,13 @@ import { useAddressSuggestions, type AddressSuggestion } from "@/components/shar
 import { sentenceDisplayLabel } from "@/components/shared/address-suggestions";
 import { AddressSheet, SheetTrigger, SuggestionText } from "./AddressSheet";
 import { DetailsSheet, DetailsTrigger, InlineDetails, type RideDetails } from "./DetailsSheet";
-import { useRouteQuote } from "@/components/shared/useRouteQuote";
+import { reportQuoteVisible, useRouteQuote } from "@/components/shared/useRouteQuote";
 import { useHidesStickyCta } from "@/components/sections/sticky-cta-visibility";
 import { isTextEntry, quoteOutcomeKey, shouldRevealResult } from "@/lib/hero/hero-visibility";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { HANDOFF_HREF, rememberShownPrice, writeHandoff } from "@/lib/booking-handoff";
-import { track } from "@/lib/analytics";
+import { bookingRideKey, reportBookingStarted } from "@/lib/analytics-funnel";
 import { navigateWithHandoffTransition } from "@/components/booking/handoff/view-transition";
 import { isFutureAmsterdamDeparture, useIsDesktop } from "./sentence-env";
 import { journeyStateFor, journeyTransition, type JourneyState } from "@/lib/horizon/journey-line-state";
@@ -122,6 +122,11 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
     return () => window.clearTimeout(id);
   }, [drawn]);
   const showPrice = priceRevealed(quote.status, drawn);
+  // Funnelmeting: het resultaat telt pas als het zichtbaar is (prijs na de
+  // onthulling, of de offerte-op-aanvraag). Eén keer per rit per pagina.
+  useEffect(() => {
+    if ((quote.status === "ready" && showPrice) || quote.status === "onrequest") reportQuoteVisible(quote);
+  }, [quote, showPrice]);
   const busy = resultBusy(quote.status, drawn);
 
   // F-14: de zin draagt de boekingshandeling zelf. De mobiele StickyCta wijkt als
@@ -209,7 +214,7 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
       return;
     }
     if (!quoteReady || !pickup || !dropoff) return;
-    track("booking_started", {
+    reportBookingStarted(bookingRideKey({ pickup: pickup.label, dropoff: dropoff.label, date, time }), {
       airport: Boolean(quote.airport?.isTransfer),
       price_kind: quote.status === "ready" ? "vaste_prijs" : "op_aanvraag",
     });

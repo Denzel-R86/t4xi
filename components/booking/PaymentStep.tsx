@@ -8,7 +8,7 @@ import Icon from "@/components/ui/Icon";
 import BookingConfirmation from "@/components/booking/BookingConfirmation";
 import type { ConfirmationDetails } from "@/lib/bookings/confirmation-details";
 import { serverPaidProof, type ServerPaidProof } from "@/lib/payments/server-paid";
-import { track } from "@/lib/analytics";
+import { funnelKey, reportPaymentCompleted } from "@/lib/analytics-funnel";
 import { getStripe } from "@/lib/payments/stripe-client";
 import {
   buildCreateIntentBody,
@@ -135,9 +135,12 @@ export default function PaymentStep({
           if (mapped === "confirmed") {
             setPaidProof(serverPaidProof(data, state.intent));
             // Alleen na serverbevestiging, nooit op basis van de redirect.
-            // Bedrag afgerond op hele euro's; geen boekings- of betaalkenmerk.
+            // Eén keer per boeking per browsersessie: polling, remount, herladen
+            // of terugnavigeren meldt dezelfde betaling niet opnieuw. De
+            // sleutel is een lokale hash van het boekings-id en gaat niet naar
+            // GA4; bedrag afgerond op hele euro's.
             if (state.intent) {
-              track("payment_completed", {
+              reportPaymentCompleted(funnelKey(`payment:${ride.bookingId}`), {
                 value: Math.round(state.intent.amount / 100),
                 currency: (state.intent.currency || "eur").toUpperCase(),
               });

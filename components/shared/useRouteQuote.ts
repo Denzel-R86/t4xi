@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import type { AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { formatEuro } from "@/lib/format/currency";
 import { parsePriceBreakdown, type PublicPriceBreakdown } from "@/lib/pricing/public-price-breakdown";
-import { priceKindFor, track } from "@/lib/analytics";
+import { priceKindFor } from "@/lib/analytics";
+import { funnelKey, reportQuoteRequested, reportQuoteResult, type QuoteOutcome } from "@/lib/analytics-funnel";
 
 /**
  * DE gedeelde live-quote-flow: AddressAutocomplete → deze hook →
@@ -17,44 +18,20 @@ import { priceKindFor, track } from "@/lib/analytics";
  * serverwaarheid reageert (Sprint 11.1).
  */
 
-// ── Funnelmeting (meetplan Fase 6, 2026-11-22) ─────────────────────────────
-// Eén quote_requested per pagina (eerste echte prijsaanvraag op dat pad) en één
-// quote_shown / quote_on_request per unieke rit, zodat herrenders en kleine
-// invoerwijzigingen de cijfers niet opblazen. Nooit adressen of tijden mee.
-let quoteRequestedForPath: string | null = null;
-const reportedQuoteKeys = new Set<string>();
+// ── Funnelmeting (meetplan Fase 6, herzien 2026-11-22) ─────────────────────
+// De hook meldt quote_requested zodra een aanvraag na de debounce echt start
+// (een geannuleerde debounce of Strict-Mode-herhaling telt dus niet). Het
+// resultaat meldt de hook NIET zelf: de pagina roept reportQuoteVisible(quote)
+// aan op het moment dat de prijs of de offerte-op-aanvraag zichtbaar is. De
+// koppeling quote → ritsleutel staat in een WeakMap en verlaat de browser nooit.
+type QuoteFunnelMeta = { rideKey: string; outcome: QuoteOutcome };
+const quoteFunnelMeta = new WeakMap<object, QuoteFunnelMeta>();
 
-function currentPath(): string {
-  return typeof window !== "undefined" ? window.location.pathname : "";
-}
-
-export function reportQuoteRequested(): void {
-  const path = currentPath();
-  if (quoteRequestedForPath === path) return;
-  quoteRequestedForPath = path;
-  track("quote_requested");
-}
-
-export function reportQuoteResult(
-  requestKey: string,
-  result: { onRequest: boolean; source?: unknown; airport: boolean; returnTrip: boolean; night?: boolean },
-): void {
-  const key = `${currentPath()}|${requestKey}`;
-  if (reportedQuoteKeys.has(key)) return;
-  reportedQuoteKeys.add(key);
-  if (reportedQuoteKeys.size > 200) reportedQuoteKeys.clear();
-  track(result.onRequest ? "quote_on_request" : "quote_shown", {
-    airport: result.airport,
-    trip_type: result.returnTrip ? "retour" : "enkel",
-    price_kind: priceKindFor(result.source, result.onRequest),
-    ...(result.onRequest ? {} : { night: Boolean(result.night) }),
-  });
-}
-
-/** Alleen voor tests: zet de deduplicatie terug. */
-export function resetQuoteReportingForTests(): void {
-  quoteRequestedForPath = null;
-  reportedQuoteKeys.clear();
+/** Meld het resultaat van deze quote (eenmalig per rit per pagina) als het zichtbaar is. */
+export function reportQuoteVisible(quote: Quote): void {
+  if (quote.status !== "ready" && quote.status !== "onrequest") return;
+  const meta = quoteFunnelMeta.get(quote);
+  if (meta) reportQuoteResult(meta.rideKey, meta.outcome);
 }
 
 export type Airport = { isTransfer: boolean; direction: "arrival" | "departure" | null };
@@ -184,9 +161,9 @@ export function useRouteQuote(
      */
     ready?: boolean;
     /**
-     * Funnelmeting (2026-11-22): standaard meldt de hook zelf quote_requested
-     * en quote_shown/quote_on_request. De routezoeker toont de prijs pas na
-     * "Bereken" en meldt daarom zelf; die zet dit op false.
+     * Funnelmeting (2026-11-22): standaard meldt de hook quote_requested zodra
+     * een aanvraag na de debounce start. De routezoeker telt pas bij een
+     * geldige klik op "Bereken" en meldt daarom zelf; die zet dit op false.
      */
     reportFunnel?: boolean;
   }
@@ -228,7 +205,8 @@ export function useRouteQuote(
             returnTime,
           })
         );
-        if (reportFunnel) reportQuoteRequested();
+        const rideKey = funnelKey(requestBody);
+        if (reportFunnel) reportQuoteRequested(rideKey);
         const res = await fetch("/api/pricing/quote", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -237,14 +215,18 @@ export function useRouteQuote(
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.available && typeof data.quoteId === "string" && data.quoteId.length > 0) {
-          setQuote(readyQuoteFromResponse(data));
-          if (reportFunnel) reportQuoteResult(requestBody, {
-            onRequest: false,
-            source: data.source,
-            airport: Boolean(data.isAirportTransfer),
-            returnTrip,
-            night: Number(data.nightSurcharge) > 0,
+          const readyQuote = readyQuoteFromResponse(data);
+          quoteFunnelMeta.set(readyQuote, {
+            rideKey,
+            outcome: {
+              onRequest: false,
+              airport: Boolean(data.isAirportTransfer),
+              returnTrip,
+              priceKind: priceKindFor(data.source, false),
+              night: Number(data.nightSurcharge) > 0,
+            },
           });
+          setQuote(readyQuote);
         } else {
           const failure = classifyQuoteFailure(res.status, data.available);
           if (failure !== "onrequest") {
@@ -258,19 +240,19 @@ export function useRouteQuote(
             });
             return;
           }
-          if (reportFunnel) reportQuoteResult(requestBody, {
-            onRequest: true,
-            airport: Boolean(data.isAirportTransfer),
-            returnTrip,
-          });
           // Ook zonder vaste prijs geeft de API de luchthavencontext mee.
-          setQuote({
+          const onRequest: Quote = {
             status: "onrequest",
             airport: {
               isTransfer: Boolean(data.isAirportTransfer),
               direction: data.flightDirection ?? null,
             },
+          };
+          quoteFunnelMeta.set(onRequest, {
+            rideKey,
+            outcome: { onRequest: true, airport: Boolean(data.isAirportTransfer), returnTrip, priceKind: "op_aanvraag" },
           });
+          setQuote(onRequest);
         }
       } catch (err) {
         if ((err as Error)?.name === "AbortError") return;
