@@ -18,6 +18,7 @@ import { isTextEntry, quoteOutcomeKey, shouldRevealResult } from "@/lib/hero/her
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { HANDOFF_HREF, rememberShownPrice, writeHandoff } from "@/lib/booking-handoff";
+import { track } from "@/lib/analytics";
 import { navigateWithHandoffTransition } from "@/components/booking/handoff/view-transition";
 import { isFutureAmsterdamDeparture, useIsDesktop } from "./sentence-env";
 import { journeyStateFor, journeyTransition, type JourneyState } from "@/lib/horizon/journey-line-state";
@@ -208,6 +209,10 @@ export function SentencePattern({ confirmHref = "/boeken" }: { confirmHref?: str
       return;
     }
     if (!quoteReady || !pickup || !dropoff) return;
+    track("booking_started", {
+      airport: Boolean(quote.airport?.isTransfer),
+      price_kind: quote.status === "ready" ? "vaste_prijs" : "op_aanvraag",
+    });
     const quoteId = quote.status === "ready" ? quote.quoteId : null;
     const written = writeHandoff({
       pickup: pickup.label,

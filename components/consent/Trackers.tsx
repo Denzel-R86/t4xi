@@ -11,6 +11,7 @@ import {
   resolveGoogleTrackerActivation,
 } from "@/lib/consent/config";
 import { useConsent } from "@/components/consent/ConsentContext";
+import { classifyContactHref, track } from "@/lib/analytics";
 
 declare global {
   interface Window {
@@ -203,6 +204,22 @@ export default function Trackers() {
       deleteCookiesMatching(META_COOKIE_EXACT, []);
     }
   }, [ready, hasChoice, statistics, marketing]);
+
+  // Funnelmeting (2026-11-22): klikken op WhatsApp-, bel- en reviewlinks,
+  // site-breed via één gedelegeerde listener in plaats van per component.
+  // track() handhaaft zelf de statistiektoestemming; alleen het linktype gaat
+  // mee, nooit het nummer of de URL.
+  useEffect(() => {
+    function onClick(event: MouseEvent) {
+      const target = event.target as Element | null;
+      const link = target?.closest?.("a[href]");
+      if (!link) return;
+      const kind = classifyContactHref(link.getAttribute("href"));
+      if (kind) track(kind);
+    }
+    document.addEventListener("click", onClick, { capture: true });
+    return () => document.removeEventListener("click", onClick, { capture: true });
+  }, []);
 
   // SPA-navigatie binnen de App Router ververst de pagina niet volledig, dus
   // page_view/PageView moeten na iedere route-wissel opnieuw worden gemeld.

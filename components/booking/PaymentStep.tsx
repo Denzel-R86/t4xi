@@ -8,6 +8,7 @@ import Icon from "@/components/ui/Icon";
 import BookingConfirmation from "@/components/booking/BookingConfirmation";
 import type { ConfirmationDetails } from "@/lib/bookings/confirmation-details";
 import { serverPaidProof, type ServerPaidProof } from "@/lib/payments/server-paid";
+import { track } from "@/lib/analytics";
 import { getStripe } from "@/lib/payments/stripe-client";
 import {
   buildCreateIntentBody,
@@ -133,6 +134,14 @@ export default function PaymentStep({
           const mapped = mapServerStatus(String(data?.status ?? ""));
           if (mapped === "confirmed") {
             setPaidProof(serverPaidProof(data, state.intent));
+            // Alleen na serverbevestiging, nooit op basis van de redirect.
+            // Bedrag afgerond op hele euro's; geen boekings- of betaalkenmerk.
+            if (state.intent) {
+              track("payment_completed", {
+                value: Math.round(state.intent.amount / 100),
+                currency: (state.intent.currency || "eur").toUpperCase(),
+              });
+            }
             return void dispatch({ type: "serverConfirmed" });
           }
           if (mapped === "failed") return void dispatch({ type: "serverFailed" });

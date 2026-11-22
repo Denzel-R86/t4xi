@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { AddressSuggestion } from "@/components/shared/AddressAutocomplete";
 import { formatEuro } from "@/lib/format/currency";
 import { parsePriceBreakdown, type PublicPriceBreakdown } from "@/lib/pricing/public-price-breakdown";
+import { priceKindFor, track } from "@/lib/analytics";
 
 /**
  * DE gedeelde live-quote-flow: AddressAutocomplete → deze hook →
@@ -15,6 +16,46 @@ import { parsePriceBreakdown, type PublicPriceBreakdown } from "@/lib/pricing/pu
  * "offerte op aanvraag"-tak — zodat het vluchtnummerveld overal op dezelfde
  * serverwaarheid reageert (Sprint 11.1).
  */
+
+// ── Funnelmeting (meetplan Fase 6, 2026-11-22) ─────────────────────────────
+// Eén quote_requested per pagina (eerste echte prijsaanvraag op dat pad) en één
+// quote_shown / quote_on_request per unieke rit, zodat herrenders en kleine
+// invoerwijzigingen de cijfers niet opblazen. Nooit adressen of tijden mee.
+let quoteRequestedForPath: string | null = null;
+const reportedQuoteKeys = new Set<string>();
+
+function currentPath(): string {
+  return typeof window !== "undefined" ? window.location.pathname : "";
+}
+
+export function reportQuoteRequested(): void {
+  const path = currentPath();
+  if (quoteRequestedForPath === path) return;
+  quoteRequestedForPath = path;
+  track("quote_requested");
+}
+
+export function reportQuoteResult(
+  requestKey: string,
+  result: { onRequest: boolean; source?: unknown; airport: boolean; returnTrip: boolean; night?: boolean },
+): void {
+  const key = `${currentPath()}|${requestKey}`;
+  if (reportedQuoteKeys.has(key)) return;
+  reportedQuoteKeys.add(key);
+  if (reportedQuoteKeys.size > 200) reportedQuoteKeys.clear();
+  track(result.onRequest ? "quote_on_request" : "quote_shown", {
+    airport: result.airport,
+    trip_type: result.returnTrip ? "retour" : "enkel",
+    price_kind: priceKindFor(result.source, result.onRequest),
+    ...(result.onRequest ? {} : { night: Boolean(result.night) }),
+  });
+}
+
+/** Alleen voor tests: zet de deduplicatie terug. */
+export function resetQuoteReportingForTests(): void {
+  quoteRequestedForPath = null;
+  reportedQuoteKeys.clear();
+}
 
 export type Airport = { isTransfer: boolean; direction: "arrival" | "departure" | null };
 export type QuoteErrorReason = "rate_limited" | "unavailable";
@@ -142,6 +183,12 @@ export function useRouteQuote(
      * boekingsformulier) geven dit nu wél expliciet door.
      */
     ready?: boolean;
+    /**
+     * Funnelmeting (2026-11-22): standaard meldt de hook zelf quote_requested
+     * en quote_shown/quote_on_request. De routezoeker toont de prijs pas na
+     * "Bereken" en meldt daarom zelf; die zet dit op false.
+     */
+    reportFunnel?: boolean;
   }
 ): Quote {
   const [quote, setQuote] = useState<Quote>({ status: "idle" });
@@ -156,6 +203,7 @@ export function useRouteQuote(
   const returnTime = opts?.returnTime ?? "";
   const luggage = opts?.luggage ?? "";
   const ready = opts?.ready ?? true;
+  const reportFunnel = opts?.reportFunnel ?? true;
 
   useEffect(() => {
     // 2026-08-19 (hotfix): zonder `ready` (datum/tijd/bagage nog niet compleet)
@@ -169,25 +217,34 @@ export function useRouteQuote(
     setQuote({ status: "loading" });
     const timer = setTimeout(async () => {
       try {
+        const requestBody = JSON.stringify(
+          buildQuoteRequestBody(pickup.label, dropoff.label, {
+            returnTrip,
+            passengers,
+            date,
+            time,
+            luggage,
+            returnDate,
+            returnTime,
+          })
+        );
+        if (reportFunnel) reportQuoteRequested();
         const res = await fetch("/api/pricing/quote", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            buildQuoteRequestBody(pickup.label, dropoff.label, {
-              returnTrip,
-              passengers,
-              date,
-              time,
-              luggage,
-              returnDate,
-              returnTime,
-            })
-          ),
+          body: requestBody,
           signal: controller.signal,
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.available && typeof data.quoteId === "string" && data.quoteId.length > 0) {
           setQuote(readyQuoteFromResponse(data));
+          if (reportFunnel) reportQuoteResult(requestBody, {
+            onRequest: false,
+            source: data.source,
+            airport: Boolean(data.isAirportTransfer),
+            returnTrip,
+            night: Number(data.nightSurcharge) > 0,
+          });
         } else {
           const failure = classifyQuoteFailure(res.status, data.available);
           if (failure !== "onrequest") {
@@ -201,6 +258,11 @@ export function useRouteQuote(
             });
             return;
           }
+          if (reportFunnel) reportQuoteResult(requestBody, {
+            onRequest: true,
+            airport: Boolean(data.isAirportTransfer),
+            returnTrip,
+          });
           // Ook zonder vaste prijs geeft de API de luchthavencontext mee.
           setQuote({
             status: "onrequest",
@@ -219,7 +281,7 @@ export function useRouteQuote(
       clearTimeout(timer);
       controller.abort();
     };
-  }, [pickup, dropoff, ready, returnTrip, passengers, date, time, luggage, returnDate, returnTime]);
+  }, [pickup, dropoff, ready, returnTrip, passengers, date, time, luggage, returnDate, returnTime, reportFunnel]);
 
   return quote;
 }

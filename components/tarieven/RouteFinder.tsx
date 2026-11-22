@@ -150,6 +150,8 @@ export default function RouteFinder() {
     time,
     luggage,
     ready: detailsComplete,
+    // De routezoeker toont de prijs pas na "Bereken" en meldt de funnel zelf.
+    reportFunnel: false,
     ...(returnTrip ? { returnDate, returnTime } : {}),
   });
   const airport = quote.airport;
@@ -170,7 +172,7 @@ export default function RouteFinder() {
   function addStop() {
     setStops((s) => (s.length >= MAX_STOPS ? s : [...s, newStop()]));
     setShowStops(true);
-    track("tussenstop_toegevoegd", { total: Math.min(stops.length + 1, MAX_STOPS) });
+    track("stop_added", { total: Math.min(stops.length + 1, MAX_STOPS) });
   }
   function removeStop(id: string) {
     setStops((s) => s.filter((x) => x.id !== id));
@@ -182,7 +184,7 @@ export default function RouteFinder() {
   function compute() {
     if (!startedRef.current) {
       startedRef.current = true;
-      track("routezoeker_gestart");
+      track("quote_requested");
     }
     if (!pickup || !dropoff) {
       setError(t("valAdres"));
@@ -217,10 +219,11 @@ export default function RouteFinder() {
     const key = `${view}-${quote.status}-${hasStops}`;
     if (reported.current === key) return;
     reported.current = key;
-    if (view === "ready") track("prijs_gevonden", { airport: needsFlight, stops: resolvedStops.length });
-    else track("prijs_op_aanvraag", { airport: needsFlight, stops: resolvedStops.length });
+    const tripType = returnTrip ? "retour" : "enkel";
+    if (view === "ready") track("quote_shown", { airport: needsFlight, stops: resolvedStops.length, trip_type: tripType });
+    else track("quote_on_request", { airport: needsFlight, stops: resolvedStops.length, trip_type: tripType, price_kind: "op_aanvraag" });
     resultRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "nearest" });
-  }, [view, quote.status, hasStops, needsFlight, resolvedStops.length, reducedMotion]);
+  }, [view, quote.status, hasStops, needsFlight, resolvedStops.length, reducedMotion, returnTrip]);
 
   // 2026-08-19 (hotfix): dezelfde, ÉNE bewuste bagagekeuze — vertaald naar een
   // leesbaar label — voor zowel de resultaatkaart als de offerteaanvraagtekst.
@@ -262,7 +265,7 @@ export default function RouteFinder() {
       : null;
 
   function onBook(e: React.MouseEvent<HTMLAnchorElement>) {
-    track("boeking_geklikt", { airport: needsFlight, stops: resolvedStops.length });
+    track("booking_started", { airport: needsFlight, stops: resolvedStops.length, trip_type: returnTrip ? "retour" : "enkel" });
     // Geen geldige rit of storage geweigerd: /boeken?h=1 opent dan een leeg formulier
     // (geen adres in de URL) — nooit een oudere rit uit hetzelfde tabblad.
     if (!handoffRide || quote.status !== "ready" || !writeHandoff(handoffRide)) {

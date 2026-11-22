@@ -33,7 +33,7 @@ export default function FairFarePromise() {
           <details
             className="group mt-7 border-t border-white/15 pt-5"
             onToggle={(e) => {
-              if ((e.currentTarget as HTMLDetailsElement).open) track("fair_fare_geopend");
+              if ((e.currentTarget as HTMLDetailsElement).open) track("fair_fare_opened");
             }}
           >
             <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-fog [&::-webkit-details-marker]:hidden">

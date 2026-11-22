@@ -36,6 +36,7 @@ import type { ConfirmationDetails } from "@/lib/bookings/confirmation-details";
 import HandoffRouteLine from "./handoff/HandoffRouteLine";
 import { clearHandoff, handoffRideUnchanged, type ShownPrice } from "@/lib/booking-handoff";
 import { useHandoffPrice } from "./handoff/useHandoffPrice";
+import { track } from "@/lib/analytics";
 
 /**
  * 2026-08-19 (audit-correctie): toetst het VOLLEDIGE vertrekmoment (datum +
@@ -135,6 +136,9 @@ export default function BookingSection({
   // twijfel over welke gegevens bij de betaling horen. Alleen bevestiging + betaalstap.
   const booked = submit.status === "success";
   const successRef = useRef<HTMLDivElement>(null);
+  // Funnelmeting: booking_started één keer per bezoek aan /boeken, zodra de
+  // klant de ritstap met een geldige prijs verlaat.
+  const bookingStartedReported = useRef(false);
   // Referentie waarvoor PaymentStep het rit-overzicht toont (pending of betaald);
   // afgeleid, dus een nieuwe/gereste boeking toont automatisch weer de gewone melding.
   const [summaryRef, setSummaryRef] = useState<string | null>(null);
@@ -233,6 +237,16 @@ export default function BookingSection({
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.ok) {
+        // De server heeft de boeking aangemaakt: pas nu telt hij als
+        // booking_submitted. Bedrag afgerond op hele euro's, geen
+        // boekingsnummer, geen adressen of tijden.
+        track("booking_submitted", {
+          trip_type: payload.rideType === "retour" ? "retour" : "enkel",
+          price_kind: data.quoteOnRequest ? "op_aanvraag" : "vaste_prijs",
+          ...(typeof data.price === "number" && !data.quoteOnRequest
+            ? { value: Math.round(data.price), currency: "EUR" }
+            : {}),
+        });
         setSubmit({
           status: "success",
           bookingRef: data.bookingRef,
@@ -375,6 +389,10 @@ export default function BookingSection({
         phone: String(form.get("telefoon") ?? ""),
         email: String(form.get("email") ?? ""),
       });
+    }
+    if (step === "rit" && !bookingStartedReported.current) {
+      bookingStartedReported.current = true;
+      track("booking_started", { trip_type: tab === "retour" ? "retour" : "enkel" });
     }
     clearGeneralError();
     goTo(nextStep(step));
