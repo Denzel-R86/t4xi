@@ -1,12 +1,24 @@
 name: Pricing health
 
-# Dagelijkse controle op het afstand-tarief (2026-11-19). Faalt deze job, dan
-# mailt GitHub de eigenaar. Aanleiding: het afstand-tarief gaf van 8 september
-# tot in november geen enkele prijs zonder dat iemand het merkte.
+# Dagelijkse controle op het afstand-tarief (2026-11-19, Monitoring 2.0 op
+# 2026-11-21). Faalt deze job, dan mailt GitHub de eigenaar. Aanleiding: het
+# afstand-tarief gaf van 8 september tot in november geen enkele prijs zonder
+# dat iemand het merkte.
+#
+# Uitkomst van /api/pricing/health:
+#   healthy / idle  -> HTTP 200, job slaagt
+#   degraded        -> HTTP 200, job slaagt met een ::warning:: (losse
+#                      infrastructuurstoring, onder de alarmdrempel)
+#   unhealthy       -> HTTP 503, job faalt (storing, of monitoring zelf kapot)
+#   elke andere HTTP-status (401, 5xx, timeout) -> job faalt
 #
 # Vereist (eenmalig, door de eigenaar):
 #   - GitHub secret  PRICING_HEALTH_SECRET  (zelfde waarde als in Vercel Production)
 #   - Vercel env     PRICING_HEALTH_SECRET  (Production)
+# Optioneel (dead-man's switch, vangt een uitgeschakelde of niet-draaiende
+# workflow — GitHub zet geplande workflows na 60 dagen repo-inactiviteit stil):
+#   - GitHub secret  HEALTHCHECKS_PING_URL  (bv. een healthchecks.io-check met
+#     een periode van 1 dag). Leeg/afwezig = de ping-stappen doen niets.
 
 on:
   schedule:
@@ -21,6 +33,8 @@ jobs:
     name: Afstand-tarief gezond
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      HEALTHCHECKS_PING_URL: ${{ secrets.HEALTHCHECKS_PING_URL }}
     steps:
       - name: Controleer /api/pricing/health
         env:
@@ -30,11 +44,44 @@ jobs:
             echo "::error::PRICING_HEALTH_SECRET ontbreekt als GitHub secret."
             exit 1
           fi
-          status=$(curl -sS -o body.json -w "%{http_code}" \
+          status=$(curl -sS -m 30 -o body.json -w "%{http_code}" \
             -H "x-health-secret: $PRICING_HEALTH_SECRET" \
-            https://www.t4xi.nl/api/pricing/health)
-          cat body.json; echo
+            https://www.t4xi.nl/api/pricing/health) || status="000"
+          cat body.json 2>/dev/null || true; echo
           if [ "$status" != "200" ]; then
             echo "::error::Afstand-tarief ongezond of controle mislukt (HTTP $status). Zie de response hierboven."
             exit 1
           fi
+          state=$(jq -r '.state // .health.status // "unknown"' body.json 2>/dev/null || echo "unknown")
+          case "$state" in
+            healthy|ok|idle)
+              echo "Status: $state" ;;
+            degraded)
+              echo "::warning::Afstand-tarief degraded: losse infrastructuurstoring(en) in de laatste 24 uur, onder de alarmdrempel. Zie de response hierboven." ;;
+            *)
+              echo "::error::Onverwachte health-status '$state' bij HTTP 200."
+              exit 1 ;;
+          esac
+
+      # Dead-man's switch (optioneel). De ping-stappen falen nooit zelf
+      # (`|| true` + continue-on-error), zodat ze de uitslag van de health-check
+      # niet kunnen maskeren. De URL wordt nooit gelogd.
+      - name: Ping dead-man's switch (succes)
+        if: success()
+        continue-on-error: true
+        run: |
+          if [ -z "$HEALTHCHECKS_PING_URL" ]; then
+            echo "::notice::HEALTHCHECKS_PING_URL niet geconfigureerd; ping overgeslagen."
+            exit 0
+          fi
+          curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECKS_PING_URL" || echo "::warning::Ping naar dead-man's switch mislukt."
+
+      - name: Ping dead-man's switch (fout)
+        if: failure()
+        continue-on-error: true
+        run: |
+          if [ -z "$HEALTHCHECKS_PING_URL" ]; then
+            echo "::notice::HEALTHCHECKS_PING_URL niet geconfigureerd; ping overgeslagen."
+            exit 0
+          fi
+          curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECKS_PING_URL/fail" || echo "::warning::Fail-ping naar dead-man's switch mislukt."
