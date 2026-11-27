@@ -11,6 +11,7 @@ import {
   type ContactAudience,
   type ContactTopic,
 } from "@/lib/contact/prefill";
+import { track } from "@/lib/analytics";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
 
@@ -148,6 +149,9 @@ export default function ContactLeadForm({
                 }),
               });
               if (!response.ok) throw new Error("delivery_failed");
+              // Zelfde moment als lead.received op de server. Alleen het type
+              // aanvraag, nooit de inhoud of contactgegevens.
+              track("lead_submitted", { lead_type: audience === "business" ? "zakelijk" : "particulier" });
               form.reset();
               setAudience("private");
               setTopic("");
